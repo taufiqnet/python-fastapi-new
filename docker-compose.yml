@@ -1,0 +1,14 @@
+services:
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DB_NAME: fastapi
+      DB_USER: postgres
+      DB_PASSWORD: 19863022
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
