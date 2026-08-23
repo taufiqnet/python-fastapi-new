@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     db_host: str
     db_port: int = 5432
 
-    app_host: str = "127.0.0.1"
+    # app_host: str = "127.0.0.1" # if the database is outside of docker
+    app_host: str = "0.0.0.0"   # if the database is inside of docker
     app_port: int = 8000
 
     model_config = SettingsConfigDict(
