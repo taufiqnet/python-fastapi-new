@@ -1,21 +1,3 @@
-#Using PostgreSQL in outside docker, in windows installed database
-
-# services:
-
-#   api:
-#     build: .
-#     ports:
-#       - "8000:8000"
-#     environment:
-#       DB_NAME: fastapi
-#       DB_USER: postgres
-#       DB_PASSWORD: 19863022
-#       DB_HOST: host.docker.internal
-#       DB_PORT: 5432
-#     extra_hosts:
-#       - "host.docker.internal:host-gateway"
-
-# Using postgreSQL in inside docker:
 services:
   api:
     build: .
@@ -27,7 +9,8 @@ services:
     environment:
       DB_HOST: db
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: postgres:16
@@ -41,6 +24,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   postgres_data:
