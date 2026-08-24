@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
 class BusinessProfileCreate(BaseModel):
@@ -77,6 +77,13 @@ class BusinessProfileCreate(BaseModel):
     language: str = "en"
 
     is_active: bool = True
+
+    @field_validator("email", "support_email", "sales_email", "invoice_email", mode="before")
+    @classmethod
+    def blank_email_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
 
 class BusinessProfileResponse(BusinessProfileCreate):

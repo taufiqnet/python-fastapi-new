@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, DECIMAL, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Date, DateTime, DECIMAL, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -49,10 +49,10 @@ class BusinessProfile(Base):
     phone: Mapped[str | None] = mapped_column(String(30), default="")
     mobile: Mapped[str | None] = mapped_column(String(30), default="")
     whatsapp: Mapped[str | None] = mapped_column(String(30), default="")
-    email: Mapped[str | None] = mapped_column(String(255), default="")
-    support_email: Mapped[str | None] = mapped_column(String(255), default="")
-    sales_email: Mapped[str | None] = mapped_column(String(255), default="")
-    invoice_email: Mapped[str | None] = mapped_column(String(255), default="")
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    support_email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    sales_email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    invoice_email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
     website: Mapped[str | None] = mapped_column(String(500), default="")
 
     # Contact Person

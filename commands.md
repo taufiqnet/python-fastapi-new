@@ -30,7 +30,7 @@ docker compose ps
 docker compose build api
 docker compose up -d
 docker compose exec api alembic revision --autogenerate -m "add business_profile table and user business fields"
-
+docker compose exec api alembic upgrade head
 
 
 **Find all the commands in the terminal executed:**
