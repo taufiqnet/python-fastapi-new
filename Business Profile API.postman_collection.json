@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "62b97217-94aa-474c-965c-f1930eb29cdd",
     "name": "Business Profile API",
-    "description": "Endpoints for BusinessProfile: create, read, list, update, delete, and assign/unassign users. Admin-only actions require a bearer token obtained via Login.",
+    "description": "Endpoints for BusinessProfile: create, read, list, update, delete, and User/Auth management including user profile, vendor profile, and addresses.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "31614458"
   },
@@ -17,7 +17,12 @@
               "type": "noauth"
             },
             "method": "POST",
-            "header": [],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\r\n    \"username\": \"admin\",\r\n    \"email\": \"admin@example.com\",\r\n    \"password\": \"admin123\"\r\n}",
@@ -28,15 +33,10 @@
               }
             },
             "url": {
-              "raw": "http://127.0.0.1:8000/auth/register",
-              "protocol": "http",
+              "raw": "{{base_url}}/auth/register",
               "host": [
-                "127",
-                "0",
-                "0",
-                "1"
+                "{{base_url}}"
               ],
-              "port": "8000",
               "path": [
                 "auth",
                 "register"
@@ -87,6 +87,142 @@
               "path": [
                 "auth",
                 "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Vendor Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_profile_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/me/vendor-profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me",
+                "vendor-profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Address",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('address_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"shipping\",\n  \"is_default\": true,\n  \"recipient_name\": \"John Doe\",\n  \"phone\": \"+8801700000000\",\n  \"building_no\": \"123\",\n  \"street\": \"Main Street\",\n  \"city\": \"Dhaka\",\n  \"state\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"zip_code\": \"1200\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/me/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me",
+                "addresses"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Address",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me/addresses/{{address_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me",
+                "addresses",
+                "{{address_id}}"
               ]
             }
           },
@@ -263,56 +399,6 @@
             }
           },
           "response": []
-        },
-        {
-          "name": "Assign User to Business",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/business/{{business_id}}/assign-user/{{user_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "business",
-                "{{business_id}}",
-                "assign-user",
-                "{{user_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Unassign User from Business",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/business/{{business_id}}/unassign-user/{{user_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "business",
-                "{{business_id}}",
-                "unassign-user",
-                "{{user_id}}"
-              ]
-            }
-          },
-          "response": []
         }
       ]
     }
@@ -335,6 +421,11 @@
     },
     {
       "key": "user_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "address_id",
       "value": "1",
       "type": "string"
     }
