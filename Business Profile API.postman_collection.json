@@ -1024,6 +1024,327 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "Create Warehouse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('warehouse_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Main Fulfillment Center\",\n  \"code\": \"WH-MAIN-01\",\n  \"address\": \"123 Logistics Way, Industrial Zone\",\n  \"region\": \"Dhaka\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/warehouses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "warehouses"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Warehouses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/warehouses?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "warehouses"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Warehouse",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/warehouses/{{warehouse_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "warehouses",
+                "{{warehouse_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Warehouse",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Central Fulfillment Hub\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/warehouses/{{warehouse_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "warehouses",
+                "{{warehouse_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Inventory Item",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('inventory_item_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"warehouse_id\": \"{{warehouse_id}}\",\n  \"quantity_on_hand\": 100,\n  \"quantity_reserved\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "items"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Inventory Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/items?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Inventory Item",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/items/{{inventory_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "items",
+                "{{inventory_item_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Adjust Stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventory_item_id\": \"{{inventory_item_id}}\",\n  \"delta\": 25,\n  \"reason\": \"restock\",\n  \"reference_id\": \"PO-99182\",\n  \"notes\": \"Restocked 25 units from supplier\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/adjustments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "adjustments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock Movements",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/movements?inventory_item_id={{inventory_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "movements"
+              ],
+              "query": [
+                {
+                  "key": "inventory_item_id",
+                  "value": "{{inventory_item_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -1074,6 +1395,16 @@
     },
     {
       "key": "image_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "warehouse_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "inventory_item_id",
       "value": "",
       "type": "string"
     }

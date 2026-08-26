@@ -3,9 +3,10 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.database import Base, engine
 from app.modules.categories.models import Category  # noqa: F401
+from app.modules.inventory.models import InventoryItem, Warehouse  # noqa: F401
 from app.modules.products.models import Product  # noqa: F401
 from app.modules.sellers.models import Seller  # noqa: F401
-from app.routers import auth, business, categories, products, tasks
+from app.routers import auth, business, categories, inventory, products, tasks
 
 try:
     Base.metadata.create_all(bind=engine)
@@ -21,6 +22,7 @@ app.include_router(auth.router)
 app.include_router(business.router)
 app.include_router(categories.router)
 app.include_router(products.router)
+app.include_router(inventory.router)
 app.include_router(tasks.router)
 
 

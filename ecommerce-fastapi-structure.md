@@ -1,4 +1,4 @@
-# Enterprise E-Commerce Backend — FastAPI Modular Structure
+ecommerce-fastapi-structure.md# Enterprise E-Commerce Backend — FastAPI Modular Structure
 
 A production-grade, domain-driven folder structure for a large-scale marketplace (Amazon/eBay-style), covering multi-vendor selling, catalog, cart/checkout, payments, shipping, reviews, and admin/analytics.
 
