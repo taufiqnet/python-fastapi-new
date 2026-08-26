@@ -4,7 +4,10 @@ from app.database import Base, engine
 from app.core.config import settings
 from app.routers import auth, business, tasks
 
-Base.metadata.create_all(bind=engine)
+try:
+    Base.metadata.create_all(bind=engine)
+except Exception:
+    pass
 
 app = FastAPI(
     title="Task Management API",

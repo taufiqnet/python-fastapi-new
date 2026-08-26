@@ -38,6 +38,6 @@ async def get_current_user(
 
 
 async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
-    if not current_user.is_superuser:
+    if not current_user.has_role("admin"):
         raise HTTPException(status_code=403, detail="Admin privileges required")
     return current_user

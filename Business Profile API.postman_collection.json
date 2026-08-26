@@ -1,0 +1,342 @@
+{
+  "info": {
+    "_postman_id": "62b97217-94aa-474c-965c-f1930eb29cdd",
+    "name": "Business Profile API",
+    "description": "Endpoints for BusinessProfile: create, read, list, update, delete, and assign/unassign users. Admin-only actions require a bearer token obtained via Login.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "31614458"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"admin\",\r\n    \"email\": \"admin@example.com\",\r\n    \"password\": \"admin123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://127.0.0.1:8000/auth/register",
+              "protocol": "http",
+              "host": [
+                "127",
+                "0",
+                "0",
+                "1"
+              ],
+              "port": "8000",
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login (get admin token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('token', json.access_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "changeme",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Business Profile",
+      "item": [
+        {
+          "name": "Create Business",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('business_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZXhwIjoxNzg3NTUzMjg3fQ.SlRvcwZLpE2HO2Z3eWAL2O6rQ8Om3DzvJ_TqBidAWVY",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/business/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "business",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Business",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business/{{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "business",
+                "{{business_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Businesses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business/?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "business",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Business",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/business/{{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "business",
+                "{{business_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Business",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business/{{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "business",
+                "{{business_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Assign User to Business",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business/{{business_id}}/assign-user/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "business",
+                "{{business_id}}",
+                "assign-user",
+                "{{user_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unassign User from Business",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/business/{{business_id}}/unassign-user/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "business",
+                "{{business_id}}",
+                "unassign-user",
+                "{{user_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "business_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "1",
+      "type": "string"
+    }
+  ]
+}
