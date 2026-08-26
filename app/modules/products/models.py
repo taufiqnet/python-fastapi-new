@@ -1,10 +1,14 @@
+import enum
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     Column,
+    DateTime,
     Enum,
     ForeignKey,
     Integer,
@@ -19,6 +23,29 @@ from sqlalchemy.types import UUID
 from app.common.enums import Status
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
+
+# NOTE: ProductCondition / ProductType / MediaType are defined here for now.
+# If other modules (e.g. returns, disputes) end up needing ProductCondition,
+# move these three into app/common/enums.py alongside Status.
+
+
+class ProductCondition(str, enum.Enum):
+    NEW = "new"
+    USED = "used"
+    REFURBISHED = "refurbished"
+    OPEN_BOX = "open_box"
+
+
+class ProductType(str, enum.Enum):
+    PHYSICAL = "physical"
+    DIGITAL = "digital"
+    SERVICE = "service"
+
+
+class MediaType(str, enum.Enum):
+    IMAGE = "image"
+    VIDEO = "video"
+
 
 # Many-to-Many association table between Product and ProductTag
 product_tags = Table(
@@ -42,8 +69,15 @@ product_tags = Table(
 class Product(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "products"
 
+    business_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     seller_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
+        ForeignKey("sellers.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
@@ -66,6 +100,32 @@ class Product(Base, UUIDMixin, TimestampMixin):
         default=Status.DRAFT,
         nullable=False,
     )
+    condition: Mapped[ProductCondition] = mapped_column(
+        Enum(ProductCondition),
+        default=ProductCondition.NEW,
+        nullable=False,
+    )
+    product_type: Mapped[ProductType] = mapped_column(
+        Enum(ProductType),
+        default=ProductType.PHYSICAL,
+        nullable=False,
+    )
+    requires_shipping: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # SEO / merchandising
+    meta_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    meta_description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    video_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_featured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Denormalized stats (updated by service layer / triggers, not client-writable)
+    average_rating: Mapped[Decimal] = mapped_column(
+        Numeric(3, 2), default=Decimal("0.00"), nullable=False
+    )
+    review_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    sold_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     category: Mapped["Category | None"] = relationship(  # noqa: F821
@@ -83,6 +143,7 @@ class Product(Base, UUIDMixin, TimestampMixin):
         back_populates="product",
         cascade="all, delete-orphan",
         lazy="selectin",
+        order_by="ProductImage.position",
     )
     attributes: Mapped[list["ProductAttribute"]] = relationship(
         "ProductAttribute",
@@ -94,6 +155,10 @@ class Product(Base, UUIDMixin, TimestampMixin):
         "ProductTag",
         secondary=product_tags,
         back_populates="products",
+        lazy="selectin",
+    )
+    business_profile: Mapped["BusinessProfile | None"] = relationship(  # noqa: F821
+        "BusinessProfile",
         lazy="selectin",
     )
 
@@ -112,13 +177,36 @@ class ProductVariant(Base, UUIDMixin, TimestampMixin):
         index=True,
         nullable=False,
     )
+    barcode: Mapped[str | None] = mapped_column(
+        String(64), unique=True, index=True, nullable=True
+    )  # UPC / EAN / GTIN
     attributes: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+
+    # Pricing
     price: Mapped[Decimal] = mapped_column(
         Numeric(12, 2),
         nullable=False,
         default=Decimal("0.00"),
     )
+    compare_at_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    cost_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True
+    )  # internal only — never serialize to public schemas
+    currency: Mapped[str] = mapped_column(String(3), default="USD", nullable=False)
+
+    # Inventory
     stock_qty: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    low_stock_threshold: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    backorder_allowed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Shipping
+    weight: Mapped[Decimal | None] = mapped_column(Numeric(10, 3), nullable=True)
+    weight_unit: Mapped[str] = mapped_column(String(10), default="kg", nullable=False)
+    length: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    width: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    height: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    dimension_unit: Mapped[str] = mapped_column(String(10), default="cm", nullable=False)
 
     # Relationships
     product: Mapped["Product"] = relationship(
@@ -130,6 +218,10 @@ class ProductVariant(Base, UUIDMixin, TimestampMixin):
         back_populates="variant",
         lazy="selectin",
     )
+
+    # NOTE: "only one is_default variant per product" and "only one is_primary
+    # image per product" are enforced in the service layer (or via a partial
+    # unique index in a migration), not at the ORM level.
 
 
 class ProductImage(Base, UUIDMixin, TimestampMixin):
@@ -148,6 +240,10 @@ class ProductImage(Base, UUIDMixin, TimestampMixin):
     url: Mapped[str] = mapped_column(String(500), nullable=False)
     position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     alt_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    media_type: Mapped[MediaType] = mapped_column(
+        Enum(MediaType), default=MediaType.IMAGE, nullable=False
+    )
 
     # Relationships
     product: Mapped["Product"] = relationship(
@@ -203,6 +299,12 @@ class AttributeValue(Base, UUIDMixin, TimestampMixin):
 class ProductTag(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "product_tags"
 
+    business_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     slug: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 

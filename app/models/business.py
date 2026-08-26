@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, Date, DateTime, DECIMAL, Integer, String, Text
+from sqlalchemy import DECIMAL, Boolean, Date, DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -11,8 +11,17 @@ class BusinessProfile(Base):
     __tablename__ = "business_profiles"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default="now()")
-    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default="now()", onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        server_default=func.now(),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        server_default=func.now(),
+        onupdate=datetime.utcnow,
+    )
 
     # Company Identity
     name_en: Mapped[str] = mapped_column(String(255))
@@ -50,9 +59,15 @@ class BusinessProfile(Base):
     mobile: Mapped[str | None] = mapped_column(String(30), default="")
     whatsapp: Mapped[str | None] = mapped_column(String(30), default="")
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
-    support_email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
-    sales_email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
-    invoice_email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    support_email: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None
+    )
+    sales_email: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None
+    )
+    invoice_email: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, default=None
+    )
     website: Mapped[str | None] = mapped_column(String(500), default="")
 
     # Contact Person

@@ -1,7 +1,7 @@
 import uuid
 from typing import Any
 
-from sqlalchemy import JSON, Boolean, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import UUID
 
@@ -12,6 +12,12 @@ from app.database import Base
 class Category(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "categories"
 
+    business_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("categories.id", ondelete="CASCADE"),
@@ -49,6 +55,10 @@ class Category(Base, UUIDMixin, TimestampMixin):
     products: Mapped[list["Product"]] = relationship(  # noqa: F821
         "Product",
         back_populates="category",
+        lazy="selectin",
+    )
+    business_profile: Mapped["BusinessProfile | None"] = relationship(  # noqa: F821
+        "BusinessProfile",
         lazy="selectin",
     )
 

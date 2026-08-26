@@ -94,6 +94,7 @@ class ProductAttributeOut(ProductAttributeBase):
 class ProductTagBase(BaseModel):
     name: str = Field(..., max_length=50)
     slug: str = Field(..., max_length=50)
+    business_id: int | None = None
 
 
 class ProductTagCreate(ProductTagBase):
@@ -115,6 +116,7 @@ class ProductBase(BaseModel):
     status: Status = Status.DRAFT
     category_id: uuid.UUID | None = None
     seller_id: uuid.UUID | None = None
+    business_id: int | None = None
 
 
 class ProductCreate(ProductBase):
@@ -132,6 +134,7 @@ class ProductUpdate(BaseModel):
     status: Status | None = None
     category_id: uuid.UUID | None = None
     seller_id: uuid.UUID | None = None
+    business_id: int | None = None
 
 
 class ProductOut(ProductBase):
@@ -154,6 +157,7 @@ class ProductListItem(BaseModel):
     status: Status
     thumbnail_url: str | None = None
     min_price: Decimal | None = None
+    business_id: int | None = None
 
 
 class ProductDetailOut(ProductOut):

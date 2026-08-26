@@ -32,6 +32,7 @@ class CategoryBase(BaseModel):
     description: str | None = None
     is_active: bool = True
     parent_id: uuid.UUID | None = None
+    business_id: int | None = None
 
 
 class CategoryCreate(CategoryBase):
@@ -45,6 +46,7 @@ class CategoryUpdate(BaseModel):
     description: str | None = None
     is_active: bool | None = None
     parent_id: uuid.UUID | None = None
+    business_id: int | None = None
 
 
 class CategoryOut(CategoryBase):
