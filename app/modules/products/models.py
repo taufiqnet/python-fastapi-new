@@ -110,7 +110,9 @@ class Product(Base, UUIDMixin, TimestampMixin):
         default=ProductType.PHYSICAL,
         nullable=False,
     )
-    requires_shipping: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    requires_shipping: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
 
     # SEO / merchandising
     meta_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -125,7 +127,9 @@ class Product(Base, UUIDMixin, TimestampMixin):
     review_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     sold_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    published_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
     category: Mapped["Category | None"] = relationship(  # noqa: F821
@@ -188,7 +192,9 @@ class ProductVariant(Base, UUIDMixin, TimestampMixin):
         nullable=False,
         default=Decimal("0.00"),
     )
-    compare_at_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+    compare_at_price: Mapped[Decimal | None] = mapped_column(
+        Numeric(12, 2), nullable=True
+    )
     cost_price: Mapped[Decimal | None] = mapped_column(
         Numeric(12, 2), nullable=True
     )  # internal only — never serialize to public schemas
@@ -197,7 +203,9 @@ class ProductVariant(Base, UUIDMixin, TimestampMixin):
     # Inventory
     stock_qty: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     low_stock_threshold: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
-    backorder_allowed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    backorder_allowed: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     is_default: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     # Shipping
@@ -206,7 +214,9 @@ class ProductVariant(Base, UUIDMixin, TimestampMixin):
     length: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     width: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     height: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
-    dimension_unit: Mapped[str] = mapped_column(String(10), default="cm", nullable=False)
+    dimension_unit: Mapped[str] = mapped_column(
+        String(10), default="cm", nullable=False
+    )
 
     # Relationships
     product: Mapped["Product"] = relationship(

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "62b97217-94aa-474c-965c-f1930eb29cdd",
     "name": "Business Profile API",
-    "description": "Endpoints for BusinessProfile: create, read, list, update, delete, and User/Auth management including user profile, vendor profile, and addresses.",
+    "description": "Endpoints for BusinessProfile: create, read, list, update, delete, User/Auth management, Categories, and Products catalog.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "31614458"
   },
@@ -275,7 +275,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"\u09f3\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
             },
             "url": {
               "raw": "{{base_url}}/business/",
@@ -362,7 +362,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"\u09f3\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
             },
             "url": {
               "raw": "{{base_url}}/business/{{business_id}}",
@@ -401,6 +401,629 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('category_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics\",\n  \"slug\": \"electronics\",\n  \"icon\": \"electronics.png\",\n  \"description\": \"Consumer electronics and gadgets\",\n  \"is_active\": true,\n  \"attribute_templates\": [\n    {\n      \"attribute_name\": \"Brand\",\n      \"attribute_type\": \"text\",\n      \"is_required\": true\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/categories/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category Tree",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/tree",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "tree"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics & Gadgets\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/{{category_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                "{{category_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product Tag",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('tag_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Wireless\",\n  \"slug\": \"wireless\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products/tags",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "tags"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Product Tags",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/tags",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "tags"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('product_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Wireless Noise-Canceling Headphones\",\n  \"slug\": \"wireless-noise-canceling-headphones\",\n  \"brand\": \"SoundPro\",\n  \"status\": \"active\",\n  \"condition\": \"new\",\n  \"product_type\": \"physical\",\n  \"requires_shipping\": true,\n  \"meta_title\": \"Buy SoundPro Wireless Headphones\",\n  \"meta_description\": \"High quality wireless noise canceling headphones\",\n  \"is_featured\": true,\n  \"tag_ids\": [\"{{tag_id}}\"],\n  \"variants\": [\n    {\n      \"sku\": \"SOUNDPRO-BLK\",\n      \"barcode\": \"1234567890123\",\n      \"price\": \"199.99\",\n      \"compare_at_price\": \"249.99\",\n      \"cost_price\": \"100.00\",\n      \"currency\": \"USD\",\n      \"stock_qty\": 50,\n      \"low_stock_threshold\": 5,\n      \"is_default\": true,\n      \"weight\": 0.35,\n      \"weight_unit\": \"kg\"\n    }\n  ],\n  \"images\": [\n    {\n      \"url\": \"https://example.com/headphones-black.jpg\",\n      \"position\": 0,\n      \"alt_text\": \"Black Headphones Front View\",\n      \"is_primary\": true,\n      \"media_type\": \"image\"\n    }\n  ],\n  \"attributes\": [\n    {\n      \"name\": \"Color\",\n      \"values\": [\n        { \"value\": \"Black\" },\n        { \"value\": \"Silver\" }\n      ]\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/?skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "{{product_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"SoundPro Wireless Noise-Canceling Headphones v2\",\n  \"is_featured\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "{{product_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Product Variant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('variant_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"SOUNDPRO-SLV\",\n  \"price\": \"219.99\",\n  \"stock_qty\": 30,\n  \"is_default\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products/{{product_id}}/variants",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "{{product_id}}",
+                "variants"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product Variant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": \"209.99\",\n  \"stock_qty\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products/variants/{{variant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "variants",
+                "{{variant_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product Variant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/variants/{{variant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "variants",
+                "{{variant_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Product Image",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('image_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com/headphones-side.jpg\",\n  \"position\": 1,\n  \"alt_text\": \"Side View\",\n  \"is_primary\": false,\n  \"media_type\": \"image\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/products/{{product_id}}/images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "{{product_id}}",
+                "images"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product Image",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/images/{{image_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "images",
+                "{{image_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/{{product_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "{{product_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -427,6 +1050,31 @@
     {
       "key": "address_id",
       "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "category_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tag_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "product_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "variant_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "image_id",
+      "value": "",
       "type": "string"
     }
   ]

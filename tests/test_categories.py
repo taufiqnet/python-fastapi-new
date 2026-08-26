@@ -2,10 +2,14 @@ import uuid
 
 import pytest
 import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
-from app.database import Base
+from app.database import Base, get_db
+from app.main import app
 from app.modules.categories.models import Category, CategoryAttributeTemplate
 from app.modules.categories.schemas import (
     CategoryAttributeTemplateCreate,
@@ -15,22 +19,54 @@ from app.modules.categories.schemas import (
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-TestingSessionLocal = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
+async_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+AsyncTestingSessionLocal = sessionmaker(
+    async_engine, class_=AsyncSession, expire_on_commit=False
+)
+
+sync_engine = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+SyncTestingSessionLocal = sessionmaker(
+    autocommit=False, autoflush=False, bind=sync_engine
 )
 
 
 @pytest_asyncio.fixture
 async def async_db():
-    async with engine.begin() as conn:
+    async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
-    async with TestingSessionLocal() as session:
+    async with AsyncTestingSessionLocal() as session:
         yield session
 
-    async with engine.begin() as conn:
+    async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+
+@pytest.fixture
+def sync_db():
+    Base.metadata.create_all(bind=sync_engine)
+    db = SyncTestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        Base.metadata.drop_all(bind=sync_engine)
+
+
+@pytest_asyncio.fixture
+async def client(sync_db):
+    def _override_get_db():
+        yield sync_db
+
+    app.dependency_overrides[get_db] = _override_get_db
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
@@ -128,3 +164,61 @@ def test_category_schemas():
     assert tree.id == cat_id
     assert len(tree.children) == 1
     assert tree.children[0].id == child_id
+
+
+@pytest.mark.asyncio
+async def test_category_api_crud(client: AsyncClient):
+    # 1. Create Category
+    create_resp = await client.post(
+        "/categories/",
+        json={
+            "name": "Home Appliances",
+            "slug": "home-appliances",
+            "description": "Appliance products for home",
+            "attribute_templates": [
+                {
+                    "attribute_name": "Power Rating",
+                    "attribute_type": "text",
+                    "is_required": False,
+                }
+            ],
+        },
+    )
+    assert create_resp.status_code == 201
+    cat_data = create_resp.json()
+    cat_id = cat_data["id"]
+    assert cat_data["name"] == "Home Appliances"
+    assert len(cat_data["attribute_templates"]) == 1
+
+    # 2. Get Category List
+    list_resp = await client.get("/categories/")
+    assert list_resp.status_code == 200
+    items = list_resp.json()
+    assert len(items) >= 1
+
+    # 3. Get Category by ID
+    get_resp = await client.get(f"/categories/{cat_id}")
+    assert get_resp.status_code == 200
+    assert get_resp.json()["slug"] == "home-appliances"
+
+    # 4. Update Category
+    update_resp = await client.put(
+        f"/categories/{cat_id}",
+        json={"name": "Smart Home Appliances"},
+    )
+    assert update_resp.status_code == 200
+    assert update_resp.json()["name"] == "Smart Home Appliances"
+
+    # 5. Get Tree
+    tree_resp = await client.get("/categories/tree")
+    assert tree_resp.status_code == 200
+    tree_data = tree_resp.json()
+    assert isinstance(tree_data, list)
+
+    # 6. Delete Category
+    del_resp = await client.delete(f"/categories/{cat_id}")
+    assert del_resp.status_code == 204
+
+    # Verify 404 after deletion
+    get_again = await client.get(f"/categories/{cat_id}")
+    assert get_again.status_code == 404

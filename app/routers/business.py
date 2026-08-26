@@ -5,7 +5,6 @@ from app.database import get_db
 from app.schemas.business import BusinessProfileCreate, BusinessProfileResponse
 from app.services.business_service import BusinessService
 
-
 router = APIRouter(prefix="/business", tags=["Business Profile"])
 
 service = BusinessService()
