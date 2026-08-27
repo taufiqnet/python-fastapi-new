@@ -10,6 +10,9 @@ from app.modules.inventory.schemas import (
     InventoryOut,
     StockAdjustmentRequest,
     StockMovementOut,
+    StockReservationCreate,
+    StockReservationOut,
+    StockReservationUpdate,
     WarehouseCreate,
     WarehouseOut,
     WarehouseUpdate,
@@ -44,9 +47,7 @@ def get_warehouse(warehouse_id: uuid.UUID, db: Session = Depends(get_db)):
     response_model=WarehouseOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_warehouse(
-    warehouse_data: WarehouseCreate, db: Session = Depends(get_db)
-):
+def create_warehouse(warehouse_data: WarehouseCreate, db: Session = Depends(get_db)):
     return service.create_warehouse(db, warehouse_data)
 
 
@@ -122,4 +123,44 @@ def get_stock_movements(
 ):
     return service.get_stock_movements(
         db, inventory_item_id=inventory_item_id, skip=skip, limit=limit
+    )
+
+
+# --- Stock Reservation Endpoints ---
+@router.post(
+    "/reservations",
+    response_model=StockReservationOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_reservation(
+    reservation_data: StockReservationCreate, db: Session = Depends(get_db)
+):
+    return service.create_reservation(db, reservation_data)
+
+
+@router.put("/reservations/{reservation_id}", response_model=StockReservationOut)
+def update_reservation(
+    reservation_id: uuid.UUID,
+    reservation_data: StockReservationUpdate,
+    db: Session = Depends(get_db),
+):
+    return service.update_reservation(db, reservation_id, reservation_data)
+
+
+@router.get("/reservations", response_model=list[StockReservationOut])
+def get_reservations(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    inventory_item_id: uuid.UUID | None = Query(None),
+    cart_id: uuid.UUID | None = Query(None),
+    order_id: uuid.UUID | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    return service.get_reservations(
+        db,
+        inventory_item_id=inventory_item_id,
+        cart_id=cart_id,
+        order_id=order_id,
+        skip=skip,
+        limit=limit,
     )

@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "62b97217-94aa-474c-965c-f1930eb29cdd",
     "name": "Business Profile API",
-    "description": "Endpoints for BusinessProfile: create, read, list, update, delete, User/Auth management, Categories, and Products catalog.",
+    "description": "Endpoints for BusinessProfile: create, read, list, update, delete, User/Auth management, Categories, Products catalog, Inventory, Pricing, Cart, Orders, Payments, and Shipping.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "31614458"
   },
@@ -1078,7 +1078,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Main Fulfillment Center\",\n  \"code\": \"WH-MAIN-01\",\n  \"address\": \"123 Logistics Way, Industrial Zone\",\n  \"region\": \"Dhaka\",\n  \"is_active\": true,\n  \"business_id\": 1\n}",
+              "raw": "{\n  \"name\": \"Main Fulfillment Center\",\n  \"code\": \"WH-MAIN-01\",\n  \"address_line1\": \"123 Logistics Way\",\n  \"address_line2\": \"Industrial Zone\",\n  \"city\": \"Dhaka\",\n  \"state\": \"Dhaka\",\n  \"postal_code\": \"1200\",\n  \"country\": \"BD\",\n  \"region\": \"Dhaka\",\n  \"is_active\": true,\n  \"is_default\": true,\n  \"business_id\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1226,7 +1226,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"warehouse_id\": \"{{warehouse_id}}\",\n  \"quantity_on_hand\": 100,\n  \"quantity_reserved\": 5\n}",
+              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"warehouse_id\": \"{{warehouse_id}}\",\n  \"quantity_on_hand\": 100,\n  \"quantity_reserved\": 5,\n  \"quantity_incoming\": 20,\n  \"reorder_point\": 10,\n  \"reorder_quantity\": 50,\n  \"aisle\": \"A-1\",\n  \"bin_code\": \"BIN-101\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1367,6 +1367,893 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Create Stock Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('reservation_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventory_item_id\": \"{{inventory_item_id}}\",\n  \"quantity\": 2,\n  \"status\": \"active\",\n  \"expires_at\": \"2026-12-31T23:59:59Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/reservations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "reservations"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Stock Reservations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/reservations?skip=0&limit=100&inventory_item_id={{inventory_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "inventory_item_id",
+                  "value": "{{inventory_item_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Stock Reservation",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"committed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/inventory/reservations/{{reservation_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "reservations",
+                "{{reservation_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pricing",
+      "item": [
+        {
+          "name": "Create Tax Rule",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('tax_rule_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"Dhaka\",\n  \"tax_percentage\": 15.0,\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/pricing/tax-rules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "tax-rules"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Tax Rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pricing/tax-rules?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "tax-rules"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Calculate Tax",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"Dhaka\",\n  \"amount\": 100.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/pricing/calculate-tax",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "calculate-tax"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Price History",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"variant_id\": \"{{variant_id}}\",\n  \"old_price\": 199.99,\n  \"new_price\": 179.99,\n  \"reason\": \"Seasonal Discount\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/pricing/price-history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "price-history"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Currency Rate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"currency_code\": \"BDT\",\n  \"rate\": 110.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/pricing/currency-rates",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "currency-rates"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cart",
+      "item": [
+        {
+          "name": "Get or Create Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('cart_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart?business_id={{business_id}}&session_id=guest_session_123",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                },
+                {
+                  "key": "session_id",
+                  "value": "guest_session_123"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Item to Cart",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/cart/items?cart_id={{cart_id}}&business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart",
+                "items"
+              ],
+              "query": [
+                {
+                  "key": "cart_id",
+                  "value": "{{cart_id}}"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('order_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"user_id\": \"{{user_id}}\",\n  \"items\": [\n    {\n      \"variant_id\": \"{{variant_id}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"shipping_address\": {\n    \"recipient_name\": \"John Doe\",\n    \"phone\": \"+8801700000000\",\n    \"street\": \"123 Main Street\",\n    \"city\": \"Dhaka\",\n    \"state\": \"Dhaka\",\n    \"zip_code\": \"1200\",\n    \"country\": \"Bangladesh\"\n  },\n  \"currency\": \"USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders?business_id={{business_id}}&skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Order Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{order_id}}"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\",\n  \"note\": \"Order confirmed and paid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/status?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{order_id}}",
+                "status"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment Intent",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('payment_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"order_id\": \"{{order_id}}\",\n  \"provider\": \"stripe\",\n  \"amount\": 399.98,\n  \"currency\": \"USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Capture Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payments/{{payment_id}}/capture?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "{{payment_id}}",
+                "capture"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refund Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 399.98,\n  \"reason\": \"Customer requested cancellation\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/payments/{{payment_id}}/refund?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "{{payment_id}}",
+                "refund"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Shipping",
+      "item": [
+        {
+          "name": "Create Shipping Zone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('zone_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"name\": \"Domestic Zone\",\n  \"region\": \"BD\",\n  \"rates\": [\n    {\n      \"min_weight\": 0.0,\n      \"max_weight\": 5.0,\n      \"base_cost\": 60.0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/shipping/zones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipping",
+                "zones"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Quote Shipping Rate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"BD\",\n  \"weight\": 1.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/shipping/quote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipping",
+                "quote"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Shipment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('shipment_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"order_id\": \"{{order_id}}\",\n  \"carrier\": \"FedEx\",\n  \"tracking_number\": \"FDX-998811\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/shipping/shipments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipping",
+                "shipments"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Shipment Tracking",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shipped\",\n  \"tracking_number\": \"FDX-998811\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/shipping/shipments/{{shipment_id}}/tracking?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipping",
+                "shipments",
+                "{{shipment_id}}",
+                "tracking"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     }
@@ -1429,6 +2316,41 @@
     },
     {
       "key": "inventory_item_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "reservation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "cart_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tax_rule_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "payment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "shipment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "zone_id",
       "value": "",
       "type": "string"
     }

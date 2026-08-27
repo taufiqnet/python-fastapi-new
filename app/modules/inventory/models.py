@@ -35,7 +35,7 @@ class StockMovementReason(str, enum.Enum):
 class ReservationStatus(str, enum.Enum):
     ACTIVE = "active"
     COMMITTED = "committed"  # order confirmed/paid — stock permanently deducted
-    RELEASED = "released"    # expired or cart/order cancelled — stock returned
+    RELEASED = "released"  # expired or cart/order cancelled — stock returned
     EXPIRED = "expired"
 
 
@@ -56,11 +56,22 @@ class Warehouse(Base, UUIDMixin, TimestampMixin):
     # Structured address — needed for nearest-warehouse fulfillment routing
     # and accurate shipping-rate calculation.
     address_line1: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    @property
+    def address(self) -> str | None:
+        return self.address_line1
+
+    @address.setter
+    def address(self, value: str | None) -> None:
+        self.address_line1 = value
+
     address_line2: Mapped[str | None] = mapped_column(String(255), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
     state: Mapped[str | None] = mapped_column(String(100), nullable=True)
     postal_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    country: Mapped[str | None] = mapped_column(String(2), nullable=True)  # ISO 3166-1 alpha-2
+    country: Mapped[str | None] = mapped_column(
+        String(2), nullable=True
+    )  # ISO 3166-1 alpha-2
     latitude: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
     longitude: Mapped[Decimal | None] = mapped_column(Numeric(9, 6), nullable=True)
     region: Mapped[str | None] = mapped_column(String(100), nullable=True)
@@ -80,9 +91,13 @@ class Warehouse(Base, UUIDMixin, TimestampMixin):
 class InventoryItem(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "inventory_items"
     __table_args__ = (
-        UniqueConstraint("variant_id", "warehouse_id", name="uq_inventory_variant_warehouse"),
+        UniqueConstraint(
+            "variant_id", "warehouse_id", name="uq_inventory_variant_warehouse"
+        ),
         CheckConstraint("quantity_on_hand >= 0", name="ck_inventory_qoh_non_negative"),
-        CheckConstraint("quantity_reserved >= 0", name="ck_inventory_reserved_non_negative"),
+        CheckConstraint(
+            "quantity_reserved >= 0", name="ck_inventory_reserved_non_negative"
+        ),
     )
 
     variant_id: Mapped[uuid.UUID] = mapped_column(
@@ -160,12 +175,16 @@ class StockReservation(Base, UUIDMixin, TimestampMixin):
         index=True,
     )
     cart_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    order_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[ReservationStatus] = mapped_column(
         Enum(ReservationStatus), default=ReservationStatus.ACTIVE, nullable=False
     )
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
 
     # Relationships
     inventory_item: Mapped["InventoryItem"] = relationship(
@@ -202,8 +221,12 @@ class StockMovement(Base, UUIDMixin, TimestampMixin):
     # Who/what performed this movement — staff user, seller, or automated
     # system/webhook. Nullable because system-originated movements have no
     # human actor.
-    actor_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    actor_type: Mapped[str | None] = mapped_column(String(50), nullable=True)  # "user" | "system" | "webhook"
+    actor_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
+    actor_type: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # "user" | "system" | "webhook"
 
     # Cost at the time of this specific movement — required for FIFO /
     # weighted-average inventory valuation and COGS reporting. This is
@@ -218,7 +241,9 @@ class StockMovement(Base, UUIDMixin, TimestampMixin):
     # Optional batch/lot tracking — only relevant for perishables,
     # pharma, or cosmetics-style inventory; leave null otherwise.
     batch_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    expiry_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expiry_date: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
     inventory_item: Mapped["InventoryItem"] = relationship(

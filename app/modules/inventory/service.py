@@ -3,20 +3,26 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.modules.inventory.models import InventoryItem, StockMovement, Warehouse
+from app.modules.inventory.models import (
+    InventoryItem,
+    StockMovement,
+    Warehouse,
+)
 from app.modules.inventory.repository import InventoryRepository
 from app.modules.inventory.schemas import (
     InventoryItemCreate,
     InventoryItemUpdate,
     InventoryOut,
     StockAdjustmentRequest,
+    StockReservationCreate,
+    StockReservationOut,
+    StockReservationUpdate,
     WarehouseCreate,
     WarehouseUpdate,
 )
 
 
 class InventoryService:
-
     def __init__(self, repository: InventoryRepository | None = None):
         self.repository = repository or InventoryRepository()
 
@@ -143,6 +149,68 @@ class InventoryService:
         return self.repository.get_stock_movements(
             db, inventory_item_id=inventory_item_id, skip=skip, limit=limit
         )
+
+    # --- Stock Reservation Services ---
+    def create_reservation(
+        self, db: Session, data: StockReservationCreate
+    ) -> StockReservationOut:
+        item = self.repository.get_inventory_item_by_id(db, data.inventory_item_id)
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Inventory item not found",
+            )
+        available = item.quantity_on_hand - item.quantity_reserved
+        if available < data.quantity:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Insufficient stock available for reservation. "
+                    f"Requested: {data.quantity}, Available: {available}"
+                ),
+            )
+
+        # Update inventory item quantity_reserved
+        self.repository.update_inventory_item(
+            db,
+            item,
+            InventoryItemUpdate(
+                quantity_reserved=item.quantity_reserved + data.quantity
+            ),
+        )
+        reservation = self.repository.create_reservation(db, data)
+        return StockReservationOut.model_validate(reservation)
+
+    def update_reservation(
+        self, db: Session, reservation_id: uuid.UUID, data: StockReservationUpdate
+    ) -> StockReservationOut:
+        reservation = self.repository.get_reservation_by_id(db, reservation_id)
+        if not reservation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Stock reservation not found",
+            )
+        updated = self.repository.update_reservation(db, reservation, data)
+        return StockReservationOut.model_validate(updated)
+
+    def get_reservations(
+        self,
+        db: Session,
+        inventory_item_id: uuid.UUID | None = None,
+        cart_id: uuid.UUID | None = None,
+        order_id: uuid.UUID | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[StockReservationOut]:
+        reservations = self.repository.get_reservations(
+            db,
+            inventory_item_id=inventory_item_id,
+            cart_id=cart_id,
+            order_id=order_id,
+            skip=skip,
+            limit=limit,
+        )
+        return [StockReservationOut.model_validate(r) for r in reservations]
 
     @staticmethod
     def _to_inventory_out(item: InventoryItem) -> InventoryOut:

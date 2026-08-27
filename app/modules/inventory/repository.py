@@ -2,18 +2,24 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.modules.inventory.models import InventoryItem, StockMovement, Warehouse
+from app.modules.inventory.models import (
+    InventoryItem,
+    StockMovement,
+    StockReservation,
+    Warehouse,
+)
 from app.modules.inventory.schemas import (
     InventoryItemCreate,
     InventoryItemUpdate,
     StockAdjustmentRequest,
+    StockReservationCreate,
+    StockReservationUpdate,
     WarehouseCreate,
     WarehouseUpdate,
 )
 
 
 class InventoryRepository:
-
     # --- Warehouse Operations ---
     def get_warehouse_by_id(
         self, db: Session, warehouse_id: uuid.UUID
@@ -39,14 +45,8 @@ class InventoryRepository:
         return query.offset(skip).limit(limit).all()
 
     def create_warehouse(self, db: Session, data: WarehouseCreate) -> Warehouse:
-        warehouse = Warehouse(
-            name=data.name,
-            code=data.code,
-            address=data.address,
-            region=data.region,
-            is_active=data.is_active,
-            business_id=data.business_id,
-        )
+        dump_data = data.model_dump(exclude={"address"})
+        warehouse = Warehouse(**dump_data)
         db.add(warehouse)
         db.commit()
         db.refresh(warehouse)
@@ -55,7 +55,7 @@ class InventoryRepository:
     def update_warehouse(
         self, db: Session, warehouse: Warehouse, data: WarehouseUpdate
     ) -> Warehouse:
-        update_data = data.model_dump(exclude_unset=True)
+        update_data = data.model_dump(exclude_unset=True, exclude={"address"})
         for field, value in update_data.items():
             setattr(warehouse, field, value)
         db.commit()
@@ -102,12 +102,7 @@ class InventoryRepository:
     def create_inventory_item(
         self, db: Session, data: InventoryItemCreate
     ) -> InventoryItem:
-        item = InventoryItem(
-            variant_id=data.variant_id,
-            warehouse_id=data.warehouse_id,
-            quantity_on_hand=data.quantity_on_hand,
-            quantity_reserved=data.quantity_reserved,
-        )
+        item = InventoryItem(**data.model_dump())
         db.add(item)
         db.commit()
         db.refresh(item)
@@ -136,6 +131,12 @@ class InventoryRepository:
             reason=data.reason,
             reference_id=data.reference_id,
             notes=data.notes,
+            actor_id=data.actor_id,
+            actor_type=data.actor_type,
+            unit_cost=data.unit_cost,
+            idempotency_key=data.idempotency_key,
+            batch_number=data.batch_number,
+            expiry_date=data.expiry_date,
         )
         db.add(movement)
         db.commit()
@@ -155,6 +156,60 @@ class InventoryRepository:
             query = query.filter(StockMovement.inventory_item_id == inventory_item_id)
         return (
             query.order_by(StockMovement.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    # --- Stock Reservation Operations ---
+    def get_reservation_by_id(
+        self, db: Session, reservation_id: uuid.UUID
+    ) -> StockReservation | None:
+        return (
+            db.query(StockReservation)
+            .filter(StockReservation.id == reservation_id)
+            .first()
+        )
+
+    def create_reservation(
+        self, db: Session, data: StockReservationCreate
+    ) -> StockReservation:
+        reservation = StockReservation(**data.model_dump())
+        db.add(reservation)
+        db.commit()
+        db.refresh(reservation)
+        return reservation
+
+    def update_reservation(
+        self, db: Session, reservation: StockReservation, data: StockReservationUpdate
+    ) -> StockReservation:
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(reservation, field, value)
+        db.commit()
+        db.refresh(reservation)
+        return reservation
+
+    def get_reservations(
+        self,
+        db: Session,
+        inventory_item_id: uuid.UUID | None = None,
+        cart_id: uuid.UUID | None = None,
+        order_id: uuid.UUID | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[StockReservation]:
+        query = db.query(StockReservation)
+        if inventory_item_id is not None:
+            query = query.filter(
+                StockReservation.inventory_item_id == inventory_item_id
+            )
+        if cart_id is not None:
+            query = query.filter(StockReservation.cart_id == cart_id)
+        if order_id is not None:
+            query = query.filter(StockReservation.order_id == order_id)
+        return (
+            query.order_by(StockReservation.created_at.desc())
             .offset(skip)
             .limit(limit)
             .all()
