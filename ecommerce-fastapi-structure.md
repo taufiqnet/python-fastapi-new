@@ -24,8 +24,8 @@ ecommerce-backend/
 │   │
 │   ├── common/
 │   │   ├── models.py                # Mixins: TimestampMixin, SoftDeleteMixin, UUIDMixin
-│   │   ├── schemas.py                # Base response envelopes, PaginatedResponse
-│   │   └── enums.py                  # Shared enums: Currency, Status, etc.
+│   │   ├── schemas.py               # Base response envelopes, PaginatedResponse
+│   │   └── enums.py                 # Shared enums: Currency, Status, etc.
 │   │
 │   ├── modules/
 │   │   ├── users/

@@ -435,7 +435,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics\",\n  \"slug\": \"electronics\",\n  \"icon\": \"electronics.png\",\n  \"description\": \"Consumer electronics and gadgets\",\n  \"is_active\": true,\n  \"attribute_templates\": [\n    {\n      \"attribute_name\": \"Brand\",\n      \"attribute_type\": \"text\",\n      \"is_required\": true\n    }\n  ]\n}",
+              "raw": "{\n  \"name\": \"Electronics\",\n  \"slug\": \"electronics\",\n  \"icon\": \"electronics.png\",\n  \"description\": \"Consumer electronics and gadgets\",\n  \"is_active\": true,\n  \"attribute_templates\": [\n    {\n      \"attribute_name\": \"Brand\",\n      \"attribute_type\": \"text\",\n      \"is_required\": true\n    }\n  ],\n  \"business_id\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -466,7 +466,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/categories/?skip=0&limit=100",
+              "raw": "{{base_url}}/categories/?skip=0&limit=100&business_id={{business_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -482,6 +482,10 @@
                 {
                   "key": "limit",
                   "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
                 }
               ]
             }
@@ -499,13 +503,19 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/categories/tree",
+              "raw": "{{base_url}}/categories/tree?business_id={{business_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "categories",
                 "tree"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
               ]
             }
           },
@@ -628,7 +638,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Wireless\",\n  \"slug\": \"wireless\"\n}",
+              "raw": "{\n  \"name\": \"Wireless\",\n  \"slug\": \"wireless\",\n  \"business_id\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -659,13 +669,19 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/products/tags",
+              "raw": "{{base_url}}/products/tags?business_id={{business_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "products",
                 "tags"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
               ]
             }
           },
@@ -701,7 +717,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Wireless Noise-Canceling Headphones\",\n  \"slug\": \"wireless-noise-canceling-headphones\",\n  \"brand\": \"SoundPro\",\n  \"status\": \"active\",\n  \"condition\": \"new\",\n  \"product_type\": \"physical\",\n  \"requires_shipping\": true,\n  \"meta_title\": \"Buy SoundPro Wireless Headphones\",\n  \"meta_description\": \"High quality wireless noise canceling headphones\",\n  \"is_featured\": true,\n  \"tag_ids\": [\"{{tag_id}}\"],\n  \"variants\": [\n    {\n      \"sku\": \"SOUNDPRO-BLK\",\n      \"barcode\": \"1234567890123\",\n      \"price\": \"199.99\",\n      \"compare_at_price\": \"249.99\",\n      \"cost_price\": \"100.00\",\n      \"currency\": \"USD\",\n      \"stock_qty\": 50,\n      \"low_stock_threshold\": 5,\n      \"is_default\": true,\n      \"weight\": 0.35,\n      \"weight_unit\": \"kg\"\n    }\n  ],\n  \"images\": [\n    {\n      \"url\": \"https://example.com/headphones-black.jpg\",\n      \"position\": 0,\n      \"alt_text\": \"Black Headphones Front View\",\n      \"is_primary\": true,\n      \"media_type\": \"image\"\n    }\n  ],\n  \"attributes\": [\n    {\n      \"name\": \"Color\",\n      \"values\": [\n        { \"value\": \"Black\" },\n        { \"value\": \"Silver\" }\n      ]\n    }\n  ]\n}",
+              "raw": "{\n  \"title\": \"Wireless Noise-Canceling Headphones\",\n  \"slug\": \"wireless-noise-canceling-headphones\",\n  \"brand\": \"SoundPro\",\n  \"status\": \"active\",\n  \"condition\": \"new\",\n  \"product_type\": \"physical\",\n  \"requires_shipping\": true,\n  \"meta_title\": \"Buy SoundPro Wireless Headphones\",\n  \"meta_description\": \"High quality wireless noise canceling headphones\",\n  \"is_featured\": true,\n  \"tag_ids\": [\n    \"{{tag_id}}\"\n  ],\n  \"variants\": [\n    {\n      \"sku\": \"SOUNDPRO-BLK\",\n      \"barcode\": \"1234567890123\",\n      \"price\": \"199.99\",\n      \"compare_at_price\": \"249.99\",\n      \"cost_price\": \"100.00\",\n      \"currency\": \"USD\",\n      \"stock_qty\": 50,\n      \"low_stock_threshold\": 5,\n      \"is_default\": true,\n      \"weight\": 0.35,\n      \"weight_unit\": \"kg\"\n    }\n  ],\n  \"images\": [\n    {\n      \"url\": \"https://example.com/headphones-black.jpg\",\n      \"position\": 0,\n      \"alt_text\": \"Black Headphones Front View\",\n      \"is_primary\": true,\n      \"media_type\": \"image\"\n    }\n  ],\n  \"attributes\": [\n    {\n      \"name\": \"Color\",\n      \"values\": [\n        {\n          \"value\": \"Black\"\n        },\n        {\n          \"value\": \"Silver\"\n        }\n      ]\n    }\n  ],\n  \"business_id\": 1,\n  \"category_id\": \"{{category_id}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -732,7 +748,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/products/?skip=0&limit=100",
+              "raw": "{{base_url}}/products/?skip=0&limit=100&business_id={{business_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -748,6 +764,10 @@
                 {
                   "key": "limit",
                   "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
                 }
               ]
             }
@@ -1058,7 +1078,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Main Fulfillment Center\",\n  \"code\": \"WH-MAIN-01\",\n  \"address\": \"123 Logistics Way, Industrial Zone\",\n  \"region\": \"Dhaka\",\n  \"is_active\": true\n}",
+              "raw": "{\n  \"name\": \"Main Fulfillment Center\",\n  \"code\": \"WH-MAIN-01\",\n  \"address\": \"123 Logistics Way, Industrial Zone\",\n  \"region\": \"Dhaka\",\n  \"is_active\": true,\n  \"business_id\": 1\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1089,7 +1109,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/inventory/warehouses?skip=0&limit=100",
+              "raw": "{{base_url}}/inventory/warehouses?skip=0&limit=100&business_id={{business_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -1105,6 +1125,10 @@
                 {
                   "key": "limit",
                   "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
                 }
               ]
             }
