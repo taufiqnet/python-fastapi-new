@@ -1,3 +1,4 @@
+import enum
 import uuid
 
 from sqlalchemy import (
@@ -13,8 +14,16 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import UUID
 
+from app.common.enums import pg_enum
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
+
+
+class ReviewStatus(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    FLAGGED = "flagged"
 
 
 class Review(Base, UUIDMixin, TimestampMixin):
@@ -36,6 +45,9 @@ class Review(Base, UUIDMixin, TimestampMixin):
         nullable=False,
         index=True,
     )
+    # TODO: same recurring gap as other modules — add
+    # ForeignKey("users.id", ondelete="CASCADE") once the identity module's
+    # table name is confirmed.
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         nullable=False,
@@ -55,7 +67,20 @@ class Review(Base, UUIDMixin, TimestampMixin):
     is_verified_purchase: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
-    status: Mapped[str] = mapped_column(String(50), default="approved", nullable=False)
+
+    # Was String(50) defaulting to "approved" — meaning every review went
+    # live immediately with no moderation step, by default, silently. If
+    # instant-publish is genuinely the intended behavior (no moderation
+    # queue at all), that's a legitimate product decision — but it should
+    # be an explicit choice made in the service layer when creating a
+    # review, not a column default that bypasses moderation before anyone
+    # decided to. Defaulting to PENDING here forces that decision to be
+    # made deliberately wherever reviews are created.
+    status: Mapped[ReviewStatus] = mapped_column(
+        pg_enum(ReviewStatus, name="reviewstatus"),
+        default=ReviewStatus.PENDING,
+        nullable=False,
+    )
     helpful_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
     # Relationships

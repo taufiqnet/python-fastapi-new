@@ -275,7 +275,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"\u09f3\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
             },
             "url": {
               "raw": "{{base_url}}/business/",
@@ -362,7 +362,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"\u09f3\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
             },
             "url": {
               "raw": "{{base_url}}/business/{{business_id}}",
@@ -407,6 +407,39 @@
       "item": [
         {
           "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categories/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categories",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics\",\n  \"slug\": \"electronics\",\n  \"icon\": \"electronics.png\",\n  \"description\": \"Consumer electronics and gadgets\",\n  \"is_active\": true,\n  \"attribute_templates\": [\n    {\n      \"attribute_name\": \"Brand\",\n      \"attribute_type\": \"text\",\n      \"is_required\": true\n    }\n  ],\n  \"business_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -420,46 +453,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics\",\n  \"slug\": \"electronics\",\n  \"icon\": \"electronics.png\",\n  \"description\": \"Consumer electronics and gadgets\",\n  \"is_active\": true,\n  \"attribute_templates\": [\n    {\n      \"attribute_name\": \"Brand\",\n      \"attribute_type\": \"text\",\n      \"is_required\": true\n    }\n  ],\n  \"business_id\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/categories/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "categories",
-                ""
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Categories",
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -498,6 +502,10 @@
             "method": "GET",
             "header": [
               {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
               }
@@ -526,6 +534,10 @@
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -558,15 +570,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Electronics & Gadgets\",\n  \"is_active\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/categories/{{category_id}}",
               "host": [
@@ -576,6 +579,15 @@
                 "categories",
                 "{{category_id}}"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics & Gadgets\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -585,6 +597,10 @@
           "request": {
             "method": "DELETE",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -610,6 +626,39 @@
       "item": [
         {
           "name": "Create Product Tag",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/tags",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "tags"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Wireless\",\n  \"slug\": \"wireless\",\n  \"business_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -623,46 +672,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Wireless\",\n  \"slug\": \"wireless\",\n  \"business_id\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/products/tags",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "products",
-                "tags"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Product Tags",
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -689,6 +709,39 @@
         },
         {
           "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                ""
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Wireless Noise-Canceling Headphones\",\n  \"slug\": \"wireless-noise-canceling-headphones\",\n  \"brand\": \"SoundPro\",\n  \"status\": \"active\",\n  \"condition\": \"new\",\n  \"product_type\": \"physical\",\n  \"requires_shipping\": true,\n  \"meta_title\": \"Buy SoundPro Wireless Headphones\",\n  \"meta_description\": \"High quality wireless noise canceling headphones\",\n  \"is_featured\": true,\n  \"tag_ids\": [\n    \"{{tag_id}}\"\n  ],\n  \"variants\": [\n    {\n      \"sku\": \"SOUNDPRO-BLK\",\n      \"barcode\": \"1234567890123\",\n      \"price\": \"199.99\",\n      \"compare_at_price\": \"249.99\",\n      \"cost_price\": \"100.00\",\n      \"currency\": \"USD\",\n      \"stock_qty\": 50,\n      \"low_stock_threshold\": 5,\n      \"is_default\": true,\n      \"weight\": 0.35,\n      \"weight_unit\": \"kg\"\n    }\n  ],\n  \"images\": [\n    {\n      \"url\": \"https://example.com/headphones-black.jpg\",\n      \"position\": 0,\n      \"alt_text\": \"Black Headphones Front View\",\n      \"is_primary\": true,\n      \"media_type\": \"image\"\n    }\n  ],\n  \"attributes\": [\n    {\n      \"name\": \"Color\",\n      \"values\": [\n        {\n          \"value\": \"Black\"\n        },\n        {\n          \"value\": \"Silver\"\n        }\n      ]\n    }\n  ],\n  \"business_id\": 1,\n  \"category_id\": \"{{category_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -702,46 +755,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Wireless Noise-Canceling Headphones\",\n  \"slug\": \"wireless-noise-canceling-headphones\",\n  \"brand\": \"SoundPro\",\n  \"status\": \"active\",\n  \"condition\": \"new\",\n  \"product_type\": \"physical\",\n  \"requires_shipping\": true,\n  \"meta_title\": \"Buy SoundPro Wireless Headphones\",\n  \"meta_description\": \"High quality wireless noise canceling headphones\",\n  \"is_featured\": true,\n  \"tag_ids\": [\n    \"{{tag_id}}\"\n  ],\n  \"variants\": [\n    {\n      \"sku\": \"SOUNDPRO-BLK\",\n      \"barcode\": \"1234567890123\",\n      \"price\": \"199.99\",\n      \"compare_at_price\": \"249.99\",\n      \"cost_price\": \"100.00\",\n      \"currency\": \"USD\",\n      \"stock_qty\": 50,\n      \"low_stock_threshold\": 5,\n      \"is_default\": true,\n      \"weight\": 0.35,\n      \"weight_unit\": \"kg\"\n    }\n  ],\n  \"images\": [\n    {\n      \"url\": \"https://example.com/headphones-black.jpg\",\n      \"position\": 0,\n      \"alt_text\": \"Black Headphones Front View\",\n      \"is_primary\": true,\n      \"media_type\": \"image\"\n    }\n  ],\n  \"attributes\": [\n    {\n      \"name\": \"Color\",\n      \"values\": [\n        {\n          \"value\": \"Black\"\n        },\n        {\n          \"value\": \"Silver\"\n        }\n      ]\n    }\n  ],\n  \"business_id\": 1,\n  \"category_id\": \"{{category_id}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/products/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "products",
-                ""
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Products",
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -780,6 +804,10 @@
             "method": "GET",
             "header": [
               {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
               }
@@ -811,15 +839,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"SoundPro Wireless Noise-Canceling Headphones v2\",\n  \"is_featured\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/products/{{product_id}}",
               "host": [
@@ -829,12 +848,55 @@
                 "products",
                 "{{product_id}}"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"SoundPro Wireless Noise-Canceling Headphones v2\",\n  \"is_featured\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
         },
         {
           "name": "Add Product Variant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/{{product_id}}/variants",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "{{product_id}}",
+                "variants"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"SOUNDPRO-SLV\",\n  \"price\": \"219.99\",\n  \"stock_qty\": 30,\n  \"is_default\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -848,41 +910,7 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"sku\": \"SOUNDPRO-SLV\",\n  \"price\": \"219.99\",\n  \"stock_qty\": 30,\n  \"is_default\": false\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/products/{{product_id}}/variants",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "products",
-                "{{product_id}}",
-                "variants"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "Update Product Variant",
@@ -898,15 +926,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"price\": \"209.99\",\n  \"stock_qty\": 25\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/products/variants/{{variant_id}}",
               "host": [
@@ -917,6 +936,15 @@
                 "variants",
                 "{{variant_id}}"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": \"209.99\",\n  \"stock_qty\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -926,6 +954,10 @@
           "request": {
             "method": "DELETE",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -947,6 +979,40 @@
         },
         {
           "name": "Add Product Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/products/{{product_id}}/images",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "products",
+                "{{product_id}}",
+                "images"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com/headphones-side.jpg\",\n  \"position\": 1,\n  \"alt_text\": \"Side View\",\n  \"is_primary\": false,\n  \"media_type\": \"image\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -960,47 +1026,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"url\": \"https://example.com/headphones-side.jpg\",\n  \"position\": 1,\n  \"alt_text\": \"Side View\",\n  \"is_primary\": false,\n  \"media_type\": \"image\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/products/{{product_id}}/images",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "products",
-                "{{product_id}}",
-                "images"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "Delete Product Image",
           "request": {
             "method": "DELETE",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1026,6 +1062,10 @@
             "method": "DELETE",
             "header": [
               {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
               }
@@ -1050,6 +1090,39 @@
       "item": [
         {
           "name": "Create Warehouse",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/warehouses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "warehouses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Main Fulfillment Center\",\n  \"code\": \"WH-MAIN-01\",\n  \"address_line1\": \"123 Logistics Way\",\n  \"address_line2\": \"Industrial Zone\",\n  \"city\": \"Dhaka\",\n  \"state\": \"Dhaka\",\n  \"postal_code\": \"1200\",\n  \"country\": \"BD\",\n  \"region\": \"Dhaka\",\n  \"is_active\": true,\n  \"is_default\": true,\n  \"business_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1063,46 +1136,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Main Fulfillment Center\",\n  \"code\": \"WH-MAIN-01\",\n  \"address_line1\": \"123 Logistics Way\",\n  \"address_line2\": \"Industrial Zone\",\n  \"city\": \"Dhaka\",\n  \"state\": \"Dhaka\",\n  \"postal_code\": \"1200\",\n  \"country\": \"BD\",\n  \"region\": \"Dhaka\",\n  \"is_active\": true,\n  \"is_default\": true,\n  \"business_id\": 1\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/inventory/warehouses",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "inventory",
-                "warehouses"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Warehouses",
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1141,6 +1185,10 @@
             "method": "GET",
             "header": [
               {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
               }
@@ -1173,6 +1221,17 @@
                 "value": "Bearer {{token}}"
               }
             ],
+            "url": {
+              "raw": "{{base_url}}/inventory/warehouses/{{warehouse_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "warehouses",
+                "{{warehouse_id}}"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"Central Fulfillment Hub\",\n  \"is_active\": true\n}",
@@ -1181,7 +1240,24 @@
                   "language": "json"
                 }
               }
-            },
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Warehouse",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/inventory/warehouses/{{warehouse_id}}",
               "host": [
@@ -1198,6 +1274,39 @@
         },
         {
           "name": "Create Inventory Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"warehouse_id\": \"{{warehouse_id}}\",\n  \"quantity_on_hand\": 100,\n  \"quantity_reserved\": 5,\n  \"quantity_incoming\": 20,\n  \"reorder_point\": 10,\n  \"reorder_quantity\": 50,\n  \"aisle\": \"A-1\",\n  \"bin_code\": \"BIN-101\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1211,46 +1320,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"warehouse_id\": \"{{warehouse_id}}\",\n  \"quantity_on_hand\": 100,\n  \"quantity_reserved\": 5,\n  \"quantity_incoming\": 20,\n  \"reorder_point\": 10,\n  \"reorder_quantity\": 50,\n  \"aisle\": \"A-1\",\n  \"bin_code\": \"BIN-101\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/inventory/items",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "inventory",
-                "items"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Inventory Items",
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1285,6 +1365,10 @@
             "method": "GET",
             "header": [
               {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
               }
@@ -1304,6 +1388,43 @@
           "response": []
         },
         {
+          "name": "Update Inventory Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/items/{{inventory_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "items",
+                "{{inventory_item_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reorder_point\": 15,\n  \"reorder_quantity\": 60,\n  \"aisle\": \"A-2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Adjust Stock",
           "request": {
             "method": "POST",
@@ -1317,15 +1438,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"inventory_item_id\": \"{{inventory_item_id}}\",\n  \"delta\": 25,\n  \"reason\": \"restock\",\n  \"reference_id\": \"PO-99182\",\n  \"notes\": \"Restocked 25 units from supplier\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/inventory/adjustments",
               "host": [
@@ -1335,6 +1447,15 @@
                 "inventory",
                 "adjustments"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventory_item_id\": \"{{inventory_item_id}}\",\n  \"delta\": 25,\n  \"reason\": \"restock\",\n  \"reference_id\": \"PO-99182\",\n  \"notes\": \"Restocked 25 units from supplier\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -1344,6 +1465,10 @@
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1370,6 +1495,39 @@
         },
         {
           "name": "Create Stock Reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/inventory/reservations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inventory",
+                "reservations"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inventory_item_id\": \"{{inventory_item_id}}\",\n  \"quantity\": 2,\n  \"status\": \"active\",\n  \"expires_at\": \"2026-12-31T23:59:59Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1383,46 +1541,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"inventory_item_id\": \"{{inventory_item_id}}\",\n  \"quantity\": 2,\n  \"status\": \"active\",\n  \"expires_at\": \"2026-12-31T23:59:59Z\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/inventory/reservations",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "inventory",
-                "reservations"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Stock Reservations",
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1469,15 +1598,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"committed\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/inventory/reservations/{{reservation_id}}",
               "host": [
@@ -1488,6 +1608,15 @@
                 "reservations",
                 "{{reservation_id}}"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"committed\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -1498,7 +1627,113 @@
       "name": "Pricing",
       "item": [
         {
+          "name": "Create Price History",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pricing/price-history",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "price-history"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"variant_id\": \"{{variant_id}}\",\n  \"old_price\": 199.99,\n  \"new_price\": 179.99,\n  \"reason\": \"Seasonal Discount\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Price History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pricing/price-history?variant_id={{variant_id}}&business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "price-history"
+              ],
+              "query": [
+                {
+                  "key": "variant_id",
+                  "value": "{{variant_id}}"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Create Tax Rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pricing/tax-rules",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "tax-rules"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"Dhaka\",\n  \"tax_percentage\": 15.0,\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1512,46 +1747,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"Dhaka\",\n  \"tax_percentage\": 15.0,\n  \"is_active\": true\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/pricing/tax-rules",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "pricing",
-                "tax-rules"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Tax Rules",
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1577,6 +1783,49 @@
           "response": []
         },
         {
+          "name": "Update Tax Rule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pricing/tax-rules/{{tax_rule_id}}?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "tax-rules",
+                "{{tax_rule_id}}"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tax_percentage\": 12.5,\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Calculate Tax",
           "request": {
             "method": "POST",
@@ -1590,15 +1839,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"Dhaka\",\n  \"amount\": 100.0\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/pricing/calculate-tax",
               "host": [
@@ -1608,42 +1848,15 @@
                 "pricing",
                 "calculate-tax"
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Price History",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"variant_id\": \"{{variant_id}}\",\n  \"old_price\": 199.99,\n  \"new_price\": 179.99,\n  \"reason\": \"Seasonal Discount\"\n}",
+              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"Dhaka\",\n  \"amount\": 100.0\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            },
-            "url": {
-              "raw": "{{base_url}}/pricing/price-history",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "pricing",
-                "price-history"
-              ]
             }
           },
           "response": []
@@ -1662,15 +1875,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"currency_code\": \"BDT\",\n  \"rate\": 110.5\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/pricing/currency-rates",
               "host": [
@@ -1679,6 +1883,48 @@
               "path": [
                 "pricing",
                 "currency-rates"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"currency_code\": \"BDT\",\n  \"rate\": 110.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Currency Rates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pricing/currency-rates?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pricing",
+                "currency-rates"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
               ]
             }
           },
@@ -1691,23 +1937,13 @@
       "item": [
         {
           "name": "Get or Create Cart",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "    const json = pm.response.json();",
-                  "    pm.collectionVariables.set('cart_id', json.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1733,7 +1969,21 @@
               ]
             }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('cart_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Add Item to Cart",
@@ -1749,15 +1999,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"quantity\": 2\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/cart/items?cart_id={{cart_id}}&business_id={{business_id}}",
               "host": [
@@ -1777,6 +2018,130 @@
                   "value": "{{business_id}}"
                 }
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"variant_id\": \"{{variant_id}}\",\n  \"quantity\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('cart_item_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Cart Item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart/items/{{cart_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart",
+                "items",
+                "{{cart_item_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Cart Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart/items/{{cart_item_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart",
+                "items",
+                "{{cart_item_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Merge Carts",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/cart/merge",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "cart",
+                "merge"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guest_session_id\": \"guest_session_123\",\n  \"user_id\": \"{{user_id}}\",\n  \"business_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -1788,6 +2153,38 @@
       "item": [
         {
           "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"user_id\": \"{{user_id}}\",\n  \"items\": [\n    {\n      \"variant_id\": \"{{variant_id}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"shipping_address\": {\n    \"recipient_name\": \"John Doe\",\n    \"phone\": \"+8801700000000\",\n    \"street\": \"123 Main Street\",\n    \"city\": \"Dhaka\",\n    \"state\": \"Dhaka\",\n    \"zip_code\": \"1200\",\n    \"country\": \"Bangladesh\"\n  },\n  \"currency\": \"USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1801,45 +2198,17 @@
                 "type": "text/javascript"
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"user_id\": \"{{user_id}}\",\n  \"items\": [\n    {\n      \"variant_id\": \"{{variant_id}}\",\n      \"quantity\": 2\n    }\n  ],\n  \"shipping_address\": {\n    \"recipient_name\": \"John Doe\",\n    \"phone\": \"+8801700000000\",\n    \"street\": \"123 Main Street\",\n    \"city\": \"Dhaka\",\n    \"state\": \"Dhaka\",\n    \"zip_code\": \"1200\",\n    \"country\": \"Bangladesh\"\n  },\n  \"currency\": \"USD\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/orders",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "orders"
-              ]
-            }
-          },
-          "response": []
+          ]
         },
         {
           "name": "List Orders",
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1876,6 +2245,10 @@
           "request": {
             "method": "GET",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -1914,15 +2287,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"processing\",\n  \"note\": \"Order confirmed and paid\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/status?business_id={{business_id}}",
               "host": [
@@ -1939,6 +2303,15 @@
                   "value": "{{business_id}}"
                 }
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\",\n  \"note\": \"Order confirmed and paid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
@@ -1950,6 +2323,38 @@
       "item": [
         {
           "name": "Create Payment Intent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"order_id\": \"{{order_id}}\",\n  \"provider\": \"stripe\",\n  \"amount\": 399.98,\n  \"currency\": \"USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1963,9 +2368,12 @@
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Get Payment",
           "request": {
-            "method": "POST",
+            "method": "GET",
             "header": [
               {
                 "key": "Content-Type",
@@ -1976,22 +2384,20 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"order_id\": \"{{order_id}}\",\n  \"provider\": \"stripe\",\n  \"amount\": 399.98,\n  \"currency\": \"USD\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
-              "raw": "{{base_url}}/payments",
+              "raw": "{{base_url}}/payments/{{payment_id}}?business_id={{business_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "payments"
+                "payments",
+                "{{payment_id}}"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
               ]
             }
           },
@@ -2002,6 +2408,10 @@
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{token}}"
@@ -2041,15 +2451,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"amount\": 399.98,\n  \"reason\": \"Customer requested cancellation\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/payments/{{payment_id}}/refund?business_id={{business_id}}",
               "host": [
@@ -2059,6 +2460,98 @@
                 "payments",
                 "{{payment_id}}",
                 "refund"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 399.98,\n  \"reason\": \"Customer requested cancellation\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Payment Method",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payments/methods",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "methods"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"provider\": \"stripe\",\n  \"method_type\": \"credit_card\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('payment_method_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Payment Methods",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payments/methods?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payments",
+                "methods"
               ],
               "query": [
                 {
@@ -2077,20 +2570,6 @@
       "item": [
         {
           "name": "Create Shipping Zone",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const json = pm.response.json();",
-                  "    pm.collectionVariables.set('zone_id', json.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -2103,15 +2582,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"name\": \"Domestic Zone\",\n  \"region\": \"BD\",\n  \"rates\": [\n    {\n      \"min_weight\": 0.0,\n      \"max_weight\": 5.0,\n      \"base_cost\": 60.0\n    }\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/shipping/zones",
               "host": [
@@ -2120,6 +2590,62 @@
               "path": [
                 "shipping",
                 "zones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"name\": \"Domestic Zone\",\n  \"region\": \"BD\",\n  \"rates\": [\n    {\n      \"min_weight\": 0.0,\n      \"max_weight\": 5.0,\n      \"base_cost\": 60.0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('shipping_zone_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Shipping Zones",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipping/zones?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipping",
+                "zones"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
               ]
             }
           },
@@ -2139,15 +2665,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"BD\",\n  \"weight\": 1.5\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/shipping/quote",
               "host": [
@@ -2157,12 +2674,54 @@
                 "shipping",
                 "quote"
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"region\": \"BD\",\n  \"weight\": 1.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []
         },
         {
           "name": "Create Shipment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/shipping/shipments",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "shipping",
+                "shipments"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"order_id\": \"{{order_id}}\",\n  \"carrier\": \"FedEx\",\n  \"tracking_number\": \"FDX-998811\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -2176,9 +2735,12 @@
                 "type": "text/javascript"
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Get Shipment Detail",
           "request": {
-            "method": "POST",
+            "method": "GET",
             "header": [
               {
                 "key": "Content-Type",
@@ -2189,23 +2751,21 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"order_id\": \"{{order_id}}\",\n  \"carrier\": \"FedEx\",\n  \"tracking_number\": \"FDX-998811\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
-              "raw": "{{base_url}}/shipping/shipments",
+              "raw": "{{base_url}}/shipping/shipments/{{shipment_id}}?business_id={{business_id}}",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "shipping",
-                "shipments"
+                "shipments",
+                "{{shipment_id}}"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
               ]
             }
           },
@@ -2225,15 +2785,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"shipped\",\n  \"tracking_number\": \"FDX-998811\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
             "url": {
               "raw": "{{base_url}}/shipping/shipments/{{shipment_id}}/tracking?business_id={{business_id}}",
               "host": [
@@ -2251,6 +2802,591 @@
                   "value": "{{business_id}}"
                 }
               ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shipped\",\n  \"tracking_number\": \"FDX-998811\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reviews",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"product_id\": \"{{product_id}}\",\n  \"user_id\": \"{{user_id}}\",\n  \"order_item_id\": null,\n  \"rating\": 5,\n  \"title\": \"Excellent Quality!\",\n  \"comment\": \"The sound quality and noise cancellation are top notch.\",\n  \"images\": [\n    \"https://example.com/review-photo.jpg\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('review_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Reviews by Product",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reviews/product/{{product_id}}?rating=5&skip=0&limit=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "product",
+                "{{product_id}}"
+              ],
+              "query": [
+                {
+                  "key": "rating",
+                  "value": "5"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Review Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reviews/product/{{product_id}}/summary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "product",
+                "{{product_id}}",
+                "summary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Review",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reviews/{{review_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "{{review_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reviews/{{review_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "{{review_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5,\n  \"title\": \"Updated Review: Still Amazing!\",\n  \"comment\": \"After 2 months of use, battery life is excellent.\",\n  \"status\": \"approved\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reviews/{{review_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "{{review_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Vote Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/reviews/{{review_id}}/vote",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "reviews",
+                "{{review_id}}",
+                "vote"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\",\n  \"is_helpful\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Create Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"user_id\": \"{{user_id}}\",\n  \"type\": \"order_update\",\n  \"title\": \"Order Shipped\",\n  \"body\": \"Your order #101 has been shipped via FedEx.\",\n  \"data\": {\n    \"order_id\": \"{{order_id}}\",\n    \"tracking_number\": \"FDX-998811\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set('notification_id', json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications?business_id={{business_id}}&user_id={{user_id}}&unread_only=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                },
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}"
+                },
+                {
+                  "key": "unread_only",
+                  "value": "false"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/{{notification_id}}/read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notification_id}}",
+                "read"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/read-all?business_id={{business_id}}&user_id={{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                },
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set Notification Preference",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/preferences",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "preferences"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"user_id\": \"{{user_id}}\",\n  \"channel\": \"email\",\n  \"event_type\": \"order_shipped\",\n  \"enabled\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Notification Preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications/preferences?business_id={{business_id}}&user_id={{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications",
+                "preferences"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                },
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Search",
+      "item": [
+        {
+          "name": "Search Products GET",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/search?q=Headphones&business_id={{business_id}}&page=1&page_size=20&sort_by=relevance&sort_order=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "Headphones"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort_by",
+                  "value": "relevance"
+                },
+                {
+                  "key": "sort_order",
+                  "value": "desc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Products POST",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/search",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "search"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"q\": \"Headphones\",\n  \"business_id\": 1,\n  \"category_id\": null,\n  \"brand\": \"SoundPro\",\n  \"min_price\": 50.0,\n  \"max_price\": 300.0,\n  \"status\": \"active\",\n  \"rating_min\": 4.0,\n  \"is_featured\": true,\n  \"sort_by\": \"relevance\",\n  \"sort_order\": \"desc\",\n  \"page\": 1,\n  \"page_size\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             }
           },
           "response": []

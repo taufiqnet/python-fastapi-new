@@ -9,7 +9,6 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
-    Enum,
     ForeignKey,
     Integer,
     Numeric,
@@ -20,7 +19,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import UUID
 
-from app.common.enums import Status
+from app.common.enums import Status, pg_enum
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
 
@@ -96,17 +95,17 @@ class Product(Base, UUIDMixin, TimestampMixin):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     brand: Mapped[str | None] = mapped_column(String(100), nullable=True)
     status: Mapped[Status] = mapped_column(
-        Enum(Status),
+        pg_enum(Status, name="status"),
         default=Status.DRAFT,
         nullable=False,
     )
     condition: Mapped[ProductCondition] = mapped_column(
-        Enum(ProductCondition),
+        pg_enum(ProductCondition, name="productcondition"),
         default=ProductCondition.NEW,
         nullable=False,
     )
     product_type: Mapped[ProductType] = mapped_column(
-        Enum(ProductType),
+        pg_enum(ProductType, name="producttype"),
         default=ProductType.PHYSICAL,
         nullable=False,
     )
@@ -252,7 +251,7 @@ class ProductImage(Base, UUIDMixin, TimestampMixin):
     alt_text: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_primary: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     media_type: Mapped[MediaType] = mapped_column(
-        Enum(MediaType), default=MediaType.IMAGE, nullable=False
+        pg_enum(MediaType, name="mediatype"), default=MediaType.IMAGE, nullable=False
     )
 
     # Relationships

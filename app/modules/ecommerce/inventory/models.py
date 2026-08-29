@@ -7,7 +7,6 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     DateTime,
-    Enum,
     ForeignKey,
     Index,
     Integer,
@@ -19,6 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import UUID
 
+from app.common.enums import pg_enum
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
 
@@ -180,7 +180,9 @@ class StockReservation(Base, UUIDMixin, TimestampMixin):
     )
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[ReservationStatus] = mapped_column(
-        Enum(ReservationStatus), default=ReservationStatus.ACTIVE, nullable=False
+        pg_enum(ReservationStatus, name="reservationstatus"),
+        default=ReservationStatus.ACTIVE,
+        nullable=False,
     )
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -213,7 +215,8 @@ class StockMovement(Base, UUIDMixin, TimestampMixin):
     )
     delta: Mapped[int] = mapped_column(Integer, nullable=False)
     reason: Mapped[StockMovementReason] = mapped_column(
-        Enum(StockMovementReason), nullable=False
+        pg_enum(StockMovementReason, name="stockmovementreason"),
+        nullable=False,
     )
     reference_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
