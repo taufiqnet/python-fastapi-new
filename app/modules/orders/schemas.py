@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.orders.models import OrderStatus
+from app.modules.orders.models import OrderFulfillmentStatus, OrderPaymentStatus
 
 
 class OrderItemCreate(BaseModel):
@@ -54,13 +54,15 @@ class OrderStatusHistoryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    status: OrderStatus
+    status_type: str
+    status_value: str
     note: str | None = None
     created_at: datetime
 
 
 class OrderStatusUpdate(BaseModel):
-    status: OrderStatus
+    payment_status: OrderPaymentStatus | None = None
+    fulfillment_status: OrderFulfillmentStatus | None = None
     note: str | None = None
 
 
@@ -69,8 +71,9 @@ class OrderSummary(BaseModel):
 
     id: uuid.UUID
     business_id: int
-    user_id: uuid.UUID
-    status: OrderStatus
+    user_id: uuid.UUID | None = None
+    payment_status: OrderPaymentStatus
+    fulfillment_status: OrderFulfillmentStatus
     total_amount: float
     currency: str
     created_at: datetime

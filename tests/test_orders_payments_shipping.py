@@ -90,15 +90,16 @@ async def test_orders_payments_shipping_flow(client: AsyncClient, sync_db):
     order_data = order_resp.json()
     order_id = order_data["id"]
     assert order_data["total_amount"] == 300.00
-    assert order_data["status"] == "pending"
+    assert order_data["payment_status"] == "unpaid"
+    assert order_data["fulfillment_status"] == "pending"
 
     # 3. Update Order Status
     upd_status = await client.put(
         f"/orders/{order_id}/status?business_id=1",
-        json={"status": "processing", "note": "Payment received"},
+        json={"fulfillment_status": "processing", "note": "Payment received"},
     )
     assert upd_status.status_code == 200
-    assert upd_status.json()["status"] == "processing"
+    assert upd_status.json()["fulfillment_status"] == "processing"
 
     # 4. Create Payment Intent & Capture
     payment_resp = await client.post(

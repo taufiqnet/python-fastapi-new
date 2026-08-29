@@ -5,10 +5,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.modules.orders.repository import OrderRepository
+from app.modules.orders.models import OrderFulfillmentStatus, OrderPaymentStatus
 from app.modules.orders.schemas import (
     OrderCreate,
     OrderDetail,
-    OrderStatus,
     OrderStatusUpdate,
     OrderSummary,
 )
@@ -43,7 +43,16 @@ class OrderService:
             calculated_total += subtotal
 
             items_with_prices.append(
-                (variant.id, seller_id, item.quantity, unit_price, subtotal)
+                (
+                    variant.id,
+                    seller_id,
+                    product.title if product else "Product",
+                    variant.sku,
+                    variant.attributes,
+                    item.quantity,
+                    unit_price,
+                    subtotal,
+                )
             )
 
         order = self.repository.create_order(
@@ -69,7 +78,8 @@ class OrderService:
         db: Session,
         business_id: int = 1,
         user_id: uuid.UUID | None = None,
-        status_filter: OrderStatus | None = None,
+        payment_status: OrderPaymentStatus | None = None,
+        fulfillment_status: OrderFulfillmentStatus | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[OrderSummary]:
@@ -77,7 +87,8 @@ class OrderService:
             db,
             business_id=business_id,
             user_id=user_id,
-            status=status_filter,
+            payment_status=payment_status,
+            fulfillment_status=fulfillment_status,
             skip=skip,
             limit=limit,
         )

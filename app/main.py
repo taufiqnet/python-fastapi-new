@@ -11,7 +11,9 @@ from app.modules.cart.models import Cart, CartItem  # noqa: F401
 from app.modules.orders.models import Order, OrderItem, OrderStatusHistory, OrderAddress  # noqa: F401
 from app.modules.payments.models import Payment, PaymentMethod, Refund  # noqa: F401
 from app.modules.shipping.models import Shipment, ShippingZone, ShippingRate  # noqa: F401
-from app.routers import auth, business, cart, categories, inventory, orders, payments, pricing, products, shipping, tasks
+from app.modules.reviews.models import Review, ReviewVote  # noqa: F401
+from app.modules.notifications.models import Notification, NotificationPreference  # noqa: F401
+from app.routers import auth, business, cart, categories, inventory, notifications, orders, payments, pricing, products, reviews, search, shipping, tasks
 
 try:
     Base.metadata.create_all(bind=engine)
@@ -33,6 +35,9 @@ app.include_router(cart.router)
 app.include_router(orders.router)
 app.include_router(payments.router)
 app.include_router(shipping.router)
+app.include_router(reviews.router)
+app.include_router(notifications.router)
+app.include_router(search.router)
 app.include_router(tasks.router)
 
 

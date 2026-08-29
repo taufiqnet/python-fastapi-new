@@ -4,10 +4,10 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.modules.orders.models import OrderFulfillmentStatus, OrderPaymentStatus
 from app.modules.orders.schemas import (
     OrderCreate,
     OrderDetail,
-    OrderStatus,
     OrderStatusUpdate,
     OrderSummary,
 )
@@ -26,7 +26,8 @@ def create_order(data: OrderCreate, db: Session = Depends(get_db)):
 def get_orders(
     business_id: int = Query(1),
     user_id: uuid.UUID | None = Query(None),
-    order_status: OrderStatus | None = Query(None, alias="status"),
+    payment_status: OrderPaymentStatus | None = Query(None),
+    fulfillment_status: OrderFulfillmentStatus | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
@@ -35,7 +36,8 @@ def get_orders(
         db,
         business_id=business_id,
         user_id=user_id,
-        status_filter=order_status,
+        payment_status=payment_status,
+        fulfillment_status=fulfillment_status,
         skip=skip,
         limit=limit,
     )
