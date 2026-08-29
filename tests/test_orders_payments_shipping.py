@@ -12,7 +12,7 @@ from sqlalchemy.pool import StaticPool
 from app.common.enums import Status
 from app.database import Base, get_db
 from app.main import app
-from app.modules.products.models import Product, ProductVariant
+from app.modules.ecommerce.products.models import Product, ProductVariant
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

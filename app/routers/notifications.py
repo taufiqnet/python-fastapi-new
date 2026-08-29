@@ -1,1 +1,1 @@
-from app.modules.notifications.router import router  # noqa: F401
+from app.modules.ecommerce.notifications.router import router  # noqa: F401

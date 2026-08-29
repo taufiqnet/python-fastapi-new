@@ -1,1 +1,1 @@
-from app.modules.pricing.router import router  # noqa: F401
+from app.modules.ecommerce.pricing.router import router  # noqa: F401

@@ -12,8 +12,8 @@ from sqlalchemy.pool import StaticPool
 from app.common.enums import Status
 from app.database import Base, get_db
 from app.main import app
-from app.modules.categories.models import Category
-from app.modules.products.models import (
+from app.modules.ecommerce.categories.models import Category
+from app.modules.ecommerce.products.models import (
     MediaType,
     Product,
     ProductCondition,
@@ -22,7 +22,7 @@ from app.modules.products.models import (
     ProductType,
     ProductVariant,
 )
-from app.modules.products.schemas import (
+from app.modules.ecommerce.products.schemas import (
     MediaType as SchemaMediaType,
     ProductCondition as SchemaProductCondition,
     ProductCreate,
@@ -32,7 +32,7 @@ from app.modules.products.schemas import (
     ProductUpdate,
     VariantCreate,
 )
-from app.modules.sellers.models import Seller  # noqa: F401
+from app.modules.ecommerce.sellers.models import Seller  # noqa: F401
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

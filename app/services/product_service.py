@@ -1,3 +1,3 @@
-from app.modules.products.service import ProductService
+from app.modules.ecommerce.products.service import ProductService
 
 __all__ = ["ProductService"]
