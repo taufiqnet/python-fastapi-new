@@ -1,3 +1,3 @@
-from app.modules.categories.router import router
+from app.modules.ecommerce.categories.router import router
 
 __all__ = ["router"]

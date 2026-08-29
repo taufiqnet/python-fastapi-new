@@ -12,19 +12,19 @@ from sqlalchemy.pool import StaticPool
 from app.common.enums import Status
 from app.database import Base, get_db
 from app.main import app
-from app.modules.inventory.models import (
+from app.modules.ecommerce.inventory.models import (
     InventoryItem,
     StockMovement,
     StockMovementReason,
     Warehouse,
 )
-from app.modules.inventory.schemas import (
+from app.modules.ecommerce.inventory.schemas import (
     InventoryItemCreate,
     StockAdjustmentRequest,
     WarehouseCreate,
 )
-from app.modules.products.models import Product, ProductVariant
-from app.modules.sellers.models import Seller  # noqa: F401
+from app.modules.ecommerce.products.models import Product, ProductVariant
+from app.modules.ecommerce.sellers.models import Seller  # noqa: F401
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

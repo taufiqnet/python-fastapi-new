@@ -1,3 +1,3 @@
-from app.modules.categories.repository import CategoryRepository
+from app.modules.ecommerce.categories.repository import CategoryRepository
 
 __all__ = ["CategoryRepository"]

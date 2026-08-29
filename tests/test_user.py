@@ -6,9 +6,9 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import get_async_db
 from app.main import app
-from app.models.business import BusinessProfile  # noqa
+from app.core.tenancy.models import BusinessProfile  # noqa
 from app.models.task import Task  # noqa
-from app.models.user import (  # noqa
+from app.core.identity.models import (  # noqa
     Address,
     AddressType,
     CustomerProfile,
@@ -17,7 +17,7 @@ from app.models.user import (  # noqa
     UserRole,
     VendorProfile,
 )
-from app.models.user import Base as UserBase
+from app.core.identity.models import Base as UserBase
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

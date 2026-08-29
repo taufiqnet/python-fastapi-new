@@ -2,17 +2,17 @@ from fastapi import FastAPI
 
 from app.core.config import settings
 from app.database import Base, engine
-from app.modules.categories.models import Category  # noqa: F401
-from app.modules.inventory.models import InventoryItem, Warehouse  # noqa: F401
-from app.modules.products.models import Product  # noqa: F401
-from app.modules.sellers.models import Seller  # noqa: F401
-from app.modules.pricing.models import PriceHistory, TaxRule, CurrencyRate  # noqa: F401
-from app.modules.cart.models import Cart, CartItem  # noqa: F401
-from app.modules.orders.models import Order, OrderItem, OrderStatusHistory, OrderAddress  # noqa: F401
-from app.modules.payments.models import Payment, PaymentMethod, Refund  # noqa: F401
-from app.modules.shipping.models import Shipment, ShippingZone, ShippingRate  # noqa: F401
-from app.modules.reviews.models import Review, ReviewVote  # noqa: F401
-from app.modules.notifications.models import Notification, NotificationPreference  # noqa: F401
+from app.modules.ecommerce.categories.models import Category  # noqa: F401
+from app.modules.ecommerce.inventory.models import InventoryItem, Warehouse  # noqa: F401
+from app.modules.ecommerce.products.models import Product  # noqa: F401
+from app.modules.ecommerce.sellers.models import Seller  # noqa: F401
+from app.modules.ecommerce.pricing.models import PriceHistory, TaxRule, CurrencyRate  # noqa: F401
+from app.modules.ecommerce.cart.models import Cart, CartItem  # noqa: F401
+from app.modules.ecommerce.orders.models import Order, OrderItem, OrderStatusHistory, OrderAddress  # noqa: F401
+from app.modules.ecommerce.payments.models import Payment, PaymentMethod, Refund  # noqa: F401
+from app.modules.ecommerce.shipping.models import Shipment, ShippingZone, ShippingRate  # noqa: F401
+from app.modules.ecommerce.reviews.models import Review, ReviewVote  # noqa: F401
+from app.modules.ecommerce.notifications.models import Notification, NotificationPreference  # noqa: F401
 from app.routers import auth, business, cart, categories, inventory, notifications, orders, payments, pricing, products, reviews, search, shipping, tasks
 
 try:

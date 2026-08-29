@@ -1,1 +1,1 @@
-from app.modules.payments.router import router  # noqa: F401
+from app.modules.ecommerce.payments.router import router  # noqa: F401

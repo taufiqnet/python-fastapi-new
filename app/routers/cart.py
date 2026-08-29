@@ -1,1 +1,1 @@
-from app.modules.cart.router import router  # noqa: F401
+from app.modules.ecommerce.cart.router import router  # noqa: F401

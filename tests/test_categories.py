@@ -10,8 +10,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
-from app.modules.categories.models import Category, CategoryAttributeTemplate
-from app.modules.categories.schemas import (
+from app.modules.ecommerce.categories.models import Category, CategoryAttributeTemplate
+from app.modules.ecommerce.categories.schemas import (
     CategoryAttributeTemplateCreate,
     CategoryCreate,
     CategoryTreeNode,

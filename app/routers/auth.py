@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user
 from app.core.security import create_access_token, verify_password
 from app.database import get_async_db
-from app.models.user import User
-from app.schemas.user import (
+from app.core.identity.models import User
+from app.core.identity.schemas import (
     AddressCreate,
     AddressResponse,
     Token,
@@ -15,7 +15,7 @@ from app.schemas.user import (
     VendorProfileCreate,
     VendorProfileResponse,
 )
-from app.services.user_service import UserService
+from app.core.identity.service import UserService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 

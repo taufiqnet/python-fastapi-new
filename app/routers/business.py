@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.business import BusinessProfileCreate, BusinessProfileResponse
-from app.services.business_service import BusinessService
+from app.core.tenancy.schemas import BusinessProfileCreate, BusinessProfileResponse
+from app.core.tenancy.service import BusinessService
 
 router = APIRouter(prefix="/business", tags=["Business Profile"])
 

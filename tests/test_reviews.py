@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 from app.common.enums import Status
 from app.database import Base, get_db
 from app.main import app
-from app.modules.products.models import Product
+from app.modules.ecommerce.products.models import Product
 
 sync_engine = create_engine(
     "sqlite:///:memory:",
