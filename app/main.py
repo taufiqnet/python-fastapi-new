@@ -70,6 +70,8 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(business.router)
+
+#ecommerce module router
 app.include_router(categories_router)
 app.include_router(products_router)
 app.include_router(inventory_router)
@@ -81,6 +83,8 @@ app.include_router(shipping_router)
 app.include_router(reviews_router)
 app.include_router(notifications_router)
 app.include_router(search_router)
+
+#project management router
 app.include_router(tasks.router)
 
 
