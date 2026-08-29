@@ -50,18 +50,19 @@ async def get_current_user(
     db: AsyncSession = Depends(get_async_db),
 ) -> User:
     payload = decode_access_token(token)
-    user_id_str: str = payload.get("sub")
-    if user_id_str is None:
+    sub = payload.get("sub")
+    if sub is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
-
+    
+    sub_str = str(sub)
     user = None
-    if user_id_str.isdigit():
-        user = await user_repo.get_by_id(db, int(user_id_str))
+    if sub_str.isdigit():
+        user = await user_repo.get_by_id(db, int(sub_str))
     if user is None:
-        user = await user_repo.get_by_username(db, user_id_str)
+        user = await user_repo.get_by_username(db, sub_str)
 
     if user is None:
         raise HTTPException(
@@ -69,3 +70,14 @@ async def get_current_user(
             detail="User not found",
         )
     return user
+
+
+async def get_current_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    if not current_user.has_role("admin"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user

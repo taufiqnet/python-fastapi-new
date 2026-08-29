@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "62b97217-94aa-474c-965c-f1930eb29cdd",
     "name": "Business Profile API",
-    "description": "Endpoints for BusinessProfile: create, read, list, update, delete, User/Auth management, Categories, Products catalog, Inventory, Pricing, Cart, Orders, Payments, and Shipping.",
+    "description": "Endpoints for SaaS Platform (Core Identity & Tenancy, E-Commerce Catalog, Inventory, Pricing, Cart, Orders, Payments, Shipping, Reviews, Notifications, and Search).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "31614458"
   },
@@ -275,7 +275,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"\u09f3\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
             },
             "url": {
               "raw": "{{base_url}}/business/",
@@ -362,7 +362,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"\u09f3\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
             },
             "url": {
               "raw": "{{base_url}}/business/{{business_id}}",

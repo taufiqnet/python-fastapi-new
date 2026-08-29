@@ -1,43 +1,86 @@
+import logging
+
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.database import Base, engine
-from app.modules.ecommerce.categories.models import Category  # noqa: F401
-from app.modules.ecommerce.inventory.models import InventoryItem, Warehouse  # noqa: F401
-from app.modules.ecommerce.products.models import Product  # noqa: F401
-from app.modules.ecommerce.sellers.models import Seller  # noqa: F401
-from app.modules.ecommerce.pricing.models import PriceHistory, TaxRule, CurrencyRate  # noqa: F401
-from app.modules.ecommerce.cart.models import Cart, CartItem  # noqa: F401
-from app.modules.ecommerce.orders.models import Order, OrderItem, OrderStatusHistory, OrderAddress  # noqa: F401
-from app.modules.ecommerce.payments.models import Payment, PaymentMethod, Refund  # noqa: F401
-from app.modules.ecommerce.shipping.models import Shipment, ShippingZone, ShippingRate  # noqa: F401
-from app.modules.ecommerce.reviews.models import Review, ReviewVote  # noqa: F401
-from app.modules.ecommerce.notifications.models import Notification, NotificationPreference  # noqa: F401
-from app.routers import auth, business, cart, categories, inventory, notifications, orders, payments, pricing, products, reviews, search, shipping, tasks
 
-try:
-    Base.metadata.create_all(bind=engine)
-except Exception:
-    pass
+# Registers every module's models with Base.metadata in one place — see
+# app/models_registry.py. Import must happen before create_all() below.
+from app import models_registry  # noqa: F401
+
+# Confirmed shims — these all just re-exported their module's real router.
+# Importing directly here removes that indirection for every one of them.
+from app.modules.ecommerce.cart.router import router as cart_router
+from app.modules.ecommerce.categories.router import router as categories_router
+from app.modules.ecommerce.inventory.router import router as inventory_router
+from app.modules.ecommerce.notifications.router import router as notifications_router
+from app.modules.ecommerce.orders.router import router as orders_router
+from app.modules.ecommerce.payments.router import router as payments_router
+from app.modules.ecommerce.pricing.router import router as pricing_router
+from app.modules.ecommerce.products.router import router as products_router
+from app.modules.ecommerce.reviews.router import router as reviews_router
+from app.modules.ecommerce.search.router import router as search_router
+from app.modules.ecommerce.shipping.router import router as shipping_router
+
+# NOTE: auth, business, and tasks are left importing from app.routers —
+# auth.py was confirmed to contain real endpoint code (it imports directly
+# from app.core.deps), not a re-export shim. Verify business and tasks the
+# same way (open app/routers/<name>.py — real code vs. a single `from
+# app.modules...router import router` line) before migrating them too. Once
+# confirmed, app/routers/ can likely be deleted entirely.
+from app.routers import auth, business, tasks
+
+logger = logging.getLogger(__name__)
+
+# create_all() is a dev/test convenience only — it creates missing tables but
+# never tracks schema changes, and can silently diverge from what Alembic's
+# migration history expects. In staging/production, schema changes should
+# come exclusively from `alembic upgrade head` (run as a separate deploy/
+# entrypoint step), not from this call.
+if settings.app_env in ("development", "test", "local"):
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception:
+        logger.exception("Failed to create database tables on startup")
+        raise
 
 app = FastAPI(
     title="E-Commerce API",
     version="1.0.0",
 )
 
+# TODO: replace with real allowed origins per environment (e.g. from
+# settings), rather than a wildcard, once a frontend origin is known.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=getattr(settings, "cors_origins", ["*"]),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# TODO: if app/core/exceptions.py defines custom exception classes, register
+# handlers for them here, e.g.:
+# from app.core.exceptions import AppError
+# @app.exception_handler(AppError)
+# def handle_app_error(request, exc):
+#     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
+
 app.include_router(auth.router)
 app.include_router(business.router)
-app.include_router(categories.router)
-app.include_router(products.router)
-app.include_router(inventory.router)
-app.include_router(pricing.router)
-app.include_router(cart.router)
-app.include_router(orders.router)
-app.include_router(payments.router)
-app.include_router(shipping.router)
-app.include_router(reviews.router)
-app.include_router(notifications.router)
-app.include_router(search.router)
+app.include_router(categories_router)
+app.include_router(products_router)
+app.include_router(inventory_router)
+app.include_router(pricing_router)
+app.include_router(cart_router)
+app.include_router(orders_router)
+app.include_router(payments_router)
+app.include_router(shipping_router)
+app.include_router(reviews_router)
+app.include_router(notifications_router)
+app.include_router(search_router)
 app.include_router(tasks.router)
 
 
