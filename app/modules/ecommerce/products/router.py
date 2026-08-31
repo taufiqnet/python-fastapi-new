@@ -31,6 +31,8 @@ def get_products(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     category_id: uuid.UUID | None = Query(None),
+    brand_id: uuid.UUID | None = Query(None),
+    model_id: uuid.UUID | None = Query(None),
     product_status: Status | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
 ):
@@ -40,6 +42,8 @@ def get_products(
         limit=limit,
         business_id=business_id,
         category_id=category_id,
+        brand_id=brand_id,
+        model_id=model_id,
         status=product_status,
     )
 

@@ -178,6 +178,8 @@ class ProductBase(BaseModel):
     is_featured: bool = False
 
     category_id: uuid.UUID | None = None
+    brand_id: uuid.UUID | None = None
+    model_id: uuid.UUID | None = None
     seller_id: uuid.UUID | None = None
     business_id: int | None = None
 
@@ -205,6 +207,8 @@ class ProductUpdate(BaseModel):
     is_featured: bool | None = None
 
     category_id: uuid.UUID | None = None
+    brand_id: uuid.UUID | None = None
+    model_id: uuid.UUID | None = None
     seller_id: uuid.UUID | None = None
     business_id: int | None = None
 
@@ -230,6 +234,8 @@ class ProductListItem(BaseModel):
     title: str
     slug: str
     brand: str | None = None
+    brand_id: uuid.UUID | None = None
+    model_id: uuid.UUID | None = None
     status: Status
     thumbnail_url: str | None = None
     min_price: Decimal | None = None

@@ -85,6 +85,18 @@ class Product(Base, UUIDMixin, TimestampMixin):
         ForeignKey("categories.id", ondelete="SET NULL"),
         nullable=True,
     )
+    brand_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("brands.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    model_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("product_models.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(
         String(255),
@@ -134,6 +146,16 @@ class Product(Base, UUIDMixin, TimestampMixin):
     category: Mapped["Category | None"] = relationship(  # noqa: F821
         "Category",
         back_populates="products",
+    )
+    brand_rel: Mapped["Brand | None"] = relationship(  # noqa: F821
+        "Brand",
+        back_populates="products",
+        lazy="selectin",
+    )
+    model_rel: Mapped["ProductModel | None"] = relationship(  # noqa: F821
+        "ProductModel",
+        back_populates="products",
+        lazy="selectin",
     )
     variants: Mapped[list["ProductVariant"]] = relationship(
         "ProductVariant",

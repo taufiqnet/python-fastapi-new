@@ -12,6 +12,14 @@ from sqlalchemy.pool import StaticPool
 from app.common.enums import Status
 from app.database import Base, get_db
 from app.main import app
+from app.modules.ecommerce.brands.models import Brand, ProductModel
+from app.modules.ecommerce.brands.schemas import (
+    BrandCreate,
+    BrandDropdownItem,
+    BrandUpdate,
+    ProductModelCreate,
+    ProductModelUpdate,
+)
 from app.modules.ecommerce.categories.models import Category
 from app.modules.ecommerce.products.models import (
     MediaType,
@@ -24,13 +32,19 @@ from app.modules.ecommerce.products.models import (
 )
 from app.modules.ecommerce.products.schemas import (
     MediaType as SchemaMediaType,
+)
+from app.modules.ecommerce.products.schemas import (
     ProductCondition as SchemaProductCondition,
+)
+from app.modules.ecommerce.products.schemas import (
     ProductCreate,
     ProductImageCreate,
     ProductListItem,
-    ProductType as SchemaProductType,
     ProductUpdate,
     VariantCreate,
+)
+from app.modules.ecommerce.products.schemas import (
+    ProductType as SchemaProductType,
 )
 from app.modules.ecommerce.sellers.models import Seller  # noqa: F401
 
@@ -100,6 +114,21 @@ async def test_product_models_and_relationships(async_db: AsyncSession):
     await async_db.commit()
     await async_db.refresh(seller)
 
+    # Brand & ProductModel
+    brand = Brand(name="Apple", slug="apple", is_active=True)
+    async_db.add(brand)
+    await async_db.commit()
+    await async_db.refresh(brand)
+
+    model = ProductModel(brand_id=brand.id, name="iPhone 15", slug="iphone-15")
+    async_db.add(model)
+    await async_db.commit()
+    await async_db.refresh(model)
+
+    assert brand.id is not None
+    assert len(brand.models) == 1
+    assert model.brand_id == brand.id
+
     # Tag
     tag = ProductTag(name="Running", slug="running")
     async_db.add(tag)
@@ -108,6 +137,8 @@ async def test_product_models_and_relationships(async_db: AsyncSession):
     # Product
     product = Product(
         category_id=category.id,
+        brand_id=brand.id,
+        model_id=model.id,
         seller_id=seller.id,
         title="Pro Running Shoes",
         slug="pro-running-shoes",
@@ -126,6 +157,8 @@ async def test_product_models_and_relationships(async_db: AsyncSession):
     await async_db.refresh(product)
 
     assert product.id is not None
+    assert product.brand_id == brand.id
+    assert product.model_id == model.id
     assert product.status == Status.ACTIVE
     assert product.condition == ProductCondition.NEW
     assert product.product_type == ProductType.PHYSICAL
@@ -180,10 +213,30 @@ async def test_product_models_and_relationships(async_db: AsyncSession):
 
 
 def test_product_schemas():
+    # Brand schemas test
+    brand_create = BrandCreate(name="Samsung", slug="samsung", is_active=True)
+    assert brand_create.name == "Samsung"
+
+    brand_update = BrandUpdate(name="Samsung Electronics")
+    assert brand_update.name == "Samsung Electronics"
+
+    brand_dropdown = BrandDropdownItem(
+        id=uuid.uuid4(), name="Samsung", slug="samsung"
+    )
+    assert brand_dropdown.name == "Samsung"
+
+    model_create = ProductModelCreate(name="Galaxy S24", slug="galaxy-s24")
+    assert model_create.name == "Galaxy S24"
+
+    model_update = ProductModelUpdate(name="Galaxy S24 Ultra")
+    assert model_update.name == "Galaxy S24 Ultra"
+
     prod_create = ProductCreate(
         title="Wireless Headphones",
         slug="wireless-headphones",
         brand="AudioTech",
+        brand_id=uuid.uuid4(),
+        model_id=uuid.uuid4(),
         status=Status.ACTIVE,
         condition=SchemaProductCondition.NEW,
         product_type=SchemaProductType.PHYSICAL,
@@ -217,6 +270,8 @@ def test_product_schemas():
         ],
     )
     assert prod_create.title == "Wireless Headphones"
+    assert prod_create.brand_id is not None
+    assert prod_create.model_id is not None
     assert prod_create.condition == SchemaProductCondition.NEW
     assert prod_create.variants[0].price == Decimal("149.99")
     assert prod_create.variants[0].compare_at_price == Decimal("199.99")
@@ -251,7 +306,39 @@ def test_product_schemas():
 
 @pytest.mark.asyncio
 async def test_product_api_crud(client: AsyncClient):
-    # 1. Create Tag via API
+    # 1. Create Brand & Product Model via API
+    brand_resp = await client.post(
+        "/brands/",
+        json={
+            "name": "Sony",
+            "slug": "sony",
+            "description": "Sony Electronics",
+            "is_active": True,
+        },
+    )
+    assert brand_resp.status_code == 201
+    brand_id = brand_resp.json()["id"]
+
+    dropdown_resp = await client.get("/brands/dropdown")
+    assert dropdown_resp.status_code == 200
+    assert len(dropdown_resp.json()) >= 1
+
+    model_resp = await client.post(
+        f"/brands/{brand_id}/models",
+        json={
+            "name": "WH-1000XM5",
+            "slug": "wh-1000xm5",
+            "description": "Noise canceling headphones",
+        },
+    )
+    assert model_resp.status_code == 201
+    model_id = model_resp.json()["id"]
+
+    models_list_resp = await client.get(f"/brands/{brand_id}/models")
+    assert models_list_resp.status_code == 200
+    assert len(models_list_resp.json()) == 1
+
+    # 2. Create Tag via API
     tag_resp = await client.post(
         "/products/tags",
         json={"name": "Wireless", "slug": "wireless"},
@@ -259,18 +346,20 @@ async def test_product_api_crud(client: AsyncClient):
     assert tag_resp.status_code == 201
     tag_id = tag_resp.json()["id"]
 
-    # 2. Get Tags
+    # 3. Get Tags
     tags_list_resp = await client.get("/products/tags")
     assert tags_list_resp.status_code == 200
     assert len(tags_list_resp.json()) >= 1
 
-    # 3. Create Product via API
+    # 4. Create Product via API with brand_id & model_id
     prod_resp = await client.post(
         "/products/",
         json={
             "title": "Smart Watch Series 5",
             "slug": "smart-watch-series-5",
             "brand": "TechBrand",
+            "brand_id": brand_id,
+            "model_id": model_id,
             "status": "active",
             "condition": "new",
             "product_type": "physical",
@@ -305,25 +394,27 @@ async def test_product_api_crud(client: AsyncClient):
     p_data = prod_resp.json()
     product_id = p_data["id"]
     assert p_data["title"] == "Smart Watch Series 5"
+    assert p_data["brand_id"] == brand_id
+    assert p_data["model_id"] == model_id
     assert len(p_data["variants"]) == 1
     assert len(p_data["images"]) == 1
     assert len(p_data["attributes"]) == 1
     assert len(p_data["tags"]) == 1
 
-    # 4. List Products (ProductListItem DTO)
-    list_resp = await client.get("/products/")
+    # 5. List Products & Filter by brand_id and model_id
+    list_resp = await client.get(f"/products/?brand_id={brand_id}&model_id={model_id}")
     assert list_resp.status_code == 200
     items = list_resp.json()
-    assert len(items) >= 1
+    assert len(items) == 1
     assert items[0]["title"] == "Smart Watch Series 5"
     assert Decimal(str(items[0]["min_price"])) == Decimal("299.99")
 
-    # 5. Get Product Detail
+    # 6. Get Product Detail
     detail_resp = await client.get(f"/products/{product_id}")
     assert detail_resp.status_code == 200
     assert detail_resp.json()["slug"] == "smart-watch-series-5"
 
-    # 6. Update Product
+    # 7. Update Product
     upd_resp = await client.put(
         f"/products/{product_id}",
         json={"title": "Smart Watch Series 5 Pro", "is_featured": False},
@@ -331,7 +422,7 @@ async def test_product_api_crud(client: AsyncClient):
     assert upd_resp.status_code == 200
     assert upd_resp.json()["title"] == "Smart Watch Series 5 Pro"
 
-    # 7. Add Variant
+    # 8. Add Variant
     var_resp = await client.post(
         f"/products/{product_id}/variants",
         json={
@@ -343,11 +434,11 @@ async def test_product_api_crud(client: AsyncClient):
     assert var_resp.status_code == 201
     var_id = var_resp.json()["id"]
 
-    # 8. Delete Variant
+    # 9. Delete Variant
     del_var_resp = await client.delete(f"/products/variants/{var_id}")
     assert del_var_resp.status_code == 204
 
-    # 9. Delete Product
+    # 10. Delete Product
     del_prod_resp = await client.delete(f"/products/{product_id}")
     assert del_prod_resp.status_code == 204
 

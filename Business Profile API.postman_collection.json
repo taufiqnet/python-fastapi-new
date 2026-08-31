@@ -622,6 +622,325 @@
       ]
     },
     {
+      "name": "Brands & Models",
+      "item": [
+        {
+          "name": "Create Brand",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"brand_id\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Apple\",\n  \"slug\": \"apple\",\n  \"logo_url\": \"https://example.com/apple.png\",\n  \"description\": \"Consumer electronics and software\",\n  \"is_active\": true,\n  \"business_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/brands/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Brands",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/brands/?skip=0&limit=100&business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                ""
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Brand Dropdown",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/brands/dropdown?business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                "dropdown"
+              ],
+              "query": [
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Brand",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/brands/{{brand_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                "{{brand_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Brand",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Apple Inc.\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/brands/{{brand_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                "{{brand_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product Model",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"model_id\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"iPhone 15 Pro\",\n  \"slug\": \"iphone-15-pro\",\n  \"description\": \"Apple flagship smartphone\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/brands/{{brand_id}}/models",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                "{{brand_id}}",
+                "models"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Brand Models",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/brands/{{brand_id}}/models",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                "{{brand_id}}",
+                "models"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product Model",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"iPhone 15 Pro Max\",\n  \"is_active\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/brands/models/{{model_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                "models",
+                "{{model_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product Model",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/brands/models/{{model_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                "models",
+                "{{model_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Brand",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/brands/{{brand_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "brands",
+                "{{brand_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Products",
       "item": [
         {
@@ -733,7 +1052,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Wireless Noise-Canceling Headphones\",\n  \"slug\": \"wireless-noise-canceling-headphones\",\n  \"brand\": \"SoundPro\",\n  \"status\": \"active\",\n  \"condition\": \"new\",\n  \"product_type\": \"physical\",\n  \"requires_shipping\": true,\n  \"meta_title\": \"Buy SoundPro Wireless Headphones\",\n  \"meta_description\": \"High quality wireless noise canceling headphones\",\n  \"is_featured\": true,\n  \"tag_ids\": [\n    \"{{tag_id}}\"\n  ],\n  \"variants\": [\n    {\n      \"sku\": \"SOUNDPRO-BLK\",\n      \"barcode\": \"1234567890123\",\n      \"price\": \"199.99\",\n      \"compare_at_price\": \"249.99\",\n      \"cost_price\": \"100.00\",\n      \"currency\": \"USD\",\n      \"stock_qty\": 50,\n      \"low_stock_threshold\": 5,\n      \"is_default\": true,\n      \"weight\": 0.35,\n      \"weight_unit\": \"kg\"\n    }\n  ],\n  \"images\": [\n    {\n      \"url\": \"https://example.com/headphones-black.jpg\",\n      \"position\": 0,\n      \"alt_text\": \"Black Headphones Front View\",\n      \"is_primary\": true,\n      \"media_type\": \"image\"\n    }\n  ],\n  \"attributes\": [\n    {\n      \"name\": \"Color\",\n      \"values\": [\n        {\n          \"value\": \"Black\"\n        },\n        {\n          \"value\": \"Silver\"\n        }\n      ]\n    }\n  ],\n  \"business_id\": 1,\n  \"category_id\": \"{{category_id}}\"\n}",
+              "raw": "{\n  \"title\": \"Wireless Noise-Canceling Headphones\",\n  \"slug\": \"wireless-noise-canceling-headphones\",\n  \"brand\": \"SoundPro\",\n  \"status\": \"active\",\n  \"condition\": \"new\",\n  \"product_type\": \"physical\",\n  \"requires_shipping\": true,\n  \"meta_title\": \"Buy SoundPro Wireless Headphones\",\n  \"meta_description\": \"High quality wireless noise canceling headphones\",\n  \"is_featured\": true,\n  \"tag_ids\": [\n    \"{{tag_id}}\"\n  ],\n  \"variants\": [\n    {\n      \"sku\": \"SOUNDPRO-BLK\",\n      \"barcode\": \"1234567890123\",\n      \"price\": \"199.99\",\n      \"compare_at_price\": \"249.99\",\n      \"cost_price\": \"100.00\",\n      \"currency\": \"USD\",\n      \"stock_qty\": 50,\n      \"low_stock_threshold\": 5,\n      \"is_default\": true,\n      \"weight\": 0.35,\n      \"weight_unit\": \"kg\"\n    }\n  ],\n  \"images\": [\n    {\n      \"url\": \"https://example.com/headphones-black.jpg\",\n      \"position\": 0,\n      \"alt_text\": \"Black Headphones Front View\",\n      \"is_primary\": true,\n      \"media_type\": \"image\"\n    }\n  ],\n  \"attributes\": [\n    {\n      \"name\": \"Color\",\n      \"values\": [\n        {\n          \"value\": \"Black\"\n        },\n        {\n          \"value\": \"Silver\"\n        }\n      ]\n    }\n  ],\n  \"business_id\": 1,\n  \"category_id\": \"{{category_id}}\",\n  \"brand_id\": \"{{brand_id}}\",\n  \"model_id\": \"{{model_id}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3487,6 +3806,16 @@
     },
     {
       "key": "zone_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "brand_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "model_id",
       "value": "",
       "type": "string"
     }

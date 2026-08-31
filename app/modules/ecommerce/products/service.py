@@ -34,6 +34,8 @@ class ProductService:
         limit: int = 100,
         business_id: int | None = None,
         category_id: uuid.UUID | None = None,
+        brand_id: uuid.UUID | None = None,
+        model_id: uuid.UUID | None = None,
         status: Status | None = None,
     ) -> list[Product]:
         return self.repository.get_all(
@@ -42,6 +44,8 @@ class ProductService:
             limit=limit,
             business_id=business_id,
             category_id=category_id,
+            brand_id=brand_id,
+            model_id=model_id,
             status=status,
         )
 
@@ -52,6 +56,8 @@ class ProductService:
         limit: int = 100,
         business_id: int | None = None,
         category_id: uuid.UUID | None = None,
+        brand_id: uuid.UUID | None = None,
+        model_id: uuid.UUID | None = None,
         status: Status | None = None,
     ) -> list[ProductListItem]:
         products = self.get_products(
@@ -60,6 +66,8 @@ class ProductService:
             limit=limit,
             business_id=business_id,
             category_id=category_id,
+            brand_id=brand_id,
+            model_id=model_id,
             status=status,
         )
         items = []
@@ -77,7 +85,9 @@ class ProductService:
                     id=p.id,
                     title=p.title,
                     slug=p.slug,
-                    brand=p.brand,
+                    brand=p.brand or (p.brand_rel.name if p.brand_rel else None),
+                    brand_id=p.brand_id,
+                    model_id=p.model_id,
                     status=p.status,
                     thumbnail_url=primary_img,
                     min_price=min_price,

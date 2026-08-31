@@ -12,6 +12,7 @@ from app import models_registry  # noqa: F401
 
 # Confirmed shims — these all just re-exported their module's real router.
 # Importing directly here removes that indirection for every one of them.
+from app.modules.ecommerce.brands.router import router as brands_router
 from app.modules.ecommerce.cart.router import router as cart_router
 from app.modules.ecommerce.categories.router import router as categories_router
 from app.modules.ecommerce.inventory.router import router as inventory_router
@@ -72,6 +73,7 @@ app.include_router(auth.router)
 app.include_router(business.router)
 
 #ecommerce module router
+app.include_router(brands_router)
 app.include_router(categories_router)
 app.include_router(products_router)
 app.include_router(inventory_router)

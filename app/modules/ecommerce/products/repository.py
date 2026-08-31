@@ -36,6 +36,8 @@ class ProductRepository:
         limit: int = 100,
         business_id: int | None = None,
         category_id: uuid.UUID | None = None,
+        brand_id: uuid.UUID | None = None,
+        model_id: uuid.UUID | None = None,
         status: Status | None = None,
     ) -> list[Product]:
         query = db.query(Product)
@@ -43,6 +45,10 @@ class ProductRepository:
             query = query.filter(Product.business_id == business_id)
         if category_id is not None:
             query = query.filter(Product.category_id == category_id)
+        if brand_id is not None:
+            query = query.filter(Product.brand_id == brand_id)
+        if model_id is not None:
+            query = query.filter(Product.model_id == model_id)
         if status is not None:
             query = query.filter(Product.status == status)
         return query.offset(skip).limit(limit).all()
@@ -62,6 +68,8 @@ class ProductRepository:
             video_url=data.video_url,
             is_featured=data.is_featured,
             category_id=data.category_id,
+            brand_id=data.brand_id,
+            model_id=data.model_id,
             seller_id=data.seller_id,
             business_id=data.business_id,
         )
