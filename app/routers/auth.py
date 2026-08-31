@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
@@ -20,6 +22,25 @@ from app.core.identity.service import UserService
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 service = UserService()
+templates = Jinja2Templates(directory="app/templates")
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+    )
+
+
+@router.get("/logout")
+async def logout_get():
+    return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+
+
+@router.post("/logout")
+async def logout_post():
+    return {"message": "Successfully logged out"}
 
 
 @router.post("/register", response_model=UserResponse, status_code=201)
@@ -50,7 +71,9 @@ async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-@router.post("/me/vendor-profile", response_model=VendorProfileResponse, status_code=201)
+@router.post(
+    "/me/vendor-profile", response_model=VendorProfileResponse, status_code=201
+)
 async def create_vendor_profile(
     data: VendorProfileCreate,
     current_user: User = Depends(get_current_user),

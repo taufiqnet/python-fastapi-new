@@ -7,7 +7,6 @@ from app.core.tenancy.schemas import BusinessProfileCreate
 
 
 class BusinessService:
-
     def __init__(self):
         self.repository = BusinessRepository()
 
@@ -33,7 +32,9 @@ class BusinessService:
     def list_businesses(self, db: Session, skip: int = 0, limit: int = 100):
         return self.repository.get_all(db, skip, limit)
 
-    def update_business(self, db: Session, business_id: int, data: BusinessProfileCreate):
+    def update_business(
+        self, db: Session, business_id: int, data: BusinessProfileCreate
+    ):
         business = self.get_business(db, business_id)
 
         if data.cr_number and data.cr_number != business.cr_number:

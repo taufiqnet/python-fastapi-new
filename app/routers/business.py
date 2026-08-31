@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.database import get_db
 from app.core.tenancy.schemas import BusinessProfileCreate, BusinessProfileResponse
 from app.core.tenancy.service import BusinessService
+from app.database import get_db
 
 router = APIRouter(prefix="/business", tags=["Business Profile"])
 
@@ -26,7 +26,9 @@ def list_businesses(skip: int = 0, limit: int = 100, db: Session = Depends(get_d
 
 
 @router.put("/{business_id}", response_model=BusinessProfileResponse)
-def update_business(business_id: int, data: BusinessProfileCreate, db: Session = Depends(get_db)):
+def update_business(
+    business_id: int, data: BusinessProfileCreate, db: Session = Depends(get_db)
+):
     return service.update_business(db, business_id, data)
 
 

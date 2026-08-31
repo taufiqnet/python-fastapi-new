@@ -4,15 +4,24 @@ from app.core.tenancy.models import BusinessProfile
 
 
 class BusinessRepository:
-
     def get_by_id(self, db: Session, business_id: int):
-        return db.query(BusinessProfile).filter(BusinessProfile.id == business_id).first()
+        return (
+            db.query(BusinessProfile).filter(BusinessProfile.id == business_id).first()
+        )
 
     def get_by_cr_number(self, db: Session, cr_number: str):
-        return db.query(BusinessProfile).filter(BusinessProfile.cr_number == cr_number).first()
+        return (
+            db.query(BusinessProfile)
+            .filter(BusinessProfile.cr_number == cr_number)
+            .first()
+        )
 
     def get_by_vat_number(self, db: Session, vat_number: str):
-        return db.query(BusinessProfile).filter(BusinessProfile.vat_number == vat_number).first()
+        return (
+            db.query(BusinessProfile)
+            .filter(BusinessProfile.vat_number == vat_number)
+            .first()
+        )
 
     def get_all(self, db: Session, skip: int = 0, limit: int = 100):
         return db.query(BusinessProfile).offset(skip).limit(limit).all()

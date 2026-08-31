@@ -19,6 +19,18 @@
             font-family: 'Inter', sans-serif;
         }
 
+        /* Prevent SweetAlert2 swal2-height-auto class from overriding html/body height.
+           SweetAlert2 adds this class to BOTH <html> and <body> when a modal opens/closes;
+           overriding only body left <html> collapsed to height:auto, which shrank the
+           100vh flex layout and exposed a blank gap at the bottom of the page. */
+        html.swal2-height-auto {
+            height: 100% !important;
+        }
+
+        body.swal2-height-auto {
+            height: 100% !important;
+        }
+
         /* ============================================
            Sidebar Theme Variables
            ============================================ */
@@ -455,6 +467,11 @@
                             </p>
                         </div>
                     </div>
+                    <div class="flex items-center space-x-1 sidebar-text">
+                        <a href="/auth/logout" id="logout-btn" title="Logout" class="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                            <i class="fas fa-sign-out-alt text-sm"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -551,7 +568,7 @@
                 }
                 const dropdown = this.closest('.sidebar-dropdown');
                 const menu = dropdown.querySelector('.sidebar-dropdown-menu');
-                
+
                 if (dropdown.classList.contains('expanded')) {
                     menu.style.maxHeight = '0px';
                     dropdown.classList.remove('expanded');
@@ -586,6 +603,21 @@
                     menu.style.maxHeight = '0px';
                 });
             }
+        }
+
+        // Logout Handler
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                localStorage.removeItem('access_token');
+                try {
+                    await fetch('/auth/logout', { method: 'POST' });
+                } catch (err) {
+                    console.error('Logout request failed:', err);
+                }
+                window.location.href = '/auth/logout';
+            });
         }
     </script>
 
