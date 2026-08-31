@@ -35,3 +35,44 @@ def business_list_page(
             "countries": countries,
         },
     )
+
+
+@router.get("/businesses/create", response_class=HTMLResponse)
+def business_create_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/tenancy/business_form.html",
+        context={
+            "business": None,
+            "is_edit": False,
+        },
+    )
+
+
+@router.get("/businesses/{business_id}", response_class=HTMLResponse)
+def business_detail_page(
+    business_id: int, request: Request, db: Session = Depends(get_db)
+):
+    business = service.get_business(db, business_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/tenancy/business_detail.html",
+        context={
+            "business": business,
+        },
+    )
+
+
+@router.get("/businesses/{business_id}/edit", response_class=HTMLResponse)
+def business_edit_page(
+    business_id: int, request: Request, db: Session = Depends(get_db)
+):
+    business = service.get_business(db, business_id)
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/tenancy/business_form.html",
+        context={
+            "business": business,
+            "is_edit": True,
+        },
+    )

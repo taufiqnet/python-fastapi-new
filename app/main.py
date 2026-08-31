@@ -25,21 +25,10 @@ from app.modules.ecommerce.reviews.router import router as reviews_router
 from app.modules.ecommerce.search.router import router as search_router
 from app.modules.ecommerce.shipping.router import router as shipping_router
 
-# NOTE: auth, business, and tasks are left importing from app.routers —
-# auth.py was confirmed to contain real endpoint code (it imports directly
-# from app.core.deps), not a re-export shim. Verify business and tasks the
-# same way (open app/routers/<name>.py — real code vs. a single `from
-# app.modules...router import router` line) before migrating them too. Once
-# confirmed, app/routers/ can likely be deleted entirely.
 from app.routers import auth, business, business_views, tasks
 
 logger = logging.getLogger(__name__)
 
-# create_all() is a dev/test convenience only — it creates missing tables but
-# never tracks schema changes, and can silently diverge from what Alembic's
-# migration history expects. In staging/production, schema changes should
-# come exclusively from `alembic upgrade head` (run as a separate deploy/
-# entrypoint step), not from this call.
 if settings.app_env in ("development", "test", "local"):
     try:
         Base.metadata.create_all(bind=engine)
@@ -52,8 +41,6 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# TODO: replace with real allowed origins per environment (e.g. from
-# settings), rather than a wildcard, once a frontend origin is known.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=getattr(settings, "cors_origins", ["*"]),
@@ -62,16 +49,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# TODO: if app/core/exceptions.py defines custom exception classes, register
-# handlers for them here, e.g.:
-# from app.core.exceptions import AppError
-# @app.exception_handler(AppError)
-# def handle_app_error(request, exc):
-#     return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
-
+app.include_router(business_views.router)
 app.include_router(auth.router)
 app.include_router(business.router)
-app.include_router(business_views.router)
 
 #ecommerce module router
 app.include_router(brands_router)

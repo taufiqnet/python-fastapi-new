@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}{{ business.name_en }} | Business Details{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Businesses
+            </a>
+        </div>
+        <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ business.name_en }}</h1>
+            {% if business.is_active %}
+            <span class="px-2.5 py-1 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1">
+                <i class="fas fa-circle text-[6px]"></i> Active
+            </span>
+            {% else %}
+            <span class="px-2.5 py-1 bg-gray-100 border border-gray-200 text-gray-600 text-xs font-semibold rounded-full flex items-center gap-1">
+                <i class="fas fa-circle text-[6px]"></i> Inactive
+            </span>
+            {% endif %}
+        </div>
+        {% if business.legal_name %}
+        <p class="text-xs text-gray-500 font-medium mt-0.5">Legal Name: {{ business.legal_name }}</p>
+        {% endif %}
+    </div>
+
+    <div class="flex items-center gap-3">
+        <a href="/businesses/{{ business.id }}/edit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-edit"></i> Edit Business Profile
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Left Column: Main Overview & Compliance -->
+    <div class="lg:col-span-2 space-y-6">
+
+        <!-- Overview Card -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <i class="fas fa-building text-indigo-600"></i> Company Overview
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Tagline</span>
+                    <span class="text-gray-800 font-medium">{{ business.company_tagline or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Short Name</span>
+                    <span class="text-gray-800 font-medium">{{ business.short_name or '—' }}</span>
+                </div>
+                <div class="md:col-span-2">
+                    <span class="text-gray-400 font-medium block mb-0.5">Description</span>
+                    <span class="text-gray-800 leading-relaxed">{{ business.description or '—' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registration & Compliance -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <i class="fas fa-file-contract text-indigo-600"></i> Registration & Compliance
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">CR Number</span>
+                    <span class="text-gray-900 font-mono font-semibold">{{ business.cr_number or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">VAT Number</span>
+                    <span class="text-gray-900 font-mono font-semibold">{{ business.vat_number or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Tax Number</span>
+                    <span class="text-gray-900 font-mono font-semibold">{{ business.tax_number or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">License Number</span>
+                    <span class="text-gray-800 font-medium">{{ business.license_number or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">License Expiry</span>
+                    <span class="text-gray-800 font-medium">{{ business.license_expiry_date or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Chamber of Commerce</span>
+                    <span class="text-gray-800 font-medium">{{ business.chamber_of_commerce_no or '—' }}</span>
+                </div>
+                <div class="sm:col-span-2 md:col-span-3">
+                    <span class="text-gray-400 font-medium block mb-0.5">National Address</span>
+                    <span class="text-gray-800 font-medium">{{ business.national_address or '—' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address & Contact -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <i class="fas fa-map-marker-alt text-indigo-600"></i> Address & Contact Details
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Full Address</span>
+                    <span class="text-gray-800 font-medium">{{ business.full_address or business.address_en or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">City / Country</span>
+                    <span class="text-gray-800 font-medium">{{ business.city }}, {{ business.country }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Primary Phone</span>
+                    <span class="text-gray-800 font-medium">{{ business.phone or business.mobile or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Primary Email</span>
+                    <span class="text-gray-800 font-medium font-mono">{{ business.email or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Website</span>
+                    {% if business.website %}
+                    <a href="{{ business.website }}" target="_blank" class="text-indigo-600 hover:underline font-medium">{{ business.website }}</a>
+                    {% else %}
+                    <span class="text-gray-800 font-medium">—</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Contact Person</span>
+                    <span class="text-gray-800 font-medium">{{ business.contact_person or '—' }} {% if business.contact_designation %}({{ business.contact_designation }}){% endif %}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Right Column: Banking & System Settings -->
+    <div class="space-y-6">
+
+        <!-- Banking Information -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <i class="fas fa-university text-indigo-600"></i> Banking Details
+            </h2>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Bank Name</span>
+                    <span class="text-gray-800 font-medium">{{ business.bank_name or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Branch</span>
+                    <span class="text-gray-800 font-medium">{{ business.bank_branch or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Account Name</span>
+                    <span class="text-gray-800 font-medium">{{ business.bank_account_name or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">Account Number</span>
+                    <span class="text-gray-800 font-mono font-medium">{{ business.bank_account_number or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">IBAN</span>
+                    <span class="text-gray-800 font-mono font-medium">{{ business.bank_iban or '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 font-medium block mb-0.5">SWIFT Code</span>
+                    <span class="text-gray-800 font-mono font-medium">{{ business.bank_swift_code or '—' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoicing & Localization -->
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                <i class="fas fa-cog text-indigo-600"></i> Settings & Configuration
+            </h2>
+
+            <div class="space-y-3 text-xs">
+                <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span class="text-gray-500 font-medium">Currency</span>
+                    <span class="text-gray-900 font-semibold">{{ business.currency_code }} ({{ business.currency_symbol }})</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span class="text-gray-500 font-medium">VAT Rate</span>
+                    <span class="text-gray-900 font-semibold">{{ business.vat_rate }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span class="text-gray-500 font-medium">Invoice Prefix</span>
+                    <span class="text-gray-900 font-mono font-semibold">{{ business.invoice_prefix }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span class="text-gray-500 font-medium">Timezone</span>
+                    <span class="text-gray-900 font-medium">{{ business.timezone }}</span>
+                </div>
+                <div class="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span class="text-gray-500 font-medium">E-Invoicing</span>
+                    <span class="font-semibold {% if business.e_invoice_enabled %}text-green-600{% else %}text-gray-400{% endif %}">
+                        {% if business.e_invoice_enabled %}Enabled{% else %}Disabled{% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between items-center py-1">
+                    <span class="text-gray-500 font-medium">ZATCA Compliant</span>
+                    <span class="font-semibold {% if business.zatca_enabled %}text-green-600{% else %}text-gray-400{% endif %}">
+                        {% if business.zatca_enabled %}Enabled{% else %}Disabled{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

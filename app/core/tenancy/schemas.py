@@ -78,9 +78,18 @@ class BusinessProfileCreate(BaseModel):
 
     is_active: bool = True
 
-    @field_validator("email", "support_email", "sales_email", "invoice_email", mode="before")
+    @field_validator(
+        "email", "support_email", "sales_email", "invoice_email", mode="before"
+    )
     @classmethod
     def blank_email_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
+
+    @field_validator("license_expiry_date", mode="before")
+    @classmethod
+    def blank_date_to_none(cls, v):
         if v == "" or v is None:
             return None
         return v

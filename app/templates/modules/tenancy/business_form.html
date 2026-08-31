@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Business Profile{% else %}Create Business Profile{% endif %} | SaaS Platform{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .form-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: #4f46e5;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Businesses
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Business Profile{% else %}Create Business Profile{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update tenant company settings, registration, compliance, and contact details{% else %}Set up a new tenant business profile on the SaaS platform{% endif %}
+        </p>
+    </div>
+</div>
+
+<form id="businessForm" class="space-y-6">
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active" onclick="switchTab('identity')">
+                <i class="fas fa-building text-xs"></i> Identity
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('compliance')">
+                <i class="fas fa-file-contract text-xs"></i> Registration & Compliance
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('address')">
+                <i class="fas fa-map-marker-alt text-xs"></i> Address
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('contact')">
+                <i class="fas fa-address-book text-xs"></i> Contact Information
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('banking')">
+                <i class="fas fa-university text-xs"></i> Banking
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('settings')">
+                <i class="fas fa-sliders-h text-xs"></i> Invoicing & Settings
+            </button>
+        </div>
+
+        <div class="p-6">
+            <!-- TAB 1: IDENTITY -->
+            <div id="tab-identity" class="tab-content space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="name_en">Business Name (English) <span class="text-red-500">*</span></label>
+                        <input type="text" id="name_en" name="name_en" class="form-input" required value="{{ business.name_en if business else '' }}" placeholder="e.g. Acme Corporation">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="short_name">Short Name</label>
+                        <input type="text" id="short_name" name="short_name" class="form-input" value="{{ business.short_name if business else '' }}" placeholder="e.g. Acme">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="legal_name">Legal Name</label>
+                        <input type="text" id="legal_name" name="legal_name" class="form-input" value="{{ business.legal_name if business else '' }}" placeholder="e.g. Acme Corporation Ltd.">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="company_tagline">Company Tagline</label>
+                        <input type="text" id="company_tagline" name="company_tagline" class="form-input" value="{{ business.company_tagline if business else '' }}" placeholder="e.g. Innovations for tomorrow">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea id="description" name="description" rows="3" class="form-input" placeholder="Brief description of the business...">{{ business.description if business else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: COMPLIANCE -->
+            <div id="tab-compliance" class="tab-content hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="cr_number">CR Number</label>
+                        <input type="text" id="cr_number" name="cr_number" class="form-input" value="{{ business.cr_number if business else '' }}" placeholder="Commercial Registration No.">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="vat_number">VAT Number</label>
+                        <input type="text" id="vat_number" name="vat_number" class="form-input" value="{{ business.vat_number if business else '' }}" placeholder="VAT Registration No.">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="tax_number">Tax Identification Number</label>
+                        <input type="text" id="tax_number" name="tax_number" class="form-input" value="{{ business.tax_number if business else '' }}" placeholder="TIN / Tax Number">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="license_number">Trade License Number</label>
+                        <input type="text" id="license_number" name="license_number" class="form-input" value="{{ business.license_number if business else '' }}" placeholder="License No.">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="license_expiry_date">License Expiry Date</label>
+                        <input type="date" id="license_expiry_date" name="license_expiry_date" class="form-input" value="{{ business.license_expiry_date if business and business.license_expiry_date else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="chamber_of_commerce_no">Chamber of Commerce No.</label>
+                        <input type="text" id="chamber_of_commerce_no" name="chamber_of_commerce_no" class="form-input" value="{{ business.chamber_of_commerce_no if business else '' }}">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="national_address">National Address</label>
+                        <input type="text" id="national_address" name="national_address" class="form-input" value="{{ business.national_address if business else '' }}" placeholder="Registered national address string">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ADDRESS -->
+            <div id="tab-address" class="tab-content hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="building_no">Building No</label>
+                        <input type="text" id="building_no" name="building_no" class="form-input" value="{{ business.building_no if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="street">Street</label>
+                        <input type="text" id="street" name="street" class="form-input" value="{{ business.street if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="district">District</label>
+                        <input type="text" id="district" name="district" class="form-input" value="{{ business.district if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="city">City</label>
+                        <input type="text" id="city" name="city" class="form-input" value="{{ business.city if business else 'Dhaka' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="state">State / Region</label>
+                        <input type="text" id="state" name="state" class="form-input" value="{{ business.state if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="country">Country</label>
+                        <input type="text" id="country" name="country" class="form-input" value="{{ business.country if business else 'Bangladesh' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="zip_code">ZIP / Postal Code</label>
+                        <input type="text" id="zip_code" name="zip_code" class="form-input" value="{{ business.zip_code if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="po_box">P.O. Box</label>
+                        <input type="text" id="po_box" name="po_box" class="form-input" value="{{ business.po_box if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="address_no">Address No</label>
+                        <input type="text" id="address_no" name="address_no" class="form-input" value="{{ business.address_no if business else '' }}">
+                    </div>
+                    <div class="form-group md:col-span-3">
+                        <label class="form-label" for="address_en">Full Address (English)</label>
+                        <textarea id="address_en" name="address_en" rows="2" class="form-input">{{ business.address_en if business else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: CONTACT -->
+            <div id="tab-contact" class="tab-content hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone" class="form-input" value="{{ business.phone if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="mobile">Mobile</label>
+                        <input type="text" id="mobile" name="mobile" class="form-input" value="{{ business.mobile if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="whatsapp">WhatsApp</label>
+                        <input type="text" id="whatsapp" name="whatsapp" class="form-input" value="{{ business.whatsapp if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="email">Primary Email</label>
+                        <input type="email" id="email" name="email" class="form-input" value="{{ business.email if business and business.email else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="support_email">Support Email</label>
+                        <input type="email" id="support_email" name="support_email" class="form-input" value="{{ business.support_email if business and business.support_email else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="sales_email">Sales Email</label>
+                        <input type="email" id="sales_email" name="sales_email" class="form-input" value="{{ business.sales_email if business and business.sales_email else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="invoice_email">Invoice Email</label>
+                        <input type="email" id="invoice_email" name="invoice_email" class="form-input" value="{{ business.invoice_email if business and business.invoice_email else '' }}">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="website">Website URL</label>
+                        <input type="text" id="website" name="website" class="form-input" value="{{ business.website if business else '' }}" placeholder="https://">
+                    </div>
+                </div>
+
+                <hr class="my-4 border-gray-100">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Contact Person</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="contact_person">Contact Person Name</label>
+                        <input type="text" id="contact_person" name="contact_person" class="form-input" value="{{ business.contact_person if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="contact_designation">Designation</label>
+                        <input type="text" id="contact_designation" name="contact_designation" class="form-input" value="{{ business.contact_designation if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="contact_mobile">Contact Person Mobile</label>
+                        <input type="text" id="contact_mobile" name="contact_mobile" class="form-input" value="{{ business.contact_mobile if business else '' }}">
+                    </div>
+                </div>
+
+                <hr class="my-4 border-gray-100">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Social Media Handles</h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="facebook_url">Facebook URL</label>
+                        <input type="text" id="facebook_url" name="facebook_url" class="form-input" value="{{ business.facebook_url if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="linkedin_url">LinkedIn URL</label>
+                        <input type="text" id="linkedin_url" name="linkedin_url" class="form-input" value="{{ business.linkedin_url if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="instagram_url">Instagram URL</label>
+                        <input type="text" id="instagram_url" name="instagram_url" class="form-input" value="{{ business.instagram_url if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="twitter_url">Twitter URL</label>
+                        <input type="text" id="twitter_url" name="twitter_url" class="form-input" value="{{ business.twitter_url if business else '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: BANKING -->
+            <div id="tab-banking" class="tab-content hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="bank_name">Bank Name</label>
+                        <input type="text" id="bank_name" name="bank_name" class="form-input" value="{{ business.bank_name if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="bank_branch">Branch Name</label>
+                        <input type="text" id="bank_branch" name="bank_branch" class="form-input" value="{{ business.bank_branch if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="bank_account_name">Account Name</label>
+                        <input type="text" id="bank_account_name" name="bank_account_name" class="form-input" value="{{ business.bank_account_name if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="bank_account_number">Account Number</label>
+                        <input type="text" id="bank_account_number" name="bank_account_number" class="form-input" value="{{ business.bank_account_number if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="bank_swift_code">SWIFT Code</label>
+                        <input type="text" id="bank_swift_code" name="bank_swift_code" class="form-input" value="{{ business.bank_swift_code if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="bank_iban">IBAN</label>
+                        <input type="text" id="bank_iban" name="bank_iban" class="form-input" value="{{ business.bank_iban if business else '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: SETTINGS -->
+            <div id="tab-settings" class="tab-content hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="currency_code">Currency Code</label>
+                        <input type="text" id="currency_code" name="currency_code" class="form-input" value="{{ business.currency_code if business else 'BDT' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="currency_symbol">Currency Symbol</label>
+                        <input type="text" id="currency_symbol" name="currency_symbol" class="form-input" value="{{ business.currency_symbol if business else '৳' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="vat_rate">VAT Rate (Decimal)</label>
+                        <input type="number" step="0.0001" id="vat_rate" name="vat_rate" class="form-input" value="{{ business.vat_rate if business else '0.1500' }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="invoice_prefix">Invoice Prefix</label>
+                        <input type="text" id="invoice_prefix" name="invoice_prefix" class="form-input" value="{{ business.invoice_prefix if business else 'INV' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="quotation_prefix">Quotation Prefix</label>
+                        <input type="text" id="quotation_prefix" name="quotation_prefix" class="form-input" value="{{ business.quotation_prefix if business else 'QT' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="credit_note_prefix">Credit Note Prefix</label>
+                        <input type="text" id="credit_note_prefix" name="credit_note_prefix" class="form-input" value="{{ business.credit_note_prefix if business else 'CN' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="purchase_order_prefix">Purchase Order Prefix</label>
+                        <input type="text" id="purchase_order_prefix" name="purchase_order_prefix" class="form-input" value="{{ business.purchase_order_prefix if business else 'PO' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="invoice_sequence_start">Invoice Sequence Start</label>
+                        <input type="number" id="invoice_sequence_start" name="invoice_sequence_start" class="form-input" value="{{ business.invoice_sequence_start if business else 1 }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="timezone">Timezone</label>
+                        <input type="text" id="timezone" name="timezone" class="form-input" value="{{ business.timezone if business else 'Asia/Dhaka' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="language">Language</label>
+                        <input type="text" id="language" name="language" class="form-input" value="{{ business.language if business else 'en' }}">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="is_active" name="is_active" class="form-checkbox" {% if not business or business.is_active %}checked{% endif %}>
+                        <span class="text-xs font-semibold text-gray-700">Business Active Status</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="e_invoice_enabled" name="e_invoice_enabled" class="form-checkbox" {% if not business or business.e_invoice_enabled %}checked{% endif %}>
+                        <span class="text-xs font-semibold text-gray-700">Enable E-Invoicing</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="zatca_enabled" name="zatca_enabled" class="form-checkbox" {% if not business or business.zatca_enabled %}checked{% endif %}>
+                        <span class="text-xs font-semibold text-gray-700">Enable ZATCA Compliance</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                    <div class="form-group">
+                        <label class="form-label" for="payment_terms">Payment Terms</label>
+                        <textarea id="payment_terms" name="payment_terms" rows="2" class="form-input">{{ business.payment_terms if business else '' }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="invoice_terms">Invoice Terms</label>
+                        <textarea id="invoice_terms" name="invoice_terms" rows="2" class="form-input">{{ business.invoice_terms if business else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Profile{% else %}Save Profile{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+    event.currentTarget.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+}
+
+document.getElementById('businessForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const isEdit = {% if is_edit %}true{% else %}false{% endif %};
+    const businessId = {% if business %}{{ business.id }}{% else %}null{% endif %};
+
+    const formData = new FormData(this);
+    const payload = {};
+
+    formData.forEach((value, key) => {
+        if (key === 'is_active' || key === 'e_invoice_enabled' || key === 'zatca_enabled') {
+            return;
+        }
+        if (value === '' && (key.endsWith('_email') || key === 'email' || key === 'license_expiry_date')) {
+            payload[key] = null;
+        } else {
+            payload[key] = value;
+        }
+    });
+
+    payload.is_active = document.getElementById('is_active').checked;
+    payload.e_invoice_enabled = document.getElementById('e_invoice_enabled').checked;
+    payload.zatca_enabled = document.getElementById('zatca_enabled').checked;
+    payload.invoice_sequence_start = parseInt(payload.invoice_sequence_start || 1);
+    payload.vat_rate = parseFloat(payload.vat_rate || 0.1500);
+
+    const url = isEdit ? '/business/' + businessId : '/business/';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'An error occurred while saving the profile.';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        Swal.fire({
+            title: 'Success!',
+            text: isEdit ? 'Business profile updated successfully.' : 'Business profile created successfully.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.href = '/';
+        });
+    })
+    .catch(err => {
+        Swal.fire('Error', err.message, 'error');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Profile' : 'Save Profile');
+    });
+});
+</script>
+{% endblock %}
