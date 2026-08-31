@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}SaaS Platform Admin{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* ============================================
+           Sidebar Theme Variables
+           ============================================ */
+        #sidebar {
+            /* Default (Light) theme values */
+            --sb-bg: #ffffff;
+            --sb-header-bg: #ffffff;
+            --sb-footer-bg: rgba(249, 250, 251, 0.7);
+            --sb-border: #f3f4f6;
+            --sb-border-strong: #e5e7eb;
+            --sb-text: #374151;
+            --sb-text-strong: #111827;
+            --sb-text-muted: #9ca3af;
+            --sb-text-faint: #6b7280;
+            --sb-hover-bg: #f3f4f6;
+            --sb-active-bg: #eef2ff;
+            --sb-active-text: #4338ca;
+            --sb-accent: #4f46e5;
+            --sb-accent-soft: #eef2ff;
+            --sb-avatar-bg: #e0e7ff;
+            --sb-avatar-text: #4338ca;
+            --sb-scrollbar: #d1d5db;
+            --sb-scrollbar-hover: #9ca3af;
+            --sb-tooltip-bg: #111827;
+            --sb-tooltip-text: #ffffff;
+            --sb-danger-hover-bg: #fef2f2;
+            background-color: var(--sb-bg);
+            border-color: var(--sb-border-strong);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Navy Blue theme (default) */
+        #sidebar[data-theme="navy"] {
+            --sb-bg: #101c3f;
+            --sb-header-bg: #0d1836;
+            --sb-footer-bg: rgba(255, 255, 255, 0.04);
+            --sb-border: rgba(255, 255, 255, 0.08);
+            --sb-border-strong: rgba(255, 255, 255, 0.08);
+            --sb-text: #cbd5e1;
+            --sb-text-strong: #ffffff;
+            --sb-text-muted: #7c8bb0;
+            --sb-text-faint: #94a3b8;
+            --sb-hover-bg: rgba(255, 255, 255, 0.07);
+            --sb-active-bg: #4f46e5;
+            --sb-active-text: #ffffff;
+            --sb-accent: #6366f1;
+            --sb-accent-soft: rgba(99, 102, 241, 0.18);
+            --sb-avatar-bg: rgba(99, 102, 241, 0.25);
+            --sb-avatar-text: #c7d2fe;
+            --sb-scrollbar: rgba(255, 255, 255, 0.15);
+            --sb-scrollbar-hover: rgba(255, 255, 255, 0.3);
+            --sb-tooltip-bg: #1e293b;
+            --sb-tooltip-text: #ffffff;
+        }
+
+        /* Slate theme */
+        #sidebar[data-theme="slate"] {
+            --sb-bg: #1e293b;
+            --sb-header-bg: #172033;
+            --sb-footer-bg: rgba(255, 255, 255, 0.04);
+            --sb-border: rgba(255, 255, 255, 0.08);
+            --sb-border-strong: rgba(255, 255, 255, 0.08);
+            --sb-text: #cbd5e1;
+            --sb-text-strong: #ffffff;
+            --sb-text-muted: #7c8898;
+            --sb-text-faint: #94a3b8;
+            --sb-hover-bg: rgba(255, 255, 255, 0.07);
+            --sb-active-bg: #475569;
+            --sb-active-text: #ffffff;
+            --sb-accent: #64748b;
+            --sb-accent-soft: rgba(100, 116, 139, 0.2);
+            --sb-avatar-bg: rgba(148, 163, 184, 0.25);
+            --sb-avatar-text: #e2e8f0;
+            --sb-scrollbar: rgba(255, 255, 255, 0.15);
+            --sb-scrollbar-hover: rgba(255, 255, 255, 0.3);
+            --sb-tooltip-bg: #0f172a;
+            --sb-tooltip-text: #ffffff;
+        }
+
+        /* Purple theme */
+        #sidebar[data-theme="purple"] {
+            --sb-bg: #1e1b3a;
+            --sb-header-bg: #191634;
+            --sb-footer-bg: rgba(255, 255, 255, 0.04);
+            --sb-border: rgba(255, 255, 255, 0.08);
+            --sb-border-strong: rgba(255, 255, 255, 0.08);
+            --sb-text: #d8d4f7;
+            --sb-text-strong: #ffffff;
+            --sb-text-muted: #8b84c2;
+            --sb-text-faint: #a5a0d9;
+            --sb-hover-bg: rgba(255, 255, 255, 0.07);
+            --sb-active-bg: #7c3aed;
+            --sb-active-text: #ffffff;
+            --sb-accent: #8b5cf6;
+            --sb-accent-soft: rgba(139, 92, 246, 0.2);
+            --sb-avatar-bg: rgba(139, 92, 246, 0.25);
+            --sb-avatar-text: #ddd6fe;
+            --sb-scrollbar: rgba(255, 255, 255, 0.15);
+            --sb-scrollbar-hover: rgba(255, 255, 255, 0.3);
+            --sb-tooltip-bg: #2e1065;
+            --sb-tooltip-text: #ffffff;
+        }
+
+        /* Emerald theme */
+        #sidebar[data-theme="emerald"] {
+            --sb-bg: #0b2b28;
+            --sb-header-bg: #082421;
+            --sb-footer-bg: rgba(255, 255, 255, 0.04);
+            --sb-border: rgba(255, 255, 255, 0.08);
+            --sb-border-strong: rgba(255, 255, 255, 0.08);
+            --sb-text: #cfe9e2;
+            --sb-text-strong: #ffffff;
+            --sb-text-muted: #6f9b90;
+            --sb-text-faint: #9ac4b8;
+            --sb-hover-bg: rgba(255, 255, 255, 0.07);
+            --sb-active-bg: #10b981;
+            --sb-active-text: #ffffff;
+            --sb-accent: #10b981;
+            --sb-accent-soft: rgba(16, 185, 129, 0.18);
+            --sb-avatar-bg: rgba(16, 185, 129, 0.25);
+            --sb-avatar-text: #a7f3d0;
+            --sb-scrollbar: rgba(255, 255, 255, 0.15);
+            --sb-scrollbar-hover: rgba(255, 255, 255, 0.3);
+            --sb-tooltip-bg: #064e3b;
+            --sb-tooltip-text: #ffffff;
+        }
+
+        /* Map existing Tailwind utility classes used inside the sidebar to theme variables */
+        #sidebar .bg-white { background-color: var(--sb-header-bg); }
+        #sidebar .border-gray-200 { border-color: var(--sb-border-strong); }
+        #sidebar .border-gray-100 { border-color: var(--sb-border); }
+        #sidebar .text-gray-900 { color: var(--sb-text-strong); }
+        #sidebar .text-gray-700 { color: var(--sb-text); }
+        #sidebar .text-gray-500 { color: var(--sb-text-faint); }
+        #sidebar .text-gray-400 { color: var(--sb-text-muted); }
+        #sidebar .hover\:bg-gray-100:hover { background-color: var(--sb-hover-bg); }
+        #sidebar .hover\:text-gray-700:hover { color: var(--sb-text-strong); }
+        #sidebar .hover\:text-indigo-600:hover { color: var(--sb-accent); }
+        #sidebar .hover\:bg-indigo-50:hover { background-color: var(--sb-accent-soft); }
+        #sidebar .bg-indigo-50 { background-color: var(--sb-active-bg); }
+        #sidebar .text-indigo-700 { color: var(--sb-active-text); }
+        #sidebar .bg-indigo-600 { background-color: var(--sb-accent); }
+        #sidebar .bg-indigo-100 { background-color: var(--sb-avatar-bg); color: var(--sb-avatar-text); }
+        #sidebar .bg-gray-50\/70 { background-color: var(--sb-footer-bg); }
+
+        /* Theme switcher */
+        .sidebar-theme-row {
+            padding: 0.6rem 1rem 0.75rem;
+            border-bottom: 1px solid var(--sb-border);
+        }
+
+        .sidebar-collapsed .sidebar-theme-row {
+            display: none;
+        }
+
+        .sidebar-theme-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--sb-text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar-theme-options {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-theme-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 9999px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 0 1px var(--sb-border-strong);
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            flex-shrink: 0;
+        }
+
+        .sidebar-theme-swatch:hover {
+            transform: scale(1.12);
+        }
+
+        .sidebar-theme-swatch.is-active {
+            box-shadow: 0 0 0 2px var(--sb-bg), 0 0 0 4px var(--sb-accent);
+        }
+
+        /* Sidebar */
+        .sidebar-collapsed {
+            width: 5.5rem !important;
+        }
+
+        @media (min-width: 1024px) {
+            #sidebar:not(.sidebar-collapsed) {
+                width: 16rem !important;
+            }
+        }
+
+        .sidebar-collapsed .sidebar-text {
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            display: none;
+        }
+
+        .sidebar-collapsed-only {
+            display: none;
+        }
+
+        .sidebar-collapsed .sidebar-collapsed-only {
+            display: block;
+        }
+
+        .sidebar-collapsed nav {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        .sidebar-collapsed nav a {
+            justify-content: center;
+        }
+
+        .sidebar-collapsed nav a i {
+            margin: 0;
+        }
+
+        .sidebar-collapsed nav a span.sidebar-text {
+            display: none;
+        }
+
+        /* Tooltip */
+        .sidebar-tooltip {
+            position: absolute;
+            left: 68px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--sb-tooltip-bg, #111827);
+            color: var(--sb-tooltip-text, #fff);
+            font-size: 12px;
+            font-weight: 500;
+            padding: 6px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            z-index: 999;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .sidebar-collapsed .sidebar-link:hover .sidebar-tooltip {
+            opacity: 1;
+            visibility: visible;
+            left: 92px;
+        }
+
+        .sidebar-collapsed > div,
+        .sidebar-collapsed nav {
+            overflow: visible !important;
+        }
+
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--sb-scrollbar, #d1d5db);
+            border-radius: 999px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--sb-scrollbar-hover, #9ca3af);
+        }
+
+        /* Sidebar Dropdown CSS */
+        .sidebar-dropdown-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            color: var(--sb-text, #4b5563);
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease;
+            outline: none;
+            cursor: pointer;
+        }
+        .sidebar-dropdown-toggle:hover {
+            background-color: var(--sb-hover-bg, #f3f4f6);
+            color: var(--sb-text-strong, #111827);
+        }
+        .sidebar-dropdown-toggle.active {
+            color: var(--sb-active-text, #4f46e5);
+        }
+        .sidebar-dropdown-menu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+            padding-left: 0.5rem;
+            margin-top: 0.25rem;
+        }
+        .sidebar-dropdown-toggle .dropdown-arrow {
+            transition: transform 0.2s ease;
+        }
+        .sidebar-dropdown.expanded .sidebar-dropdown-toggle .dropdown-arrow {
+            transform: rotate(90deg);
+        }
+        .sidebar-collapsed .sidebar-dropdown-toggle .dropdown-arrow {
+            display: none !important;
+        }
+        .sidebar-collapsed .sidebar-dropdown-menu {
+            display: none !important;
+            max-height: 0px !important;
+        }
+        .sidebar-collapsed .sidebar-dropdown-toggle {
+            justify-content: center;
+        }
+    </style>
+
+    {% block head %}{% endblock %}
+</head>
+
+<body class="bg-[#f5f7fb] flex h-screen overflow-hidden">
+
+    <!-- Mobile Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-40 hidden lg:hidden">
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" data-theme="navy"
+        class="fixed inset-y-0 left-0 bg-white border-r border-gray-200 z-50 transform -translate-x-full lg:translate-x-0 transition-all duration-300 ease-in-out lg:relative shadow-sm">
+
+        <div class="flex flex-col h-full overflow-hidden">
+
+            <!-- Logo -->
+            <div class="h-14 px-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+
+                <div class="flex items-center space-x-2 overflow-hidden">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
+                        <i class="fas fa-shield-alt text-white text-sm"></i>
+                    </div>
+
+                    <div class="sidebar-text transition-all duration-300">
+                        <h2 class="text-sm font-semibold text-gray-900 leading-none">
+                            SaaS Platform
+                        </h2>
+
+                        <p class="text-[10px] text-gray-500 mt-0.5">
+                            Multi-Tenant Admin
+                        </p>
+                    </div>
+                </div>
+
+                <button id="close-sidebar" class="lg:hidden text-gray-400 hover:text-gray-700 transition-colors">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+
+                <button id="toggle-sidebar"
+                    class="hidden lg:flex items-center justify-center w-7 h-7 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-all">
+                    <i class="fas fa-chevron-left transition-transform duration-300 text-xs" id="toggle-icon"></i>
+                </button>
+            </div>
+
+            <!-- Theme Switcher -->
+            <div class="sidebar-theme-row">
+                <p class="sidebar-theme-label sidebar-text">Sidebar Theme</p>
+                <div class="sidebar-theme-options">
+                    <button type="button" class="sidebar-theme-swatch" data-theme-option="light" title="Light"
+                        style="background:#ffffff;"></button>
+                    <button type="button" class="sidebar-theme-swatch" data-theme-option="navy" title="Navy Blue"
+                        style="background:linear-gradient(135deg,#101c3f,#4f46e5);"></button>
+                    <button type="button" class="sidebar-theme-swatch" data-theme-option="slate" title="Slate"
+                        style="background:linear-gradient(135deg,#1e293b,#64748b);"></button>
+                    <button type="button" class="sidebar-theme-swatch" data-theme-option="purple" title="Purple"
+                        style="background:linear-gradient(135deg,#1e1b3a,#8b5cf6);"></button>
+                    <button type="button" class="sidebar-theme-swatch" data-theme-option="emerald" title="Emerald"
+                        style="background:linear-gradient(135deg,#0b2b28,#10b981);"></button>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-4 custom-scrollbar">
+
+                <!-- TENANCY MODULE -->
+                <div class="sidebar-dropdown expanded" data-module="tenancy">
+                    <button type="button" class="sidebar-dropdown-toggle active">
+                        <span class="flex items-center">
+                            <i class="fas fa-building w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text">Tenancy</span>
+                        </span>
+                        <i class="fas fa-chevron-right text-[10px] dropdown-arrow"></i>
+                    </button>
+
+                    <div class="sidebar-dropdown-menu space-y-1">
+                        <a href="/" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 bg-indigo-50 text-indigo-700">
+                            <i class="fas fa-briefcase w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Business Profiles
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Business Profiles
+                            </span>
+                        </a>
+                    </div>
+                </div>
+
+            </nav>
+
+            <!-- User -->
+            <div class="p-3 border-t border-gray-100 bg-gray-50/70 shrink-0">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2 overflow-hidden">
+                        <div class="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold text-xs shrink-0">
+                            A
+                        </div>
+
+                        <div class="min-w-0 sidebar-text transition-opacity duration-300">
+                            <p class="text-[13px] font-semibold text-gray-900 truncate">
+                                Admin User
+                            </p>
+                            <p class="text-[11px] text-gray-500 truncate">
+                                System Administrator
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        <!-- Mobile Header -->
+        <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-5 shrink-0 lg:hidden">
+            <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-white text-sm"></i>
+                </div>
+                <span class="text-base font-semibold text-gray-900">
+                    SaaS Platform
+                </span>
+            </div>
+
+            <div class="w-6"></div>
+        </header>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-4 lg:p-5">
+            {% block content %}{% endblock %}
+        </div>
+
+    </main>
+
+    <!-- Scripts -->
+    <script>
+        // Sidebar Elements
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const openBtn = document.getElementById('open-sidebar');
+        const closeBtn = document.getElementById('close-sidebar');
+        const toggleBtn = document.getElementById('toggle-sidebar');
+        const toggleIcon = document.getElementById('toggle-icon');
+
+        // Sidebar Theme Switcher
+        const themeSwatches = document.querySelectorAll('.sidebar-theme-swatch');
+
+        function setSidebarTheme(theme) {
+            sidebar.setAttribute('data-theme', theme);
+            localStorage.setItem('sidebarTheme', theme);
+            themeSwatches.forEach(swatch => {
+                swatch.classList.toggle('is-active', swatch.getAttribute('data-theme-option') === theme);
+            });
+        }
+
+        themeSwatches.forEach(swatch => {
+            swatch.addEventListener('click', () => {
+                setSidebarTheme(swatch.getAttribute('data-theme-option'));
+            });
+        });
+
+        // Restore saved theme, defaulting to Navy Blue
+        setSidebarTheme(localStorage.getItem('sidebarTheme') || 'navy');
+
+        // Open Mobile Sidebar
+        if (openBtn) {
+            openBtn.addEventListener('click', () => {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            });
+        }
+
+        // Close Mobile Sidebar
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            });
+        }
+
+        // Overlay Click
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            });
+        }
+
+        // Sidebar Collapsible Dropdowns
+        document.querySelectorAll('.sidebar-dropdown-toggle').forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (sidebar && sidebar.classList.contains('sidebar-collapsed')) {
+                    return;
+                }
+                const dropdown = this.closest('.sidebar-dropdown');
+                const menu = dropdown.querySelector('.sidebar-dropdown-menu');
+                
+                if (dropdown.classList.contains('expanded')) {
+                    menu.style.maxHeight = '0px';
+                    dropdown.classList.remove('expanded');
+                } else {
+                    menu.style.maxHeight = menu.scrollHeight + 'px';
+                    dropdown.classList.add('expanded');
+                }
+            });
+        });
+
+        // Desktop Collapse
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('sidebar-collapsed');
+
+                if (sidebar.classList.contains('sidebar-collapsed')) {
+                    toggleIcon.style.transform = 'rotate(180deg)';
+                    localStorage.setItem('sidebarCollapsed', 'true');
+                    document.querySelectorAll('.sidebar-dropdown-menu').forEach(menu => {
+                        menu.style.maxHeight = '0px';
+                    });
+                } else {
+                    toggleIcon.style.transform = 'rotate(0deg)';
+                    localStorage.setItem('sidebarCollapsed', 'false');
+                }
+            });
+
+            if (localStorage.getItem('sidebarCollapsed') === 'true') {
+                sidebar.classList.add('sidebar-collapsed');
+                toggleIcon.style.transform = 'rotate(180deg)';
+                document.querySelectorAll('.sidebar-dropdown-menu').forEach(menu => {
+                    menu.style.maxHeight = '0px';
+                });
+            }
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+
+</html>

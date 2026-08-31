@@ -31,7 +31,7 @@ from app.modules.ecommerce.shipping.router import router as shipping_router
 # same way (open app/routers/<name>.py — real code vs. a single `from
 # app.modules...router import router` line) before migrating them too. Once
 # confirmed, app/routers/ can likely be deleted entirely.
-from app.routers import auth, business, tasks
+from app.routers import auth, business, business_views, tasks
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(business.router)
+app.include_router(business_views.router)
 
 #ecommerce module router
 app.include_router(brands_router)

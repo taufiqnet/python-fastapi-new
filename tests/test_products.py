@@ -124,6 +124,7 @@ async def test_product_models_and_relationships(async_db: AsyncSession):
     async_db.add(model)
     await async_db.commit()
     await async_db.refresh(model)
+    await async_db.refresh(brand)
 
     assert brand.id is not None
     assert len(brand.models) == 1
