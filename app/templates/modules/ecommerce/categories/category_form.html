@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Category{% else %}Create Category{% endif %} | SaaS Platform{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .form-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: #4f46e5;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/categories/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Categories
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Category{% else %}Create Category{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update category settings, parent hierarchy, and attribute templates{% else %}Set up a new e-commerce product category{% endif %}
+        </p>
+    </div>
+</div>
+
+<form id="categoryForm" class="space-y-6">
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active" onclick="switchTab('general')">
+                <i class="fas fa-tags text-xs"></i> Category Information
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('attributes')">
+                <i class="fas fa-list-check text-xs"></i> Attribute Templates
+            </button>
+        </div>
+
+        <div class="p-6">
+            <!-- TAB 1: GENERAL INFORMATION -->
+            <div id="tab-general" class="tab-content space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="name">Category Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" class="form-input" required value="{{ category.name if category else '' }}" placeholder="e.g. Electronics, Smartphones">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="slug">URL Slug <span class="text-red-500">*</span></label>
+                        <input type="text" id="slug" name="slug" class="form-input" required value="{{ category.slug if category else '' }}" placeholder="e.g. electronics, smartphones">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="parent_id">Parent Category</label>
+                        <select id="parent_id" name="parent_id" class="form-input">
+                            <option value="">— None (Root Category) —</option>
+                            {% for p in parent_categories %}
+                            <option value="{{ p.id }}" {% if category and category.parent_id == p.id %}selected{% endif %}>
+                                {{ p.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="business_id">Business Profile</label>
+                        <select id="business_id" name="business_id" class="form-input">
+                            <option value="">— Global (All Businesses) —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if category and category.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="icon">Icon Class (FontAwesome)</label>
+                        <input type="text" id="icon" name="icon" class="form-input" value="{{ category.icon if category and category.icon else '' }}" placeholder="e.g. fas fa-laptop, fas fa-mobile-alt">
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea id="description" name="description" rows="3" class="form-input" placeholder="Brief overview of products in this category...">{{ category.description if category and category.description else '' }}</textarea>
+                    </div>
+
+                    <div class="form-group md:col-span-2 pt-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="is_active" name="is_active" class="form-checkbox" {% if not category or category.is_active %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Category Active Status</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: ATTRIBUTE TEMPLATES -->
+            <div id="tab-attributes" class="tab-content hidden space-y-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Default Product Attribute Templates</h3>
+                        <p class="text-xs text-gray-500">Define specification attributes automatically assigned to products under this category</p>
+                    </div>
+                    <button type="button" id="btnAddAttr" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5">
+                        <i class="fas fa-plus text-[10px]"></i> Add Attribute
+                    </button>
+                </div>
+
+                <div id="attrContainer" class="space-y-3">
+                    {% if category and category.attribute_templates %}
+                    {% for attr in category.attribute_templates %}
+                    <div class="attr-row p-3 border border-gray-200 rounded-lg bg-gray-50/50 grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                        <div class="md:col-span-4 form-group">
+                            <label class="form-label">Attribute Name</label>
+                            <input type="text" class="attr-name form-input" value="{{ attr.attribute_name }}" placeholder="e.g. Color, RAM, Brand">
+                        </div>
+                        <div class="md:col-span-3 form-group">
+                            <label class="form-label">Type</label>
+                            <select class="attr-type form-input">
+                                <option value="text" {% if attr.attribute_type == 'text' %}selected{% endif %}>Text</option>
+                                <option value="select" {% if attr.attribute_type == 'select' %}selected{% endif %}>Select / Dropdown</option>
+                                <option value="number" {% if attr.attribute_type == 'number' %}selected{% endif %}>Number</option>
+                                <option value="boolean" {% if attr.attribute_type == 'boolean' %}selected{% endif %}>Boolean (Yes/No)</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-3 form-group">
+                            <label class="form-label">Options (comma separated)</label>
+                            <input type="text" class="attr-options form-input" value="{% if attr.options %}{% if attr.options is sequence and attr.options is not string %}{{ attr.options|join(', ') }}{% else %}{{ attr.options }}{% endif %}{% endif %}" placeholder="Red, Blue, Green">
+                        </div>
+                        <div class="md:col-span-2 flex items-center justify-between pt-4">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" class="attr-req form-checkbox" {% if attr.is_required %}checked{% endif %}>
+                                <span class="text-xs font-medium text-gray-700">Req.</span>
+                            </label>
+                            <button type="button" class="text-red-500 hover:text-red-700 text-xs p-1" onclick="this.closest('.attr-row').remove()">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/categories/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Category{% else %}Save Category{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+    event.currentTarget.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+}
+
+// Auto-generate slug from name if slug is empty
+document.getElementById('name').addEventListener('input', function() {
+    const slugInput = document.getElementById('slug');
+    if (!slugInput.dataset.userEdited && !{% if is_edit %}true{% else %}false{% endif %}) {
+        slugInput.value = this.value
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+});
+
+document.getElementById('slug').addEventListener('input', function() {
+    this.dataset.userEdited = "true";
+});
+
+// Add Attribute Row
+document.getElementById('btnAddAttr').addEventListener('click', function() {
+    const container = document.getElementById('attrContainer');
+    const row = document.createElement('div');
+    row.className = "attr-row p-3 border border-gray-200 rounded-lg bg-gray-50/50 grid grid-cols-1 md:grid-cols-12 gap-3 items-center";
+    row.innerHTML = `
+        <div class="md:col-span-4 form-group">
+            <label class="form-label">Attribute Name</label>
+            <input type="text" class="attr-name form-input" placeholder="e.g. Color, RAM, Brand">
+        </div>
+        <div class="md:col-span-3 form-group">
+            <label class="form-label">Type</label>
+            <select class="attr-type form-input">
+                <option value="text">Text</option>
+                <option value="select">Select / Dropdown</option>
+                <option value="number">Number</option>
+                <option value="boolean">Boolean (Yes/No)</option>
+            </select>
+        </div>
+        <div class="md:col-span-3 form-group">
+            <label class="form-label">Options (comma separated)</label>
+            <input type="text" class="attr-options form-input" placeholder="Red, Blue, Green">
+        </div>
+        <div class="md:col-span-2 flex items-center justify-between pt-4">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" class="attr-req form-checkbox">
+                <span class="text-xs font-medium text-gray-700">Req.</span>
+            </label>
+            <button type="button" class="text-red-500 hover:text-red-700 text-xs p-1" onclick="this.closest('.attr-row').remove()">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
+});
+
+document.getElementById('categoryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const isEdit = {% if is_edit %}true{% else %}false{% endif %};
+    const categoryId = "{% if category %}{{ category.id }}{% endif %}";
+
+    const name = document.getElementById('name').value;
+    const slug = document.getElementById('slug').value;
+    const parentIdVal = document.getElementById('parent_id').value;
+    const businessIdVal = document.getElementById('business_id').value;
+    const iconVal = document.getElementById('icon').value;
+    const descVal = document.getElementById('description').value;
+    const isActive = document.getElementById('is_active').checked;
+
+    const payload = {
+        name: name,
+        slug: slug,
+        is_active: isActive,
+        parent_id: parentIdVal ? parentIdVal : null,
+        business_id: businessIdVal ? parseInt(businessIdVal) : null,
+        icon: iconVal ? iconVal : null,
+        description: descVal ? descVal : null
+    };
+
+    // Parse attribute templates if creating
+    if (!isEdit) {
+        const attrTemplates = [];
+        document.querySelectorAll('.attr-row').forEach(row => {
+            const attrName = row.querySelector('.attr-name').value.trim();
+            if (attrName) {
+                const attrType = row.querySelector('.attr-type').value;
+                const optsRaw = row.querySelector('.attr-options').value.trim();
+                const isReq = row.querySelector('.attr-req').checked;
+                const options = optsRaw ? optsRaw.split(',').map(s => s.trim()) : null;
+
+                attrTemplates.push({
+                    attribute_name: attrName,
+                    attribute_type: attrType,
+                    is_required: isReq,
+                    options: options
+                });
+            }
+        });
+        payload.attribute_templates = attrTemplates;
+    }
+
+    const url = isEdit ? '/categories/' + categoryId : '/categories/';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'An error occurred while saving the category.';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        Swal.fire({
+            title: 'Success!',
+            text: isEdit ? 'Category updated successfully.' : 'Category created successfully.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.href = '/categories/manage';
+        });
+    })
+    .catch(err => {
+        Swal.fire('Error', err.message, 'error');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Category' : 'Save Category');
+    });
+});
+</script>
+{% endblock %}

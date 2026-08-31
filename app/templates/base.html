@@ -426,8 +426,8 @@
             <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-4 custom-scrollbar">
 
                 <!-- TENANCY MODULE -->
-                <div class="sidebar-dropdown expanded" data-module="tenancy">
-                    <button type="button" class="sidebar-dropdown-toggle active">
+                <div class="sidebar-dropdown {% if active_page == 'tenancy' or not active_page %}expanded{% endif %}" data-module="tenancy">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page == 'tenancy' or not active_page %}active{% endif %}">
                         <span class="flex items-center">
                             <i class="fas fa-building w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text">Tenancy</span>
@@ -436,13 +436,36 @@
                     </button>
 
                     <div class="sidebar-dropdown-menu space-y-1">
-                        <a href="/" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 bg-indigo-50 text-indigo-700">
+                        <a href="/" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'tenancy' or not active_page %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                             <i class="fas fa-briefcase w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Business Profiles
                             </span>
                             <span class="sidebar-tooltip">
                                 Business Profiles
+                            </span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ECOMMERCE MODULE -->
+                <div class="sidebar-dropdown {% if active_page == 'categories' %}expanded{% endif %}" data-module="ecommerce">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page == 'categories' %}active{% endif %}">
+                        <span class="flex items-center">
+                            <i class="fas fa-shopping-cart w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text">Ecommerce</span>
+                        </span>
+                        <i class="fas fa-chevron-right text-[10px] dropdown-arrow"></i>
+                    </button>
+
+                    <div class="sidebar-dropdown-menu space-y-1">
+                        <a href="/categories/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'categories' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-tags w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Category
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Category
                             </span>
                         </a>
                     </div>
@@ -577,6 +600,11 @@
                     dropdown.classList.add('expanded');
                 }
             });
+        });
+
+        // Initialize open dropdowns height on load
+        document.querySelectorAll('.sidebar-dropdown.expanded .sidebar-dropdown-menu').forEach(menu => {
+            menu.style.maxHeight = menu.scrollHeight + 'px';
         });
 
         // Desktop Collapse

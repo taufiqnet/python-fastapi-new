@@ -222,3 +222,39 @@ async def test_category_api_crud(client: AsyncClient):
     # Verify 404 after deletion
     get_again = await client.get(f"/categories/{cat_id}")
     assert get_again.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_category_html_views(client: AsyncClient):
+    # 1. Manage Page
+    manage_resp = await client.get("/categories/manage")
+    assert manage_resp.status_code == 200
+    assert "Category List" in manage_resp.text
+    assert "Ecommerce" in manage_resp.text
+
+    # 2. Create Page
+    create_page_resp = await client.get("/categories/create")
+    assert create_page_resp.status_code == 200
+    assert "Create Category" in create_page_resp.text
+
+    # 3. Create a category via API
+    create_resp = await client.post(
+        "/categories/",
+        json={
+            "name": "Laptops & Notebooks",
+            "slug": "laptops-notebooks",
+            "description": "Portable computers",
+        },
+    )
+    assert create_resp.status_code == 201
+    cat_id = create_resp.json()["id"]
+
+    # 4. Detail Page
+    detail_resp = await client.get(f"/categories/detail/{cat_id}")
+    assert detail_resp.status_code == 200
+    assert "Laptops" in detail_resp.text
+
+    # 5. Edit Page
+    edit_resp = await client.get(f"/categories/edit/{cat_id}")
+    assert edit_resp.status_code == 200
+    assert "Edit Category" in edit_resp.text
