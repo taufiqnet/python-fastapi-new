@@ -350,6 +350,132 @@ The original 7 principles still hold for Ecommerce (see Part A, Section 7 below)
 7. **`project_management/`** — most standalone; build whenever, doesn't block or get blocked by the others.
 
 ---
+
+## 10. Frontend Structure — HTML + TailwindCSS (server-rendered, Jinja2)
+
+*(Assumes the existing `base.html` — sidebar + layout — is a Jinja2 template rendered by FastAPI, not a separate SPA. This is the minimal-effort path: no separate frontend app, no API client layer, no build step beyond Tailwind itself. If `base.html` is actually served from a different stack, say so and this section changes.)*
+
+**Rule of thumb:** `templates/` mirrors `app/modules/` 1:1. If a router lives at `modules/pharmacy/prescriptions/router.py`, its pages live at `templates/pharmacy/prescriptions/*.html`. Zero guessing about where a page belongs.
+
+```
+app/
+├── templates/
+│   ├── base.html                     # ← your existing layout, unchanged
+│   │
+│   ├── partials/                     # cross-module chrome
+│   │   ├── _sidebar.html             # loops over active modules — see below
+│   │   ├── _topbar.html
+│   │   └── _flash_messages.html
+│   │
+│   ├── components/                   # ← the actual time-saver: build once, reuse everywhere
+│   │   ├── _table.html               # generic data table w/ sort headers, row actions
+│   │   ├── _pagination.html
+│   │   ├── _form_field.html          # label + input + error, one macro for every form
+│   │   ├── _badge.html               # status pills (uses your enums: active/pending/etc.)
+│   │   ├── _modal.html               # confirm-delete, quick-create
+│   │   ├── _empty_state.html
+│   │   └── _stat_card.html           # dashboard KPI tiles
+│   │
+│   ├── core/
+│   │   ├── auth/ (login.html, register.html)
+│   │   └── dashboard.html            # cross-module landing page, uses _stat_card
+│   │
+│   └── modules/                      # ← mirrors app/modules/ exactly
+│       ├── ecommerce/
+│       │   ├── catalog/  (list.html, detail.html, form.html)
+│       │   ├── orders/   (list.html, detail.html)
+│       │   └── ...
+│       ├── inventory_management/ (list.html, form.html)
+│       ├── pharmacy/
+│       │   ├── prescriptions/
+│       │   └── inventory/
+│       └── ... (one folder per module, same names as app/modules/)
+│
+└── static/
+    ├── css/
+    │   ├── input.css                 # @tailwind base/components/utilities + your custom classes
+    │   └── output.css                # compiled — Tailwind CLI, no bundler needed
+    └── js/
+        └── app.js                    # Alpine.js or htmx, if you want interactivity without a framework
+```
+
+### Why `components/` is the actual leverage point
+Almost every screen across 7 modules is one of three shapes: **list** (table + filters + pagination), **detail** (read-only fields + related records), or **form** (create/edit). Build each of `_table.html`, `_form_field.html`, `_pagination.html`, `_badge.html` **once**, and every module's `list.html`/`form.html` becomes a thin Jinja2 file that just passes data in — not hand-rolled markup 40 times.
+
+```jinja2
+{# templates/components/_table.html #}
+{% macro data_table(headers, rows) %}
+<div class="overflow-x-auto rounded-lg border border-gray-200">
+  <table class="min-w-full divide-y divide-gray-200">
+    <thead class="bg-gray-50">
+      <tr>
+        {% for h in headers %}
+        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">{{ h }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {{ caller() }}
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+```
+
+```jinja2
+{# templates/modules/pharmacy/prescriptions/list.html #}
+{% extends "base.html" %}
+{% from "components/_table.html" import data_table %}
+{% block content %}
+  {% call data_table(["Patient", "Drug", "Status", ""]) %}
+    {% for p in prescriptions %}
+    <tr class="hover:bg-gray-50">
+      <td class="px-4 py-2">{{ p.patient_name }}</td>
+      <td class="px-4 py-2">{{ p.drug.name }}</td>
+      <td class="px-4 py-2">{{ badge(p.status) }}</td>
+      <td class="px-4 py-2 text-right"><a href="/prescriptions/{{ p.id }}">View</a></td>
+    </tr>
+    {% endfor %}
+  {% endcall %}
+{% endblock %}
+```
+
+### Sidebar driven by entitlements, not hand-maintained
+Reuse the same check `require_module` runs so the sidebar never drifts from what routes are actually gated:
+
+```jinja2
+{# templates/partials/_sidebar.html #}
+{% for module in nav_modules %}
+  {% if business.has_module(module.key) %}
+    <a href="{{ module.url }}" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-100">
+      {{ module.icon }} {{ module.label }}
+    </a>
+  {% endif %}
+{% endfor %}
+```
+`nav_modules` is one small list in `app/core/tenancy/nav.py` (key, label, icon, url) — add a module there once, it appears in every business's sidebar automatically if entitled.
+
+### Router wiring (minimal effort)
+Keep each module's existing `router.py` for JSON API endpoints; add a sibling `views.py` per module for the HTML pages, mounted under the same `require_module(...)` dependency:
+
+```python
+# app/modules/pharmacy/prescriptions/views.py
+router = APIRouter(dependencies=[Depends(require_module("pharmacy"))])
+templates = Jinja2Templates(directory="app/templates")
+
+@router.get("/prescriptions")
+async def list_prescriptions(request: Request, db=Depends(get_db)):
+    items = await service.list_prescriptions(db)
+    return templates.TemplateResponse("modules/pharmacy/prescriptions/list.html",
+                                       {"request": request, "prescriptions": items})
+```
+
+### Effort-minimizing defaults
+- **Tailwind:** compile once with the Tailwind CLI (`npx tailwindcss -i input.css -o output.css --watch`) — no webpack/vite needed for a server-rendered app.
+- **Interactivity:** reach for **htmx** (form submits/partial swaps without page reloads) or **Alpine.js** (dropdowns, modals, tabs) before reaching for a JS framework — either drops into `base.html` as one `<script>` tag.
+- **New module checklist:** add `templates/modules/<name>/` mirroring its `app/modules/<name>/` routers, add one entry to `nav_modules`, reuse `components/` for every screen. No new patterns to invent per module.
+
+---
 ---
 
 # Part A — Ecommerce Module (original spec, unchanged)

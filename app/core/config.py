@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     db_name: str
     db_user: str
     db_password: str
-    db_host: str
+    db_host: str = "localhost"
     db_port: int = 5432
 
     app_host: str = "0.0.0.0"

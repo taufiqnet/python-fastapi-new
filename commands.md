@@ -33,6 +33,11 @@ docker compose exec api alembic revision --autogenerate -m "add business_profile
 docker compose exec api alembic upgrade head
 
 
+docker-compose up --build -d
+docker-compose exec api pytest
+docker-compose exec api pytest tests/test_products.py -v
+
+
 **Find all the commands in the terminal executed:**
 notepad (Get-PSReadLineOption).HistorySavePath
 
