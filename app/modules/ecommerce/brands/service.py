@@ -87,6 +87,17 @@ class BrandService:
         self.repository.delete(db, brand)
 
     # --- ProductModel Logic ---
+    def get_all_models(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 500,
+        is_active: bool | None = None,
+    ) -> list[ProductModel]:
+        return self.repository.get_all_models(
+            db, skip=skip, limit=limit, is_active=is_active
+        )
+
     def get_brand_models(
         self,
         db: Session,

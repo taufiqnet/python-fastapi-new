@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Product{% else %}Create Product{% endif %} | SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <a href="/products" class="w-9 h-9 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+                <i class="fas fa-arrow-left text-sm"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{% if is_edit %}Edit Product{% else %}Create Product{% endif %}</h1>
+                <p class="text-xs text-gray-500 mt-0.5 font-medium">Configure product item details</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <form id="productForm" class="space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Product Title <span class="text-red-500">*</span></label>
+                    <input type="text" id="title" name="title" required value="{{ product.title if product else '' }}" placeholder="e.g. iPhone 15 Pro Max" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Slug <span class="text-red-500">*</span></label>
+                    <input type="text" id="slug" name="slug" required value="{{ product.slug if product else '' }}" placeholder="e.g. iphone-15-pro-max" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono outline-none focus:border-indigo-600 transition-colors">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Business Profile</label>
+                    <select id="business_id" name="business_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
+                        <option value="">-- Select Business --</option>
+                        {% for b in businesses %}
+                        <option value="{{ b.id }}" {% if product and product.business_id == b.id %}selected{% endif %}>{{ b.name_en }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Category</label>
+                    <select id="category_id" name="category_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
+                        <option value="">-- Select Category --</option>
+                        {% for c in categories %}
+                        <option value="{{ c.id }}" {% if product and product.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Brand</label>
+                    <select id="brand_id" name="brand_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
+                        <option value="">-- Select Brand --</option>
+                        {% for b in brands %}
+                        <option value="{{ b.id }}" {% if product and product.brand_id == b.id %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Status</label>
+                    <select id="status" name="status" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs capitalize outline-none focus:border-indigo-600 transition-colors">
+                        {% for s in statuses %}
+                        <option value="{{ s }}" {% if product and product.status.value == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Condition</label>
+                    <select id="condition" name="condition" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs capitalize outline-none focus:border-indigo-600 transition-colors">
+                        {% for c in conditions %}
+                        <option value="{{ c }}" {% if product and product.condition.value == c %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Product Type</label>
+                    <select id="product_type" name="product_type" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs capitalize outline-none focus:border-indigo-600 transition-colors">
+                        {% for t in product_types %}
+                        <option value="{{ t }}" {% if product and product.product_type.value == t %}selected{% endif %}>{{ t }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
+                <textarea id="description" name="description" rows="4" placeholder="Product overview..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">{{ product.description if product and product.description else '' }}</textarea>
+            </div>
+
+            <div class="flex items-center gap-6 pt-2">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="is_featured" name="is_featured" {% if product and product.is_featured %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-gray-300">
+                    <label for="is_featured" class="text-xs font-medium text-gray-700">Featured Product</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="requires_shipping" name="requires_shipping" {% if not product or product.requires_shipping %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-gray-300">
+                    <label for="requires_shipping" class="text-xs font-medium text-gray-700">Requires Shipping</label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                <a href="/products" class="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg text-xs transition-colors">Cancel</a>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-colors shadow-sm">
+                    {% if is_edit %}Save Changes{% else %}Create Product{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const productId = "{{ product.id if product else '' }}";
+
+document.getElementById('title').addEventListener('input', function() {
+    if (!isEdit) {
+        document.getElementById('slug').value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+});
+
+document.getElementById('productForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const payload = {
+        title: document.getElementById('title').value,
+        slug: document.getElementById('slug').value,
+        business_id: document.getElementById('business_id').value ? parseInt(document.getElementById('business_id').value) : null,
+        category_id: document.getElementById('category_id').value || null,
+        brand_id: document.getElementById('brand_id').value || null,
+        status: document.getElementById('status').value,
+        condition: document.getElementById('condition').value,
+        product_type: document.getElementById('product_type').value,
+        description: document.getElementById('description').value || null,
+        is_featured: document.getElementById('is_featured').checked,
+        requires_shipping: document.getElementById('requires_shipping').checked
+    };
+
+    const url = isEdit ? '/products/' + productId : '/products/';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+        const resp = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (resp.ok) {
+            Swal.fire({
+                title: isEdit ? 'Updated!' : 'Created!',
+                text: 'Product successfully saved.',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => window.location.href = '/products');
+        } else {
+            const err = await resp.json();
+            Swal.fire('Error', err.detail || 'Failed to save product', 'error');
+        }
+    } catch (e) {
+        Swal.fire('Error', e.message, 'error');
+    }
+});
+</script>
+{% endblock %}

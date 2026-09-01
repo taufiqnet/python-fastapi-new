@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.title }} | Product Details{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <a href="/products" class="w-9 h-9 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+                <i class="fas fa-arrow-left text-sm"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ product.title }}</h1>
+                <p class="text-xs text-gray-500 mt-0.5 font-medium">Product specification and metadata</p>
+            </div>
+        </div>
+        <a href="/products/edit/{{ product.id }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-edit"></i> Edit Product
+        </a>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
+        <div class="flex items-center gap-4 pb-6 border-b border-gray-100">
+            <div class="w-16 h-16 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl font-bold border border-indigo-100">
+                <i class="fas fa-box"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">{{ product.title }}</h2>
+                <p class="text-xs text-gray-500 font-mono mt-0.5">Slug: {{ product.slug }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+            <div class="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                <span class="text-gray-500 font-medium block mb-1">Status</span>
+                <span class="font-semibold capitalize text-gray-900">{{ product.status.value }}</span>
+            </div>
+            <div class="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                <span class="text-gray-500 font-medium block mb-1">Condition</span>
+                <span class="font-semibold capitalize text-gray-900">{{ product.condition.value }}</span>
+            </div>
+            <div class="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                <span class="text-gray-500 font-medium block mb-1">Type</span>
+                <span class="font-semibold capitalize text-gray-900">{{ product.product_type.value }}</span>
+            </div>
+            <div class="p-3 bg-gray-50/80 rounded-lg border border-gray-100">
+                <span class="text-gray-500 font-medium block mb-1">Business Profile</span>
+                <span class="font-semibold text-gray-900">{{ business.name_en if business else '—' }}</span>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-gray-100 space-y-2">
+            <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider text-gray-500">Description</h3>
+            <p class="text-xs text-gray-700 leading-relaxed">{{ product.description or 'No description provided.' }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

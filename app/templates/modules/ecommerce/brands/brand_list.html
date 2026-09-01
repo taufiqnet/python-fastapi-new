@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Brands | SaaS Platform{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<style>
+    :root { --indigo: #4f46e5; }
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green   { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.yellow  { background: #fefce8; color: #ca8a04; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
+    .toolbar-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
+    .toolbar-search input { width: 100%; padding: 7px 12px 7px 30px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+    .toolbar select { padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; cursor: pointer; outline: none; }
+
+    .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table.dataTable { border-collapse: collapse !important; }
+    table.dataTable thead tr th { background: #f9fafb !important; border-bottom: 1px solid #e5e7eb !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; color: #6b7280 !important; padding: 10px 14px !important; }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+    .dataTables_filter, .dataTables_length { display: none !important; }
+
+    .badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+    .badge-active   { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-inactive { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+
+    .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none; }
+    .action-btn.view { color: #10b981; } .action-btn.view:hover { background: #ecfdf5; color: #047857; }
+    .action-btn.edit { color: #4f46e5; } .action-btn.edit:hover { background: #eef2ff; color: #3730a3; }
+    .action-btn.delete { color: #ef4444; } .action-btn.delete:hover { background: #fef2f2; color: #b91c1c; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Brands</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Manage and view e-commerce brands and manufacturers</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="/brands/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-plus"></i> Create Brand
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-copyright"></i></div>
+        <div>
+            <div class="stat-label">Total Brands</div>
+            <div class="stat-value">{{ total_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+        <div>
+            <div class="stat-label">Active</div>
+            <div class="stat-value">{{ active_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-pause-circle"></i></div>
+        <div>
+            <div class="stat-label">Inactive</div>
+            <div class="stat-value">{{ inactive_count }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by name, slug, description...">
+    </div>
+    <select id="filterStatus">
+        <option value="">All Statuses</option>
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
+    </select>
+    <button type="button" id="btnClearFilters" class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+        <i class="fas fa-times-circle text-xs"></i> Clear Filters
+    </button>
+</div>
+
+<div class="table-card">
+    <div class="overflow-x-auto">
+        <table id="brandTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Brand Name</th>
+                    <th>Slug</th>
+                    <th>Business Profile</th>
+                    <th>Status</th>
+                    <th style="width:110px">Actions</th>
+                    <th class="hidden"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in brands %}
+                <tr id="brand-row-{{ b.id }}">
+                    <td>
+                        <div class="flex items-center gap-2">
+                            {% if b.logo_url %}
+                            <img src="{{ b.logo_url }}" class="w-7 h-7 rounded object-cover border border-gray-200">
+                            {% else %}
+                            <div class="w-7 h-7 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs"><i class="fas fa-copyright"></i></div>
+                            {% endif %}
+                            <span class="font-semibold text-gray-900">{{ b.name }}</span>
+                        </div>
+                    </td>
+                    <td class="text-xs text-gray-600 font-mono">{{ b.slug }}</td>
+                    <td class="text-xs text-gray-600">{{ biz_map.get(b.business_id, '—') }}</td>
+                    <td>
+                        {% if b.is_active %}
+                        <span class="badge badge-active"><i class="fas fa-circle text-[6px] mr-1"></i> Active</span>
+                        {% else %}
+                        <span class="badge badge-inactive"><i class="fas fa-circle text-[6px] mr-1"></i> Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <a href="/brands/detail/{{ b.id }}" class="action-btn view" title="View Brand"><i class="fas fa-eye"></i></a>
+                            <a href="/brands/edit/{{ b.id }}" class="action-btn edit" title="Edit Brand"><i class="fas fa-edit"></i></a>
+                            <button type="button" class="action-btn delete" onclick="deleteBrand('{{ b.id }}', '{{ b.name|e }}')" title="Delete Brand"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </td>
+                    <td class="hidden">{% if b.is_active %}Active{% else %}Inactive{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script>
+$(document).ready(function () {
+    var table = $('#brandTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        dom: 'rtp',
+        columnDefs: [{ targets: [5], visible: false, searchable: true }],
+        order: []
+    });
+
+    $('#customSearch').on('input', function () { table.search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(5).search(this.value).draw(); });
+    $('#btnClearFilters').on('click', function() {
+        $('#customSearch').val('');
+        $('#filterStatus').val('');
+        table.search('').columns().search('').draw();
+    });
+});
+
+function deleteBrand(id, name) {
+    Swal.fire({
+        title: 'Delete Brand?',
+        text: 'Are you sure you want to delete "' + name + '"? This will remove associated models and references.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Yes, Delete'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/brands/' + id, { method: 'DELETE' }).then(response => {
+                if (response.ok) {
+                    Swal.fire('Deleted!', 'Brand deleted successfully.', 'success').then(() => window.location.reload());
+                } else {
+                    Swal.fire('Error', 'Failed to delete brand.', 'error');
+                }
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

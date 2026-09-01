@@ -25,7 +25,16 @@ from app.modules.ecommerce.reviews.router import router as reviews_router
 from app.modules.ecommerce.search.router import router as search_router
 from app.modules.ecommerce.shipping.router import router as shipping_router
 
-from app.routers import auth, business, business_views, category_views, tasks
+from app.routers import (
+    auth,
+    brand_views,
+    business,
+    business_views,
+    category_views,
+    model_views,
+    product_views,
+    tasks,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +60,9 @@ app.add_middleware(
 
 app.include_router(business_views.router)
 app.include_router(category_views.router)
+app.include_router(brand_views.router)
+app.include_router(model_views.router)
+app.include_router(product_views.router)
 app.include_router(auth.router)
 app.include_router(business.router)
 

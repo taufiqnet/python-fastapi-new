@@ -231,6 +231,10 @@ async def test_category_html_views(client: AsyncClient):
     assert manage_resp.status_code == 200
     assert "Category List" in manage_resp.text
     assert "Ecommerce" in manage_resp.text
+    assert "Category" in manage_resp.text
+    assert "Brand" in manage_resp.text
+    assert "Model" in manage_resp.text
+    assert "Product" in manage_resp.text
 
     # 2. Create Page
     create_page_resp = await client.get("/categories/create")

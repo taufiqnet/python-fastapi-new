@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Brand{% else %}Create Brand{% endif %} | SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center gap-3">
+            <a href="/brands" class="w-9 h-9 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+                <i class="fas fa-arrow-left text-sm"></i>
+            </a>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{% if is_edit %}Edit Brand{% else %}Create Brand{% endif %}</h1>
+                <p class="text-xs text-gray-500 mt-0.5 font-medium">Configure e-commerce brand details</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <form id="brandForm" class="space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Brand Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="name" name="name" required value="{{ brand.name if brand else '' }}" placeholder="e.g. Apple" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Slug <span class="text-red-500">*</span></label>
+                    <input type="text" id="slug" name="slug" required value="{{ brand.slug if brand else '' }}" placeholder="e.g. apple" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono outline-none focus:border-indigo-600 transition-colors">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Business Profile</label>
+                    <select id="business_id" name="business_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
+                        <option value="">-- Global / Platform-wide --</option>
+                        {% for b in businesses %}
+                        <option value="{{ b.id }}" {% if brand and brand.business_id == b.id %}selected{% endif %}>{{ b.name_en }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Logo URL</label>
+                    <input type="url" id="logo_url" name="logo_url" value="{{ brand.logo_url if brand and brand.logo_url else '' }}" placeholder="https://example.com/logo.png" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
+                <textarea id="description" name="description" rows="3" placeholder="Brief brand summary..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">{{ brand.description if brand and brand.description else '' }}</textarea>
+            </div>
+
+            <div class="flex items-center gap-2 pt-2">
+                <input type="checkbox" id="is_active" name="is_active" {% if not brand or brand.is_active %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                <label for="is_active" class="text-xs font-medium text-gray-700">Active Brand</label>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                <a href="/brands" class="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg text-xs transition-colors">Cancel</a>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-colors shadow-sm">
+                    {% if is_edit %}Save Changes{% else %}Create Brand{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const isEdit = {{ 'true' if is_edit else 'false' }};
+const brandId = "{{ brand.id if brand else '' }}";
+
+document.getElementById('name').addEventListener('input', function() {
+    if (!isEdit) {
+        document.getElementById('slug').value = this.value.toLowerCase().replace(/[^a-z0-0]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    }
+});
+
+document.getElementById('brandForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const payload = {
+        name: document.getElementById('name').value,
+        slug: document.getElementById('slug').value,
+        business_id: document.getElementById('business_id').value ? parseInt(document.getElementById('business_id').value) : null,
+        logo_url: document.getElementById('logo_url').value || null,
+        description: document.getElementById('description').value || null,
+        is_active: document.getElementById('is_active').checked
+    };
+
+    const url = isEdit ? '/brands/' + brandId : '/brands/';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+        const resp = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (resp.ok) {
+            Swal.fire({
+                title: isEdit ? 'Updated!' : 'Created!',
+                text: 'Brand successfully saved.',
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => window.location.href = '/brands');
+        } else {
+            const err = await resp.json();
+            Swal.fire('Error', err.detail || 'Failed to save brand', 'error');
+        }
+    } catch (e) {
+        Swal.fire('Error', e.message, 'error');
+    }
+});
+</script>
+{% endblock %}

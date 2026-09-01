@@ -71,6 +71,18 @@ class BrandRepository:
     def get_model_by_slug(self, db: Session, slug: str) -> ProductModel | None:
         return db.query(ProductModel).filter(ProductModel.slug == slug).first()
 
+    def get_all_models(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 500,
+        is_active: bool | None = None,
+    ) -> list[ProductModel]:
+        query = db.query(ProductModel)
+        if is_active is not None:
+            query = query.filter(ProductModel.is_active == is_active)
+        return query.offset(skip).limit(limit).all()
+
     def get_models_by_brand(
         self,
         db: Session,
