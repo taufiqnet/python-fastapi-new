@@ -424,22 +424,15 @@ function deleteCategory(id, name) {
                 headers: { 'Accept': 'application/json' }
             }).then(response => {
                 if (response.ok || response.status === 204) {
-                    Swal.fire({
-                        title: 'Deleted!',
-                        text: 'Category has been deleted.',
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        window.location.reload();
-                    });
+                    showSuccessToast('Category Deleted', '"' + name + '" has been removed.');
+                    setTimeout(() => window.location.reload(), 1200);
                 } else {
                     return response.json().then(err => {
                         throw new Error(err.detail || 'Failed to delete category');
                     });
                 }
             }).catch(err => {
-                Swal.fire('Error', err.message, 'error');
+                showErrorAlert('Delete Failed', err.message);
             });
         }
     });

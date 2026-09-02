@@ -185,18 +185,14 @@ document.getElementById('brandForm').addEventListener('submit', function(e) {
         return data;
     })
     .then(data => {
-        Swal.fire({
-            title: 'Success!',
-            text: isEdit ? 'Brand updated successfully.' : 'Brand created successfully.',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => {
-            window.location.href = '/brands';
-        });
+        showSuccessToast(
+            isEdit ? 'Brand Updated' : 'Brand Created',
+            isEdit ? 'Changes saved successfully.' : 'New brand added successfully.'
+        );
+        setTimeout(() => { window.location.href = '/brands'; }, 1200);
     })
     .catch(err => {
-        Swal.fire('Error', err.message, 'error');
+        showErrorAlert('Save Failed', err.message);
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Brand' : 'Save Brand');
     });

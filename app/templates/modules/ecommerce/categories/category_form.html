@@ -348,18 +348,14 @@ document.getElementById('categoryForm').addEventListener('submit', function(e) {
         return data;
     })
     .then(data => {
-        Swal.fire({
-            title: 'Success!',
-            text: isEdit ? 'Category updated successfully.' : 'Category created successfully.',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => {
-            window.location.href = '/categories/manage';
-        });
+        showSuccessToast(
+            isEdit ? 'Category Updated' : 'Category Created',
+            isEdit ? 'Changes saved successfully.' : 'New category added successfully.'
+        );
+        setTimeout(() => { window.location.href = '/categories/manage'; }, 1200);
     })
     .catch(err => {
-        Swal.fire('Error', err.message, 'error');
+        showErrorAlert('Save Failed', err.message);
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Category' : 'Save Category');
     });

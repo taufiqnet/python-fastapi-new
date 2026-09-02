@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ department.name }} | Department Details{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <div class="flex items-center gap-3">
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ department.name }}</h1>
+                {% if department.is_active %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">Active</span>
+                {% else %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200">Inactive</span>
+                {% endif %}
+            </div>
+            <p class="text-xs text-gray-500 mt-0.5 font-mono">Slug: {{ department.slug }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/departments/manage" class="px-4 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <a href="/departments/edit/{{ department.id }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="md:col-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2">Overview</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 block mb-0.5">Department ID</label>
+                    <span class="text-xs font-mono text-gray-800 bg-gray-50 px-2 py-1 rounded border">{{ department.id }}</span>
+                </div>
+
+                <div>
+                    <label class="text-xs font-semibold text-gray-400 block mb-0.5">Description</label>
+                    <p class="text-sm text-gray-700">{% if department.description %}{{ department.description }}{% else %}<span class="italic text-gray-400">No description provided</span>{% endif %}</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 pt-2">
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-0.5">Multiple Heads Allowed</label>
+                        <span class="text-xs font-semibold {% if department.multiple_heads_allowed %}text-indigo-600{% else %}text-gray-600{% endif %}">
+                            {% if department.multiple_heads_allowed %}Yes{% else %}No{% endif %}
+                        </span>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-semibold text-gray-400 block mb-0.5">Business Profile</label>
+                        <span class="text-xs font-medium text-gray-800">
+                            {% if business %}{{ business.name_en }}{% else %}Global / All Businesses{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 border-b pb-2">Associated Job Titles</h2>
+            
+            {% if department.job_titles %}
+            <ul class="divide-y divide-gray-100">
+                {% for jt in department.job_titles %}
+                <li class="py-2.5 flex items-center justify-between">
+                    <div>
+                        <a href="/job-titles/detail/{{ jt.id }}" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800">{{ jt.name }}</a>
+                        {% if jt.short_name %}
+                        <span class="text-[10px] text-gray-400 block">({{ jt.short_name }})</span>
+                        {% endif %}
+                    </div>
+                    {% if jt.is_active %}
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    {% else %}
+                    <span class="w-2 h-2 rounded-full bg-gray-300"></span>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-xs text-gray-400 italic">No job titles assigned to this department yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

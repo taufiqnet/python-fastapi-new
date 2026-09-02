@@ -49,6 +49,10 @@ from app.modules.ecommerce.notifications.models import (  # noqa: F401
     Notification,
     NotificationPreference,
 )
+from app.modules.hr_payroll.organization.models import (  # noqa: F401
+    Department,
+    JobTitle,
+)
 
 # TODO: Product.business_id and several other models FK to a business/tenant
 # table (e.g. BusinessProfile). If that model isn't imported somewhere before

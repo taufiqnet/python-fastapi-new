@@ -448,6 +448,38 @@
                     </div>
                 </div>
 
+                <!-- HR & PAYROLL MODULE -->
+                <div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles'] %}expanded{% endif %}" data-module="hr_payroll">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles'] %}active{% endif %}">
+                        <span class="flex items-center">
+                            <i class="fas fa-users-cog w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text">HR & Payroll</span>
+                        </span>
+                        <i class="fas fa-chevron-right text-[10px] dropdown-arrow"></i>
+                    </button>
+
+                    <div class="sidebar-dropdown-menu space-y-1">
+                        <a href="/departments/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'departments' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-sitemap w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Department
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Department
+                            </span>
+                        </a>
+                        <a href="/job-titles/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'job_titles' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-user-tie w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Job Title
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Job Title
+                            </span>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- ECOMMERCE MODULE -->
                 <div class="sidebar-dropdown {% if active_page in ['categories', 'brands', 'models', 'products'] %}expanded{% endif %}" data-module="ecommerce">
                     <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['categories', 'brands', 'models', 'products'] %}active{% endif %}">
@@ -659,6 +691,47 @@
                 });
             }
         }
+
+        // SweetAlert2 Helper Notifications
+        const SuccessToast = Swal.mixin({
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer);
+                toast.addEventListener('mouseleave', Swal.resumeTimer);
+            }
+        });
+
+        window.showSuccessToast = function(title, text = '') {
+            return SuccessToast.fire({
+                icon: 'success',
+                title: title,
+                text: text
+            });
+        };
+
+        window.showErrorAlert = function(title, text = '') {
+            return Swal.fire({
+                icon: 'error',
+                title: title,
+                text: text,
+                showConfirmButton: true,
+                confirmButtonColor: '#ef4444'
+            });
+        };
+
+        window.showWarningAlert = function(title, text = '') {
+            return Swal.fire({
+                icon: 'warning',
+                title: title,
+                text: text,
+                showConfirmButton: true,
+                confirmButtonColor: '#f59e0b'
+            });
+        };
 
         // Logout Handler
         const logoutBtn = document.getElementById('logout-btn');

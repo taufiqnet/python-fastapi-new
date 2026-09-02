@@ -26,6 +26,9 @@ from app.modules.ecommerce.products.router import router as products_router
 from app.modules.ecommerce.reviews.router import router as reviews_router
 from app.modules.ecommerce.search.router import router as search_router
 from app.modules.ecommerce.shipping.router import router as shipping_router
+from app.modules.hr_payroll.organization.router import (
+    router as organization_router,
+)
 
 from app.routers import (
     auth,
@@ -34,6 +37,7 @@ from app.routers import (
     business_views,
     category_views,
     model_views,
+    organization_views,
     product_views,
     tasks,
 )
@@ -68,6 +72,7 @@ app.include_router(category_views.router)
 app.include_router(brand_views.router)
 app.include_router(model_views.router)
 app.include_router(product_views.router)
+app.include_router(organization_views.router)
 app.include_router(auth.router)
 app.include_router(business.router)
 
@@ -84,6 +89,9 @@ app.include_router(shipping_router)
 app.include_router(reviews_router)
 app.include_router(notifications_router)
 app.include_router(search_router)
+
+#hr payroll router
+app.include_router(organization_router)
 
 #project management router
 app.include_router(tasks.router)

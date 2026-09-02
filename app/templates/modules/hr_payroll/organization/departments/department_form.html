@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Department{% else %}Create Department{% endif %} | HR & Payroll{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .form-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: #4f46e5;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/departments/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Departments
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Department{% else %}Create Department{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update department details and configuration{% else %}Add a new department to your organization{% endif %}
+        </p>
+    </div>
+</div>
+
+<form id="departmentForm" class="space-y-6" onsubmit="handleDepartmentSubmit(event)">
+    <input type="hidden" id="deptId" value="{% if is_edit %}{{ department.id }}{% endif %}">
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active">
+                <i class="fas fa-sitemap text-xs"></i> Department Information
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="name">Department Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" class="form-input" required max="255"
+                               value="{% if is_edit %}{{ department.name }}{% endif %}"
+                               oninput="autoGenerateSlug(this.value)"
+                               placeholder="e.g. Human Resources, Engineering">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="slug">URL Slug <span class="text-red-500">*</span></label>
+                        <input type="text" id="slug" name="slug" class="form-input font-mono" required max="280"
+                               value="{% if is_edit %}{{ department.slug }}{% endif %}"
+                               placeholder="e.g. human-resources, engineering">
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="business_id">Business Profile</label>
+                        <select id="business_id" name="business_id" class="form-input">
+                            <option value="">— Global (All Businesses) —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if is_edit and department.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }} (ID: {{ b.id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea id="description" name="description" rows="3" class="form-input"
+                                  placeholder="Brief overview of the department's responsibilities...">{% if is_edit and department.description %}{{ department.description }}{% endif %}</textarea>
+                    </div>
+
+                    <div class="form-group md:col-span-2 pt-2 flex flex-col md:flex-row gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="is_active" name="is_active" class="form-checkbox" {% if not is_edit or department.is_active %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Active Department Status</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="multiple_heads_allowed" name="multiple_heads_allowed" class="form-checkbox" {% if is_edit and department.multiple_heads_allowed %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Multiple Department Heads Allowed</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/departments/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Department{% else %}Save Department{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function autoGenerateSlug(val) {
+    if ("{{ is_edit }}" === "True") return;
+    const slugInput = document.getElementById('slug');
+    if (!slugInput.dataset.userEdited) {
+        slugInput.value = val.toLowerCase().trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+}
+
+document.getElementById('slug').addEventListener('input', function() {
+    this.dataset.userEdited = "true";
+});
+
+function handleDepartmentSubmit(event) {
+    event.preventDefault();
+    const isEdit = "{{ is_edit }}" === "True";
+    const deptId = document.getElementById('deptId').value;
+
+    const payload = {
+        name: document.getElementById('name').value,
+        slug: document.getElementById('slug').value,
+        description: document.getElementById('description').value || null,
+        business_id: document.getElementById('business_id').value ? parseInt(document.getElementById('business_id').value) : null,
+        is_active: document.getElementById('is_active').checked,
+        multiple_heads_allowed: document.getElementById('multiple_heads_allowed').checked
+    };
+
+    const url = isEdit ? '/departments/' + deptId : '/departments';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'Failed to save department';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        showSuccessToast(
+            isEdit ? 'Department Updated' : 'Department Created',
+            isEdit ? 'Changes saved successfully.' : 'New department added successfully.'
+        );
+        setTimeout(() => { window.location.href = '/departments/manage'; }, 1200);
+    })
+    .catch(err => {
+        showErrorAlert('Save Failed', err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Department' : 'Save Department');
+    });
+}
+</script>
+{% endblock %}

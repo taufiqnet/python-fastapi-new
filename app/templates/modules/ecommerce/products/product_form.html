@@ -529,7 +529,7 @@ document.getElementById('btnAddVariant').addEventListener('click', function() {
 function removeVariantRow(btn) {
     const rows = document.querySelectorAll('.variant-row');
     if (rows.length <= 1) {
-        Swal.fire('Notice', 'A product must have at least one variant.', 'info');
+        showWarningAlert('Notice', 'A product must have at least one variant.');
         return;
     }
     btn.closest('.variant-row').remove();
@@ -561,7 +561,7 @@ function removeImageRow(btn) {
     const container = document.getElementById('imageRowsContainer');
     const rows = container.querySelectorAll('.image-upload-row');
     if (rows.length <= 1) {
-        Swal.fire('Notice', 'You must maintain at least one image upload row.', 'info');
+        showWarningAlert('Notice', 'You must maintain at least one image upload row.');
         return;
     }
     btn.closest('.image-upload-row').remove();
@@ -573,12 +573,12 @@ function validateSingleFileInput(input) {
 
     const maxBytes = 5 * 1024 * 1024; // 5MB
     if (!file.type.startsWith('image/')) {
-        Swal.fire('Invalid File', 'File "' + file.name + '" is not an image file.', 'error');
+        showErrorAlert('Invalid File', 'File "' + file.name + '" is not an image file.');
         input.value = '';
         return;
     }
     if (file.size > maxBytes) {
-        Swal.fire('File Too Large Warning', 'Image "' + file.name + '" exceeds the 5MB maximum file size limit.', 'warning');
+        showWarningAlert('File Too Large Warning', 'Image "' + file.name + '" exceeds the 5MB maximum file size limit.');
         input.value = '';
         return;
     }
@@ -617,9 +617,9 @@ async function deleteExistingImage(imageId) {
             
             const el = document.getElementById('existing-img-' + imageId);
             if (el) el.remove();
-            Swal.fire('Deleted!', 'Image removed successfully.', 'success');
+            showSuccessToast('Image Deleted', 'Image removed successfully.');
         } catch (err) {
-            Swal.fire('Error', err.message, 'error');
+            showErrorAlert('Delete Failed', err.message);
         }
     }
 }
@@ -783,18 +783,14 @@ document.getElementById('productForm').addEventListener('submit', async function
             throw new Error(msg);
         }
 
-        Swal.fire({
-            title: 'Success!',
-            text: isEdit ? 'Product updated successfully.' : 'Product created successfully.',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => {
-            window.location.href = '/products';
-        });
+        showSuccessToast(
+            isEdit ? 'Product Updated' : 'Product Created',
+            isEdit ? 'Changes saved successfully.' : 'New product added successfully.'
+        );
+        setTimeout(() => { window.location.href = '/products'; }, 1200);
 
     } catch (err) {
-        Swal.fire('Error', err.message, 'error');
+        showErrorAlert('Save Failed', err.message);
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Product' : 'Save Product');
     }

@@ -177,18 +177,14 @@ document.getElementById('modelForm').addEventListener('submit', function(e) {
         return data;
     })
     .then(data => {
-        Swal.fire({
-            title: 'Success!',
-            text: isEdit ? 'Model updated successfully.' : 'Model created successfully.',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        }).then(() => {
-            window.location.href = '/brands/models';
-        });
+        showSuccessToast(
+            isEdit ? 'Model Updated' : 'Model Created',
+            isEdit ? 'Changes saved successfully.' : 'New model added successfully.'
+        );
+        setTimeout(() => { window.location.href = '/brands/models'; }, 1200);
     })
     .catch(err => {
-        Swal.fire('Error', err.message, 'error');
+        showErrorAlert('Save Failed', err.message);
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Model' : 'Save Model');
     });

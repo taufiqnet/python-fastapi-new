@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Job Title{% else %}Create Job Title{% endif %} | HR & Payroll{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .form-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: #4f46e5;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/job-titles/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Job Titles
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Job Title{% else %}Create Job Title{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update job title details and department assignment{% else %}Add a new position designation to your organization{% endif %}
+        </p>
+    </div>
+</div>
+
+<form id="jobTitleForm" class="space-y-6" onsubmit="handleJobTitleSubmit(event)">
+    <input type="hidden" id="jtId" value="{% if is_edit %}{{ job_title.id }}{% endif %}">
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active">
+                <i class="fas fa-user-tie text-xs"></i> Job Title Information
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="name">Job Title Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" class="form-input" required max="255"
+                               value="{% if is_edit %}{{ job_title.name }}{% endif %}"
+                               placeholder="e.g. Senior Software Engineer">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="short_name">Short Name / Designation</label>
+                        <input type="text" id="short_name" name="short_name" class="form-input font-mono" max="255"
+                               value="{% if is_edit and job_title.short_name %}{{ job_title.short_name }}{% endif %}"
+                               placeholder="e.g. Sr. SE">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        <select id="business_id" name="business_id" required class="form-input">
+                            <option value="">— Select Business —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if is_edit and job_title.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }} (ID: {{ b.id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="department_id">Department</label>
+                        <select id="department_id" name="department_id" class="form-input">
+                            <option value="">— Unassigned —</option>
+                            {% for d in departments %}
+                            <option value="{{ d.id }}" {% if is_edit and job_title.department_id == d.id %}selected{% endif %}>
+                                {{ d.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea id="description" name="description" rows="3" class="form-input"
+                                  placeholder="Brief description of responsibilities and scope...">{% if is_edit and job_title.description %}{{ job_title.description }}{% endif %}</textarea>
+                    </div>
+
+                    <div class="form-group md:col-span-2 pt-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="is_active" name="is_active" class="form-checkbox" {% if not is_edit or job_title.is_active %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Active Job Title Status</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/job-titles/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Job Title{% else %}Save Job Title{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function handleJobTitleSubmit(event) {
+    event.preventDefault();
+    const isEdit = "{{ is_edit }}" === "True";
+    const jtId = document.getElementById('jtId').value;
+
+    const payload = {
+        name: document.getElementById('name').value,
+        short_name: document.getElementById('short_name').value || null,
+        description: document.getElementById('description').value || null,
+        business_id: parseInt(document.getElementById('business_id').value),
+        department_id: document.getElementById('department_id').value || null,
+        is_active: document.getElementById('is_active').checked
+    };
+
+    const url = isEdit ? '/job-titles/' + jtId : '/job-titles';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'Failed to save job title';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        showSuccessToast(
+            isEdit ? 'Job Title Updated' : 'Job Title Created',
+            isEdit ? 'Changes saved successfully.' : 'New job title added successfully.'
+        );
+        setTimeout(() => { window.location.href = '/job-titles/manage'; }, 1200);
+    })
+    .catch(err => {
+        showErrorAlert('Save Failed', err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Job Title' : 'Save Job Title');
+    });
+}
+</script>
+{% endblock %}
