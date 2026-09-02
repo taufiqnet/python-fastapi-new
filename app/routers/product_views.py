@@ -48,9 +48,15 @@ def product_list_page(
     brand_map = {b.id: b.name for b in brands}
 
     total_count = len(products)
-    published_count = sum(1 for p in products if p.status == Status.PUBLISHED)
-    draft_count = sum(1 for p in products if p.status == Status.DRAFT)
-    archived_count = sum(1 for p in products if p.status == Status.ARCHIVED)
+    published_count = sum(
+        1 for p in products if (getattr(p.status, "value", p.status) in ("published", "active"))
+    )
+    draft_count = sum(
+        1 for p in products if getattr(p.status, "value", p.status) == "draft"
+    )
+    archived_count = sum(
+        1 for p in products if getattr(p.status, "value", p.status) == "archived"
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -106,12 +112,23 @@ def product_detail_page(
     if product.business_id:
         business = business_service.get_business(db, product.business_id)
 
+    categories = category_service.get_categories(db, skip=0, limit=500)
+    brands = brand_service.get_brands(db, skip=0, limit=500)
+    models = brand_service.get_all_models(db, skip=0, limit=500)
+
+    cat_map = {c.id: c.name for c in categories}
+    brand_map = {b.id: b.name for b in brands}
+    model_map = {m.id: m.name for m in models}
+
     return templates.TemplateResponse(
         request=request,
         name="modules/ecommerce/products/product_detail.html",
         context={
             "product": product,
             "business": business,
+            "cat_map": cat_map,
+            "brand_map": brand_map,
+            "model_map": model_map,
             "active_page": "products",
         },
     )

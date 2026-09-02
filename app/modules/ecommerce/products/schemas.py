@@ -212,6 +212,9 @@ class ProductUpdate(BaseModel):
     seller_id: uuid.UUID | None = None
     business_id: int | None = None
 
+    variants: list[VariantCreate] | None = None
+    images: list[ProductImageCreate] | None = None
+
 
 class ProductOut(ProductBase):
     model_config = ConfigDict(from_attributes=True)

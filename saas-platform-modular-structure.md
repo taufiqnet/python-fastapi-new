@@ -80,8 +80,16 @@ platform-backend/
 │   │   │   ├── goods_receipt/          # writes stock via adapter, Part B §4.5
 │   │   │   └── adapters.py
 │   │   │
-│   │   ├── hr_payroll/               # ← Part C
-│   │   │   ├── employees/ attendance/ leave/ payroll_runs/ payslips/
+│   │   ├── hr_payroll/               # ← Part C, detailed in §5.1 (build order #5)
+│   │   │   ├── organization/           # Department, JobTitle
+│   │   │   ├── employees/               # Employee (profile, employment, reporting line)
+│   │   │   ├── attendance/               # Attendance (check-in/out, work/overtime hours)
+│   │   │   ├── leave/                     # LeaveType, LeaveApplication, LeaveAllocation
+│   │   │   ├── holidays/                   # Holiday (public/festival/company calendar)
+│   │   │   ├── compensation/                # EmployeeSalary (per-employee salary structure)
+│   │   │   ├── payroll_periods/              # PayrollPeriod (draft → processing → locked → paid)
+│   │   │   ├── payslips/                      # PayrollRecord (per-employee payslip per period)
+│   │   │   └── audit/                          # HRM-scoped audit trail, mirrors core/audit
 │   │   │
 │   │   ├── finance_accounts/         # ← Part C
 │   │   │   ├── chart_of_accounts/ journal_entries/ invoices/
@@ -250,12 +258,52 @@ Default to fully separated as built above; revisit `core/facilities/` only if du
 - `PurchaseOrderItem` — po_id, variant_id (or a procurement-local `sku_id`), qty_ordered, unit_cost
 - `GoodsReceipt` — po_id, received_at, received_by — writes stock via `get_inventory_adapter(business).receive_stock(...)`; see Part B §4.5
 
-### 🔹 `modules/hr_payroll/`
-**models.py**
-- `Employee` — business_id, user_id (nullable — not every employee needs system login), department_id, designation, hire_date
-- `Attendance`, `LeaveRequest`, `LeaveBalance`
-- `PayrollRun` — period_start, period_end, status
-- `Payslip` — employee_id, run_id, gross_pay, deductions (JSON), net_pay
+### 🔹 `modules/hr_payroll/` (expanded — see §5.1)
+
+## 5.1 `hr_payroll/` — Feature Breakdown
+
+Same vertical-slice shape as every other module (`models.py` / `schemas.py` / `router.py` / `service.py` / `repository.py` / `exceptions.py` per folder — omitted below per your note, just the structure):
+
+```
+modules/hr_payroll/
+├── organization/
+│   ├── departments/          # Department — self-contained, one head per dept (unless multi-head allowed)
+│   └── job_titles/           # JobTitle — optionally scoped to a Department
+│
+├── employees/                # Employee — profile, contact, job info, employment type,
+│                              #   direct_manager (self-referential reporting line)
+│
+├── attendance/                # Attendance — daily check-in/out, work_hours, overtime_hours,
+│                               #   status (present/absent/late/half_day/on_leave/holiday/weekend),
+│                               #   source (manual/biometric/system)
+│
+├── leave/                      # LeaveType, LeaveApplication, LeaveAllocation
+│                                #   — request → review (approve/reject) → allocation balance update
+│
+├── holidays/                    # Holiday — public/festival/company/weekend calendar,
+│                                 #   feeds attendance status resolution
+│
+├── compensation/                  # EmployeeSalary — one active salary structure per employee
+│                                   #   (earnings + deductions → gross/net), effective_from dated
+│
+├── payroll_periods/                # PayrollPeriod — draft → processing → locked → paid,
+│                                    #   the run boundary payslips attach to
+│
+├── payslips/                        # PayrollRecord — one payslip per employee per period,
+│                                     #   snapshots attendance summary + earnings/deductions,
+│                                     #   gross/deduction/net auto-computed, payment_method + is_paid
+│
+└── audit/                            # HRM-scoped audit trail (create/update/delete/approve/reject/
+                                       #   cancel/lock/unlock/pay/activate/deactivate/import/export),
+                                       #   generic FK over every HRM model above — module-local
+                                       #   companion to core/audit, called the same way from service.py
+```
+
+**Notes carried over from the Django reference (`models.py`) into this structure, not as schema but as design intent:**
+- `employees/` is the hub — `attendance/`, `leave/`, `compensation/`, and `payslips/` all FK into it, never into each other directly.
+- `payroll_periods/` and `payslips/` are split the same way `orders`/`order_items` are in Ecommerce: the period is the run/batch, the payslip is the per-employee line, one-to-many, `unique(period, employee)`.
+- `compensation/` (the salary structure) and `payslips/` (the computed payslip) are deliberately separate slices — a payslip is a point-in-time snapshot computed from the salary structure + that period's attendance, not a live reference to it.
+- `audit/` keeps its own module-scoped log (matches the platform's `core/audit` pattern) since HR/payroll changes need query-by-module and query-by-actor independent of the platform-wide audit stream.
 
 ### 🔹 `modules/finance_accounts/`
 **models.py**
@@ -264,7 +312,7 @@ Default to fully separated as built above; revisit `core/facilities/` only if du
 - `Invoice`, `Bill` — AR/AP
 - `TaxFiling`
 
-*Note: `ecommerce/orders` and `hr_payroll/payroll_runs` will both eventually post `JournalEntry` rows here — same integration pattern as Inventory: call `finance_accounts.service.post_journal_entry(...)`, never write directly to `journal_lines`.*
+*Note: `ecommerce/orders` and `hr_payroll/payroll_periods` (on lock/pay) will both eventually post `JournalEntry` rows here — same integration pattern as Inventory: call `finance_accounts.service.post_journal_entry(...)`, never write directly to `journal_lines`.*
 
 ### 🔹 `modules/pharmacy/`
 **models.py**

@@ -2,174 +2,562 @@
 
 {% block title %}{% if is_edit %}Edit Product{% else %}Create Product{% endif %} | SaaS Platform{% endblock %}
 
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .form-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: #4f46e5;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-            <a href="/products" class="w-9 h-9 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
-                <i class="fas fa-arrow-left text-sm"></i>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/products" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Products
             </a>
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{% if is_edit %}Edit Product{% else %}Create Product{% endif %}</h1>
-                <p class="text-xs text-gray-500 mt-0.5 font-medium">Configure product item details</p>
-            </div>
         </div>
-    </div>
-
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <form id="productForm" class="space-y-5">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Product Title <span class="text-red-500">*</span></label>
-                    <input type="text" id="title" name="title" required value="{{ product.title if product else '' }}" placeholder="e.g. iPhone 15 Pro Max" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Slug <span class="text-red-500">*</span></label>
-                    <input type="text" id="slug" name="slug" required value="{{ product.slug if product else '' }}" placeholder="e.g. iphone-15-pro-max" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-mono outline-none focus:border-indigo-600 transition-colors">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Business Profile</label>
-                    <select id="business_id" name="business_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
-                        <option value="">-- Select Business --</option>
-                        {% for b in businesses %}
-                        <option value="{{ b.id }}" {% if product and product.business_id == b.id %}selected{% endif %}>{{ b.name_en }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Category</label>
-                    <select id="category_id" name="category_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
-                        <option value="">-- Select Category --</option>
-                        {% for c in categories %}
-                        <option value="{{ c.id }}" {% if product and product.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Brand</label>
-                    <select id="brand_id" name="brand_id" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">
-                        <option value="">-- Select Brand --</option>
-                        {% for b in brands %}
-                        <option value="{{ b.id }}" {% if product and product.brand_id == b.id %}selected{% endif %}>{{ b.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Status</label>
-                    <select id="status" name="status" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs capitalize outline-none focus:border-indigo-600 transition-colors">
-                        {% for s in statuses %}
-                        <option value="{{ s }}" {% if product and product.status.value == s %}selected{% endif %}>{{ s }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Condition</label>
-                    <select id="condition" name="condition" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs capitalize outline-none focus:border-indigo-600 transition-colors">
-                        {% for c in conditions %}
-                        <option value="{{ c }}" {% if product and product.condition.value == c %}selected{% endif %}>{{ c }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1.5">Product Type</label>
-                    <select id="product_type" name="product_type" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs capitalize outline-none focus:border-indigo-600 transition-colors">
-                        {% for t in product_types %}
-                        <option value="{{ t }}" {% if product and product.product_type.value == t %}selected{% endif %}>{{ t }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
-                <textarea id="description" name="description" rows="4" placeholder="Product overview..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-600 transition-colors">{{ product.description if product and product.description else '' }}</textarea>
-            </div>
-
-            <div class="flex items-center gap-6 pt-2">
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="is_featured" name="is_featured" {% if product and product.is_featured %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-gray-300">
-                    <label for="is_featured" class="text-xs font-medium text-gray-700">Featured Product</label>
-                </div>
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="requires_shipping" name="requires_shipping" {% if not product or product.requires_shipping %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-gray-300">
-                    <label for="requires_shipping" class="text-xs font-medium text-gray-700">Requires Shipping</label>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-                <a href="/products" class="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold rounded-lg text-xs transition-colors">Cancel</a>
-                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-colors shadow-sm">
-                    {% if is_edit %}Save Changes{% else %}Create Product{% endif %}
-                </button>
-            </div>
-        </form>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Product{% else %}Create Product{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update product specifications, variants, pricing and media{% else %}Set up a new e-commerce product item in the catalog{% endif %}
+        </p>
     </div>
 </div>
+
+<form id="productForm" class="space-y-6">
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active" onclick="switchTab('general')">
+                <i class="fas fa-box text-xs"></i> Product Information
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('variants')">
+                <i class="fas fa-tags text-xs"></i> Variants & Pricing
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('media')">
+                <i class="fas fa-images text-xs"></i> Images & Media
+            </button>
+        </div>
+
+        <div class="p-6">
+            <!-- TAB 1: PRODUCT INFORMATION -->
+            <div id="tab-general" class="tab-content space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="title">Product Title <span class="text-red-500">*</span></label>
+                        <input type="text" id="title" name="title" class="form-input" required value="{{ product.title if product else '' }}" placeholder="e.g. iPhone 15 Pro Max">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="slug">URL Slug <span class="text-red-500">*</span></label>
+                        <input type="text" id="slug" name="slug" class="form-input font-mono" required value="{{ product.slug if product else '' }}" placeholder="e.g. iphone-15-pro-max">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="business_id">Business Profile</label>
+                        <select id="business_id" name="business_id" class="form-input">
+                            <option value="">— Global (All Businesses) —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if product and product.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="category_id">Category</label>
+                        <select id="category_id" name="category_id" class="form-input">
+                            <option value="">— Select Category —</option>
+                            {% for c in categories %}
+                            <option value="{{ c.id }}" {% if product and product.category_id == c.id %}selected{% endif %}>
+                                {{ c.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="brand_id">Brand</label>
+                        <select id="brand_id" name="brand_id" class="form-input">
+                            <option value="">— Select Brand —</option>
+                            {% for b in brands %}
+                            <option value="{{ b.id }}" {% if product and product.brand_id == b.id %}selected{% endif %}>
+                                {{ b.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="model_id">Product Model</label>
+                        <select id="model_id" name="model_id" class="form-input">
+                            <option value="">— Select Model —</option>
+                            {% for m in models %}
+                            <option value="{{ m.id }}" {% if product and product.model_id == m.id %}selected{% endif %}>
+                                {{ m.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="status">Status</label>
+                        <select id="status" name="status" class="form-input capitalize">
+                            {% for s in statuses %}
+                            {% set st_val = product.status.value if (product and product.status.value is defined) else (product.status if product else '') %}
+                            <option value="{{ s }}" {% if st_val == s %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="condition">Condition</label>
+                        <select id="condition" name="condition" class="form-input capitalize">
+                            {% for c in conditions %}
+                            {% set cond_val = product.condition.value if (product and product.condition.value is defined) else (product.condition if product else '') %}
+                            <option value="{{ c }}" {% if cond_val == c %}selected{% endif %}>{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="product_type">Product Type</label>
+                        <select id="product_type" name="product_type" class="form-input capitalize">
+                            {% for t in product_types %}
+                            {% set pt_val = product.product_type.value if (product and product.product_type.value is defined) else (product.product_type if product else '') %}
+                            <option value="{{ t }}" {% if pt_val == t %}selected{% endif %}>{{ t }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea id="description" name="description" rows="4" class="form-input" placeholder="Product details, specs, and features...">{{ product.description if product and product.description else '' }}</textarea>
+                    </div>
+
+                    <div class="form-group md:col-span-2 flex items-center gap-6 pt-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="is_featured" name="is_featured" class="form-checkbox" {% if product and product.is_featured %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Featured Product</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="requires_shipping" name="requires_shipping" class="form-checkbox" {% if not product or product.requires_shipping %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Requires Shipping</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: MULTI-VARIANTS & PRICING -->
+            <div id="tab-variants" class="tab-content hidden space-y-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Product Variants, Pricing & Inventory</h3>
+                        <p class="text-xs text-gray-500">Configure multiple SKUs, prices, compare-at prices, cost prices, and stock limits</p>
+                    </div>
+                    <button type="button" id="btnAddVariant" class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5">
+                        <i class="fas fa-plus text-[10px]"></i> Add Variant
+                    </button>
+                </div>
+
+                <div id="variantContainer" class="space-y-4">
+                    {% if product and product.variants and product.variants|length > 0 %}
+                    {% for v in product.variants %}
+                    <div class="variant-row p-4 border border-gray-200 rounded-lg bg-gray-50/50 space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div class="form-group">
+                                <label class="form-label">SKU Code <span class="text-red-500">*</span></label>
+                                <input type="text" class="v-sku form-input font-mono" value="{{ v.sku }}" required placeholder="PROD-SKU-001">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Price (USD) <span class="text-red-500">*</span></label>
+                                <input type="number" step="0.01" class="v-price form-input" value="{{ v.price }}" required placeholder="29.99">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Compare-at Price</label>
+                                <input type="number" step="0.01" class="v-compare-price form-input" value="{{ v.compare_at_price if v.compare_at_price else '' }}" placeholder="39.99">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cost Price</label>
+                                <input type="number" step="0.01" class="v-cost-price form-input" value="{{ v.cost_price if v.cost_price else '' }}" placeholder="15.00">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div class="form-group">
+                                <label class="form-label">Stock Quantity</label>
+                                <input type="number" class="v-stock form-input" value="{{ v.stock_qty if v.stock_qty is not none else 0 }}" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Low Stock Threshold</label>
+                                <input type="number" class="v-threshold form-input" value="{{ v.low_stock_threshold if v.low_stock_threshold is not none else 5 }}" placeholder="5">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Barcode / UPC</label>
+                                <input type="text" class="v-barcode form-input font-mono" value="{{ v.barcode if v.barcode else '' }}" placeholder="123456789">
+                            </div>
+                            <div class="form-group flex items-center justify-between pt-4">
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="radio" name="default_variant_radio" class="v-is-default form-checkbox" {% if v.is_default %}checked{% endif %}>
+                                    <span class="text-xs font-semibold text-gray-700">Default Variant</span>
+                                </label>
+                                <button type="button" class="text-red-500 hover:text-red-700 text-xs p-1" onclick="removeVariantRow(this)">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="variant-row p-4 border border-gray-200 rounded-lg bg-gray-50/50 space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div class="form-group">
+                                <label class="form-label">SKU Code <span class="text-red-500">*</span></label>
+                                <input type="text" class="v-sku form-input font-mono" required placeholder="e.g. PROD-SKU-001">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Price (USD) <span class="text-red-500">*</span></label>
+                                <input type="number" step="0.01" class="v-price form-input" required value="29.99" placeholder="29.99">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Compare-at Price</label>
+                                <input type="number" step="0.01" class="v-compare-price form-input" placeholder="39.99">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cost Price</label>
+                                <input type="number" step="0.01" class="v-cost-price form-input" placeholder="15.00">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <div class="form-group">
+                                <label class="form-label">Stock Quantity</label>
+                                <input type="number" class="v-stock form-input" value="10" placeholder="10">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Low Stock Threshold</label>
+                                <input type="number" class="v-threshold form-input" value="5" placeholder="5">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Barcode / UPC</label>
+                                <input type="text" class="v-barcode form-input font-mono" placeholder="123456789">
+                            </div>
+                            <div class="form-group flex items-center justify-between pt-4">
+                                <label class="flex items-center gap-1.5 cursor-pointer">
+                                    <input type="radio" name="default_variant_radio" class="v-is-default form-checkbox" checked>
+                                    <span class="text-xs font-semibold text-gray-700">Default Variant</span>
+                                </label>
+                                <button type="button" class="text-red-500 hover:text-red-700 text-xs p-1" onclick="removeVariantRow(this)">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TAB 3: IMAGES & MEDIA -->
+            <div id="tab-media" class="tab-content hidden space-y-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h3 class="text-xs font-bold text-gray-900 uppercase tracking-wider">Product Gallery Image</h3>
+                        <p class="text-xs text-gray-500">Add primary product image URL for catalog preview</p>
+                    </div>
+                </div>
+
+                <div class="p-4 border border-gray-200 rounded-lg bg-gray-50/50 space-y-4">
+                    {% set primary_img = (product.images[0] if product and product.images and product.images|length > 0 else None) %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="form-group md:col-span-2">
+                            <label class="form-label" for="image_url">Image URL</label>
+                            <input type="url" id="image_url" class="form-input" value="{{ primary_img.url if primary_img else '' }}" placeholder="https://example.com/product.jpg">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/products" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Product{% else %}Save Product{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const isEdit = {{ 'true' if is_edit else 'false' }};
-const productId = "{{ product.id if product else '' }}";
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
 
+    event.currentTarget.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+}
+
+// Auto-generate slug from title
 document.getElementById('title').addEventListener('input', function() {
-    if (!isEdit) {
-        document.getElementById('slug').value = this.value.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    const slugInput = document.getElementById('slug');
+    if (!slugInput.dataset.userEdited && !{% if is_edit %}true{% else %}false{% endif %}) {
+        slugInput.value = this.value
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/[\s_-]+/g, '-')
+            .replace(/^-+|-+$/g, '');
     }
 });
 
-document.getElementById('productForm').addEventListener('submit', async function(e) {
+document.getElementById('slug').addEventListener('input', function() {
+    this.dataset.userEdited = "true";
+});
+
+// Dynamic variant row addition
+document.getElementById('btnAddVariant').addEventListener('click', function() {
+    const container = document.getElementById('variantContainer');
+    const slug = document.getElementById('slug').value || 'item';
+    const index = container.querySelectorAll('.variant-row').length + 1;
+    
+    const div = document.createElement('div');
+    div.className = "variant-row p-4 border border-gray-200 rounded-lg bg-gray-50/50 space-y-3";
+    div.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="form-group">
+                <label class="form-label">SKU Code <span class="text-red-500">*</span></label>
+                <input type="text" class="v-sku form-input font-mono" required value="${slug.toUpperCase()}-VAR-${index}" placeholder="PROD-SKU-001">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Price (USD) <span class="text-red-500">*</span></label>
+                <input type="number" step="0.01" class="v-price form-input" required value="29.99" placeholder="29.99">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Compare-at Price</label>
+                <input type="number" step="0.01" class="v-compare-price form-input" placeholder="39.99">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cost Price</label>
+                <input type="number" step="0.01" class="v-cost-price form-input" placeholder="15.00">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="form-group">
+                <label class="form-label">Stock Quantity</label>
+                <input type="number" class="v-stock form-input" value="10" placeholder="10">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Low Stock Threshold</label>
+                <input type="number" class="v-threshold form-input" value="5" placeholder="5">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Barcode / UPC</label>
+                <input type="text" class="v-barcode form-input font-mono" placeholder="123456789">
+            </div>
+            <div class="form-group flex items-center justify-between pt-4">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="default_variant_radio" class="v-is-default form-checkbox">
+                    <span class="text-xs font-semibold text-gray-700">Default Variant</span>
+                </label>
+                <button type="button" class="text-red-500 hover:text-red-700 text-xs p-1" onclick="removeVariantRow(this)">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+});
+
+function removeVariantRow(btn) {
+    const rows = document.querySelectorAll('.variant-row');
+    if (rows.length <= 1) {
+        Swal.fire('Notice', 'A product must have at least one variant.', 'info');
+        return;
+    }
+    btn.closest('.variant-row').remove();
+}
+
+document.getElementById('productForm').addEventListener('submit', function(e) {
     e.preventDefault();
+    
+    const isEdit = {% if is_edit %}true{% else %}false{% endif %};
+    const productId = "{% if product %}{{ product.id }}{% endif %}";
+
+    const title = document.getElementById('title').value;
+    const slug = document.getElementById('slug').value;
+    const businessIdVal = document.getElementById('business_id').value;
+    const categoryIdVal = document.getElementById('category_id').value;
+    const brandIdVal = document.getElementById('brand_id').value;
+    const modelIdVal = document.getElementById('model_id').value;
+    const statusVal = document.getElementById('status').value;
+    const conditionVal = document.getElementById('condition').value;
+    const productTypeVal = document.getElementById('product_type').value;
+    const descVal = document.getElementById('description').value;
+    const isFeatured = document.getElementById('is_featured').checked;
+    const requiresShipping = document.getElementById('requires_shipping').checked;
+
+    const imageUrl = document.getElementById('image_url').value.trim();
+
+    // Compile variants
+    const variantRows = document.querySelectorAll('.variant-row');
+    const variants = [];
+    variantRows.forEach((row, idx) => {
+        const sku = row.querySelector('.v-sku').value.trim();
+        const price = parseFloat(row.querySelector('.v-price').value) || 29.99;
+        const comparePriceRaw = row.querySelector('.v-compare-price').value;
+        const comparePrice = comparePriceRaw ? parseFloat(comparePriceRaw) : null;
+        const costPriceRaw = row.querySelector('.v-cost-price').value;
+        const costPrice = costPriceRaw ? parseFloat(costPriceRaw) : null;
+        const stockQty = parseInt(row.querySelector('.v-stock').value) || 0;
+        const threshold = parseInt(row.querySelector('.v-threshold').value) || 5;
+        const barcode = row.querySelector('.v-barcode').value.trim() || null;
+        const isDefault = row.querySelector('.v-is-default').checked || (idx === 0);
+
+        if (sku) {
+            variants.push({
+                sku: sku,
+                price: price,
+                compare_at_price: comparePrice,
+                cost_price: costPrice,
+                stock_qty: stockQty,
+                low_stock_threshold: threshold,
+                barcode: barcode,
+                is_default: isDefault
+            });
+        }
+    });
+
     const payload = {
-        title: document.getElementById('title').value,
-        slug: document.getElementById('slug').value,
-        business_id: document.getElementById('business_id').value ? parseInt(document.getElementById('business_id').value) : null,
-        category_id: document.getElementById('category_id').value || null,
-        brand_id: document.getElementById('brand_id').value || null,
-        status: document.getElementById('status').value,
-        condition: document.getElementById('condition').value,
-        product_type: document.getElementById('product_type').value,
-        description: document.getElementById('description').value || null,
-        is_featured: document.getElementById('is_featured').checked,
-        requires_shipping: document.getElementById('requires_shipping').checked
+        title: title,
+        slug: slug,
+        business_id: businessIdVal ? parseInt(businessIdVal) : null,
+        category_id: categoryIdVal ? categoryIdVal : null,
+        brand_id: brandIdVal ? brandIdVal : null,
+        model_id: modelIdVal ? modelIdVal : null,
+        status: statusVal,
+        condition: conditionVal,
+        product_type: productTypeVal,
+        description: descVal ? descVal : null,
+        is_featured: isFeatured,
+        requires_shipping: requiresShipping,
+        variants: variants
     };
+
+    if (imageUrl) {
+        payload.images = [
+            {
+                url: imageUrl,
+                position: 0,
+                is_primary: true
+            }
+        ];
+    }
 
     const url = isEdit ? '/products/' + productId : '/products/';
     const method = isEdit ? 'PUT' : 'POST';
 
-    try {
-        const resp = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
-        if (resp.ok) {
-            Swal.fire({
-                title: isEdit ? 'Updated!' : 'Created!',
-                text: 'Product successfully saved.',
-                icon: 'success',
-                timer: 1500,
-                showConfirmButton: false
-            }).then(() => window.location.href = '/products');
-        } else {
-            const err = await resp.json();
-            Swal.fire('Error', err.detail || 'Failed to save product', 'error');
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'An error occurred while saving product.';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
         }
-    } catch (e) {
-        Swal.fire('Error', e.message, 'error');
-    }
+        return data;
+    })
+    .then(data => {
+        Swal.fire({
+            title: 'Success!',
+            text: isEdit ? 'Product updated successfully.' : 'Product created successfully.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.href = '/products';
+        });
+    })
+    .catch(err => {
+        Swal.fire('Error', err.message, 'error');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Product' : 'Save Product');
+    });
 });
 </script>
 {% endblock %}

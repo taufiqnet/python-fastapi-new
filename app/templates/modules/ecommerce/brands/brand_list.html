@@ -3,42 +3,116 @@
 {% block title %}Brands | SaaS Platform{% endblock %}
 
 {% block head %}
+<!-- DataTables CSS -->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
 
 <style>
-    :root { --indigo: #4f46e5; }
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
     .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.25rem; }
     @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
-    .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
-    .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .stat-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
     .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
     .stat-icon.green   { background: #f0fdf4; color: #16a34a; }
     .stat-icon.yellow  { background: #fefce8; color: #ca8a04; }
     .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
 
-    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
-    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
-    .toolbar-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
-    .toolbar-search input { width: 100%; padding: 7px 12px 7px 30px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
-    .toolbar select { padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; cursor: pointer; outline: none; }
+    .toolbar {
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px; margin-bottom: 12px;
+    }
+    .toolbar-search {
+        position: relative; flex: 1; min-width: 200px;
+    }
+    .toolbar-search i {
+        position: absolute; left: 10px; top: 50%;
+        transform: translateY(-50%); color: #9ca3af; font-size: 13px;
+    }
+    .toolbar-search input {
+        width: 100%; padding: 7px 12px 7px 30px;
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        background: #f9fafb; color: #374151; font-size: 13px; outline: none;
+        transition: border-color .15s, background .15s;
+    }
+    .toolbar-search input:focus {
+        border-color: var(--indigo);
+        box-shadow: 0 0 0 2px rgba(79,70,229,.08);
+        background: #fff;
+    }
+    .toolbar select {
+        padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb;
+        border-radius: 8px; background: #f9fafb; color: #374151;
+        font-size: 13px; cursor: pointer; outline: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .toolbar select:focus { border-color: var(--indigo); background-color: #fff; }
 
-    .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    .table-card {
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 12px; overflow: hidden;
+    }
+
     table.dataTable { border-collapse: collapse !important; }
-    table.dataTable thead tr th { background: #f9fafb !important; border-bottom: 1px solid #e5e7eb !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; color: #6b7280 !important; padding: 10px 14px !important; }
+    table.dataTable thead tr th {
+        background: #f9fafb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        font-size: 10px !important; font-weight: 700 !important;
+        text-transform: uppercase; letter-spacing: .6px;
+        color: #6b7280 !important; padding: 10px 14px !important;
+        white-space: nowrap;
+    }
     table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
-    .dataTables_filter, .dataTables_length { display: none !important; }
+    table.dataTable tbody tr:hover td { background: #f9fafb !important; }
+    table.dataTable.no-footer { border-bottom: 1px solid #f3f4f6 !important; }
+
+    .dataTables_filter,
+    .dataTables_length { display: none !important; }
+
+    .dataTables_wrapper .dataTables_paginate { padding: 10px 14px !important; }
+
+    .dt-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 14px; border-top: 1px solid #f3f4f6;
+        background: #fafafa; flex-wrap: wrap; gap: 8px;
+    }
+    .dt-footer .dt-info { font-size: 12px; color: #9ca3af; }
+    .dt-footer .dt-perpage {
+        display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+    }
+    .dt-perpage select {
+        padding: 3px 22px 3px 8px; border: 1px solid #e5e7eb;
+        border-radius: 6px; background: #fff; color: #374151;
+        font-size: 12px; cursor: pointer; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 6px center;
+    }
 
     .badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
     .badge-active   { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
     .badge-inactive { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
 
     .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none; }
-    .action-btn.view { color: #10b981; } .action-btn.view:hover { background: #ecfdf5; color: #047857; }
-    .action-btn.edit { color: #4f46e5; } .action-btn.edit:hover { background: #eef2ff; color: #3730a3; }
-    .action-btn.delete { color: #ef4444; } .action-btn.delete:hover { background: #fef2f2; color: #b91c1c; }
+    .action-btn.view { color: #10b981; } .action-btn.view:hover { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+    .action-btn.edit { color: #4f46e5; } .action-btn.edit:hover { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
+    .action-btn.delete { color: #ef4444; } .action-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
 </style>
 {% endblock %}
 
@@ -49,6 +123,9 @@
         <p class="text-xs text-gray-500 mt-0.5 font-medium">Manage and view e-commerce brands and manufacturers</p>
     </div>
     <div class="flex items-center gap-3">
+        <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
+            <i class="fas fa-sliders-h text-sm"></i>
+        </button>
         <a href="/brands/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
             <i class="fas fa-plus"></i> Create Brand
         </a>
@@ -89,6 +166,12 @@
         <option value="Active">Active</option>
         <option value="Inactive">Inactive</option>
     </select>
+    <select id="filterBusiness">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}">{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
     <button type="button" id="btnClearFilters" class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
         <i class="fas fa-times-circle text-xs"></i> Clear Filters
     </button>
@@ -104,6 +187,7 @@
                     <th>Business Profile</th>
                     <th>Status</th>
                     <th style="width:110px">Actions</th>
+                    <th class="hidden"></th>
                     <th class="hidden"></th>
                 </tr>
             </thead>
@@ -121,7 +205,13 @@
                         </div>
                     </td>
                     <td class="text-xs text-gray-600 font-mono">{{ b.slug }}</td>
-                    <td class="text-xs text-gray-600">{{ biz_map.get(b.business_id, '—') }}</td>
+                    <td class="text-xs text-gray-600">
+                        {% if b.business_id and biz_map.get(b.business_id) %}
+                        {{ biz_map.get(b.business_id) }}
+                        {% else %}
+                        <span class="text-gray-400">— Global —</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% if b.is_active %}
                         <span class="badge badge-active"><i class="fas fa-circle text-[6px] mr-1"></i> Active</span>
@@ -137,10 +227,29 @@
                         </div>
                     </td>
                     <td class="hidden">{% if b.is_active %}Active{% else %}Inactive{% endif %}</td>
+                    <td class="hidden">{% if b.business_id and biz_map.get(b.business_id) %}{{ biz_map.get(b.business_id) }}{% else %}Global{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <!-- Custom footer -->
+    <div class="dt-footer">
+        <div class="dt-info" id="dtInfo"></div>
+        <div class="flex items-center gap-4 flex-wrap">
+            <div class="dt-perpage">
+                Show
+                <select id="dtPerPage">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+                entries
+            </div>
+            <div id="dtPagination"></div>
+        </div>
     </div>
 </div>
 
@@ -149,24 +258,86 @@
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <script>
 $(document).ready(function () {
     var table = $('#brandTable').DataTable({
         responsive: true,
         pageLength: 10,
-        dom: 'rtp',
-        columnDefs: [{ targets: [5], visible: false, searchable: true }],
-        order: []
+        dom: 'rt',
+        columnDefs: [{ targets: [5, 6], visible: false, searchable: true }],
+        order: [],
+        language: { emptyTable: "No brands found." },
+        drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
     $('#filterStatus').on('change', function () { table.column(5).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(6).search(this.value).draw(); });
+    $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
+
+    $('#btnToggleFilters').on('click', function() {
+        $('.toolbar').slideToggle(200);
+    });
+
     $('#btnClearFilters').on('click', function() {
         $('#customSearch').val('');
         $('#filterStatus').val('');
+        $('#filterBusiness').val('');
         table.search('').columns().search('').draw();
     });
+
+    function updateFooter(api) {
+        var info = api.page.info();
+        var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
+        var end   = Math.min(info.end, info.recordsDisplay);
+        var total = info.recordsDisplay;
+        var overall = info.recordsTotal;
+
+        if (total === 0) {
+            $('#dtInfo').text('No entries found');
+        } else if (total < overall) {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' filtered (total ' + overall + ')');
+        } else {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' entries');
+        }
+
+        var pages = info.pages;
+        var current = info.page;
+        var html = '';
+        var btnClass = 'inline-flex items-center justify-center w-7 h-7 rounded text-xs border transition-colors ';
+        var base   = btnClass + 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer';
+        var active = btnClass + 'border-indigo-600 bg-indigo-600 text-white font-semibold cursor-default';
+        var disabled = btnClass + 'border-gray-100 bg-white text-gray-300 cursor-default';
+
+        if (current === 0) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        }
+
+        var start_p = Math.max(0, current - 2);
+        var end_p   = Math.min(pages - 1, current + 2);
+        if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
+        if (start_p > 1) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        for (var i = start_p; i <= end_p; i++) {
+            html += '<button class="' + (i === current ? active : base) + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
+        }
+        if (end_p < pages - 2) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
+
+        if (current >= pages - 1) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        }
+
+        $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
+    }
+    window._dtTable = table;
 });
+
+function movePage(p) { window._dtTable.page(p).draw('page'); }
 
 function deleteBrand(id, name) {
     Swal.fire({
@@ -179,8 +350,14 @@ function deleteBrand(id, name) {
     }).then((result) => {
         if (result.isConfirmed) {
             fetch('/brands/' + id, { method: 'DELETE' }).then(response => {
-                if (response.ok) {
-                    Swal.fire('Deleted!', 'Brand deleted successfully.', 'success').then(() => window.location.reload());
+                if (response.ok || response.status === 204) {
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: 'Brand deleted successfully.',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => window.location.reload());
                 } else {
                     Swal.fire('Error', 'Failed to delete brand.', 'error');
                 }

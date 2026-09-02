@@ -129,8 +129,62 @@ class ProductRepository:
 
     def update(self, db: Session, product: Product, data: ProductUpdate) -> Product:
         update_data = data.model_dump(exclude_unset=True)
+
+        variants_data = update_data.pop("variants", None)
+        images_data = update_data.pop("images", None)
+
         for field, value in update_data.items():
             setattr(product, field, value)
+
+        if variants_data is not None:
+            existing_variants_map = {v.sku: v for v in product.variants}
+            submitted_skus = set()
+            for v_dict in variants_data:
+                sku = v_dict.get("sku")
+                if not sku:
+                    continue
+                submitted_skus.add(sku)
+                if sku in existing_variants_map:
+                    variant = existing_variants_map[sku]
+                    for k, val in v_dict.items():
+                        if val is not None:
+                            setattr(variant, k, val)
+                else:
+                    new_variant = ProductVariant(
+                        product_id=product.id,
+                        sku=v_dict.get("sku"),
+                        barcode=v_dict.get("barcode"),
+                        attributes=v_dict.get("attributes"),
+                        price=v_dict.get("price", 0),
+                        compare_at_price=v_dict.get("compare_at_price"),
+                        cost_price=v_dict.get("cost_price"),
+                        currency=v_dict.get("currency", "USD"),
+                        stock_qty=v_dict.get("stock_qty", 0),
+                        low_stock_threshold=v_dict.get("low_stock_threshold", 5),
+                        backorder_allowed=v_dict.get("backorder_allowed", False),
+                        is_default=v_dict.get("is_default", False),
+                        weight=v_dict.get("weight"),
+                        weight_unit=v_dict.get("weight_unit", "kg"),
+                        length=v_dict.get("length"),
+                        width=v_dict.get("width"),
+                        height=v_dict.get("height"),
+                        dimension_unit=v_dict.get("dimension_unit", "cm"),
+                    )
+                    product.variants.append(new_variant)
+
+        if images_data is not None:
+            for img_dict in images_data:
+                url = img_dict.get("url")
+                if url and not any(i.url == url for i in product.images):
+                    new_image = ProductImage(
+                        product_id=product.id,
+                        url=url,
+                        position=img_dict.get("position", 0),
+                        alt_text=img_dict.get("alt_text"),
+                        is_primary=img_dict.get("is_primary", False),
+                        media_type=img_dict.get("media_type", "image"),
+                    )
+                    product.images.append(new_image)
 
         db.commit()
         db.refresh(product)
