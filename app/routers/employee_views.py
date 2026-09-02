@@ -79,6 +79,32 @@ def employee_list_page(
     )
 
 
+@router.get("/employees/create2", response_class=HTMLResponse)
+def employee_create2_page(request: Request, db: Session = Depends(get_db)):
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    departments = department_service.get_departments(db, skip=0, limit=500)
+    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
+    employees = employee_service.get_employees(db, skip=0, limit=500)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/employees/employee_form2.html",
+        context={
+            "employee": None,
+            "is_edit": False,
+            "businesses": businesses,
+            "departments": departments,
+            "job_titles": job_titles,
+            "all_employees": employees,
+            "gender_options": [e.value for e in GenderEnum],
+            "marital_status_options": [e.value for e in MaritalStatusEnum],
+            "work_arrangement_options": [e.value for e in WorkArrangementEnum],
+            "employment_type_options": [e.value for e in EmploymentTypeEnum],
+            "active_page": "employees2",
+        },
+    )
+
+
 @router.get("/employees/create", response_class=HTMLResponse)
 def employee_create_page(request: Request, db: Session = Depends(get_db)):
     businesses = business_service.list_businesses(db, skip=0, limit=500)

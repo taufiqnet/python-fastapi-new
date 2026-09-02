@@ -1,30 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}{% if is_edit %}Edit Employee{% else %}Create Employee{% endif %} | HR & Payroll{% endblock %}
+{% block title %}{% if is_edit %}Edit Employee 2{% else %}Create Employee 2{% endif %} | HR & Payroll{% endblock %}
 
 {% block head %}
 <style>
-    .tab-btn {
-        padding: 10px 16px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #6b7280;
-        border-bottom: 2px solid transparent;
-        transition: all 0.15s ease;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        white-space: nowrap;
-    }
-    .tab-btn:hover {
-        color: #111827;
-        border-color: #d1d5db;
-    }
-    .tab-btn.active {
-        color: #4f46e5;
-        border-color: #4f46e5;
-    }
     .form-group {
         display: flex;
         flex-direction: column;
@@ -71,38 +50,25 @@
             </a>
         </div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
-            {% if is_edit %}Edit Employee{% else %}Create Employee{% endif %}
+            {% if is_edit %}Edit Employee 2{% else %}Create Employee 2{% endif %}
         </h1>
         <p class="text-xs text-gray-500 font-medium">
-            {% if is_edit %}Update employee details and organization metadata{% else %}Add a new employee to your organization{% endif %}
+            {% if is_edit %}Update employee details and organization metadata{% else %}Add a new employee to your organization (Single Page View){% endif %}
         </p>
     </div>
 </div>
 
-<form id="employeeForm" class="space-y-6" onsubmit="handleEmployeeSubmit(event)">
+<form id="employeeForm2" class="space-y-6" onsubmit="handleEmployee2Submit(event)">
     <input type="hidden" id="empId" value="{% if is_edit %}{{ employee.id }}{% endif %}">
 
     <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         
-        <!-- Tab Headers -->
-        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
-            <button type="button" class="tab-btn active" onclick="switchTab(event, 'basic')">
-                <i class="fas fa-user-circle text-xs"></i> Basic Information
-            </button>
-            <button type="button" class="tab-btn" onclick="switchTab(event, 'contact')">
-                <i class="fas fa-address-book text-xs"></i> Contact Information
-            </button>
-            <button type="button" class="tab-btn" onclick="switchTab(event, 'job')">
-                <i class="fas fa-sitemap text-xs"></i> Job & Organization
-            </button>
-            <button type="button" class="tab-btn" onclick="switchTab(event, 'settings')">
-                <i class="fas fa-cog text-xs"></i> Settings & Flags
-            </button>
-        </div>
-
-        <div class="p-6">
-            <!-- TAB 1: BASIC INFORMATION -->
-            <div id="tab-basic" class="tab-content space-y-4">
+        <div class="p-6 space-y-8">
+            <!-- SECTION 1: BASIC INFORMATION -->
+            <div>
+                <h2 class="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+                    <i class="fas fa-user-circle text-indigo-600"></i> Basic Information
+                </h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="form-group">
                         <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
@@ -193,8 +159,11 @@
                 </div>
             </div>
 
-            <!-- TAB 2: CONTACT INFORMATION -->
-            <div id="tab-contact" class="tab-content hidden space-y-4">
+            <!-- SECTION 2: CONTACT INFORMATION -->
+            <div>
+                <h2 class="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+                    <i class="fas fa-address-book text-indigo-600"></i> Contact Information
+                </h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="form-group">
                         <label class="form-label" for="work_email">Work Email <span class="text-red-500">*</span></label>
@@ -239,8 +208,11 @@
                 </div>
             </div>
 
-            <!-- TAB 3: JOB & ORGANIZATION -->
-            <div id="tab-job" class="tab-content hidden space-y-4">
+            <!-- SECTION 3: JOB & ORGANIZATION -->
+            <div>
+                <h2 class="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+                    <i class="fas fa-sitemap text-indigo-600"></i> Job & Organization
+                </h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="form-group">
                         <label class="form-label" for="department_id">Department</label>
@@ -319,8 +291,11 @@
                 </div>
             </div>
 
-            <!-- TAB 4: SETTINGS & FLAGS -->
-            <div id="tab-settings" class="tab-content hidden space-y-4">
+            <!-- SECTION 4: SETTINGS & FLAGS -->
+            <div>
+                <h2 class="text-sm font-bold text-gray-900 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+                    <i class="fas fa-cog text-indigo-600"></i> Settings & Flags
+                </h2>
                 <div class="form-group md:col-span-2 pt-2 flex flex-col md:flex-row gap-6">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" id="is_active" name="is_active" class="form-checkbox" {% if not is_edit or employee.is_active %}checked{% endif %}>
@@ -351,21 +326,13 @@
 
 {% block extra_js %}
 <script>
-function switchTab(evt, tabName) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-
-    evt.currentTarget.classList.add('active');
-    document.getElementById('tab-' + tabName).classList.remove('hidden');
-}
-
-function handleEmployeeSubmit(event) {
+function handleEmployee2Submit(event) {
     event.preventDefault();
     const isEdit = "{{ is_edit }}" === "True";
     const empId = document.getElementById('empId').value;
 
     const payload = {};
-    const form = document.getElementById('employeeForm');
+    const form = document.getElementById('employeeForm2');
     const inputs = form.querySelectorAll('input, select, textarea');
 
     inputs.forEach(input => {
