@@ -1,125 +1,240 @@
 {% extends "base.html" %}
 
-{% block title %}Employee Detail | {{ employee.full_name }}{% endblock %}
+{% block title %}Employee Profile | {{ employee.full_name }}{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Top Action Header -->
     <div class="flex items-center justify-between">
-        <div>
-            <div class="flex items-center gap-2">
-                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ employee.full_name }}</h1>
-                {% if employee.is_department_head %}
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    <i class="fas fa-crown text-[10px] mr-1"></i> Department Head
-                </span>
-                {% endif %}
-            </div>
-            <p class="text-xs text-gray-500 mt-0.5 font-medium">Employee ID: <span class="font-mono text-gray-700">{{ employee.employee_id }}</span></p>
-        </div>
-        
         <div class="flex items-center gap-2">
-            <a href="/employees/manage" class="px-3.5 py-2 border border-gray-200 hover:border-gray-300 bg-white text-gray-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm">
-                <i class="fas fa-arrow-left"></i> Back
+            <a href="/employees/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Employees
             </a>
-            <a href="/employees/edit/{{ employee.id }}" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm">
-                <i class="fas fa-edit"></i> Edit Employee
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/employees/edit/{{ employee.id }}" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 shadow-sm">
+                <i class="fas fa-edit"></i> Edit Profile
             </a>
         </div>
     </div>
 
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
-        <!-- Basic Info -->
-        <div>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100 pb-2 mb-3">Basic Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Business Profile</span>
-                    <span class="font-semibold text-gray-800">{{ business.name_en if business else 'N/A' }}</span>
+    <!-- Main CV Profile Card -->
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        
+        <!-- Cover Banner / Profile Header -->
+        <div class="bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-900 px-8 py-8 text-white relative">
+            <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+                <!-- Avatar with Photo Placeholder -->
+                <div class="relative shrink-0">
+                    <div class="w-28 h-28 rounded-2xl bg-indigo-100 border-4 border-white/20 shadow-lg flex items-center justify-center text-indigo-700 font-bold text-3xl overflow-hidden">
+                        {% if employee.first_name and employee.last_name %}
+                            {{ employee.first_name[0] }}{{ employee.last_name[0] }}
+                        {% else %}
+                            <i class="fas fa-user text-4xl text-indigo-400"></i>
+                        {% endif %}
+                    </div>
+                    <button type="button" title="Photo feature coming soon" class="absolute -bottom-1 -right-1 bg-white text-gray-700 p-2 rounded-full shadow-md border border-gray-200 hover:bg-gray-50 transition-colors text-xs flex items-center justify-center">
+                        <i class="fas fa-camera text-indigo-600"></i>
+                    </button>
                 </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Full Name</span>
-                    <span class="font-semibold text-gray-800">{{ employee.full_name }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Date of Birth</span>
-                    <span class="font-semibold text-gray-800">{{ employee.date_of_birth if employee.date_of_birth else '—' }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Gender</span>
-                    <span class="font-semibold text-gray-800">{{ employee.gender.value|capitalize if employee.gender else '—' }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Marital Status</span>
-                    <span class="font-semibold text-gray-800">{{ employee.marital_status.value|capitalize if employee.marital_status else '—' }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Nationality</span>
-                    <span class="font-semibold text-gray-800">{{ employee.nationality if employee.nationality else '—' }}</span>
+
+                <!-- Basic Header Details -->
+                <div class="flex-1 text-center md:text-left space-y-2">
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                        <h1 class="text-2xl font-bold text-white tracking-tight">{{ employee.full_name }}</h1>
+                        {% if employee.is_active %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                                Active
+                            </span>
+                        {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/20 text-red-200 border border-red-400/30">
+                                Inactive
+                            </span>
+                        {% endif %}
+
+                        {% if employee.is_department_head %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/30">
+                                <i class="fas fa-crown text-[9px] mr-1"></i> Department Head
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <p class="text-indigo-200 text-sm font-medium">
+                        {{ employee.job_title.name if employee.job_title else 'Job Designation Unassigned' }}
+                        {% if employee.department %}
+                            <span class="text-indigo-300/60 mx-1">•</span> {{ employee.department.name }}
+                        {% endif %}
+                    </p>
+
+                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 pt-1 text-xs text-indigo-100/80 font-mono">
+                        <div><i class="fas fa-id-card mr-1 text-indigo-300"></i> ID: {{ employee.employee_id }}</div>
+                        <div><i class="fas fa-building mr-1 text-indigo-300"></i> {{ business.name_en if business else 'Company N/A' }}</div>
+                        {% if employee.team %}
+                        <div><i class="fas fa-users mr-1 text-indigo-300"></i> Team: {{ employee.team }}</div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Contact Info -->
-        <div>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100 pb-2 mb-3">Contact Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+        <!-- CV Sections Grid Layout -->
+        <div class="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <!-- Left Column: Quick Contact & Metadata -->
+            <div class="space-y-6 md:border-r border-gray-100 md:pr-6">
+                <!-- Contact Summary -->
                 <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Work Email</span>
-                    <span class="font-semibold text-gray-800">{{ employee.work_email }}</span>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center gap-2">
+                        <i class="fas fa-address-card text-indigo-600"></i> Contact Details
+                    </h3>
+                    <ul class="space-y-3 text-xs">
+                        <li class="flex items-start gap-2.5">
+                            <i class="fas fa-envelope text-gray-400 mt-0.5 w-4 text-center shrink-0"></i>
+                            <div>
+                                <span class="text-gray-400 block font-medium text-[11px]">Work Email</span>
+                                <a href="mailto:{{ employee.work_email }}" class="font-semibold text-indigo-600 hover:underline break-all">{{ employee.work_email }}</a>
+                            </div>
+                        </li>
+
+                        {% if employee.personal_email %}
+                        <li class="flex items-start gap-2.5">
+                            <i class="fas fa-at text-gray-400 mt-0.5 w-4 text-center shrink-0"></i>
+                            <div>
+                                <span class="text-gray-400 block font-medium text-[11px]">Personal Email</span>
+                                <span class="font-semibold text-gray-800 break-all">{{ employee.personal_email }}</span>
+                            </div>
+                        </li>
+                        {% endif %}
+
+                        <li class="flex items-start gap-2.5">
+                            <i class="fas fa-phone text-gray-400 mt-0.5 w-4 text-center shrink-0"></i>
+                            <div>
+                                <span class="text-gray-400 block font-medium text-[11px]">Phone</span>
+                                <span class="font-semibold text-gray-800">{{ employee.phone if employee.phone else '—' }}</span>
+                            </div>
+                        </li>
+
+                        {% if employee.linkedin %}
+                        <li class="flex items-start gap-2.5">
+                            <i class="fab fa-linkedin text-indigo-600 mt-0.5 w-4 text-center shrink-0"></i>
+                            <div>
+                                <span class="text-gray-400 block font-medium text-[11px]">LinkedIn</span>
+                                <a href="{{ employee.linkedin }}" target="_blank" class="font-semibold text-indigo-600 hover:underline break-all">View LinkedIn Profile</a>
+                            </div>
+                        </li>
+                        {% endif %}
+
+                        {% if employee.emergency_contact %}
+                        <li class="flex items-start gap-2.5 pt-1">
+                            <i class="fas fa-user-shield text-red-500 mt-0.5 w-4 text-center shrink-0"></i>
+                            <div>
+                                <span class="text-gray-400 block font-medium text-[11px]">Emergency Contact</span>
+                                <span class="font-semibold text-gray-800">{{ employee.emergency_contact }}</span>
+                            </div>
+                        </li>
+                        {% endif %}
+                    </ul>
                 </div>
+
+                <!-- Residential Address -->
+                {% if employee.residential_address %}
+                <div class="pt-4 border-t border-gray-100">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-2">
+                        <i class="fas fa-map-marker-alt text-indigo-600"></i> Residential Address
+                    </h3>
+                    <p class="text-xs text-gray-700 leading-relaxed bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        {{ employee.residential_address }}
+                    </p>
+                </div>
+                {% endif %}
+
+                <!-- Organizational Structure -->
+                <div class="pt-4 border-t border-gray-100 space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-2">
+                        <i class="fas fa-sitemap text-indigo-600"></i> Management
+                    </h3>
+                    <div class="text-xs">
+                        <span class="text-gray-400 block font-medium text-[11px]">Direct Manager</span>
+                        <span class="font-semibold text-gray-800">
+                            {% if employee.direct_manager %}
+                                {{ employee.direct_manager.full_name }} ({{ employee.direct_manager.employee_id }})
+                            {% else %}
+                                None
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Personal & Employment CV Sections -->
+            <div class="md:col-span-2 space-y-6">
+
+                <!-- Personal Information Section -->
                 <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Personal Email</span>
-                    <span class="font-semibold text-gray-800">{{ employee.personal_email if employee.personal_email else '—' }}</span>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-gray-900 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+                        <i class="fas fa-user text-indigo-600"></i> Personal Information
+                    </h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Date of Birth</span>
+                            <span class="font-semibold text-gray-800">{{ employee.date_of_birth if employee.date_of_birth else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Gender</span>
+                            <span class="font-semibold text-gray-800">{{ employee.gender.value|capitalize if employee.gender else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Marital Status</span>
+                            <span class="font-semibold text-gray-800">{{ employee.marital_status.value|capitalize if employee.marital_status else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Nationality</span>
+                            <span class="font-semibold text-gray-800">{{ employee.nationality if employee.nationality else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">National ID</span>
+                            <span class="font-semibold text-gray-800 font-mono">{{ employee.national_id if employee.national_id else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Passport No</span>
+                            <span class="font-semibold text-gray-800 font-mono">{{ employee.passport_no if employee.passport_no else '—' }}</span>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Employment & Contract Details -->
                 <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Phone</span>
-                    <span class="font-semibold text-gray-800">{{ employee.phone if employee.phone else '—' }}</span>
+                    <h2 class="text-xs font-bold uppercase tracking-wider text-gray-900 border-b border-gray-200 pb-2 mb-4 flex items-center gap-2">
+                        <i class="fas fa-briefcase text-indigo-600"></i> Employment & Contract Details
+                    </h2>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Employment Type</span>
+                            <span class="font-semibold text-gray-800">{{ employee.employment_type.value|replace('_', ' ')|title if employee.employment_type else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Work Arrangement</span>
+                            <span class="font-semibold text-gray-800">{{ employee.work_arrangement.value|title if employee.work_arrangement else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Start Date</span>
+                            <span class="font-semibold text-gray-800">{{ employee.start_date if employee.start_date else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Contract End Date</span>
+                            <span class="font-semibold text-gray-800">{{ employee.contract_end_date if employee.contract_end_date else '—' }}</span>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <span class="text-gray-400 block font-medium text-[11px]">Probation End Date</span>
+                            <span class="font-semibold text-gray-800">{{ employee.probation_end_date if employee.probation_end_date else '—' }}</span>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">LinkedIn</span>
-                    {% if employee.linkedin %}
-                    <a href="{{ employee.linkedin }}" target="_blank" class="text-indigo-600 hover:underline font-semibold">{{ employee.linkedin }}</a>
-                    {% else %}
-                    <span class="font-semibold text-gray-800">—</span>
-                    {% endif %}
-                </div>
-                <div class="md:col-span-2">
-                    <span class="text-gray-400 block font-medium mb-0.5">Emergency Contact</span>
-                    <span class="font-semibold text-gray-800">{{ employee.emergency_contact if employee.emergency_contact else '—' }}</span>
-                </div>
+
             </div>
         </div>
 
-        <!-- Job & Organization -->
-        <div>
-            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100 pb-2 mb-3">Job & Employment Details</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Department</span>
-                    <span class="font-semibold text-gray-800">{{ employee.department.name if employee.department else 'Unassigned' }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Job Title</span>
-                    <span class="font-semibold text-gray-800">{{ employee.job_title.name if employee.job_title else 'Unassigned' }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Direct Manager</span>
-                    <span class="font-semibold text-gray-800">{{ employee.direct_manager.full_name if employee.direct_manager else 'None' }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Employment Type</span>
-                    <span class="font-semibold text-gray-800">{{ employee.employment_type.value|replace('_', ' ')|title if employee.employment_type else '—' }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Work Arrangement</span>
-                    <span class="font-semibold text-gray-800">{{ employee.work_arrangement.value|title if employee.work_arrangement else '—' }}</span>
-                </div>
-                <div>
-                    <span class="text-gray-400 block font-medium mb-0.5">Start Date</span>
-                    <span class="font-semibold text-gray-800">{{ employee.start_date if employee.start_date else '—' }}</span>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 {% endblock %}
