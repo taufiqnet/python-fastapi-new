@@ -53,6 +53,7 @@ from app.modules.hr_payroll.organization.models import (  # noqa: F401
     Department,
     JobTitle,
 )
+from app.modules.hr_payroll.employees.models import Employee  # noqa: F401
 
 # TODO: Product.business_id and several other models FK to a business/tenant
 # table (e.g. BusinessProfile). If that model isn't imported somewhere before

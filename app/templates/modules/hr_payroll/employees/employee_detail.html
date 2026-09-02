@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Employee Detail | {{ employee.full_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{{ employee.full_name }}</h1>
+                {% if employee.is_department_head %}
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <i class="fas fa-crown text-[10px] mr-1"></i> Department Head
+                </span>
+                {% endif %}
+            </div>
+            <p class="text-xs text-gray-500 mt-0.5 font-medium">Employee ID: <span class="font-mono text-gray-700">{{ employee.employee_id }}</span></p>
+        </div>
+        
+        <div class="flex items-center gap-2">
+            <a href="/employees/manage" class="px-3.5 py-2 border border-gray-200 hover:border-gray-300 bg-white text-gray-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <a href="/employees/edit/{{ employee.id }}" class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm">
+                <i class="fas fa-edit"></i> Edit Employee
+            </a>
+        </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
+        <!-- Basic Info -->
+        <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100 pb-2 mb-3">Basic Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Business Profile</span>
+                    <span class="font-semibold text-gray-800">{{ business.name_en if business else 'N/A' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Full Name</span>
+                    <span class="font-semibold text-gray-800">{{ employee.full_name }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Date of Birth</span>
+                    <span class="font-semibold text-gray-800">{{ employee.date_of_birth if employee.date_of_birth else '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Gender</span>
+                    <span class="font-semibold text-gray-800">{{ employee.gender.value|capitalize if employee.gender else '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Marital Status</span>
+                    <span class="font-semibold text-gray-800">{{ employee.marital_status.value|capitalize if employee.marital_status else '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Nationality</span>
+                    <span class="font-semibold text-gray-800">{{ employee.nationality if employee.nationality else '—' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Info -->
+        <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100 pb-2 mb-3">Contact Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Work Email</span>
+                    <span class="font-semibold text-gray-800">{{ employee.work_email }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Personal Email</span>
+                    <span class="font-semibold text-gray-800">{{ employee.personal_email if employee.personal_email else '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Phone</span>
+                    <span class="font-semibold text-gray-800">{{ employee.phone if employee.phone else '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">LinkedIn</span>
+                    {% if employee.linkedin %}
+                    <a href="{{ employee.linkedin }}" target="_blank" class="text-indigo-600 hover:underline font-semibold">{{ employee.linkedin }}</a>
+                    {% else %}
+                    <span class="font-semibold text-gray-800">—</span>
+                    {% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <span class="text-gray-400 block font-medium mb-0.5">Emergency Contact</span>
+                    <span class="font-semibold text-gray-800">{{ employee.emergency_contact if employee.emergency_contact else '—' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Job & Organization -->
+        <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-gray-500 border-b border-gray-100 pb-2 mb-3">Job & Employment Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Department</span>
+                    <span class="font-semibold text-gray-800">{{ employee.department.name if employee.department else 'Unassigned' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Job Title</span>
+                    <span class="font-semibold text-gray-800">{{ employee.job_title.name if employee.job_title else 'Unassigned' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Direct Manager</span>
+                    <span class="font-semibold text-gray-800">{{ employee.direct_manager.full_name if employee.direct_manager else 'None' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Employment Type</span>
+                    <span class="font-semibold text-gray-800">{{ employee.employment_type.value|replace('_', ' ')|title if employee.employment_type else '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Work Arrangement</span>
+                    <span class="font-semibold text-gray-800">{{ employee.work_arrangement.value|title if employee.work_arrangement else '—' }}</span>
+                </div>
+                <div>
+                    <span class="text-gray-400 block font-medium mb-0.5">Start Date</span>
+                    <span class="font-semibold text-gray-800">{{ employee.start_date if employee.start_date else '—' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
