@@ -1,6 +1,7 @@
+import os
 import uuid
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.common.enums import Status
@@ -20,6 +21,9 @@ from app.modules.ecommerce.products.schemas import (
     VariantCreate,
     VariantUpdate,
 )
+
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
 class ProductService:
@@ -141,6 +145,11 @@ class ProductService:
 
     def delete_product(self, db: Session, product_id: uuid.UUID) -> None:
         product = self.get_product(db, product_id)
+
+        # Delete physical images
+        for img in product.images:
+            self._delete_physical_image_file(img.url)
+
         self.repository.delete(db, product)
 
     # --- Tags ---
@@ -185,6 +194,60 @@ class ProductService:
         self.repository.delete_variant(db, variant)
 
     # --- Images ---
+    def upload_product_images(
+        self, product_slug: str, files: list[UploadFile]
+    ) -> list[str]:
+        if not files:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No files provided",
+            )
+
+        upload_dir = "app/static/ecommerce/images"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        saved_urls = []
+        for index, file in enumerate(files):
+            if not file.content_type or not file.content_type.startswith("image/"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"File '{file.filename}' is not a valid image.",
+                )
+
+            # Check size
+            file.file.seek(0, os.SEEK_END)
+            file_size = file.file.tell()
+            file.file.seek(0)
+
+            if file_size > MAX_FILE_SIZE:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"File '{file.filename}' exceeds maximum allowed size of 5MB.",
+                )
+
+            # Determine extension
+            ext = ".jpg"
+            if file.filename and "." in file.filename:
+                ext = "." + file.filename.rsplit(".", 1)[-1].lower()
+
+            # Format name: product_slug, product_slug_1, product_slug_2, etc.
+            if index == 0 and not os.path.exists(os.path.join(upload_dir, f"{product_slug}{ext}")):
+                filename = f"{product_slug}{ext}"
+            else:
+                counter = index if index > 0 else 1
+                while os.path.exists(os.path.join(upload_dir, f"{product_slug}_{counter}{ext}")):
+                    counter += 1
+                filename = f"{product_slug}_{counter}{ext}"
+
+            filepath = os.path.join(upload_dir, filename)
+            with open(filepath, "wb") as f:
+                f.write(file.file.read())
+
+            relative_url = f"/static/ecommerce/images/{filename}"
+            saved_urls.append(relative_url)
+
+        return saved_urls
+
     def add_image(
         self, db: Session, product_id: uuid.UUID, data: ProductImageCreate
     ) -> ProductImage:
@@ -198,4 +261,16 @@ class ProductService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Image not found",
             )
+
+        self._delete_physical_image_file(image.url)
         self.repository.delete_image(db, image)
+
+    def _delete_physical_image_file(self, url: str) -> None:
+        if url and url.startswith("/static/ecommerce/images/"):
+            filename = url.replace("/static/ecommerce/images/", "")
+            file_path = os.path.join("app/static/ecommerce/images", filename)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except Exception:
+                    pass

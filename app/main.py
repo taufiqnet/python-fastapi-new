@@ -1,7 +1,9 @@
 import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.database import Base, engine
@@ -49,6 +51,9 @@ app = FastAPI(
     title="E-Commerce API",
     version="1.0.0",
 )
+
+os.makedirs("app/static/ecommerce/images", exist_ok=True)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.add_middleware(
     CORSMiddleware,

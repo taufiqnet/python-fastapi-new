@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.common.enums import Status
@@ -62,6 +62,14 @@ def create_tag(
     db: Session = Depends(get_db),
 ):
     return service.create_tag(db, tag_data)
+
+
+@router.post("/upload-images", response_model=list[str])
+def upload_images(
+    product_slug: str = Form(...),
+    files: list[UploadFile] = File(...),
+):
+    return service.upload_product_images(product_slug=product_slug, files=files)
 
 
 @router.get("/{product_id}", response_model=ProductDetailOut)

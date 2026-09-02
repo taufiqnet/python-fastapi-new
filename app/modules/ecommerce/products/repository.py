@@ -102,14 +102,18 @@ class ProductRepository:
                 product.variants.append(variant)
 
         if data.images:
+            variants_by_sku = {v.sku: v for v in product.variants}
             for img_data in data.images:
+                v_id = img_data.variant_id
+                if not v_id and img_data.variant_sku and img_data.variant_sku in variants_by_sku:
+                    v_id = variants_by_sku[img_data.variant_sku].id
                 image = ProductImage(
                     url=img_data.url,
                     position=img_data.position,
                     alt_text=img_data.alt_text,
                     is_primary=img_data.is_primary,
                     media_type=img_data.media_type,
-                    variant_id=img_data.variant_id,
+                    variant_id=v_id,
                 )
                 product.images.append(image)
 
@@ -172,19 +176,36 @@ class ProductRepository:
                     )
                     product.variants.append(new_variant)
 
+            # Delete variants no longer present
+            for sku, existing_v in list(existing_variants_map.items()):
+                if sku not in submitted_skus:
+                    db.delete(existing_v)
+
         if images_data is not None:
+            variants_by_sku = {v.sku: v for v in product.variants}
             for img_dict in images_data:
                 url = img_dict.get("url")
-                if url and not any(i.url == url for i in product.images):
-                    new_image = ProductImage(
-                        product_id=product.id,
-                        url=url,
-                        position=img_dict.get("position", 0),
-                        alt_text=img_dict.get("alt_text"),
-                        is_primary=img_dict.get("is_primary", False),
-                        media_type=img_dict.get("media_type", "image"),
-                    )
-                    product.images.append(new_image)
+                v_sku = img_dict.get("variant_sku")
+                v_id = img_dict.get("variant_id")
+                if not v_id and v_sku and v_sku in variants_by_sku:
+                    v_id = variants_by_sku[v_sku].id
+
+                if url:
+                    existing_img = next((i for i in product.images if i.url == url), None)
+                    if existing_img:
+                        if v_id:
+                            existing_img.variant_id = v_id
+                    else:
+                        new_image = ProductImage(
+                            product_id=product.id,
+                            url=url,
+                            position=img_dict.get("position", 0),
+                            alt_text=img_dict.get("alt_text"),
+                            is_primary=img_dict.get("is_primary", False),
+                            media_type=img_dict.get("media_type", "image"),
+                            variant_id=v_id,
+                        )
+                        product.images.append(new_image)
 
         db.commit()
         db.refresh(product)

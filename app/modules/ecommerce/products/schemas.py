@@ -21,6 +21,7 @@ class ProductImageBase(BaseModel):
     is_primary: bool = False
     media_type: MediaType = MediaType.IMAGE
     variant_id: uuid.UUID | None = None
+    variant_sku: str | None = None
 
 
 class ProductImageCreate(ProductImageBase):
