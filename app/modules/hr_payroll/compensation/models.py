@@ -39,20 +39,36 @@ class EmployeeSalary(Base, UUIDMixin, TimestampMixin):
     )
 
     # ── Earnings ────────────────────────────────────────────────────
-    basic_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    basic_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
     house_rent: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    medical_allowance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    transport_allowance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    food_allowance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    other_allowance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    medical_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    transport_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    food_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    other_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
 
     # ── Deductions ──────────────────────────────────────────────────
     tax: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    provident_fund: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    other_deduction: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    provident_fund: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    other_deduction: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
 
     # ── Computed totals (written by service.py, not the model) ───────
-    gross_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    gross_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
     net_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
 
     effective_from: Mapped["Date"] = mapped_column(Date, nullable=False)

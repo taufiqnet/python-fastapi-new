@@ -1,6 +1,6 @@
 <!-- HR & PAYROLL MODULE -->
-<div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications'] %}expanded{% endif %}" data-module="hr_payroll">
-    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications'] %}active{% endif %}">
+<div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation'] %}expanded{% endif %}" data-module="hr_payroll">
+    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation'] %}active{% endif %}">
         <span class="flex items-center">
             <i class="fas fa-users-cog w-4 text-sm shrink-0"></i>
             <span class="ml-3 text-[13px] font-medium sidebar-text">HR & Payroll</span>
@@ -52,6 +52,15 @@
             </span>
             <span class="sidebar-tooltip">
                 Leave Requests
+            </span>
+        </a>
+        <a href="/compensation/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'compensation' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <i class="fas fa-money-bill-wave w-4 text-sm shrink-0"></i>
+            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                Compensation
+            </span>
+            <span class="sidebar-tooltip">
+                Compensation
             </span>
         </a>
     </div>

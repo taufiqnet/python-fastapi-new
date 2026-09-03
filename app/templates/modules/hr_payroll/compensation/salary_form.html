@@ -1,0 +1,321 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Compensation Structure{% else %}Create Compensation Structure{% endif %} | HR & Payroll{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/compensation/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Compensation
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Compensation Structure{% else %}Create Compensation Structure{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update salary components, allowances, and deductions{% else %}Define employee base salary, allowances, and deductions{% endif %}
+        </p>
+    </div>
+</div>
+
+<form id="salaryForm" class="space-y-6" onsubmit="handleSalarySubmit(event)">
+    <input type="hidden" id="salaryId" value="{% if is_edit %}{{ salary.id }}{% endif %}">
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active">
+                <i class="fas fa-money-bill-wave text-xs"></i> Compensation Details
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="space-y-6">
+                <!-- Basic Assignment -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="employee_id">Employee <span class="text-red-500">*</span></label>
+                        <select id="employee_id" name="employee_id" class="form-input" required {% if is_edit %}disabled{% endif %}>
+                            <option value="">— Select Employee —</option>
+                            {% for e in employees %}
+                            <option value="{{ e.id }}" {% if is_edit and salary.employee_id == e.id %}selected{% endif %}>
+                                {{ e.first_name }} {{ e.last_name }} ({{ e.employee_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        <select id="business_id" name="business_id" class="form-input" required>
+                            <option value="">— Select Business —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if is_edit and salary.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }} (ID: {{ b.id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="effective_from">Effective From <span class="text-red-500">*</span></label>
+                        <input type="date" id="effective_from" name="effective_from" class="form-input" required
+                               value="{% if is_edit %}{{ salary.effective_from }}{% endif %}">
+                    </div>
+                </div>
+
+                <!-- Earnings Section -->
+                <div>
+                    <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-emerald-600"></i> Earnings & Allowances
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                        <div class="form-group">
+                            <label class="form-label" for="basic_salary">Basic Salary <span class="text-red-500">*</span></label>
+                            <input type="number" step="0.01" min="0" id="basic_salary" name="basic_salary" class="form-input calc-input" required
+                                   value="{% if is_edit %}{{ salary.basic_salary }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="house_rent">House Rent Allowance</label>
+                            <input type="number" step="0.01" min="0" id="house_rent" name="house_rent" class="form-input calc-input"
+                                   value="{% if is_edit %}{{ salary.house_rent }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="medical_allowance">Medical Allowance</label>
+                            <input type="number" step="0.01" min="0" id="medical_allowance" name="medical_allowance" class="form-input calc-input"
+                                   value="{% if is_edit %}{{ salary.medical_allowance }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="transport_allowance">Transport Allowance</label>
+                            <input type="number" step="0.01" min="0" id="transport_allowance" name="transport_allowance" class="form-input calc-input"
+                                   value="{% if is_edit %}{{ salary.transport_allowance }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="food_allowance">Food Allowance</label>
+                            <input type="number" step="0.01" min="0" id="food_allowance" name="food_allowance" class="form-input calc-input"
+                                   value="{% if is_edit %}{{ salary.food_allowance }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="other_allowance">Other Allowance</label>
+                            <input type="number" step="0.01" min="0" id="other_allowance" name="other_allowance" class="form-input calc-input"
+                                   value="{% if is_edit %}{{ salary.other_allowance }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Deductions Section -->
+                <div>
+                    <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fas fa-minus-circle text-rose-600"></i> Deductions
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-rose-50/40 rounded-xl border border-rose-100">
+                        <div class="form-group">
+                            <label class="form-label" for="tax">Tax Deduction</label>
+                            <input type="number" step="0.01" min="0" id="tax" name="tax" class="form-input calc-input"
+                                   value="{% if is_edit %}{{ salary.tax }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="provident_fund">Provident Fund (PF)</label>
+                            <input type="number" step="0.01" min="0" id="provident_fund" name="provident_fund" class="form-input calc-input"
+                                   value="{% if is_edit %}{{ salary.provident_fund }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="other_deduction">Other Deductions</label>
+                            <input type="number" step="0.01" min="0" id="other_deduction" name="other_deduction" class="form-input calc-input"
+                                   value="{% if is_edit %}{{ salary.other_deduction }}{% else %}0.00{% endif %}" oninput="calculateTotals()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Computed Calculation Preview -->
+                <div class="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold text-indigo-900 uppercase">Live Computation Preview</h4>
+                            <p class="text-[11px] text-indigo-600">Gross = Sum of Earnings | Net = Gross - Deductions</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-6">
+                        <div class="text-right">
+                            <span class="text-[11px] font-medium text-gray-500 uppercase block">Gross Salary</span>
+                            <span id="previewGross" class="text-base font-extrabold text-emerald-700">0.00</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[11px] font-medium text-gray-500 uppercase block">Net Salary</span>
+                            <span id="previewNet" class="text-base font-extrabold text-indigo-700">0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/compensation/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Salary Structure{% else %}Save Salary Structure{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getNum(id) {
+    const val = parseFloat(document.getElementById(id).value);
+    return isNaN(val) ? 0 : val;
+}
+
+function calculateTotals() {
+    const basic = getNum('basic_salary');
+    const houseRent = getNum('house_rent');
+    const medical = getNum('medical_allowance');
+    const transport = getNum('transport_allowance');
+    const food = getNum('food_allowance');
+    const otherAllow = getNum('other_allowance');
+
+    const tax = getNum('tax');
+    const pf = getNum('provident_fund');
+    const otherDeduct = getNum('other_deduction');
+
+    const gross = basic + houseRent + medical + transport + food + otherAllow;
+    const net = gross - (tax + pf + otherDeduct);
+
+    document.getElementById('previewGross').innerText = gross.toFixed(2);
+    document.getElementById('previewNet').innerText = net.toFixed(2);
+}
+
+document.addEventListener('DOMContentLoaded', calculateTotals);
+
+function handleSalarySubmit(event) {
+    event.preventDefault();
+    const isEdit = "{{ is_edit }}" === "True";
+    const salaryId = document.getElementById('salaryId').value;
+
+    const payload = {
+        employee_id: document.getElementById('employee_id').value,
+        business_id: parseInt(document.getElementById('business_id').value),
+        effective_from: document.getElementById('effective_from').value,
+        basic_salary: getNum('basic_salary'),
+        house_rent: getNum('house_rent'),
+        medical_allowance: getNum('medical_allowance'),
+        transport_allowance: getNum('transport_allowance'),
+        food_allowance: getNum('food_allowance'),
+        other_allowance: getNum('other_allowance'),
+        tax: getNum('tax'),
+        provident_fund: getNum('provident_fund'),
+        other_deduction: getNum('other_deduction')
+    };
+
+    const url = isEdit ? '/compensation/salaries/' + salaryId : '/compensation/salaries';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'Failed to save salary structure';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        showSuccessToast(
+            isEdit ? 'Structure Updated' : 'Structure Created',
+            isEdit ? 'Compensation structure updated successfully.' : 'New salary structure created successfully.'
+        );
+        setTimeout(() => { window.location.href = '/compensation/manage'; }, 1200);
+    })
+    .catch(err => {
+        showErrorAlert('Save Failed', err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Salary Structure' : 'Save Salary Structure');
+    });
+}
+</script>
+{% endblock %}

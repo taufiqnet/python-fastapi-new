@@ -3883,6 +3883,208 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Compensation",
+      "item": [
+        {
+          "name": "Create Salary Structure",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"salary_id\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"basic_salary\": 5000.0,\n  \"house_rent\": 1000.0,\n  \"medical_allowance\": 500.0,\n  \"transport_allowance\": 300.0,\n  \"food_allowance\": 200.0,\n  \"other_allowance\": 100.0,\n  \"tax\": 500.0,\n  \"provident_fund\": 300.0,\n  \"other_deduction\": 100.0,\n  \"effective_from\": \"2025-01-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/compensation/salaries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compensation",
+                "salaries"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Salary Structures",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/compensation/salaries?skip=0&limit=100&business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compensation",
+                "salaries"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Salary Structure",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compensation",
+                "salaries",
+                "{{salary_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Salary Structure by Employee",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/compensation/salaries/employee/{{employee_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compensation",
+                "salaries",
+                "employee",
+                "{{employee_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Salary Structure",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"basic_salary\": 6000.0,\n  \"house_rent\": 1200.0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compensation",
+                "salaries",
+                "{{salary_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Salary Structure",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "compensation",
+                "salaries",
+                "{{salary_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -3993,6 +4195,11 @@
     },
     {
       "key": "attendance_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "salary_id",
       "value": "",
       "type": "string"
     }

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Compensation Structure Detail | HR & Payroll{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/compensation/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Compensation Structures
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if employee %}{{ employee.first_name }} {{ employee.last_name }}{% else %}Employee Salary Detail{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">Effective From: {{ salary.effective_from }}</p>
+    </div>
+    <div>
+        <a href="/compensation/edit/{{ salary.id }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors inline-flex items-center gap-2">
+            <i class="fas fa-edit"></i> Edit Structure
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">Basic Salary</span>
+        <h3 class="text-xl font-extrabold text-gray-900 mt-1">{{ "%.2f"|format(salary.basic_salary) }}</h3>
+    </div>
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">Gross Salary</span>
+        <h3 class="text-xl font-extrabold text-emerald-600 mt-1">{{ "%.2f"|format(salary.gross_salary) }}</h3>
+    </div>
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <span class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider block">Net Salary</span>
+        <h3 class="text-xl font-extrabold text-indigo-600 mt-1">{{ "%.2f"|format(salary.net_salary) }}</h3>
+    </div>
+</div>
+
+<!-- Details Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Earnings Breakdown -->
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200 bg-emerald-50/50 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-emerald-900 uppercase tracking-wider flex items-center gap-2">
+                <i class="fas fa-plus-circle text-emerald-600"></i> Earnings Breakdown
+            </h3>
+        </div>
+        <div class="p-5">
+            <table class="w-full text-xs">
+                <tbody class="divide-y divide-gray-100">
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">Basic Salary</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.basic_salary) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">House Rent Allowance</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.house_rent) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">Medical Allowance</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.medical_allowance) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">Transport Allowance</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.transport_allowance) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">Food Allowance</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.food_allowance) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">Other Allowance</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.other_allowance) }}</td>
+                    </tr>
+                    <tr class="bg-emerald-50/50 font-bold">
+                        <td class="py-3 text-emerald-900 uppercase text-[11px]">Total Gross Earnings</td>
+                        <td class="py-3 text-right text-emerald-700 text-sm">{{ "%.2f"|format(salary.gross_salary) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Deductions Breakdown -->
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200 bg-rose-50/50 flex items-center justify-between">
+            <h3 class="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-2">
+                <i class="fas fa-minus-circle text-rose-600"></i> Deductions Breakdown
+            </h3>
+        </div>
+        <div class="p-5">
+            <table class="w-full text-xs">
+                <tbody class="divide-y divide-gray-100">
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">Tax Deduction</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.tax) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">Provident Fund (PF)</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.provident_fund) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2.5 font-medium text-gray-600">Other Deductions</td>
+                        <td class="py-2.5 text-right font-semibold text-gray-900">{{ "%.2f"|format(salary.other_deduction) }}</td>
+                    </tr>
+                    <tr class="bg-rose-50/50 font-bold">
+                        <td class="py-3 text-rose-900 uppercase text-[11px]">Total Deductions</td>
+                        <td class="py-3 text-right text-rose-700 text-sm">{{ "%.2f"|format(salary.tax + salary.provident_fund + salary.other_deduction) }}</td>
+                    </tr>
+                    <tr class="bg-indigo-50/80 font-extrabold">
+                        <td class="py-3 text-indigo-900 uppercase text-[11px]">Net Payable Salary</td>
+                        <td class="py-3 text-right text-indigo-700 text-base">{{ "%.2f"|format(salary.net_salary) }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

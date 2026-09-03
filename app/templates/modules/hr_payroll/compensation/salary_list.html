@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Compensation Structures | HR & Payroll{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Compensation & Salary Structures</h1>
+        <p class="text-xs text-gray-500 font-medium mt-1">Manage base salaries, allowances, and deductions for employees</p>
+    </div>
+    <div>
+        <a href="/compensation/create" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors inline-flex items-center gap-2">
+            <i class="fas fa-plus"></i> Add Salary Structure
+        </a>
+    </div>
+</div>
+
+<!-- Stats Overview Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Total Structures</p>
+                <h3 class="text-xl font-extrabold text-gray-900 mt-1">{{ total_count }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Total Gross Payroll</p>
+                <h3 class="text-xl font-extrabold text-emerald-600 mt-1">{{ "%.2f"|format(total_gross) }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
+                <i class="fas fa-money-check-alt"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Total Net Payroll</p>
+                <h3 class="text-xl font-extrabold text-indigo-600 mt-1">{{ "%.2f"|format(total_net) }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
+                <i class="fas fa-wallet"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Average Net Salary</p>
+                <h3 class="text-xl font-extrabold text-blue-600 mt-1">{{ "%.2f"|format(avg_net) }}</h3>
+            </div>
+            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-sm font-bold">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-200 bg-gray-50/50 flex flex-col md:flex-row items-center justify-between gap-3">
+        <div class="relative w-full md:w-72">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Search employee..." 
+                   class="w-full pl-9 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500 bg-white">
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+            <thead>
+                <tr class="border-b border-gray-200 bg-gray-50 text-gray-500 font-semibold uppercase text-[10px] tracking-wider">
+                    <th class="py-3 px-4">Employee</th>
+                    <th class="py-3 px-4">Business</th>
+                    <th class="py-3 px-4 text-right">Basic Salary</th>
+                    <th class="py-3 px-4 text-right">Gross Salary</th>
+                    <th class="py-3 px-4 text-right">Net Salary</th>
+                    <th class="py-3 px-4">Effective From</th>
+                    <th class="py-3 px-4 text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="salaryTableBody" class="divide-y divide-gray-100">
+                {% if salaries %}
+                    {% for s in salaries %}
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="py-3 px-4 font-semibold text-gray-900">
+                            {{ emp_map.get(s.employee_id, 'Employee ID: ' ~ s.employee_id) }}
+                        </td>
+                        <td class="py-3 px-4 text-gray-600">
+                            {{ biz_map.get(s.business_id, 'Business ID: ' ~ s.business_id) }}
+                        </td>
+                        <td class="py-3 px-4 text-right font-medium text-gray-700">
+                            {{ "%.2f"|format(s.basic_salary) }}
+                        </td>
+                        <td class="py-3 px-4 text-right font-semibold text-emerald-700">
+                            {{ "%.2f"|format(s.gross_salary) }}
+                        </td>
+                        <td class="py-3 px-4 text-right font-extrabold text-indigo-700">
+                            {{ "%.2f"|format(s.net_salary) }}
+                        </td>
+                        <td class="py-3 px-4 text-gray-600">
+                            {{ s.effective_from }}
+                        </td>
+                        <td class="py-3 px-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="/compensation/detail/{{ s.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 rounded transition-colors" title="View Detail">
+                                    <i class="fas fa-eye text-xs"></i>
+                                </a>
+                                <a href="/compensation/edit/{{ s.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 rounded transition-colors" title="Edit">
+                                    <i class="fas fa-edit text-xs"></i>
+                                </a>
+                                <button onclick="deleteSalary('{{ s.id }}')" class="p-1.5 text-gray-500 hover:text-red-600 rounded transition-colors" title="Delete">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-gray-400">
+                            <i class="fas fa-money-bill-wave text-2xl mb-2 block"></i>
+                            No compensation structures found.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterTable() {
+    const input = document.getElementById("searchInput").value.toLowerCase();
+    const rows = document.querySelectorAll("#salaryTableBody tr");
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(input) ? "" : "none";
+    });
+}
+
+function deleteSalary(salaryId) {
+    Swal.fire({
+        title: 'Delete Compensation Structure?',
+        text: "This operation cannot be undone.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, delete it'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/compensation/salaries/' + salaryId, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => {
+                if (res.status === 204 || res.ok) {
+                    showSuccessToast('Deleted', 'Salary structure deleted successfully.');
+                    setTimeout(() => { window.location.reload(); }, 1000);
+                } else {
+                    return res.json().then(data => { throw new Error(data.detail || 'Delete failed'); });
+                }
+            })
+            .catch(err => {
+                showErrorAlert('Delete Failed', err.message);
+            });
+        }
+    });
+}
+</script>
+{% endblock %}
