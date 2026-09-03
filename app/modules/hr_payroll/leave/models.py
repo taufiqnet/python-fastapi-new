@@ -15,7 +15,8 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import UUID, Enum as SAEnum
+from sqlalchemy.types import UUID
+from sqlalchemy.types import Enum as SAEnum
 
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
@@ -49,11 +50,17 @@ class LeaveType(Base, UUIDMixin, TimestampMixin):
         index=True,
     )
     name: Mapped[str] = mapped_column(String(100), nullable=False)
-    code: Mapped[str] = mapped_column(String(10), nullable=False)  # e.g. AL, SL, ML — shown on payslips
+    code: Mapped[str] = mapped_column(
+        String(10), nullable=False
+    )  # e.g. AL, SL, ML — shown on payslips
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    max_days_per_year: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)  # 0 = unlimited
+    max_days_per_year: Mapped[int] = mapped_column(
+        SmallInteger, default=0, nullable=False
+    )  # 0 = unlimited
     is_paid: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    requires_document: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    requires_document: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
     applicable_gender: Mapped[GenderApplicabilityEnum] = mapped_column(
         SAEnum(GenderApplicabilityEnum, name="leave_type_applicable_gender"),
         default=GenderApplicabilityEnum.ALL,
@@ -129,8 +136,12 @@ class LeaveApplication(Base, UUIDMixin, TimestampMixin):
         nullable=True,
     )
     review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
-    applied_at: Mapped["DateTime"] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    reviewed_at: Mapped["DateTime | None"] = mapped_column(DateTime(timezone=True), nullable=True)
+    applied_at: Mapped["DateTime"] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    reviewed_at: Mapped["DateTime | None"] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # Relationships
     business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
@@ -154,7 +165,9 @@ class LeaveApplication(Base, UUIDMixin, TimestampMixin):
     )
 
     def __repr__(self) -> str:
-        return f"<LeaveApplication {self.employee_id} | {self.start_date}→{self.end_date} [{self.status}]>"
+        return (
+            f"<LeaveApplication {self.employee_id} | {self.start_date} [{self.status}]>"
+        )
 
 
 class LeaveAllocation(Base, UUIDMixin, TimestampMixin):
@@ -163,7 +176,10 @@ class LeaveAllocation(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "leave_allocations"
     __table_args__ = (
         UniqueConstraint(
-            "employee_id", "leave_type_id", "year", name="uq_leave_allocation_employee_type_year"
+            "employee_id",
+            "leave_type_id",
+            "year",
+            name="uq_leave_allocation_employee_type_year",
         ),
     )
 
@@ -187,7 +203,9 @@ class LeaveAllocation(Base, UUIDMixin, TimestampMixin):
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     allocated_days: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     used_days: Mapped[float] = mapped_column(Numeric(5, 2), default=0, nullable=False)
-    carried_forward: Mapped[float] = mapped_column(Numeric(5, 2), default=0, nullable=False)
+    carried_forward: Mapped[float] = mapped_column(
+        Numeric(5, 2), default=0, nullable=False
+    )
 
     # Relationships
     business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
@@ -206,7 +224,13 @@ class LeaveAllocation(Base, UUIDMixin, TimestampMixin):
 
     @property
     def remaining_days(self) -> float:
-        return float(self.allocated_days) + float(self.carried_forward) - float(self.used_days)
+        return (
+            float(self.allocated_days)
+            + float(self.carried_forward)
+            - float(self.used_days)
+        )
 
     def __repr__(self) -> str:
-        return f"<LeaveAllocation {self.employee_id} | {self.leave_type_id} | {self.year}>"
+        return (
+            f"<LeaveAllocation {self.employee_id} | {self.leave_type_id} | {self.year}>"
+        )

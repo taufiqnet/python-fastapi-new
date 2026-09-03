@@ -5,8 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 from app.modules.hr_payroll.leave.models import (
+    GenderApplicabilityEnum,
     LeaveAllocation,
     LeaveApplication,
+    LeaveStatusEnum,
     LeaveType,
 )
 from app.modules.hr_payroll.leave.repository import (
@@ -19,7 +21,6 @@ from app.modules.hr_payroll.leave.schemas import (
     LeaveAllocationUpdate,
     LeaveApplicationCreate,
     LeaveApplicationReview,
-    LeaveApplicationUpdate,
     LeaveTypeCreate,
     LeaveTypeUpdate,
 )
@@ -156,7 +157,8 @@ class LeaveAllocationService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=(
-                    f"Leave allocation for employee and leave type in year {data.year} already exists"
+                    f"Leave allocation for employee and leave type in year "
+                    f"{data.year} already exists"
                 ),
             )
 
@@ -198,7 +200,7 @@ class LeaveApplicationService:
         limit: int = 100,
         business_id: int | None = None,
         employee_id: uuid.UUID | None = None,
-        status_filter: str | None = None,
+        status_filter: str | LeaveStatusEnum | None = None,
     ) -> list[LeaveApplication]:
         return self.repository.get_all(
             db,
@@ -243,6 +245,38 @@ class LeaveApplicationService:
                 detail=f"Leave type with id '{data.leave_type_id}' not found",
             )
 
+        # Compute total_days if 0 or not set
+        if data.total_days <= 0:
+            data.total_days = (data.end_date - data.start_date).days + 1
+
+        # Check document requirement
+        if leave_type.requires_document and not data.document_url:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Supporting document URL is required for this leave type",
+            )
+
+        # Check gender applicability
+        if leave_type.applicable_gender != GenderApplicabilityEnum.ALL:
+            emp_gender = getattr(employee, "gender", None)
+            if emp_gender:
+                emp_gender_str = (
+                    str(emp_gender).value
+                    if hasattr(emp_gender, "value")
+                    else str(emp_gender)
+                )
+                if (
+                    emp_gender_str.lower()
+                    != leave_type.applicable_gender.value.lower()
+                ):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=(
+                            f"This leave type is only applicable to "
+                            f"{leave_type.applicable_gender.value} employees"
+                        ),
+                    )
+
         return self.repository.create(db, data)
 
     def review_application(
@@ -253,20 +287,24 @@ class LeaveApplicationService:
     ) -> LeaveApplication:
         application = self.get_application(db, application_uuid)
 
-        if application.status != "pending":
+        if (
+            application.status != LeaveStatusEnum.PENDING
+            and str(application.status) != "pending"
+        ):
+            app_status = application.status
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot review leave application with status '{application.status}'",
+                detail=f"Cannot review leave application with status '{app_status}'",
             )
 
-        reviewer = self.employee_repository.get_by_id(db, data.reviewer_id)
+        reviewer = self.employee_repository.get_by_id(db, data.reviewed_by_id)
         if not reviewer:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Reviewer with id '{data.reviewer_id}' not found",
+                detail=f"Reviewer with id '{data.reviewed_by_id}' not found",
             )
 
-        if data.status == "approved":
+        if data.status in (LeaveStatusEnum.APPROVED, "approved"):
             year = application.start_date.year
             allocation = self.allocation_repository.get_by_emp_type_year(
                 db,
@@ -276,15 +314,15 @@ class LeaveApplicationService:
                 business_id=application.business_id,
             )
             if allocation:
-                allocation.used_days += application.number_of_days
+                allocation.used_days += application.total_days
                 db.add(allocation)
 
         return self.repository.update_status(
             db,
             application=application,
             status=data.status,
-            reviewer_id=data.reviewer_id,
-            rejection_reason=data.rejection_reason,
+            reviewed_by_id=data.reviewed_by_id,
+            review_note=data.review_note,
         )
 
     def delete_application(

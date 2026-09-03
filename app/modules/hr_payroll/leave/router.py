@@ -11,7 +11,6 @@ from app.modules.hr_payroll.leave.schemas import (
     LeaveApplicationCreate,
     LeaveApplicationOut,
     LeaveApplicationReview,
-    LeaveApplicationUpdate,
     LeaveTypeCreate,
     LeaveTypeOut,
     LeaveTypeUpdate,
@@ -52,9 +51,7 @@ def get_leave_type(leave_type_id: uuid.UUID, db: Session = Depends(get_db)):
     response_model=LeaveTypeOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_leave_type(
-    leave_type_data: LeaveTypeCreate, db: Session = Depends(get_db)
-):
+def create_leave_type(leave_type_data: LeaveTypeCreate, db: Session = Depends(get_db)):
     return leave_type_service.create_leave_type(db, leave_type_data)
 
 
@@ -64,14 +61,10 @@ def update_leave_type(
     leave_type_data: LeaveTypeUpdate,
     db: Session = Depends(get_db),
 ):
-    return leave_type_service.update_leave_type(
-        db, leave_type_id, leave_type_data
-    )
+    return leave_type_service.update_leave_type(db, leave_type_id, leave_type_data)
 
 
-@router.delete(
-    "/leave-types/{leave_type_id}", status_code=status.HTTP_204_NO_CONTENT
-)
+@router.delete("/leave-types/{leave_type_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_leave_type(leave_type_id: uuid.UUID, db: Session = Depends(get_db)):
     leave_type_service.delete_leave_type(db, leave_type_id)
     return None
@@ -98,9 +91,7 @@ def get_leave_allocations(
 
 
 @router.get("/leave-allocations/{allocation_id}", response_model=LeaveAllocationOut)
-def get_leave_allocation(
-    allocation_id: uuid.UUID, db: Session = Depends(get_db)
-):
+def get_leave_allocation(allocation_id: uuid.UUID, db: Session = Depends(get_db)):
     return leave_allocation_service.get_allocation(db, allocation_id)
 
 
@@ -129,9 +120,7 @@ def update_leave_allocation(
 @router.delete(
     "/leave-allocations/{allocation_id}", status_code=status.HTTP_204_NO_CONTENT
 )
-def delete_leave_allocation(
-    allocation_id: uuid.UUID, db: Session = Depends(get_db)
-):
+def delete_leave_allocation(allocation_id: uuid.UUID, db: Session = Depends(get_db)):
     leave_allocation_service.delete_allocation(db, allocation_id)
     return None
 
@@ -156,12 +145,8 @@ def get_leave_applications(
     )
 
 
-@router.get(
-    "/leave-applications/{application_id}", response_model=LeaveApplicationOut
-)
-def get_leave_application(
-    application_id: uuid.UUID, db: Session = Depends(get_db)
-):
+@router.get("/leave-applications/{application_id}", response_model=LeaveApplicationOut)
+def get_leave_application(application_id: uuid.UUID, db: Session = Depends(get_db)):
     return leave_application_service.get_application(db, application_id)
 
 
@@ -185,16 +170,12 @@ def review_leave_application(
     review_data: LeaveApplicationReview,
     db: Session = Depends(get_db),
 ):
-    return leave_application_service.review_application(
-        db, application_id, review_data
-    )
+    return leave_application_service.review_application(db, application_id, review_data)
 
 
 @router.delete(
     "/leave-applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT
 )
-def delete_leave_application(
-    application_id: uuid.UUID, db: Session = Depends(get_db)
-):
+def delete_leave_application(application_id: uuid.UUID, db: Session = Depends(get_db)):
     leave_application_service.delete_application(db, application_id)
     return None

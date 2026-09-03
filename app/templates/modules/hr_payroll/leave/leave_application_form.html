@@ -113,8 +113,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="number_of_days">Number of Days <span class="text-red-500">*</span></label>
-                        <input type="number" step="0.5" min="0.5" id="number_of_days" name="number_of_days" class="form-input" required placeholder="e.g. 1.0">
+                        <label class="form-label" for="total_days">Total Days <span class="text-red-500">*</span></label>
+                        <input type="number" min="1" id="total_days" name="total_days" class="form-input" required placeholder="e.g. 1">
                     </div>
 
                     <div class="form-group">
@@ -128,8 +128,13 @@
                     </div>
 
                     <div class="form-group md:col-span-2">
-                        <label class="form-label" for="reason">Reason for Leave</label>
-                        <textarea id="reason" name="reason" rows="3" class="form-input" placeholder="Provide any details regarding your leave application..."></textarea>
+                        <label class="form-label" for="reason">Reason for Leave <span class="text-red-500">*</span></label>
+                        <textarea id="reason" name="reason" rows="3" class="form-input" required placeholder="Provide details regarding your leave application..."></textarea>
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="document_url">Supporting Document URL (Medical certificate, etc.)</label>
+                        <input type="url" id="document_url" name="document_url" class="form-input" placeholder="https://example.com/medical_certificate.pdf">
                     </div>
                 </div>
             </div>
@@ -160,7 +165,7 @@ function calculateDays() {
         if (d2 >= d1) {
             const diffTime = Math.abs(d2 - d1);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            document.getElementById('number_of_days').value = diffDays.toFixed(1);
+            document.getElementById('total_days').value = diffDays;
         }
     }
 }
@@ -174,8 +179,9 @@ function handleApplicationSubmit(event) {
         leave_type_id: document.getElementById('leave_type_id').value,
         start_date: document.getElementById('start_date').value,
         end_date: document.getElementById('end_date').value,
-        number_of_days: parseFloat(document.getElementById('number_of_days').value),
-        reason: document.getElementById('reason').value || null
+        total_days: parseInt(document.getElementById('total_days').value) || 0,
+        reason: document.getElementById('reason').value,
+        document_url: document.getElementById('document_url').value || null
     };
 
     const btnSubmit = document.getElementById('btnSubmit');

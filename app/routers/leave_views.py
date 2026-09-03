@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.hr_payroll.employees.service import EmployeeService
+from app.modules.hr_payroll.leave.models import GenderApplicabilityEnum
 from app.modules.hr_payroll.leave.service import (
     LeaveAllocationService,
     LeaveApplicationService,
@@ -71,6 +72,7 @@ def leave_type_create_page(request: Request, db: Session = Depends(get_db)):
             "leave_type": None,
             "is_edit": False,
             "businesses": businesses,
+            "gender_options": GenderApplicabilityEnum,
             "active_page": "leave_types",
         },
     )
@@ -90,6 +92,7 @@ def leave_type_edit_page(
             "leave_type": leave_type,
             "is_edit": True,
             "businesses": businesses,
+            "gender_options": GenderApplicabilityEnum,
             "active_page": "leave_types",
         },
     )
@@ -123,9 +126,21 @@ def leave_application_list_page(
     emp_map = {e.id: e.full_name for e in employees}
 
     total_count = len(applications)
-    pending_count = sum(1 for app in applications if app.status == "pending")
-    approved_count = sum(1 for app in applications if app.status == "approved")
-    rejected_count = sum(1 for app in applications if app.status == "rejected")
+    pending_count = sum(
+        1
+        for app in applications
+        if getattr(app.status, "value", app.status) == "pending"
+    )
+    approved_count = sum(
+        1
+        for app in applications
+        if getattr(app.status, "value", app.status) == "approved"
+    )
+    rejected_count = sum(
+        1
+        for app in applications
+        if getattr(app.status, "value", app.status) == "rejected"
+    )
 
     return templates.TemplateResponse(
         request=request,

@@ -170,8 +170,11 @@
             <thead>
                 <tr>
                     <th>Leave Type</th>
-                    <th>Default Days/Year</th>
+                    <th>Max Days/Year</th>
                     <th>Paid Type</th>
+                    <th>Gender</th>
+                    <th>Requires Doc</th>
+                    <th>Carry Forward</th>
                     <th>Business Profile</th>
                     <th>Status</th>
                     <th style="width:90px">Actions</th>
@@ -190,13 +193,34 @@
                         </div>
                     </td>
                     <td class="text-xs text-gray-700 font-semibold">
-                        {{ lt.default_days_per_year }} Days
+                        {% if lt.max_days_per_year and lt.max_days_per_year > 0 %}
+                        {{ lt.max_days_per_year }} Days
+                        {% else %}
+                        <span class="text-indigo-600 font-bold">Unlimited</span>
+                        {% endif %}
                     </td>
                     <td>
                         {% if lt.is_paid %}
                         <span class="badge badge-paid"><i class="fas fa-check text-[8px]"></i> Paid</span>
                         {% else %}
                         <span class="badge badge-inactive">Unpaid</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-xs text-gray-600 font-medium capitalize">
+                        {{ lt.applicable_gender.value if lt.applicable_gender.value is defined else lt.applicable_gender }}
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {% if lt.requires_document %}
+                        <span class="text-emerald-600 font-semibold"><i class="fas fa-check-circle mr-0.5"></i> Yes</span>
+                        {% else %}
+                        <span class="text-gray-400">No</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {% if lt.carry_forward %}
+                        <span class="text-indigo-600 font-semibold"><i class="fas fa-check-circle mr-0.5"></i> Yes</span>
+                        {% else %}
+                        <span class="text-gray-400">No</span>
                         {% endif %}
                     </td>
                     <td class="text-xs text-gray-600">
@@ -261,15 +285,15 @@ $(document).ready(function () {
         responsive: true,
         pageLength: 10,
         dom: 'rt',
-        columnDefs: [{ targets: [6, 7], visible: false, searchable: true }],
+        columnDefs: [{ targets: [9, 10], visible: false, searchable: true }],
         order: [],
         language: { emptyTable: "No leave types found." },
         drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterStatus').on('change', function () { table.column(6).search(this.value).draw(); });
-    $('#filterBusiness').on('change', function () { table.column(7).search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(9).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(10).search(this.value).draw(); });
     $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
     $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });

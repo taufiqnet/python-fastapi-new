@@ -96,16 +96,16 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label class="form-label" for="name">Leave Type Name <span class="text-red-500">*</span></label>
-                        <input type="text" id="name" name="name" class="form-input" required max="255"
+                        <input type="text" id="name" name="name" class="form-input" required max="100"
                                value="{% if is_edit %}{{ leave_type.name }}{% endif %}"
                                placeholder="e.g. Casual Leave, Sick Leave">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="code">Short Code <span class="text-red-500">*</span></label>
-                        <input type="text" id="code" name="code" class="form-input font-mono uppercase" required max="50"
+                        <input type="text" id="code" name="code" class="form-input font-mono uppercase" required max="10"
                                value="{% if is_edit %}{{ leave_type.code }}{% endif %}"
-                               placeholder="e.g. CL, SL">
+                               placeholder="e.g. CL, SL, AL">
                     </div>
 
                     <div class="form-group">
@@ -121,10 +121,22 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="default_days_per_year">Default Annual Quota (Days) <span class="text-red-500">*</span></label>
-                        <input type="number" step="0.5" min="0" id="default_days_per_year" name="default_days_per_year" class="form-input" required
-                               value="{% if is_edit %}{{ leave_type.default_days_per_year }}{% else %}10.0{% endif %}"
-                               placeholder="e.g. 15.0">
+                        <label class="form-label" for="max_days_per_year">Max Days Per Year (0 = Unlimited) <span class="text-red-500">*</span></label>
+                        <input type="number" min="0" id="max_days_per_year" name="max_days_per_year" class="form-input" required
+                               value="{% if is_edit %}{{ leave_type.max_days_per_year }}{% else %}0{% endif %}"
+                               placeholder="e.g. 15">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="applicable_gender">Applicable Gender <span class="text-red-500">*</span></label>
+                        <select id="applicable_gender" name="applicable_gender" class="form-input" required>
+                            {% for opt in gender_options %}
+                            {% set current_gender = leave_type.applicable_gender.value if (leave_type and leave_type.applicable_gender.value is defined) else (leave_type.applicable_gender if leave_type else '') %}
+                            <option value="{{ opt.value }}" {% if is_edit and current_gender == opt.value %}selected{% endif %}>
+                                {{ opt.value|capitalize }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div class="form-group md:col-span-2">
@@ -133,7 +145,7 @@
                                   placeholder="Brief overview of leave type eligibility and guidelines...">{% if is_edit and leave_type.description %}{{ leave_type.description }}{% endif %}</textarea>
                     </div>
 
-                    <div class="form-group md:col-span-2 pt-2 flex flex-col md:flex-row gap-6">
+                    <div class="form-group md:col-span-2 pt-2 flex flex-wrap gap-6">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="is_active" name="is_active" class="form-checkbox" {% if not is_edit or leave_type.is_active %}checked{% endif %}>
                             <span class="text-xs font-semibold text-gray-700">Active Status</span>
@@ -142,6 +154,16 @@
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="is_paid" name="is_paid" class="form-checkbox" {% if not is_edit or leave_type.is_paid %}checked{% endif %}>
                             <span class="text-xs font-semibold text-gray-700">Paid Leave Type</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="requires_document" name="requires_document" class="form-checkbox" {% if is_edit and leave_type.requires_document %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Requires Document</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="carry_forward" name="carry_forward" class="form-checkbox" {% if is_edit and leave_type.carry_forward %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Allow Carry Forward</span>
                         </label>
                     </div>
                 </div>
@@ -173,10 +195,13 @@ function handleLeaveTypeSubmit(event) {
         name: document.getElementById('name').value,
         code: document.getElementById('code').value,
         description: document.getElementById('description').value || null,
-        default_days_per_year: parseFloat(document.getElementById('default_days_per_year').value),
+        max_days_per_year: parseInt(document.getElementById('max_days_per_year').value) || 0,
+        applicable_gender: document.getElementById('applicable_gender').value,
         business_id: parseInt(document.getElementById('business_id').value),
         is_active: document.getElementById('is_active').checked,
-        is_paid: document.getElementById('is_paid').checked
+        is_paid: document.getElementById('is_paid').checked,
+        requires_document: document.getElementById('requires_document').checked,
+        carry_forward: document.getElementById('carry_forward').checked
     };
 
     const url = isEdit ? '/leave-types/' + ltId : '/leave-types';

@@ -1,10 +1,12 @@
 import uuid
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
 from app.modules.hr_payroll.leave.models import (
     LeaveAllocation,
     LeaveApplication,
+    LeaveStatusEnum,
     LeaveType,
 )
 from app.modules.hr_payroll.leave.schemas import (
@@ -18,13 +20,10 @@ from app.modules.hr_payroll.leave.schemas import (
 
 
 class LeaveTypeRepository:
-
     def get_by_id(self, db: Session, leave_type_uuid: uuid.UUID) -> LeaveType | None:
         return db.query(LeaveType).filter(LeaveType.id == leave_type_uuid).first()
 
-    def get_by_code(
-        self, db: Session, code: str, business_id: int
-    ) -> LeaveType | None:
+    def get_by_code(self, db: Session, code: str, business_id: int) -> LeaveType | None:
         return (
             db.query(LeaveType)
             .filter(
@@ -71,7 +70,6 @@ class LeaveTypeRepository:
 
 
 class LeaveAllocationRepository:
-
     def get_by_id(
         self, db: Session, allocation_uuid: uuid.UUID
     ) -> LeaveAllocation | None:
@@ -146,7 +144,6 @@ class LeaveAllocationRepository:
 
 
 class LeaveApplicationRepository:
-
     def get_by_id(
         self, db: Session, application_uuid: uuid.UUID
     ) -> LeaveApplication | None:
@@ -163,7 +160,7 @@ class LeaveApplicationRepository:
         limit: int = 100,
         business_id: int | None = None,
         employee_id: uuid.UUID | None = None,
-        status: str | None = None,
+        status: str | LeaveStatusEnum | None = None,
     ) -> list[LeaveApplication]:
         query = db.query(LeaveApplication)
         if business_id is not None:
@@ -200,13 +197,14 @@ class LeaveApplicationRepository:
         self,
         db: Session,
         application: LeaveApplication,
-        status: str,
-        reviewer_id: uuid.UUID,
-        rejection_reason: str | None = None,
+        status: str | LeaveStatusEnum,
+        reviewed_by_id: uuid.UUID,
+        review_note: str | None = None,
     ) -> LeaveApplication:
         application.status = status
-        application.reviewer_id = reviewer_id
-        application.rejection_reason = rejection_reason
+        application.reviewed_by_id = reviewed_by_id
+        application.review_note = review_note
+        application.reviewed_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(application)
         return application
