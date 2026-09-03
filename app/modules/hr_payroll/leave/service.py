@@ -212,6 +212,27 @@ class LeaveApplicationService:
             )
         return application
 
+    def _check_overlapping_applications(
+        self,
+        db: Session,
+        employee_id: uuid.UUID,
+        start_date,
+        end_date,
+        exclude_application_id: uuid.UUID | None = None,
+    ) -> None:
+        existing_apps = self.repository.get_all(
+            db, employee_id=employee_id, limit=500
+        )
+        for app_rec in existing_apps:
+            if exclude_application_id and app_rec.id == exclude_application_id:
+                continue
+            if app_rec.status in (LeaveStatusEnum.PENDING, LeaveStatusEnum.APPROVED):
+                if (app_rec.start_date <= end_date) and (app_rec.end_date >= start_date):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Overlapping leave application exists for this date range",
+                    )
+
     def create_application(
         self, db: Session, data: LeaveApplicationCreate
     ) -> LeaveApplication:
@@ -234,6 +255,14 @@ class LeaveApplicationService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Leave type with id '{data.leave_type_id}' not found",
             )
+
+        # Check overlapping applications
+        self._check_overlapping_applications(
+            db,
+            employee_id=data.employee_id,
+            start_date=data.start_date,
+            end_date=data.end_date,
+        )
 
         # Compute total_days if 0 or not set
         if data.total_days <= 0:
@@ -264,6 +293,31 @@ class LeaveApplicationService:
                         ),
                     )
 
+        # Check initial balance if leave allocation exists
+        if leave_type.max_days_per_year != 0:
+            year = data.start_date.year
+            allocation = self.allocation_repository.get_by_emp_type_year(
+                db,
+                employee_id=data.employee_id,
+                leave_type_id=data.leave_type_id,
+                year=year,
+                business_id=data.business_id,
+            )
+            if allocation:
+                remaining = (
+                    float(allocation.allocated_days)
+                    + float(allocation.carried_forward)
+                    - float(allocation.used_days)
+                )
+                if remaining < data.total_days:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=(
+                            f"Insufficient leave balance: {remaining} day(s) "
+                            f"remaining, {data.total_days} day(s) requested"
+                        ),
+                    )
+
         return self.repository.create(db, data)
 
     def update_application(
@@ -284,6 +338,14 @@ class LeaveApplicationService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Start date cannot be after end date",
             )
+
+        self._check_overlapping_applications(
+            db,
+            employee_id=application.employee_id,
+            start_date=start_date,
+            end_date=end_date,
+            exclude_application_id=application_uuid,
+        )
 
         if data.total_days is None or data.total_days <= 0:
             data.total_days = (end_date - start_date).days + 1

@@ -145,6 +145,18 @@ class PayrollPeriodService:
                     detail=f"Payroll period with name '{data.name}' already exists",
                 )
 
+        if period.status == PayrollPeriodStatusEnum.PAID and data.status is not None:
+            target_status = (
+                data.status
+                if isinstance(data.status, PayrollPeriodStatusEnum)
+                else PayrollPeriodStatusEnum(data.status)
+            )
+            if target_status != PayrollPeriodStatusEnum.PAID:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot modify or revert a paid payroll period",
+                )
+
         start_date = data.start_date or period.start_date
         end_date = data.end_date or period.end_date
         if start_date > end_date:
@@ -249,6 +261,12 @@ class PayrollRecordService:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Payroll period with id '{data.period_id}' not found",
+            )
+
+        if period.is_locked:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot create a payslip in a locked or paid payroll period",
             )
 
         employee = self.employee_repository.get_by_id(db, data.employee_id)

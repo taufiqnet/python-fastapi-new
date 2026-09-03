@@ -1,10 +1,14 @@
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.modules.hr_payroll.attendance.models import Attendance, AttendanceStatusEnum
+from app.modules.hr_payroll.attendance.models import (
+    Attendance,
+    AttendanceSourceEnum,
+    AttendanceStatusEnum,
+)
 from app.modules.hr_payroll.attendance.repository import AttendanceRepository
 from app.modules.hr_payroll.attendance.schemas import (
     AttendanceCreate,
@@ -160,6 +164,97 @@ class AttendanceService:
         data.overtime_hours = overtime_hours
 
         return self.repository.update(db, record, data)
+
+    def check_in(
+        self,
+        db: Session,
+        business_id: int,
+        employee_id: uuid.UUID,
+        att_date: date | None = None,
+        check_in_time: time | None = None,
+        note: str | None = None,
+    ) -> Attendance:
+        employee = self.employee_repository.get_by_id(db, employee_id)
+        if not employee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Employee with id '{employee_id}' not found",
+            )
+
+        now = datetime.now()
+        target_date = att_date or now.date()
+        target_check_in = check_in_time or now.time().replace(microsecond=0)
+
+        existing = self.repository.get_by_emp_date(
+            db,
+            employee_id=employee_id,
+            att_date=target_date,
+            business_id=business_id,
+        )
+
+        if existing:
+            update_data = AttendanceUpdate(
+                check_in=target_check_in,
+                note=note or existing.note,
+            )
+            return self.update_record(db, existing.id, update_data)
+
+        status_val = AttendanceStatusEnum.PRESENT
+        if target_check_in > time(9, 15):
+            status_val = AttendanceStatusEnum.LATE
+
+        create_data = AttendanceCreate(
+            business_id=business_id,
+            employee_id=employee_id,
+            date=target_date,
+            status=status_val,
+            check_in=target_check_in,
+            source=AttendanceSourceEnum.SYSTEM,
+            note=note,
+        )
+        return self.create_record(db, create_data)
+
+    def check_out(
+        self,
+        db: Session,
+        business_id: int,
+        employee_id: uuid.UUID,
+        att_date: date | None = None,
+        check_out_time: time | None = None,
+        note: str | None = None,
+    ) -> Attendance:
+        employee = self.employee_repository.get_by_id(db, employee_id)
+        if not employee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Employee with id '{employee_id}' not found",
+            )
+
+        now = datetime.now()
+        target_date = att_date or now.date()
+        target_check_out = check_out_time or now.time().replace(microsecond=0)
+
+        existing = self.repository.get_by_emp_date(
+            db,
+            employee_id=employee_id,
+            att_date=target_date,
+            business_id=business_id,
+        )
+
+        if not existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"No check-in record found for employee on {target_date}. "
+                    "Please check in first."
+                ),
+            )
+
+        update_data = AttendanceUpdate(
+            check_out=target_check_out,
+            note=note or existing.note,
+        )
+        return self.update_record(db, existing.id, update_data)
 
     def delete_record(self, db: Session, attendance_uuid: uuid.UUID) -> None:
         record = self.get_record(db, attendance_uuid)

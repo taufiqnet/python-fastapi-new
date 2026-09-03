@@ -43,6 +43,22 @@ class AttendanceUpdate(BaseModel):
     recorded_by_id: uuid.UUID | None = None
 
 
+class AttendanceCheckInRequest(BaseModel):
+    business_id: int
+    employee_id: uuid.UUID
+    date: date_type | None = None
+    check_in: time_type | None = None
+    note: str | None = Field(None, max_length=255)
+
+
+class AttendanceCheckOutRequest(BaseModel):
+    business_id: int
+    employee_id: uuid.UUID
+    date: date_type | None = None
+    check_out: time_type | None = None
+    note: str | None = Field(None, max_length=255)
+
+
 class AttendanceOut(AttendanceBase):
     model_config = ConfigDict(from_attributes=True)
 

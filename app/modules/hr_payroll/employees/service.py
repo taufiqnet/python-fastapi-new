@@ -54,6 +54,56 @@ class EmployeeService:
             )
         return employee
 
+    def validate_direct_manager(
+        self,
+        db: Session,
+        manager_id: uuid.UUID,
+        employee_id: uuid.UUID | None = None,
+        business_id: int | None = None,
+    ) -> None:
+        """
+        Validates direct manager rules:
+        - Manager must exist and be active.
+        - Employee cannot be their own direct manager.
+        - Manager must belong to the same business profile.
+        - Prevents management hierarchy cycles (A -> B -> C -> A).
+        """
+        if employee_id and manager_id == employee_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Employee cannot be their own direct manager",
+            )
+
+        manager = self.repository.get_by_id(db, manager_id)
+        if not manager:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Direct manager with id '{manager_id}' not found",
+            )
+
+        if business_id is not None and manager.business_id != business_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Direct manager must belong to the same business profile",
+            )
+
+        # Cycle detection
+        curr_manager_id = manager.direct_manager_id
+        visited = {employee_id} if employee_id else set()
+        visited.add(manager_id)
+
+        while curr_manager_id:
+            if curr_manager_id in visited:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Management hierarchy cycle detected",
+                )
+            visited.add(curr_manager_id)
+            m = self.repository.get_by_id(db, curr_manager_id)
+            if not m:
+                break
+            curr_manager_id = m.direct_manager_id
+
     def validate_department_head(
         self,
         db: Session,
@@ -139,12 +189,12 @@ class EmployeeService:
                 )
 
         if data.direct_manager_id is not None:
-            manager = self.repository.get_by_id(db, data.direct_manager_id)
-            if not manager:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Direct manager with id '{data.direct_manager_id}' not found",
-                )
+            self.validate_direct_manager(
+                db,
+                manager_id=data.direct_manager_id,
+                employee_id=None,
+                business_id=data.business_id,
+            )
 
         # Validate department head rules
         self.validate_department_head(
@@ -225,17 +275,12 @@ class EmployeeService:
             data.direct_manager_id is not None
             and data.direct_manager_id != employee.direct_manager_id
         ):
-            if data.direct_manager_id == employee_uuid:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Employee cannot be their own direct manager",
-                )
-            manager = self.repository.get_by_id(db, data.direct_manager_id)
-            if not manager:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Direct manager with id '{data.direct_manager_id}' not found",
-                )
+            self.validate_direct_manager(
+                db,
+                manager_id=data.direct_manager_id,
+                employee_id=employee_uuid,
+                business_id=target_business_id,
+            )
 
         # Department head rules
         target_is_dept_head = (
