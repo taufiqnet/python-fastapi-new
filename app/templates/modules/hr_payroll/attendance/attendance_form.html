@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Attendance{% else %}Log Attendance{% endif %} | HR & Payroll{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/attendance/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Attendance Records
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Attendance Record{% else %}Log Attendance{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update employee attendance log details{% else %}Record employee daily check-in, check-out, and status{% endif %}
+        </p>
+    </div>
+</div>
+
+<form id="attendanceForm" class="space-y-6" onsubmit="handleAttendanceSubmit(event)">
+    <input type="hidden" id="attendanceId" value="{% if is_edit %}{{ record.id }}{% endif %}">
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active">
+                <i class="fas fa-clock text-xs"></i> Attendance Information
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="employee_id">Employee <span class="text-red-500">*</span></label>
+                        <select id="employee_id" name="employee_id" class="form-input" required>
+                            <option value="">— Select Employee —</option>
+                            {% for e in employees %}
+                            <option value="{{ e.id }}" {% if is_edit and record.employee_id == e.id %}selected{% endif %}>
+                                {{ e.full_name }} ({{ e.employee_code or 'No Code' }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        <select id="business_id" name="business_id" class="form-input" required>
+                            <option value="">— Select Business Profile —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if is_edit and record.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }} (ID: {{ b.id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="date">Attendance Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="date" name="date" class="form-input" required
+                               value="{% if is_edit and record.date %}{{ record.date }}{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="status">Attendance Status <span class="text-red-500">*</span></label>
+                        <select id="status" name="status" class="form-input" required>
+                            {% for opt in status_options %}
+                            <option value="{{ opt.value }}" {% if is_edit and record.status == opt.value or (not is_edit and opt.value == 'present') %}selected{% endif %}>
+                                {{ opt.value | replace('_', ' ') | title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="check_in">Check-in Time</label>
+                        <input type="time" id="check_in" name="check_in" class="form-input" onchange="autoCalculateHours()"
+                               value="{% if is_edit and record.check_in %}{{ record.check_in.strftime('%H:%M') if record.check_in.strftime else record.check_in }}{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="check_out">Check-out Time</label>
+                        <input type="time" id="check_out" name="check_out" class="form-input" onchange="autoCalculateHours()"
+                               value="{% if is_edit and record.check_out %}{{ record.check_out.strftime('%H:%M') if record.check_out.strftime else record.check_out }}{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="work_hours">Work Hours (derived or custom)</label>
+                        <input type="number" step="0.01" min="0" id="work_hours" name="work_hours" class="form-input"
+                               value="{% if is_edit %}{{ record.work_hours }}{% else %}0.00{% endif %}"
+                               placeholder="e.g. 8.00">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="overtime_hours">Overtime Hours</label>
+                        <input type="number" step="0.01" min="0" id="overtime_hours" name="overtime_hours" class="form-input"
+                               value="{% if is_edit %}{{ record.overtime_hours }}{% else %}0.00{% endif %}"
+                               placeholder="e.g. 1.50">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="source">Source</label>
+                        <select id="source" name="source" class="form-input">
+                            {% for s in source_options %}
+                            <option value="{{ s.value }}" {% if is_edit and record.source == s.value %}selected{% endif %}>
+                                {{ s.value | title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="recorded_by_id">Recorded By (HR/Manager)</label>
+                        <select id="recorded_by_id" name="recorded_by_id" class="form-input">
+                            <option value="">— None —</option>
+                            {% for e in employees %}
+                            <option value="{{ e.id }}" {% if is_edit and record.recorded_by_id == e.id %}selected{% endif %}>
+                                {{ e.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="note">Note / Remarks</label>
+                        <textarea id="note" name="note" rows="3" class="form-input" maxlength="255"
+                                  placeholder="Optional attendance note or exception remarks...">{% if is_edit and record.note %}{{ record.note }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/attendance/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Record{% else %}Save Record{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function autoCalculateHours() {
+    const checkIn = document.getElementById('check_in').value;
+    const checkOut = document.getElementById('check_out').value;
+    if (checkIn && checkOut) {
+        const [hIn, mIn] = checkIn.split(':').map(Number);
+        const [hOut, mOut] = checkOut.split(':').map(Number);
+        
+        let minIn = hIn * 60 + mIn;
+        let minOut = hOut * 60 + mOut;
+        if (minOut < minIn) minOut += 24 * 60; // Overnight shift
+        
+        const diffHours = (minOut - minIn) / 60.0;
+        document.getElementById('work_hours').value = diffHours.toFixed(2);
+        
+        const overtime = diffHours > 8.0 ? (diffHours - 8.0) : 0.0;
+        document.getElementById('overtime_hours').value = overtime.toFixed(2);
+    }
+}
+
+function handleAttendanceSubmit(event) {
+    event.preventDefault();
+    const isEdit = "{{ is_edit }}" === "True";
+    const attId = document.getElementById('attendanceId').value;
+
+    const checkInVal = document.getElementById('check_in').value;
+    const checkOutVal = document.getElementById('check_out').value;
+
+    const payload = {
+        employee_id: document.getElementById('employee_id').value,
+        business_id: parseInt(document.getElementById('business_id').value),
+        date: document.getElementById('date').value,
+        status: document.getElementById('status').value,
+        check_in: checkInVal ? checkInVal + ":00" : null,
+        check_out: checkOutVal ? checkOutVal + ":00" : null,
+        work_hours: parseFloat(document.getElementById('work_hours').value || '0'),
+        overtime_hours: parseFloat(document.getElementById('overtime_hours').value || '0'),
+        source: document.getElementById('source').value,
+        recorded_by_id: document.getElementById('recorded_by_id').value || null,
+        note: document.getElementById('note').value || null
+    };
+
+    const url = isEdit ? '/attendance/' + attId : '/attendance';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'Failed to save attendance record';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        showSuccessToast(
+            isEdit ? 'Attendance Updated' : 'Attendance Logged',
+            isEdit ? 'Record updated successfully.' : 'New attendance record added successfully.'
+        );
+        setTimeout(() => { window.location.href = '/attendance/manage'; }, 1200);
+    })
+    .catch(err => {
+        showErrorAlert('Save Failed', err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Record' : 'Save Record');
+    });
+}
+</script>
+{% endblock %}

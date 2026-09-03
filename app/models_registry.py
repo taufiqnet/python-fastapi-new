@@ -59,6 +59,7 @@ from app.modules.hr_payroll.leave.models import (  # noqa: F401
     LeaveApplication,
     LeaveType,
 )
+from app.modules.hr_payroll.attendance.models import Attendance  # noqa: F401
 
 # TODO: Product.business_id and several other models FK to a business/tenant
 # table (e.g. BusinessProfile). If that model isn't imported somewhere before

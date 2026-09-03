@@ -3711,6 +3711,178 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "Create Attendance Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"attendance_id\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"date\": \"2025-01-15\",\n  \"status\": \"present\",\n  \"check_in\": \"09:00:00\",\n  \"check_out\": \"17:30:00\",\n  \"work_hours\": 8.5,\n  \"overtime_hours\": 0.5,\n  \"source\": \"manual\",\n  \"note\": \"Logged via API\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/attendance",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "attendance"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Attendance Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/attendance?skip=0&limit=100&business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "attendance"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Attendance Record",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/attendance/{{attendance_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "attendance",
+                "{{attendance_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Attendance Record",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"late\",\n  \"check_in\": \"09:30:00\",\n  \"work_hours\": 8.0,\n  \"note\": \"Late arrival due to traffic\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/attendance/{{attendance_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "attendance",
+                "{{attendance_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Attendance Record",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/attendance/{{attendance_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "attendance",
+                "{{attendance_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -3816,6 +3988,11 @@
     },
     {
       "key": "model_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "attendance_id",
       "value": "",
       "type": "string"
     }

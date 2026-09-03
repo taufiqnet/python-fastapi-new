@@ -10,7 +10,8 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import UUID, Date, Enum as SAEnum
+from sqlalchemy.types import UUID, Date
+from sqlalchemy.types import Enum as SAEnum
 
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
@@ -69,7 +70,9 @@ class Attendance(Base, UUIDMixin, TimestampMixin):
     check_in: Mapped["Time | None"] = mapped_column(Time, nullable=True)
     check_out: Mapped["Time | None"] = mapped_column(Time, nullable=True)
     work_hours: Mapped[float] = mapped_column(Numeric(4, 2), default=0, nullable=False)
-    overtime_hours: Mapped[float] = mapped_column(Numeric(4, 2), default=0, nullable=False)
+    overtime_hours: Mapped[float] = mapped_column(
+        Numeric(4, 2), default=0, nullable=False
+    )
     source: Mapped[AttendanceSourceEnum] = mapped_column(
         SAEnum(AttendanceSourceEnum, name="attendance_source"),
         default=AttendanceSourceEnum.MANUAL,

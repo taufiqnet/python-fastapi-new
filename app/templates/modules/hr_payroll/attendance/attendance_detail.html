@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Detail | HR & Payroll{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/attendance/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Attendance Records
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Attendance Record Details</h1>
+        <p class="text-xs text-gray-500 font-medium">Record ID: {{ record.id }}</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="/attendance/edit/{{ record.id }}" class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm">
+            <i class="fas fa-edit text-xs"></i> Edit Record
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Main Info Card -->
+    <div class="md:col-span-2 bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
+        <div>
+            <h2 class="text-base font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+                <i class="fas fa-id-card text-indigo-600"></i> Primary Information
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Employee</p>
+                    <p class="text-sm font-semibold text-gray-900 mt-1">{{ record.employee.full_name if record.employee else record.employee_id }}</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Attendance Date</p>
+                    <p class="text-sm font-semibold text-gray-900 mt-1 font-mono">{{ record.date }}</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Status</p>
+                    <div class="mt-1">
+                        {% set st = record.status.value if record.status.value else record.status|string %}
+                        {% if st == 'present' %}
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
+                        {% elif st == 'absent' %}
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">Absent</span>
+                        {% elif st == 'late' %}
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Late</span>
+                        {% elif st == 'half_day' %}
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-orange-50 text-orange-700 border border-orange-200">Half Day</span>
+                        {% elif st == 'on_leave' %}
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">On Leave</span>
+                        {% else %}
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">{{ st | replace('_', ' ') | title }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Source</p>
+                    <p class="text-sm font-semibold text-gray-900 mt-1 capitalize">{{ record.source.value if record.source.value else record.source }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-base font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+                <i class="fas fa-clock text-indigo-600"></i> Time & Hours Log
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Check-in Time</p>
+                    <p class="text-sm font-semibold text-gray-900 mt-1 font-mono">{% if record.check_in %}{{ record.check_in }}{% else %}—{% endif %}</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Check-out Time</p>
+                    <p class="text-sm font-semibold text-gray-900 mt-1 font-mono">{% if record.check_out %}{{ record.check_out }}{% else %}—{% endif %}</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Total Work Hours</p>
+                    <p class="text-sm font-bold text-gray-900 mt-1">{{ record.work_hours }} hrs</p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Overtime Hours</p>
+                    <p class="text-sm font-bold text-amber-600 mt-1">{{ record.overtime_hours }} hrs</p>
+                </div>
+            </div>
+        </div>
+
+        {% if record.note %}
+        <div>
+            <h2 class="text-base font-bold text-gray-900 border-b border-gray-100 pb-3 mb-3 flex items-center gap-2">
+                <i class="fas fa-sticky-note text-indigo-600"></i> Remarks / Notes
+            </h2>
+            <p class="text-xs text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200">{{ record.note }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sidebar Card -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-6">
+        <div>
+            <h2 class="text-base font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+                <i class="fas fa-building text-indigo-600"></i> Tenant Context
+            </h2>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Business Profile</p>
+                    <p class="text-sm font-semibold text-gray-900 mt-0.5">
+                        {% if business %}{{ business.name_en }} (ID: {{ business.id }}){% else %}Business ID: {{ record.business_id }}{% endif %}
+                    </p>
+                </div>
+
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Recorded By</p>
+                    <p class="text-sm font-semibold text-gray-900 mt-0.5">
+                        {% if record.recorded_by %}{{ record.recorded_by.full_name }}{% else %}— System / Manual Log —{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-base font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+                <i class="fas fa-history text-indigo-600"></i> Audit Metadata
+            </h2>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Created At</p>
+                    <p class="text-xs text-gray-600 mt-0.5 font-mono">{{ record.created_at.strftime('%Y-%m-%d %H:%M:%S') if record.created_at else '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-[11px] font-semibold text-gray-400 uppercase">Last Updated</p>
+                    <p class="text-xs text-gray-600 mt-0.5 font-mono">{{ record.updated_at.strftime('%Y-%m-%d %H:%M:%S') if record.updated_at else '—' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

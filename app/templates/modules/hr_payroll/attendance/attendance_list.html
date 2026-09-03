@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Management | HR & Payroll{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Attendance Records</h1>
+        <p class="text-xs text-gray-500 font-medium">Track employee daily attendance, check-in/out times, and work hours</p>
+    </div>
+    <div>
+        <a href="/attendance/create" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+            <i class="fas fa-plus"></i> Log Attendance
+        </a>
+    </div>
+</div>
+
+<!-- Summary Metric Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-base shrink-0">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div>
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Logs</p>
+            <p class="text-xl font-bold text-gray-900">{{ total_count }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-base shrink-0">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div>
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Present</p>
+            <p class="text-xl font-bold text-emerald-600">{{ present_count }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-base shrink-0">
+            <i class="fas fa-user-times"></i>
+        </div>
+        <div>
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Absent</p>
+            <p class="text-xl font-bold text-rose-600">{{ absent_count }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-base shrink-0">
+            <i class="fas fa-user-clock"></i>
+        </div>
+        <div>
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Late / Half Day</p>
+            <p class="text-xl font-bold text-amber-600">{{ late_count + half_day_count }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+    <form method="GET" action="/attendance/manage" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <div>
+            <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Business</label>
+            <select name="business_id" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+                <option value="">All Businesses</option>
+                {% for b in businesses %}
+                <option value="{{ b.id }}" {% if request.query_params.get('business_id') == b.id|string %}selected{% endif %}>{{ b.name_en }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Employee</label>
+            <select name="employee_id" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+                <option value="">All Employees</option>
+                {% for e in employees %}
+                <option value="{{ e.id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>{{ e.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Date</label>
+            <input type="date" name="att_date" value="{{ request.query_params.get('att_date', '') }}" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div>
+            <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Status</label>
+            <select name="status_filter" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+                <option value="">All Statuses</option>
+                <option value="present" {% if request.query_params.get('status_filter') == 'present' %}selected{% endif %}>Present</option>
+                <option value="absent" {% if request.query_params.get('status_filter') == 'absent' %}selected{% endif %}>Absent</option>
+                <option value="late" {% if request.query_params.get('status_filter') == 'late' %}selected{% endif %}>Late</option>
+                <option value="half_day" {% if request.query_params.get('status_filter') == 'half_day' %}selected{% endif %}>Half Day</option>
+                <option value="on_leave" {% if request.query_params.get('status_filter') == 'on_leave' %}selected{% endif %}>On Leave</option>
+            </select>
+        </div>
+
+        <div class="flex items-end gap-2">
+            <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1">
+                <i class="fas fa-filter text-[10px]"></i> Filter
+            </button>
+            <a href="/attendance/manage" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 px-3 rounded-lg transition-colors">
+                Clear
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Table Card -->
+<div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50/50 border-b border-gray-200 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                    <th class="px-5 py-3">Employee</th>
+                    <th class="px-5 py-3">Date</th>
+                    <th class="px-5 py-3">Status</th>
+                    <th class="px-5 py-3">Check In / Out</th>
+                    <th class="px-5 py-3">Work / OT Hours</th>
+                    <th class="px-5 py-3">Source</th>
+                    <th class="px-5 py-3">Business</th>
+                    <th class="px-5 py-3 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-xs">
+                {% if records %}
+                    {% for r in records %}
+                    {% set st = r.status.value if r.status.value else r.status|string %}
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="px-5 py-3.5 font-semibold text-gray-900">
+                            {{ emp_map.get(r.employee_id, 'Unknown Employee') }}
+                        </td>
+                        <td class="px-5 py-3.5 text-gray-600 font-mono">
+                            {{ r.date }}
+                        </td>
+                        <td class="px-5 py-3.5">
+                            {% if st == 'present' %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">Present</span>
+                            {% elif st == 'absent' %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">Absent</span>
+                            {% elif st == 'late' %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200">Late</span>
+                            {% elif st == 'half_day' %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-orange-50 text-orange-700 border border-orange-200">Half Day</span>
+                            {% elif st == 'on_leave' %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">On Leave</span>
+                            {% else %}
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-gray-100 text-gray-700 border border-gray-200">{{ st | replace('_', ' ') | title }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-3.5 text-gray-600 font-mono">
+                            {% if r.check_in %}{{ r.check_in }}{% else %}—{% endif %}
+                            /
+                            {% if r.check_out %}{{ r.check_out }}{% else %}—{% endif %}
+                        </td>
+                        <td class="px-5 py-3.5 text-gray-700">
+                            <span class="font-semibold">{{ r.work_hours }}</span> hrs
+                            {% if r.overtime_hours > 0 %}
+                            <span class="text-amber-600 font-medium">(+{{ r.overtime_hours }} OT)</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-5 py-3.5 text-gray-500 capitalize">
+                            {{ r.source.value if r.source.value else r.source }}
+                        </td>
+                        <td class="px-5 py-3.5 text-gray-500">
+                            {{ biz_map.get(r.business_id, 'Global') }}
+                        </td>
+                        <td class="px-5 py-3.5 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="/attendance/detail/{{ r.id }}" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded hover:bg-gray-100 transition-colors" title="View Details">
+                                    <i class="fas fa-eye text-xs"></i>
+                                </a>
+                                <a href="/attendance/edit/{{ r.id }}" class="p-1.5 text-gray-400 hover:text-amber-600 rounded hover:bg-gray-100 transition-colors" title="Edit">
+                                    <i class="fas fa-edit text-xs"></i>
+                                </a>
+                                <button type="button" onclick="deleteAttendance('{{ r.id }}')" class="p-1.5 text-gray-400 hover:text-rose-600 rounded hover:bg-gray-100 transition-colors" title="Delete">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="px-5 py-8 text-center text-gray-400 font-medium">
+                            <i class="fas fa-inbox text-2xl mb-2 block text-gray-300"></i>
+                            No attendance records found matching criteria.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteAttendance(attId) {
+    Swal.fire({
+        title: 'Delete Attendance Record?',
+        text: "Are you sure you want to delete this attendance log? This action cannot be undone.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, delete record'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/attendance/' + attId, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Failed to delete attendance record.');
+                showSuccessToast('Record Deleted', 'Attendance log has been deleted.');
+                setTimeout(() => window.location.reload(), 1000);
+            })
+            .catch(err => {
+                showErrorAlert('Delete Failed', err.message);
+            });
+        }
+    });
+}
+</script>
+{% endblock %}
