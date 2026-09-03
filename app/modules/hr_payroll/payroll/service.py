@@ -3,10 +3,12 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.modules.hr_payroll.compensation.repository import EmployeeSalaryRepository
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 from app.modules.hr_payroll.payroll.models import (
     Holiday,
     HolidayTypeEnum,
+    PaymentMethodEnum,
     PayrollPeriod,
     PayrollPeriodStatusEnum,
     PayrollRecord,
@@ -169,10 +171,12 @@ class PayrollRecordService:
         repository: PayrollRecordRepository | None = None,
         period_repository: PayrollPeriodRepository | None = None,
         employee_repository: EmployeeRepository | None = None,
+        salary_repository: EmployeeSalaryRepository | None = None,
     ):
         self.repository = repository or PayrollRecordRepository()
         self.period_repository = period_repository or PayrollPeriodRepository()
         self.employee_repository = employee_repository or EmployeeRepository()
+        self.salary_repository = salary_repository or EmployeeSalaryRepository()
 
     def _compute_salary_totals(
         self,
@@ -387,3 +391,118 @@ class PayrollRecordService:
                 detail="Cannot delete a payslip in a locked or paid payroll period",
             )
         self.repository.delete(db, record)
+
+    def generate_period_payroll(
+        self, db: Session, period_uuid: uuid.UUID
+    ) -> list[PayrollRecord]:
+        period = self.period_repository.get_by_id(db, period_uuid)
+        if not period:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payroll period not found",
+            )
+
+        if period.is_locked:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot generate payroll for a locked or paid payroll period",
+            )
+
+        employees = self.employee_repository.get_all(
+            db, business_id=period.business_id, limit=1000
+        )
+        active_employees = [e for e in employees if getattr(e, "is_active", True)]
+
+        generated_records: list[PayrollRecord] = []
+
+        for emp in active_employees:
+            salary = self.salary_repository.get_by_employee_id(
+                db, employee_id=emp.id, business_id=period.business_id
+            )
+
+            basic_salary = float(getattr(salary, "basic_salary", 0.0) or 0.0)
+            house_rent = float(getattr(salary, "house_rent", 0.0) or 0.0)
+            medical_allowance = float(getattr(salary, "medical_allowance", 0.0) or 0.0)
+            transport_allowance = float(
+                getattr(salary, "transport_allowance", 0.0) or 0.0
+            )
+            food_allowance = float(getattr(salary, "food_allowance", 0.0) or 0.0)
+            other_allowance = float(getattr(salary, "other_allowance", 0.0) or 0.0)
+
+            tax = float(getattr(salary, "tax", 0.0) or 0.0)
+            provident_fund = float(getattr(salary, "provident_fund", 0.0) or 0.0)
+            other_deduction = float(getattr(salary, "other_deduction", 0.0) or 0.0)
+
+            gross, deductions, net = self._compute_salary_totals(
+                basic_salary=basic_salary,
+                house_rent=house_rent,
+                transport_allowance=transport_allowance,
+                medical_allowance=medical_allowance,
+                food_allowance=food_allowance,
+                other_allowance=other_allowance,
+                overtime_pay=0.0,
+                bonus=0.0,
+                tax=tax,
+                provident_fund=provident_fund,
+                unpaid_leave_deduction=0.0,
+                loan_installment=0.0,
+                other_deduction=other_deduction,
+            )
+
+            existing = self.repository.get_by_period_employee(
+                db, period_id=period.id, employee_id=emp.id
+            )
+
+            if existing:
+                existing.basic_salary = basic_salary
+                existing.house_rent = house_rent
+                existing.medical_allowance = medical_allowance
+                existing.transport_allowance = transport_allowance
+                existing.food_allowance = food_allowance
+                existing.other_allowance = other_allowance
+                existing.tax = tax
+                existing.provident_fund = provident_fund
+                existing.other_deduction = other_deduction
+                existing.gross_salary = gross
+                existing.total_deduction = deductions
+                existing.net_salary = net
+                db.commit()
+                db.refresh(existing)
+                generated_records.append(existing)
+            else:
+                record_data = PayrollRecordCreate(
+                    business_id=period.business_id,
+                    period_id=period.id,
+                    employee_id=emp.id,
+                    working_days=0,
+                    present_days=0,
+                    absent_days=0,
+                    leave_days=0,
+                    overtime_hours=0.0,
+                    basic_salary=basic_salary,
+                    house_rent=house_rent,
+                    transport_allowance=transport_allowance,
+                    medical_allowance=medical_allowance,
+                    food_allowance=food_allowance,
+                    other_allowance=other_allowance,
+                    overtime_pay=0.0,
+                    bonus=0.0,
+                    tax=tax,
+                    provident_fund=provident_fund,
+                    unpaid_leave_deduction=0.0,
+                    loan_installment=0.0,
+                    other_deduction=other_deduction,
+                    payment_method=PaymentMethodEnum.BANK_TRANSFER,
+                    is_paid=False,
+                    note=f"Auto-generated salary for {period.name}",
+                )
+                new_rec = self.repository.create(
+                    db,
+                    data=record_data,
+                    gross_salary=gross,
+                    total_deduction=deductions,
+                    net_salary=net,
+                )
+                generated_records.append(new_rec)
+
+        return generated_records

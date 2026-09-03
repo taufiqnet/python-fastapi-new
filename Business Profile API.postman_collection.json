@@ -4574,6 +4574,35 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Generate Period Payroll",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/periods/{{period_id}}/generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "periods",
+                "{{period_id}}",
+                "generate"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     }

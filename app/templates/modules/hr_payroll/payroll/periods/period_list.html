@@ -126,6 +126,11 @@
                         <td class="py-3 px-4 text-gray-500">{{ biz_map.get(p.business_id, 'Global') }}</td>
                         <td class="py-3 px-4 text-right whitespace-nowrap">
                             <div class="flex items-center justify-end gap-2">
+                                {% if not p.is_locked %}
+                                <button onclick="generatePayroll('{{ p.id }}', '{{ p.name }}')" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-semibold rounded-lg transition-colors flex items-center gap-1" title="Generate Monthly Salary">
+                                    <i class="fas fa-cogs text-[10px]"></i> Generate Salary
+                                </button>
+                                {% endif %}
                                 <a href="/payroll-records/manage?period_id={{ p.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 transition-colors" title="View Payslips">
                                     <i class="fas fa-file-invoice-dollar text-xs"></i>
                                 </a>
@@ -157,6 +162,32 @@
 
 {% block extra_js %}
 <script>
+function generatePayroll(periodId, periodName) {
+    if (!confirm('Generate monthly salary payslips for ' + periodName + '? Any existing draft payslips for this period will be re-calculated based on current employee salary setups.')) return;
+    
+    fetch('/payroll/periods/' + periodId + '/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
+    })
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.detail || 'Failed to generate payroll');
+        }
+        return data;
+    })
+    .then(data => {
+        showSuccessToast('Payroll Generated', 'Generated/updated ' + data.length + ' employee payslips.');
+        setTimeout(() => { window.location.href = '/payroll-records/manage?period_id=' + periodId; }, 1200);
+    })
+    .catch(err => {
+        showErrorAlert('Generation Failed', err.message);
+    });
+}
+
 function deletePeriod(periodId) {
     if (!confirm('Are you sure you want to delete this payroll period?')) return;
     fetch('/payroll/periods/' + periodId, {

@@ -109,6 +109,17 @@ def create_payroll_period(
     return period_service.create_period(db, period_data)
 
 
+@router.post(
+    "/periods/{period_id}/generate",
+    response_model=list[PayrollRecordOut],
+)
+def generate_period_payroll(
+    period_id: uuid.UUID,
+    db: Session = Depends(get_db),
+):
+    return record_service.generate_period_payroll(db, period_id)
+
+
 @router.put("/periods/{period_id}", response_model=PayrollPeriodOut)
 def update_payroll_period(
     period_id: uuid.UUID,
