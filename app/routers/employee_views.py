@@ -114,7 +114,7 @@ def employee_create_page(request: Request, db: Session = Depends(get_db)):
 
     return templates.TemplateResponse(
         request=request,
-        name="modules/hr_payroll/employees/employee_form.html",
+        name="modules/hr_payroll/employees/employee_form2.html",
         context={
             "employee": None,
             "is_edit": False,
@@ -169,7 +169,7 @@ def employee_edit_page(
 
     return templates.TemplateResponse(
         request=request,
-        name="modules/hr_payroll/employees/employee_form.html",
+        name="modules/hr_payroll/employees/employee_form2.html",
         context={
             "employee": employee,
             "is_edit": True,

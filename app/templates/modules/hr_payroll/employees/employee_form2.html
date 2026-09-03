@@ -85,28 +85,28 @@
                     <div class="form-group">
                         <label class="form-label" for="employee_id">Employee ID <span class="text-red-500">*</span></label>
                         <input type="text" id="employee_id" name="employee_id" required class="form-input"
-                               value="{{ employee.employee_id if employee else '' }}"
+                               value="{{ (employee.employee_id or '') if employee else '' }}"
                                placeholder="e.g. EMP-001">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="first_name">First Name <span class="text-red-500">*</span></label>
                         <input type="text" id="first_name" name="first_name" required class="form-input"
-                               value="{{ employee.first_name if employee else '' }}"
+                               value="{{ (employee.first_name or '') if employee else '' }}"
                                placeholder="First Name">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="middle_name">Middle Name</label>
                         <input type="text" id="middle_name" name="middle_name" class="form-input"
-                               value="{{ employee.middle_name if employee else '' }}"
+                               value="{{ (employee.middle_name or '') if employee else '' }}"
                                placeholder="Middle Name">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="last_name">Last Name</label>
                         <input type="text" id="last_name" name="last_name" class="form-input"
-                               value="{{ employee.last_name if employee else '' }}"
+                               value="{{ (employee.last_name or '') if employee else '' }}"
                                placeholder="Last Name">
                     </div>
 
@@ -139,21 +139,21 @@
                     <div class="form-group">
                         <label class="form-label" for="nationality">Nationality</label>
                         <input type="text" id="nationality" name="nationality" class="form-input"
-                               value="{{ employee.nationality if employee else '' }}"
+                               value="{{ (employee.nationality or '') if employee else '' }}"
                                placeholder="e.g. American">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="national_id">National ID</label>
                         <input type="text" id="national_id" name="national_id" class="form-input"
-                               value="{{ employee.national_id if employee else '' }}"
+                               value="{{ (employee.national_id or '') if employee else '' }}"
                                placeholder="National ID">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="passport_no">Passport No</label>
                         <input type="text" id="passport_no" name="passport_no" class="form-input"
-                               value="{{ employee.passport_no if employee else '' }}"
+                               value="{{ (employee.passport_no or '') if employee else '' }}"
                                placeholder="Passport No">
                     </div>
                 </div>
@@ -168,35 +168,38 @@
                     <div class="form-group">
                         <label class="form-label" for="work_email">Work Email <span class="text-red-500">*</span></label>
                         <input type="email" id="work_email" name="work_email" required class="form-input"
-                               value="{{ employee.work_email if employee else '' }}"
+                               value="{{ (employee.work_email or '') if employee else '' }}"
                                placeholder="work@company.com">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="personal_email">Personal Email</label>
-                        <input type="email" id="personal_email" name="personal_email" class="form-input"
-                               value="{{ employee.personal_email if employee else '' }}"
+                        <input type="email"
+                               id="personal_email"
+                               name="personal_email"
+                               class="form-input"
+                               value="{{ (employee.personal_email or '') if employee else '' }}"
                                placeholder="personal@example.com">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="phone">Phone</label>
                         <input type="text" id="phone" name="phone" class="form-input"
-                               value="{{ employee.phone if employee else '' }}"
+                               value="{{ (employee.phone or '') if employee else '' }}"
                                placeholder="+1 234 567 890">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="linkedin">LinkedIn Profile</label>
                         <input type="url" id="linkedin" name="linkedin" class="form-input"
-                               value="{{ employee.linkedin if employee else '' }}"
+                               value="{{ (employee.linkedin or '') if employee else '' }}"
                                placeholder="https://linkedin.com/in/username">
                     </div>
 
                     <div class="form-group md:col-span-2">
                         <label class="form-label" for="emergency_contact">Emergency Contact</label>
                         <input type="text" id="emergency_contact" name="emergency_contact" class="form-input"
-                               value="{{ employee.emergency_contact if employee else '' }}"
+                               value="{{ (employee.emergency_contact or '') if employee else '' }}"
                                placeholder="Name, Relation, Phone">
                     </div>
 
@@ -247,7 +250,7 @@
                     <div class="form-group">
                         <label class="form-label" for="team">Team</label>
                         <input type="text" id="team" name="team" class="form-input"
-                               value="{{ employee.team if employee else '' }}"
+                               value="{{ (employee.team or '') if employee else '' }}"
                                placeholder="e.g. Core Engineering">
                     </div>
 
