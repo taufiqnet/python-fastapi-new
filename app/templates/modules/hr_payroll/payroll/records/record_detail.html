@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Payslip Details | HR & Payroll{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/payroll-records/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Payslips
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Employee Payslip Statement</h1>
+        <p class="text-xs text-gray-500 font-medium">Computed salary snapshot ID: {{ record.id }}</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="/payroll-records/edit/{{ record.id }}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+            <i class="fas fa-edit text-[10px]"></i> Edit Payslip
+        </a>
+    </div>
+</div>
+
+<div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm p-6 space-y-6">
+    
+    <!-- Top Meta Info -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-gray-200 gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-gray-900">
+                {% if record.employee %}{{ record.employee.first_name }} {{ record.employee.last_name }}{% else %}Employee ID: {{ record.employee_id }}{% endif %}
+            </h2>
+            <p class="text-xs text-gray-500 font-medium">
+                Period: {% if record.period %}{{ record.period.name }}{% else %}{{ record.period_id }}{% endif %}
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if record.is_paid %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <i class="fas fa-check-circle mr-1.5"></i> PAID
+            </span>
+            {% else %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                <i class="fas fa-hourglass-half mr-1.5"></i> PENDING
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Attendance Card -->
+    <div>
+        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Attendance Summary</h3>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-gray-50 p-4 rounded-xl text-center">
+            <div>
+                <span class="text-[11px] text-gray-500">Working Days</span>
+                <p class="text-sm font-bold text-gray-900">{{ record.working_days }}</p>
+            </div>
+            <div>
+                <span class="text-[11px] text-gray-500">Present</span>
+                <p class="text-sm font-bold text-emerald-600">{{ record.present_days }}</p>
+            </div>
+            <div>
+                <span class="text-[11px] text-gray-500">Absent</span>
+                <p class="text-sm font-bold text-rose-600">{{ record.absent_days }}</p>
+            </div>
+            <div>
+                <span class="text-[11px] text-gray-500">Leave</span>
+                <p class="text-sm font-bold text-blue-600">{{ record.leave_days }}</p>
+            </div>
+            <div>
+                <span class="text-[11px] text-gray-500">Overtime Hrs</span>
+                <p class="text-sm font-bold text-indigo-600">{{ record.overtime_hours }} hrs</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Earnings & Deductions Tables -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Earnings -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+            <div class="bg-emerald-50/50 px-4 py-2.5 border-b border-gray-200">
+                <h4 class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Earnings</h4>
+            </div>
+            <div class="p-4 space-y-2 text-xs">
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Basic Salary</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.basic_salary) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">House Rent Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.house_rent) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Transport Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.transport_allowance) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Medical Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.medical_allowance) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Food Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.food_allowance) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Other Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.other_allowance) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Overtime Pay</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.overtime_pay) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Bonus</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.bonus) }}</span></div>
+                <div class="flex justify-between pt-2 text-sm font-bold text-gray-900 border-t border-gray-200">
+                    <span>Gross Salary</span>
+                    <span class="text-emerald-700">${{ "%.2f"|format(record.gross_salary) }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deductions -->
+        <div class="border border-gray-200 rounded-xl overflow-hidden">
+            <div class="bg-rose-50/50 px-4 py-2.5 border-b border-gray-200">
+                <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider">Deductions</h4>
+            </div>
+            <div class="p-4 space-y-2 text-xs">
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Tax</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.tax) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Provident Fund</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.provident_fund) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Unpaid Leave Deduction</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.unpaid_leave_deduction) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Loan Installment</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.loan_installment) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Other Deduction</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.other_deduction) }}</span></div>
+                <div class="flex justify-between pt-10 text-sm font-bold text-gray-900 border-t border-gray-200">
+                    <span>Total Deduction</span>
+                    <span class="text-rose-600">${{ "%.2f"|format(record.total_deduction) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Net Total Box -->
+    <div class="p-4 bg-indigo-600 rounded-xl text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+            <span class="text-xs font-medium text-indigo-100 uppercase tracking-wider">Net Amount Payable</span>
+            <p class="text-xs text-indigo-200">Gross Salary (${{ "%.2f"|format(record.gross_salary) }}) − Total Deductions (${{ "%.2f"|format(record.total_deduction) }})</p>
+        </div>
+        <div class="text-2xl font-black tracking-tight">${{ "%.2f"|format(record.net_salary) }}</div>
+    </div>
+
+    <!-- Payment info -->
+    <div class="border-t border-gray-200 pt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+        <div>
+            <span class="text-gray-500 font-medium">Payment Method:</span>
+            <p class="font-semibold text-gray-900 uppercase">{{ record.payment_method.value|default(record.payment_method)|replace('_', ' ') }}</p>
+        </div>
+        <div>
+            <span class="text-gray-500 font-medium">Bank Account:</span>
+            <p class="font-semibold text-gray-900">{{ record.bank_account|default('—') }}</p>
+        </div>
+        <div>
+            <span class="text-gray-500 font-medium">Disbursement Timestamp:</span>
+            <p class="font-semibold text-gray-900">{{ record.paid_at|default('Not Paid') }}</p>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

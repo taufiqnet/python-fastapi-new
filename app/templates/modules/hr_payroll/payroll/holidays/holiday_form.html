@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Holiday{% else %}Create Holiday{% endif %} | HR & Payroll{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .form-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: #4f46e5;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/holidays/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Holidays
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Holiday{% else %}Create Holiday{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update holiday configuration and date range{% else %}Add a new official holiday to the calendar{% endif %}
+        </p>
+    </div>
+</div>
+
+<form id="holidayForm" class="space-y-6" onsubmit="handleHolidaySubmit(event)">
+    <input type="hidden" id="holidayId" value="{% if is_edit %}{{ holiday.id }}{% endif %}">
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active">
+                <i class="fas fa-calendar-day text-xs"></i> Holiday Information
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="name">Holiday Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="name" name="name" class="form-input" required max="255"
+                               value="{% if is_edit %}{{ holiday.name }}{% endif %}"
+                               placeholder="e.g. Independence Day, Eid-ul-Fitr">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="holiday_type">Holiday Type <span class="text-red-500">*</span></label>
+                        <select id="holiday_type" name="holiday_type" class="form-input" required>
+                            {% for ht in holiday_types %}
+                            <option value="{{ ht.value }}" {% if is_edit and (holiday.holiday_type.value|default(holiday.holiday_type)) == ht.value %}selected{% endif %}>
+                                {{ ht.value|capitalize }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        <select id="business_id" name="business_id" class="form-input" required>
+                            <option value="">— Select Business Profile —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if is_edit and holiday.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }} (ID: {{ b.id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="start_date">Start Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="start_date" name="start_date" class="form-input" required
+                               value="{% if is_edit %}{{ holiday.start_date }}{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="end_date">End Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="end_date" name="end_date" class="form-input" required
+                               value="{% if is_edit %}{{ holiday.end_date }}{% endif %}">
+                    </div>
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="description">Description</label>
+                        <textarea id="description" name="description" rows="3" class="form-input"
+                                  placeholder="Additional notes about this holiday...">{% if is_edit and holiday.description %}{{ holiday.description }}{% endif %}</textarea>
+                    </div>
+
+                    <div class="form-group md:col-span-2 pt-2">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="is_paid" name="is_paid" class="form-checkbox" {% if not is_edit or holiday.is_paid %}checked{% endif %}>
+                            <span class="text-xs font-semibold text-gray-700">Paid Holiday</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/holidays/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Holiday{% else %}Save Holiday{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function handleHolidaySubmit(event) {
+    event.preventDefault();
+    const isEdit = "{{ is_edit }}" === "True";
+    const holidayId = document.getElementById('holidayId').value;
+
+    const payload = {
+        name: document.getElementById('name').value,
+        holiday_type: document.getElementById('holiday_type').value,
+        business_id: parseInt(document.getElementById('business_id').value),
+        start_date: document.getElementById('start_date').value,
+        end_date: document.getElementById('end_date').value,
+        description: document.getElementById('description').value || null,
+        is_paid: document.getElementById('is_paid').checked
+    };
+
+    const url = isEdit ? '/payroll/holidays/' + holidayId : '/payroll/holidays';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'Failed to save holiday';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        showSuccessToast(
+            isEdit ? 'Holiday Updated' : 'Holiday Created',
+            isEdit ? 'Changes saved successfully.' : 'New holiday added to calendar.'
+        );
+        setTimeout(() => { window.location.href = '/holidays/manage'; }, 1200);
+    })
+    .catch(err => {
+        showErrorAlert('Save Failed', err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Holiday' : 'Save Holiday');
+    });
+}
+</script>
+{% endblock %}

@@ -4085,6 +4085,497 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Payroll",
+      "item": [
+        {
+          "name": "Create Holiday",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"holiday_id\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"name\": \"New Year's Day\",\n  \"holiday_type\": \"public\",\n  \"start_date\": \"2025-01-01\",\n  \"end_date\": \"2025-01-01\",\n  \"is_paid\": true,\n  \"description\": \"Public Holiday\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payroll/holidays",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "holidays"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Holidays",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/holidays?skip=0&limit=100&business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "holidays"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Holiday",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "holidays",
+                "{{holiday_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Holiday",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Year's Day (Observed)\",\n  \"is_paid\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "holidays",
+                "{{holiday_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Holiday",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "holidays",
+                "{{holiday_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Payroll Period",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"period_id\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"name\": \"January 2025\",\n  \"start_date\": \"2025-01-01\",\n  \"end_date\": \"2025-01-31\",\n  \"status\": \"draft\",\n  \"payment_date\": \"2025-01-31\",\n  \"notes\": \"January monthly payroll run\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payroll/periods",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "periods"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Payroll Periods",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/periods?skip=0&limit=100&business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "periods"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payroll Period",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/periods/{{period_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "periods",
+                "{{period_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Payroll Period",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"processing\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payroll/periods/{{period_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "periods",
+                "{{period_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Payroll Period",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/periods/{{period_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "periods",
+                "{{period_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Payroll Record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    pm.collectionVariables.set(\"record_id\", json.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business_id\": 1,\n  \"period_id\": \"{{period_id}}\",\n  \"employee_id\": \"{{employee_id}}\",\n  \"working_days\": 22,\n  \"present_days\": 22,\n  \"absent_days\": 0,\n  \"leave_days\": 0,\n  \"overtime_hours\": 5.0,\n  \"basic_salary\": 5000.0,\n  \"house_rent\": 1000.0,\n  \"transport_allowance\": 300.0,\n  \"medical_allowance\": 500.0,\n  \"food_allowance\": 200.0,\n  \"other_allowance\": 100.0,\n  \"overtime_pay\": 150.0,\n  \"bonus\": 0.0,\n  \"tax\": 500.0,\n  \"provident_fund\": 300.0,\n  \"unpaid_leave_deduction\": 0.0,\n  \"loan_installment\": 0.0,\n  \"other_deduction\": 50.0,\n  \"payment_method\": \"bank_transfer\",\n  \"bank_account\": \"BD1234567890\",\n  \"is_paid\": false,\n  \"note\": \"January Payslip\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payroll/records",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "records"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Payroll Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/records?skip=0&limit=100&business_id={{business_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "records"
+              ],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "business_id",
+                  "value": "{{business_id}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Payroll Record",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/records/{{record_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "records",
+                "{{record_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Payroll Record",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_paid\": true,\n  \"note\": \"Paid via bank disbursement\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/payroll/records/{{record_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "records",
+                "{{record_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Payroll Record",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payroll/records/{{record_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payroll",
+                "records",
+                "{{record_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -4200,6 +4691,21 @@
     },
     {
       "key": "salary_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "holiday_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "period_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "record_id",
       "value": "",
       "type": "string"
     }

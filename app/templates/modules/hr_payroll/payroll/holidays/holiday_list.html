@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Holiday Calendar | HR & Payroll{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Holiday Calendar</h1>
+        <p class="text-xs text-gray-500 font-medium">Manage company holidays and observances across business profiles</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="/holidays/create" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+            <i class="fas fa-plus text-[10px]"></i> Add Holiday
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Holidays</span>
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-gray-900">{{ total_count }}</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Paid Holidays</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-emerald-600">{{ paid_count }}</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Unpaid Holidays</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                <i class="fas fa-calendar-times"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-amber-600">{{ unpaid_count }}</div>
+    </div>
+</div>
+
+<!-- Filters & Table Card -->
+<div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+            <form method="GET" action="/holidays/manage" class="flex flex-wrap items-center gap-3">
+                <select name="business_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
+                    <option value="">All Businesses</option>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if request.query_params.get('business_id') == b.id|string %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="holiday_type" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
+                    <option value="">All Holiday Types</option>
+                    {% for ht in holiday_types %}
+                    <option value="{{ ht.value }}" {% if request.query_params.get('holiday_type') == ht.value %}selected{% endif %}>{{ ht.value|capitalize }}</option>
+                    {% endfor %}
+                </select>
+                {% if request.query_params.get('business_id') or request.query_params.get('holiday_type') %}
+                <a href="/holidays/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">Clear Filters</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-gray-200 bg-gray-50 text-[11px] uppercase tracking-wider font-semibold text-gray-500">
+                    <th class="py-3 px-4">Holiday Name</th>
+                    <th class="py-3 px-4">Type</th>
+                    <th class="py-3 px-4">Start Date</th>
+                    <th class="py-3 px-4">End Date</th>
+                    <th class="py-3 px-4">Paid</th>
+                    <th class="py-3 px-4">Business</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-xs font-medium text-gray-700">
+                {% if holidays %}
+                    {% for h in holidays %}
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="py-3 px-4 font-semibold text-gray-900">
+                            {{ h.name }}
+                            {% if h.description %}
+                            <p class="text-[11px] font-normal text-gray-500 truncate max-w-xs">{{ h.description }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                {{ h.holiday_type.value|default(h.holiday_type)|capitalize }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap">{{ h.start_date }}</td>
+                        <td class="py-3 px-4 whitespace-nowrap">{{ h.end_date }}</td>
+                        <td class="py-3 px-4">
+                            {% if h.is_paid %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Paid</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">Unpaid</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-gray-500">{{ biz_map.get(h.business_id, 'Global') }}</td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="/holidays/edit/{{ h.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 transition-colors" title="Edit">
+                                    <i class="fas fa-edit text-xs"></i>
+                                </a>
+                                <button onclick="deleteHoliday('{{ h.id }}')" class="p-1.5 text-gray-500 hover:text-red-600 transition-colors" title="Delete">
+                                    <i class="fas fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-gray-500 text-xs">
+                            No holidays found. Click "Add Holiday" to create one.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteHoliday(holidayId) {
+    if (!confirm('Are you sure you want to delete this holiday?')) return;
+    fetch('/payroll/holidays/' + holidayId, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Failed to delete holiday');
+        showSuccessToast('Deleted', 'Holiday removed successfully.');
+        setTimeout(() => { window.location.reload(); }, 1000);
+    })
+    .catch(err => {
+        showErrorAlert('Error', err.message);
+    });
+}
+</script>
+{% endblock %}

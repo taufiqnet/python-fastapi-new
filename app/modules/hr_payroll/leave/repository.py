@@ -98,6 +98,36 @@ class LeaveAllocationRepository:
             .first()
         )
 
+    def get_by_emp_type_year_locked(
+        self,
+        db: Session,
+        employee_id: uuid.UUID,
+        leave_type_id: uuid.UUID,
+        year: int,
+        business_id: int,
+    ) -> LeaveAllocation | None:
+        """Same lookup as get_by_emp_type_year, but takes a row lock
+        (SELECT ... FOR UPDATE) for the life of the current transaction.
+
+        Must be called from within a request/service flow that shares a
+        single DB transaction with the subsequent write (e.g. do NOT call
+        db.commit() between this and the used_days mutation), or the lock
+        is pointless. Used by review_application()/cancel_application() to
+        prevent two concurrent approvals from double-spending the same
+        balance.
+        """
+        return (
+            db.query(LeaveAllocation)
+            .filter(
+                LeaveAllocation.employee_id == employee_id,
+                LeaveAllocation.leave_type_id == leave_type_id,
+                LeaveAllocation.year == year,
+                LeaveAllocation.business_id == business_id,
+            )
+            .with_for_update()
+            .first()
+        )
+
     def get_all(
         self,
         db: Session,
@@ -201,7 +231,15 @@ class LeaveApplicationRepository:
         reviewed_by_id: uuid.UUID,
         review_note: str | None = None,
     ) -> LeaveApplication:
-        application.status = status
+        """Commits the status change AND any other pending changes already
+        staged on this session (e.g. an allocation.used_days mutation added
+        via db.add() earlier in the same request) as a single transaction.
+        Callers relying on this atomicity must NOT call db.commit() between
+        staging the allocation change and calling this method.
+        """
+        application.status = (
+            status if isinstance(status, LeaveStatusEnum) else LeaveStatusEnum(status)
+        )
         application.reviewed_by_id = reviewed_by_id
         application.review_note = review_note
         application.reviewed_at = datetime.now(timezone.utc)

@@ -33,6 +33,7 @@ from app.modules.hr_payroll.employees.router import router as employees_router
 from app.modules.hr_payroll.leave.router import router as leave_router
 from app.modules.hr_payroll.attendance.router import router as attendance_router
 from app.modules.hr_payroll.compensation.router import router as compensation_router
+from app.modules.hr_payroll.payroll.router import router as payroll_router
 
 from app.routers import (
     attendance_views,
@@ -46,6 +47,7 @@ from app.routers import (
     leave_views,
     model_views,
     organization_views,
+    payroll_views,
     product_views,
     tasks,
 )
@@ -85,6 +87,7 @@ app.include_router(employee_views.router)
 app.include_router(leave_views.router)
 app.include_router(attendance_views.router)
 app.include_router(compensation_views.router)
+app.include_router(payroll_views.router)
 app.include_router(auth.router)
 app.include_router(business.router)
 
@@ -108,6 +111,7 @@ app.include_router(employees_router)
 app.include_router(leave_router)
 app.include_router(attendance_router)
 app.include_router(compensation_router)
+app.include_router(payroll_router)
 
 #project management router
 app.include_router(tasks.router)

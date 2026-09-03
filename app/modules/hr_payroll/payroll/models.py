@@ -13,7 +13,8 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import UUID, Date, Enum as SAEnum
+from sqlalchemy.types import UUID, Date
+from sqlalchemy.types import Enum as SAEnum
 
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
@@ -84,7 +85,9 @@ class PayrollPeriod(Base, UUIDMixin, TimestampMixin):
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g. "January 2025" / "2025-01"
+    name: Mapped[str] = mapped_column(
+        String(100), nullable=False
+    )  # e.g. "January 2025" / "2025-01"
     start_date: Mapped["Date"] = mapped_column(Date, nullable=False)
     end_date: Mapped["Date"] = mapped_column(Date, nullable=False)
     status: Mapped[PayrollPeriodStatusEnum] = mapped_column(
@@ -92,7 +95,9 @@ class PayrollPeriod(Base, UUIDMixin, TimestampMixin):
         default=PayrollPeriodStatusEnum.DRAFT,
         nullable=False,
     )
-    payment_date: Mapped["Date | None"] = mapped_column(Date, nullable=True)  # actual bank disbursement date
+    payment_date: Mapped["Date | None"] = mapped_column(
+        Date, nullable=True
+    )  # actual bank disbursement date
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
@@ -107,7 +112,10 @@ class PayrollPeriod(Base, UUIDMixin, TimestampMixin):
 
     @property
     def is_locked(self) -> bool:
-        return self.status in (PayrollPeriodStatusEnum.LOCKED, PayrollPeriodStatusEnum.PAID)
+        return self.status in (
+            PayrollPeriodStatusEnum.LOCKED,
+            PayrollPeriodStatusEnum.PAID,
+        )
 
     def __repr__(self) -> str:
         return f"<PayrollPeriod {self.name} [{self.status}]>"
@@ -145,7 +153,9 @@ class PayrollRecord(Base, UUIDMixin, TimestampMixin):
 
     __tablename__ = "payroll_records"
     __table_args__ = (
-        UniqueConstraint("period_id", "employee_id", name="uq_payroll_record_period_employee"),
+        UniqueConstraint(
+            "period_id", "employee_id", name="uq_payroll_record_period_employee"
+        ),
     )
 
     business_id: Mapped[int] = mapped_column(
@@ -172,38 +182,74 @@ class PayrollRecord(Base, UUIDMixin, TimestampMixin):
     present_days: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
     absent_days: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
     leave_days: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
-    overtime_hours: Mapped[float] = mapped_column(Numeric(6, 2), default=0, nullable=False)
+    overtime_hours: Mapped[float] = mapped_column(
+        Numeric(6, 2), default=0, nullable=False
+    )
 
     # ── Earnings ─────────────────────────────────────────────────────
-    basic_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    basic_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
     house_rent: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    transport_allowance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    medical_allowance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    food_allowance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    other_allowance: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    overtime_pay: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    bonus: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)  # festival/performance bonus
-    gross_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)  # written by service.py
+    transport_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    medical_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    food_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    other_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    overtime_pay: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    bonus: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )  # festival/performance bonus
+    gross_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )  # written by service.py
 
     # ── Deductions ───────────────────────────────────────────────────
-    tax: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)  # income tax withheld at source
-    provident_fund: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    unpaid_leave_deduction: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    loan_installment: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    other_deduction: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
-    total_deduction: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)  # written by service.py
+    tax: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )  # income tax withheld at source
+    provident_fund: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    unpaid_leave_deduction: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    loan_installment: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    other_deduction: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )
+    total_deduction: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )  # written by service.py
 
     # ── Net ───────────────────────────────────────────────────────────
-    net_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)  # written by service.py
+    net_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0, nullable=False
+    )  # written by service.py
 
     payment_method: Mapped[PaymentMethodEnum] = mapped_column(
         SAEnum(PaymentMethodEnum, name="payroll_record_payment_method"),
         default=PaymentMethodEnum.BANK_TRANSFER,
         nullable=False,
     )
-    bank_account: Mapped[str | None] = mapped_column(String(50), nullable=True)  # account/mobile no. used for disbursement
+    bank_account: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # account/mobile no. used for disbursement
     is_paid: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    paid_at: Mapped["DateTime | None"] = mapped_column(DateTime(timezone=True), nullable=True)
+    paid_at: Mapped["DateTime | None"] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships

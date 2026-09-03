@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll Payslips | HR & Payroll{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Payroll Payslips</h1>
+        <p class="text-xs text-gray-500 font-medium">Individual employee payslip snapshots, earnings, deductions, and payment statuses</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="/payroll-records/create" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+            <i class="fas fa-plus text-[10px]"></i> Generate Payslip
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Payslips</span>
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-gray-900">{{ total_count }}</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Gross Payroll</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                <i class="fas fa-coins"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-blue-600">${{ "%.2f"|format(total_gross) }}</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Deductions</span>
+            <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
+                <i class="fas fa-minus-circle"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-rose-600">${{ "%.2f"|format(total_deduction) }}</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Net Disbursement</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                <i class="fas fa-wallet"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-emerald-600">${{ "%.2f"|format(total_net) }}</div>
+    </div>
+</div>
+
+<!-- Filters & Table Card -->
+<div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+            <form method="GET" action="/payroll-records/manage" class="flex flex-wrap items-center gap-3">
+                <select name="business_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
+                    <option value="">All Businesses</option>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if request.query_params.get('business_id') == b.id|string %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="period_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
+                    <option value="">All Payroll Periods</option>
+                    {% for p in periods %}
+                    <option value="{{ p.id }}" {% if request.query_params.get('period_id') == p.id|string %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="employee_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
+                    <option value="">All Employees</option>
+                    {% for e in employees %}
+                    <option value="{{ e.id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>{{ e.first_name }} {{ e.last_name }}</option>
+                    {% endfor %}
+                </select>
+
+                {% if request.query_params.get('business_id') or request.query_params.get('period_id') or request.query_params.get('employee_id') %}
+                <a href="/payroll-records/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">Clear Filters</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-gray-200 bg-gray-50 text-[11px] uppercase tracking-wider font-semibold text-gray-500">
+                    <th class="py-3 px-4">Employee</th>
+                    <th class="py-3 px-4">Period</th>
+                    <th class="py-3 px-4">Gross Salary</th>
+                    <th class="py-3 px-4">Deductions</th>
+                    <th class="py-3 px-4">Net Salary</th>
+                    <th class="py-3 px-4">Payment Method</th>
+                    <th class="py-3 px-4">Payment Status</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-xs font-medium text-gray-700">
+                {% if records %}
+                    {% for r in records %}
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="py-3 px-4 font-semibold text-gray-900">
+                            {{ emp_map.get(r.employee_id, 'Unknown Employee') }}
+                        </td>
+                        <td class="py-3 px-4 text-gray-600 font-medium">
+                            {{ period_map.get(r.period_id, '—') }}
+                        </td>
+                        <td class="py-3 px-4 text-gray-900 font-semibold">${{ "%.2f"|format(r.gross_salary) }}</td>
+                        <td class="py-3 px-4 text-rose-600 font-semibold">${{ "%.2f"|format(r.total_deduction) }}</td>
+                        <td class="py-3 px-4 text-emerald-600 font-bold">${{ "%.2f"|format(r.net_salary) }}</td>
+                        <td class="py-3 px-4 text-gray-500 uppercase text-[10px] tracking-wider">{{ r.payment_method.value|default(r.payment_method)|replace('_', ' ') }}</td>
+                        <td class="py-3 px-4">
+                            {% if r.is_paid %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Paid</span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="/payroll-records/detail/{{ r.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 transition-colors" title="View Payslip">
+                                    <i class="fas fa-eye text-xs"></i>
+                                </a>
+                                <a href="/payroll-records/edit/{{ r.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 transition-colors" title="Edit">
+                                    <i class="fas fa-edit text-xs"></i>
+                                </a>
+                                <button onclick="deleteRecord('{{ r.id }}')" class="p-1.5 text-gray-500 hover:text-red-600 transition-colors" title="Delete">
+                                    <i class="fas fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="py-8 text-center text-gray-500 text-xs">
+                            No payslip records found. Click "Generate Payslip" to create one.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteRecord(recordId) {
+    if (!confirm('Are you sure you want to delete this payslip record?')) return;
+    fetch('/payroll/records/' + recordId, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Failed to delete payslip record');
+        showSuccessToast('Deleted', 'Payslip record removed successfully.');
+        setTimeout(() => { window.location.reload(); }, 1000);
+    })
+    .catch(err => {
+        showErrorAlert('Error', err.message);
+    });
+}
+</script>
+{% endblock %}

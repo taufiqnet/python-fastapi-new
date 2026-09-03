@@ -267,16 +267,18 @@ class LeaveApplicationService:
         return self.repository.create(db, data)
 
     def update_application(
-        self,
-        db: Session,
-        application_uuid: uuid.UUID,
-        data: LeaveApplicationUpdate,
+        self, db: Session, application_uuid: uuid.UUID, data: LeaveApplicationUpdate
     ) -> LeaveApplication:
         application = self.get_application(db, application_uuid)
 
+        if application.status != LeaveStatusEnum.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot edit a leave application with status '{application.status}'",
+            )
+
         start_date = data.start_date or application.start_date
         end_date = data.end_date or application.end_date
-
         if start_date > end_date:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -296,14 +298,10 @@ class LeaveApplicationService:
     ) -> LeaveApplication:
         application = self.get_application(db, application_uuid)
 
-        if (
-            application.status != LeaveStatusEnum.PENDING
-            and str(application.status) != "pending"
-        ):
-            app_status = application.status
+        if application.status != LeaveStatusEnum.PENDING:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot review leave application with status '{app_status}'",
+                detail=f"Cannot review leave application with status '{application.status}'",
             )
 
         reviewer = self.employee_repository.get_by_id(db, data.reviewed_by_id)
@@ -313,25 +311,119 @@ class LeaveApplicationService:
                 detail=f"Reviewer with id '{data.reviewed_by_id}' not found",
             )
 
-        if data.status in (LeaveStatusEnum.APPROVED, "approved"):
-            year = application.start_date.year
-            allocation = self.allocation_repository.get_by_emp_type_year(
-                db,
-                employee_id=application.employee_id,
-                leave_type_id=application.leave_type_id,
-                year=year,
-                business_id=application.business_id,
+        target_status = (
+            data.status
+            if isinstance(data.status, LeaveStatusEnum)
+            else LeaveStatusEnum(data.status)
+        )
+
+        if target_status == LeaveStatusEnum.APPROVED:
+            leave_type = self.leave_type_repository.get_by_id(
+                db, application.leave_type_id
             )
-            if allocation:
-                allocation.used_days += application.total_days
+            if not leave_type:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Leave type not found for this application",
+                )
+
+            # max_days_per_year == 0 means unlimited -> skip balance enforcement
+            if leave_type.max_days_per_year != 0:
+                year = application.start_date.year
+                allocation = self.allocation_repository.get_by_emp_type_year_locked(
+                    db,
+                    employee_id=application.employee_id,
+                    leave_type_id=application.leave_type_id,
+                    year=year,
+                    business_id=application.business_id,
+                )
+
+                if not allocation:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=(
+                            "No leave allocation configured for this employee, "
+                            "leave type, and year. Cannot approve."
+                        ),
+                    )
+
+                remaining = (
+                    float(allocation.allocated_days)
+                    + float(allocation.carried_forward)
+                    - float(allocation.used_days)
+                )
+                if remaining < application.total_days:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=(
+                            f"Insufficient leave balance: {remaining} day(s) "
+                            f"remaining, {application.total_days} day(s) requested"
+                        ),
+                    )
+
+                allocation.used_days = (
+                    float(allocation.used_days) + application.total_days
+                )
                 db.add(allocation)
+
+        # NOTE: allocation change above is staged, not committed. update_status()
+        # commits it together with the application status change in one
+        # transaction. Do not insert a db.commit() between the two.
+        return self.repository.update_status(
+            db,
+            application=application,
+            status=target_status,
+            reviewed_by_id=data.reviewed_by_id,
+            review_note=data.review_note,
+        )
+
+    def cancel_application(
+        self,
+        db: Session,
+        application_uuid: uuid.UUID,
+        actor_id: uuid.UUID,
+    ) -> LeaveApplication:
+        """Cancel a PENDING or APPROVED application. If it was APPROVED,
+        restores the balance that was deducted at approval time."""
+        application = self.get_application(db, application_uuid)
+
+        if application.status not in (
+            LeaveStatusEnum.PENDING,
+            LeaveStatusEnum.APPROVED,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot cancel a leave application with status '{application.status}'",
+            )
+
+        was_approved = application.status == LeaveStatusEnum.APPROVED
+
+        if was_approved:
+            leave_type = self.leave_type_repository.get_by_id(
+                db, application.leave_type_id
+            )
+            if leave_type and leave_type.max_days_per_year != 0:
+                year = application.start_date.year
+                allocation = self.allocation_repository.get_by_emp_type_year_locked(
+                    db,
+                    employee_id=application.employee_id,
+                    leave_type_id=application.leave_type_id,
+                    year=year,
+                    business_id=application.business_id,
+                )
+                if allocation:
+                    restored = float(allocation.used_days) - application.total_days
+                    allocation.used_days = max(restored, 0)
+                    db.add(allocation)
+                # If the allocation row no longer exists, there's nothing to
+                # restore to -- proceed with cancellation regardless.
 
         return self.repository.update_status(
             db,
             application=application,
-            status=data.status,
-            reviewed_by_id=data.reviewed_by_id,
-            review_note=data.review_note,
+            status=LeaveStatusEnum.CANCELLED,
+            reviewed_by_id=actor_id,
+            review_note="Cancelled" if was_approved else None,
         )
 
     def delete_application(self, db: Session, application_uuid: uuid.UUID) -> None:

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll Periods | HR & Payroll{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Payroll Periods</h1>
+        <p class="text-xs text-gray-500 font-medium">Manage salary processing cycles, batch boundaries, and locks</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="/payroll-periods/create" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+            <i class="fas fa-plus text-[10px]"></i> Create Payroll Period
+        </a>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Draft Periods</span>
+            <div class="w-8 h-8 rounded-lg bg-gray-50 text-gray-600 flex items-center justify-center text-xs">
+                <i class="fas fa-pencil-alt"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-gray-900">{{ draft_count }}</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Processing</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                <i class="fas fa-spinner"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-blue-600">{{ processing_count }}</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Locked</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                <i class="fas fa-lock"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-amber-600">{{ locked_count }}</div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Paid</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                <i class="fas fa-check-double"></i>
+            </div>
+        </div>
+        <div class="text-2xl font-bold text-emerald-600">{{ paid_count }}</div>
+    </div>
+</div>
+
+<!-- Filters & Table Card -->
+<div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+            <form method="GET" action="/payroll-periods/manage" class="flex flex-wrap items-center gap-3">
+                <select name="business_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
+                    <option value="">All Businesses</option>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if request.query_params.get('business_id') == b.id|string %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+
+                <select name="status" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
+                    <option value="">All Statuses</option>
+                    {% for s in status_options %}
+                    <option value="{{ s.value }}" {% if request.query_params.get('status') == s.value %}selected{% endif %}>{{ s.value|capitalize }}</option>
+                    {% endfor %}
+                </select>
+                {% if request.query_params.get('business_id') or request.query_params.get('status') %}
+                <a href="/payroll-periods/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">Clear Filters</a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="border-b border-gray-200 bg-gray-50 text-[11px] uppercase tracking-wider font-semibold text-gray-500">
+                    <th class="py-3 px-4">Period Name</th>
+                    <th class="py-3 px-4">Start Date</th>
+                    <th class="py-3 px-4">End Date</th>
+                    <th class="py-3 px-4">Disbursement Date</th>
+                    <th class="py-3 px-4">Status</th>
+                    <th class="py-3 px-4">Business</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-xs font-medium text-gray-700">
+                {% if periods %}
+                    {% for p in periods %}
+                    <tr class="hover:bg-gray-50/80 transition-colors">
+                        <td class="py-3 px-4 font-semibold text-gray-900">
+                            {{ p.name }}
+                            {% if p.notes %}
+                            <p class="text-[11px] font-normal text-gray-500 truncate max-w-xs">{{ p.notes }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 whitespace-nowrap">{{ p.start_date }}</td>
+                        <td class="py-3 px-4 whitespace-nowrap">{{ p.end_date }}</td>
+                        <td class="py-3 px-4 whitespace-nowrap text-gray-500">{{ p.payment_date|default('—') }}</td>
+                        <td class="py-3 px-4">
+                            {% set status_val = p.status.value|default(p.status) %}
+                            {% if status_val == 'draft' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-700 border border-gray-200">Draft</span>
+                            {% elif status_val == 'processing' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">Processing</span>
+                            {% elif status_val == 'locked' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">Locked</span>
+                            {% elif status_val == 'paid' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Paid</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-gray-500">{{ biz_map.get(p.business_id, 'Global') }}</td>
+                        <td class="py-3 px-4 text-right whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="/payroll-records/manage?period_id={{ p.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 transition-colors" title="View Payslips">
+                                    <i class="fas fa-file-invoice-dollar text-xs"></i>
+                                </a>
+                                <a href="/payroll-periods/edit/{{ p.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 transition-colors" title="Edit">
+                                    <i class="fas fa-edit text-xs"></i>
+                                </a>
+                                {% if not p.is_locked %}
+                                <button onclick="deletePeriod('{{ p.id }}')" class="p-1.5 text-gray-500 hover:text-red-600 transition-colors" title="Delete">
+                                    <i class="fas fa-trash text-xs"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="py-8 text-center text-gray-500 text-xs">
+                            No payroll periods found. Click "Create Payroll Period" to start one.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deletePeriod(periodId) {
+    if (!confirm('Are you sure you want to delete this payroll period?')) return;
+    fetch('/payroll/periods/' + periodId, {
+        method: 'DELETE',
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Failed to delete payroll period');
+        showSuccessToast('Deleted', 'Payroll period removed successfully.');
+        setTimeout(() => { window.location.reload(); }, 1000);
+    })
+    .catch(err => {
+        showErrorAlert('Error', err.message);
+    });
+}
+</script>
+{% endblock %}
