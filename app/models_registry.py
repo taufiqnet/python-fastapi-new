@@ -54,6 +54,11 @@ from app.modules.hr_payroll.organization.models import (  # noqa: F401
     JobTitle,
 )
 from app.modules.hr_payroll.employees.models import Employee  # noqa: F401
+from app.modules.hr_payroll.leave.models import (  # noqa: F401
+    LeaveAllocation,
+    LeaveApplication,
+    LeaveType,
+)
 
 # TODO: Product.business_id and several other models FK to a business/tenant
 # table (e.g. BusinessProfile). If that model isn't imported somewhere before

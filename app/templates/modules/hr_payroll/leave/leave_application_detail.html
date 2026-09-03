@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Application Details | HR & Payroll{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Top Action Header -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <a href="/leave/applications/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Applications
+            </a>
+        </div>
+    </div>
+
+    <!-- Application Detail Card -->
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        
+        <!-- Header Banner -->
+        <div class="bg-gradient-to-r from-slate-800 via-indigo-900 to-slate-900 px-8 py-6 text-white">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <span class="text-xs text-indigo-200 font-mono">Application ID: {{ application.id }}</span>
+                    <h1 class="text-xl font-bold text-white tracking-tight mt-1">
+                        {{ application.leave_type.name if application.leave_type else 'Leave Request' }}
+                    </h1>
+                    <p class="text-xs text-indigo-200/80 mt-0.5">
+                        Submitted on {{ application.created_at.strftime('%B %d, %Y') if application.created_at else '' }}
+                    </p>
+                </div>
+
+                <div>
+                    {% if application.status == 'approved' %}
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                            <i class="fas fa-check text-[10px] mr-1"></i> Approved
+                        </span>
+                    {% elif application.status == 'rejected' %}
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-200 border border-red-400/30">
+                            <i class="fas fa-times text-[10px] mr-1"></i> Rejected
+                        </span>
+                    {% else %}
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/30">
+                            <i class="fas fa-clock text-[10px] mr-1"></i> Pending Review
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8 space-y-6">
+            <!-- Applicant Info & Dates -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 border-b border-gray-100 pb-6">
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                        <i class="fas fa-user text-indigo-600"></i> Applicant Details
+                    </h3>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-1 text-xs">
+                        <div class="font-bold text-gray-900 text-sm">
+                            {{ application.employee.full_name if application.employee else 'Employee' }}
+                        </div>
+                        <div class="text-gray-500">ID: {{ application.employee.employee_id if application.employee else 'N/A' }}</div>
+                        <div class="text-gray-500">Work Email: {{ application.employee.work_email if application.employee else 'N/A' }}</div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-indigo-600"></i> Duration & Dates
+                    </h3>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-1 text-xs">
+                        <div class="flex items-center justify-between text-gray-700">
+                            <span>Start Date:</span>
+                            <span class="font-semibold">{{ application.start_date }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-gray-700">
+                            <span>End Date:</span>
+                            <span class="font-semibold">{{ application.end_date }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-indigo-600 pt-1 border-t border-gray-200 font-bold">
+                            <span>Total Requested:</span>
+                            <span>{{ application.number_of_days }} Days</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason -->
+            <div class="space-y-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                    <i class="fas fa-comment-alt text-indigo-600"></i> Application Reason
+                </h3>
+                <p class="text-xs text-gray-700 bg-gray-50 p-4 rounded-xl border border-gray-100 leading-relaxed">
+                    {{ application.reason if application.reason else 'No reason provided.' }}
+                </p>
+            </div>
+
+            <!-- Review Actions (if pending) -->
+            {% if application.status == 'pending' %}
+            <div class="bg-indigo-50/50 border border-indigo-100 rounded-xl p-6 space-y-4">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-900 flex items-center gap-2">
+                    <i class="fas fa-user-check text-indigo-600"></i> Review Decision
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="reviewer_id">Reviewer / Manager <span class="text-red-500">*</span></label>
+                        <select id="reviewer_id" class="form-input">
+                            <option value="">— Select Reviewer —</option>
+                            {% for mgr in employees %}
+                            <option value="{{ mgr.id }}">{{ mgr.full_name }} ({{ mgr.employee_id }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="rejection_reason">Rejection Reason (If rejecting)</label>
+                        <input type="text" id="rejection_reason" class="form-input" placeholder="Explain why the request is rejected...">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" onclick="submitReview('rejected')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                        <i class="fas fa-times-circle"></i> Reject Application
+                    </button>
+                    <button type="button" onclick="submitReview('approved')" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i> Approve Application
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <!-- Review Information -->
+            <div class="border-t border-gray-100 pt-4 space-y-2 text-xs">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                    <i class="fas fa-clipboard-check text-indigo-600"></i> Review Status Details
+                </h3>
+                <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 space-y-1">
+                    <div>Reviewed by: <span class="font-semibold text-gray-800">{{ application.reviewer.full_name if application.reviewer else 'N/A' }}</span></div>
+                    {% if application.rejection_reason %}
+                    <div class="text-red-600">Rejection Reason: {{ application.rejection_reason }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function submitReview(decisionStatus) {
+    const reviewerId = document.getElementById('reviewer_id').value;
+    if (!reviewerId) {
+        showWarningAlert('Reviewer Required', 'Please select a reviewer employee.');
+        return;
+    }
+
+    const payload = {
+        status: decisionStatus,
+        reviewer_id: reviewerId,
+        rejection_reason: document.getElementById('rejection_reason').value || null
+    };
+
+    fetch('/leave-applications/{{ application.id }}/review', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'Failed to review application';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        showSuccessToast('Application Processed', 'Leave application marked as ' + decisionStatus + '.');
+        setTimeout(() => { window.location.reload(); }, 1200);
+    })
+    .catch(err => {
+        showErrorAlert('Review Failed', err.message);
+    });
+}
+</script>
+{% endblock %}

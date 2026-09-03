@@ -247,7 +247,7 @@
                         <select id="department_id" name="department_id" class="form-input">
                             <option value="">— Unassigned —</option>
                             {% for d in departments %}
-                            <option value="{{ d.id }}" {% if employee and employee.department_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                            <option value="{{ d.id }}" {% if employee and employee.department_id|string == d.id|string %}selected{% endif %}>{{ d.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -257,7 +257,7 @@
                         <select id="job_title_id" name="job_title_id" class="form-input">
                             <option value="">— Unassigned —</option>
                             {% for j in job_titles %}
-                            <option value="{{ j.id }}" {% if employee and employee.job_title_id == j.id %}selected{% endif %}>{{ j.name }}</option>
+                            <option value="{{ j.id }}" {% if employee and employee.job_title_id|string == j.id|string %}selected{% endif %}>{{ j.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -267,7 +267,7 @@
                         <select id="direct_manager_id" name="direct_manager_id" class="form-input">
                             <option value="">— None —</option>
                             {% for mgr in all_employees %}
-                            <option value="{{ mgr.id }}" {% if employee and employee.direct_manager_id == mgr.id %}selected{% endif %}>{{ mgr.full_name }} ({{ mgr.employee_id }})</option>
+                            <option value="{{ mgr.id }}" {% if employee and employee.direct_manager_id|string == mgr.id|string %}selected{% endif %}>{{ mgr.full_name }} ({{ mgr.employee_id }})</option>
                             {% endfor %}
                         </select>
                     </div>

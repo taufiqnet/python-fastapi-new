@@ -30,6 +30,7 @@ from app.modules.hr_payroll.organization.router import (
     router as organization_router,
 )
 from app.modules.hr_payroll.employees.router import router as employees_router
+from app.modules.hr_payroll.leave.router import router as leave_router
 
 from app.routers import (
     auth,
@@ -38,6 +39,7 @@ from app.routers import (
     business_views,
     category_views,
     employee_views,
+    leave_views,
     model_views,
     organization_views,
     product_views,
@@ -76,6 +78,7 @@ app.include_router(model_views.router)
 app.include_router(product_views.router)
 app.include_router(organization_views.router)
 app.include_router(employee_views.router)
+app.include_router(leave_views.router)
 app.include_router(auth.router)
 app.include_router(business.router)
 
@@ -96,6 +99,7 @@ app.include_router(search_router)
 #hr payroll router
 app.include_router(organization_router)
 app.include_router(employees_router)
+app.include_router(leave_router)
 
 #project management router
 app.include_router(tasks.router)
