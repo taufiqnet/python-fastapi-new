@@ -98,6 +98,101 @@ def leave_type_edit_page(
     )
 
 
+# --- Leave Allocation Views ---
+@router.get("/leave/allocations/manage", response_class=HTMLResponse)
+def leave_allocation_list_page(
+    request: Request,
+    skip: int = 0,
+    limit: int = 500,
+    business_id: int | None = None,
+    employee_id: uuid.UUID | None = None,
+    year: int | None = None,
+    db: Session = Depends(get_db),
+):
+    allocations = leave_allocation_service.get_allocations(
+        db,
+        skip=skip,
+        limit=limit,
+        business_id=business_id,
+        employee_id=employee_id,
+        year=year,
+    )
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
+    employees = employee_service.get_employees(db, skip=0, limit=500)
+
+    biz_map = {b.id: b.name_en for b in businesses}
+    lt_map = {lt.id: lt.name for lt in leave_types}
+    emp_map = {e.id: e.full_name for e in employees}
+
+    total_count = len(allocations)
+    total_allocated_days = sum(float(a.allocated_days) for a in allocations)
+    total_used_days = sum(float(a.used_days) for a in allocations)
+    total_remaining_days = sum(a.remaining_days for a in allocations)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/leave/leave_allocation_list.html",
+        context={
+            "allocations": allocations,
+            "businesses": businesses,
+            "leave_types": leave_types,
+            "employees": employees,
+            "biz_map": biz_map,
+            "lt_map": lt_map,
+            "emp_map": emp_map,
+            "total_count": total_count,
+            "total_allocated_days": total_allocated_days,
+            "total_used_days": total_used_days,
+            "total_remaining_days": total_remaining_days,
+            "active_page": "leave_allocations",
+        },
+    )
+
+
+@router.get("/leave/allocations/create", response_class=HTMLResponse)
+def leave_allocation_create_page(request: Request, db: Session = Depends(get_db)):
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
+    employees = employee_service.get_employees(db, skip=0, limit=500)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/leave/leave_allocation_form.html",
+        context={
+            "allocation": None,
+            "is_edit": False,
+            "businesses": businesses,
+            "leave_types": leave_types,
+            "employees": employees,
+            "active_page": "leave_allocations",
+        },
+    )
+
+
+@router.get("/leave/allocations/edit/{allocation_id}", response_class=HTMLResponse)
+def leave_allocation_edit_page(
+    allocation_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+):
+    allocation = leave_allocation_service.get_allocation(db, allocation_id)
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
+    employees = employee_service.get_employees(db, skip=0, limit=500)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/leave/leave_allocation_form.html",
+        context={
+            "allocation": allocation,
+            "is_edit": True,
+            "businesses": businesses,
+            "leave_types": leave_types,
+            "employees": employees,
+            "active_page": "leave_allocations",
+        },
+    )
+
+
 # --- Leave Application Views ---
 @router.get("/leave/applications/manage", response_class=HTMLResponse)
 def leave_application_list_page(
@@ -174,6 +269,29 @@ def leave_application_create_page(request: Request, db: Session = Depends(get_db
         context={
             "application": None,
             "is_edit": False,
+            "businesses": businesses,
+            "leave_types": leave_types,
+            "employees": employees,
+            "active_page": "leave_applications",
+        },
+    )
+
+
+@router.get("/leave/applications/edit/{application_id}", response_class=HTMLResponse)
+def leave_application_edit_page(
+    application_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+):
+    application = leave_application_service.get_application(db, application_id)
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
+    employees = employee_service.get_employees(db, skip=0, limit=500)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/leave/leave_application_form.html",
+        context={
+            "application": application,
+            "is_edit": True,
             "businesses": businesses,
             "leave_types": leave_types,
             "employees": employees,

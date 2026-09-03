@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Apply for Leave | HR & Payroll{% endblock %}
+{% block title %}{% if is_edit %}Edit Leave Request{% else %}Apply for Leave{% endif %} | HR & Payroll{% endblock %}
 
 {% block head %}
 <style>
@@ -46,6 +46,11 @@
         border-color: #4f46e5;
         box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
     }
+    .form-input[readonly] {
+        background-color: #f9fafb;
+        color: #4b5563;
+        cursor: not-allowed;
+    }
 </style>
 {% endblock %}
 
@@ -60,15 +65,16 @@
             </a>
         </div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
-            Apply for Leave
+            {% if is_edit %}Edit Leave Request{% else %}Apply for Leave{% endif %}
         </h1>
         <p class="text-xs text-gray-500 font-medium">
-            Submit a new leave request for review and approval
+            {% if is_edit %}Update details for existing leave application{% else %}Submit a new leave request for review and approval{% endif %}
         </p>
     </div>
 </div>
 
 <form id="leaveApplicationForm" class="space-y-6" onsubmit="handleApplicationSubmit(event)">
+    <input type="hidden" id="appId" value="{% if is_edit %}{{ application.id }}{% endif %}">
 
     <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         
@@ -84,57 +90,80 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
-                        <select id="business_id" name="business_id" class="form-input" required>
+                        <select id="business_id" name="business_id" class="form-input" required {% if is_edit %}disabled{% endif %}>
                             <option value="">— Select Business —</option>
                             {% for b in businesses %}
-                            <option value="{{ b.id }}">{{ b.name_en }} (ID: {{ b.id }})</option>
+                            <option value="{{ b.id }}" {% if is_edit and application.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }} (ID: {{ b.id }})
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="employee_id">Applicant Employee <span class="text-red-500">*</span></label>
-                        <select id="employee_id" name="employee_id" class="form-input" required>
+                        <select id="employee_id" name="employee_id" class="form-input" required {% if is_edit %}disabled{% endif %} onchange="checkLeaveBalance()">
                             <option value="">— Select Employee —</option>
                             {% for e in employees %}
-                            <option value="{{ e.id }}">{{ e.full_name }} ({{ e.employee_id }})</option>
+                            <option value="{{ e.id }}" {% if is_edit and application.employee_id == e.id %}selected{% endif %}>
+                                {{ e.full_name }} ({{ e.employee_id }})
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="leave_type_id">Leave Type <span class="text-red-500">*</span></label>
-                        <select id="leave_type_id" name="leave_type_id" class="form-input" required>
+                        <div class="flex items-center justify-between">
+                            <label class="form-label" for="leave_type_id">Leave Type <span class="text-red-500">*</span></label>
+                            <span id="balanceBadge" class="hidden text-[11px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md">
+                                <i class="fas fa-wallet mr-1"></i> Balance: <span id="balanceValue">—</span>
+                            </span>
+                        </div>
+                        <select id="leave_type_id" name="leave_type_id" class="form-input" required {% if is_edit %}disabled{% endif %} onchange="checkLeaveBalance()">
                             <option value="">— Select Leave Type —</option>
                             {% for lt in leave_types %}
-                            <option value="{{ lt.id }}">{{ lt.name }} ({{ lt.code }})</option>
+                            <option value="{{ lt.id }}" {% if is_edit and application.leave_type_id == lt.id %}selected{% endif %}>
+                                {{ lt.name }} ({{ lt.code }})
+                            </option>
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="total_days">Total Days <span class="text-red-500">*</span></label>
-                        <input type="number" min="1" id="total_days" name="total_days" class="form-input" required placeholder="e.g. 1">
+                        <input type="number" min="1" id="total_days" name="total_days" class="form-input" readonly required
+                               value="{% if is_edit %}{{ application.total_days }}{% endif %}"
+                               placeholder="Calculated automatically">
+                        <p id="balanceWarning" class="hidden text-xs text-red-600 font-semibold mt-1">
+                            <i class="fas fa-exclamation-triangle mr-1"></i> The requested leave days exceed your available leave balance.
+                        </p>
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="start_date">Start Date <span class="text-red-500">*</span></label>
-                        <input type="date" id="start_date" name="start_date" class="form-input" required onchange="calculateDays()">
+                        <input type="date" id="start_date" name="start_date" class="form-input" required
+                               value="{% if is_edit %}{{ application.start_date }}{% endif %}"
+                               onchange="calculateDays()">
                     </div>
 
                     <div class="form-group">
                         <label class="form-label" for="end_date">End Date <span class="text-red-500">*</span></label>
-                        <input type="date" id="end_date" name="end_date" class="form-input" required onchange="calculateDays()">
+                        <input type="date" id="end_date" name="end_date" class="form-input" required
+                               value="{% if is_edit %}{{ application.end_date }}{% endif %}"
+                               onchange="calculateDays()">
                     </div>
 
                     <div class="form-group md:col-span-2">
                         <label class="form-label" for="reason">Reason for Leave <span class="text-red-500">*</span></label>
-                        <textarea id="reason" name="reason" rows="3" class="form-input" required placeholder="Provide details regarding your leave application..."></textarea>
+                        <textarea id="reason" name="reason" rows="3" class="form-input" required
+                                  placeholder="Provide details regarding your leave application...">{% if is_edit %}{{ application.reason }}{% endif %}</textarea>
                     </div>
 
                     <div class="form-group md:col-span-2">
                         <label class="form-label" for="document_url">Supporting Document URL (Medical certificate, etc.)</label>
-                        <input type="url" id="document_url" name="document_url" class="form-input" placeholder="https://example.com/medical_certificate.pdf">
+                        <input type="url" id="document_url" name="document_url" class="form-input"
+                               value="{% if is_edit and application.document_url %}{{ application.document_url }}{% endif %}"
+                               placeholder="https://example.com/medical_certificate.pdf">
                     </div>
                 </div>
             </div>
@@ -146,7 +175,7 @@
                 Cancel
             </a>
             <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
-                <i class="fas fa-paper-plane"></i> Submit Application
+                <i class="fas fa-paper-plane"></i> {% if is_edit %}Update Application{% else %}Submit Application{% endif %}
             </button>
         </div>
     </div>
@@ -156,6 +185,63 @@
 
 {% block extra_js %}
 <script>
+let currentBalance = null; // null = unknown/unlimited, number = remaining days
+
+function checkLeaveBalance() {
+    const empId = document.getElementById('employee_id').value;
+    const ltId = document.getElementById('leave_type_id').value;
+    const sDate = document.getElementById('start_date').value || new Date().toISOString().split('T')[0];
+    const year = new Date(sDate).getFullYear();
+
+    const badge = document.getElementById('balanceBadge');
+    const valSpan = document.getElementById('balanceValue');
+
+    if (!empId || !ltId) {
+        badge.classList.add('hidden');
+        currentBalance = null;
+        validateBalance();
+        return;
+    }
+
+    // Fetch allocation for employee, leave type, and year
+    fetch('/leave-allocations?employee_id=' + empId + '&year=' + year)
+        .then(res => res.json())
+        .then(allocations => {
+            const alloc = allocations.find(a => a.leave_type_id === ltId);
+            if (alloc) {
+                currentBalance = parseFloat(alloc.remaining_days);
+                valSpan.textContent = currentBalance.toFixed(1) + ' Days';
+                badge.classList.remove('hidden');
+                validateBalance();
+            } else {
+                // Fetch leave type info for default quota
+                fetch('/leave-types/' + ltId)
+                    .then(r => r.json())
+                    .then(lt => {
+                        if (lt.max_days_per_year && lt.max_days_per_year > 0) {
+                            currentBalance = parseFloat(lt.max_days_per_year);
+                            valSpan.textContent = currentBalance.toFixed(1) + ' Days (Quota)';
+                        } else {
+                            currentBalance = null; // Unlimited
+                            valSpan.textContent = 'Unlimited';
+                        }
+                        badge.classList.remove('hidden');
+                        validateBalance();
+                    })
+                    .catch(() => {
+                        currentBalance = null;
+                        badge.classList.add('hidden');
+                        validateBalance();
+                    });
+            }
+        })
+        .catch(() => {
+            currentBalance = null;
+            badge.classList.add('hidden');
+            validateBalance();
+        });
+}
+
 function calculateDays() {
     const sDate = document.getElementById('start_date').value;
     const eDate = document.getElementById('end_date').value;
@@ -166,30 +252,73 @@ function calculateDays() {
             const diffTime = Math.abs(d2 - d1);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
             document.getElementById('total_days').value = diffDays;
+        } else {
+            document.getElementById('total_days').value = '';
         }
+    }
+    checkLeaveBalance();
+}
+
+function validateBalance() {
+    const totalDaysVal = parseFloat(document.getElementById('total_days').value) || 0;
+    const warning = document.getElementById('balanceWarning');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    if (currentBalance !== null && totalDaysVal > 0 && totalDaysVal > currentBalance) {
+        warning.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i> Leave balance is not sufficient. Available balance: ' + currentBalance.toFixed(1) + ' Days.';
+        warning.classList.remove('hidden');
+        btnSubmit.disabled = true;
+        btnSubmit.classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+        warning.classList.add('hidden');
+        btnSubmit.disabled = false;
+        btnSubmit.classList.remove('opacity-50', 'cursor-not-allowed');
     }
 }
 
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('employee_id').value && document.getElementById('leave_type_id').value) {
+        checkLeaveBalance();
+    }
+});
+
 function handleApplicationSubmit(event) {
     event.preventDefault();
+    const isEdit = "{{ is_edit }}" === "True";
+    const appId = document.getElementById('appId').value;
 
-    const payload = {
+    const totalDays = parseInt(document.getElementById('total_days').value) || 0;
+    if (currentBalance !== null && totalDays > currentBalance) {
+        showWarningAlert('Insufficient Leave Balance', 'Your requested leave days exceed your available balance.');
+        return;
+    }
+
+    const payload = isEdit ? {
+        start_date: document.getElementById('start_date').value,
+        end_date: document.getElementById('end_date').value,
+        total_days: totalDays,
+        reason: document.getElementById('reason').value,
+        document_url: document.getElementById('document_url').value || null
+    } : {
         business_id: parseInt(document.getElementById('business_id').value),
         employee_id: document.getElementById('employee_id').value,
         leave_type_id: document.getElementById('leave_type_id').value,
         start_date: document.getElementById('start_date').value,
         end_date: document.getElementById('end_date').value,
-        total_days: parseInt(document.getElementById('total_days').value) || 0,
+        total_days: totalDays,
         reason: document.getElementById('reason').value,
         document_url: document.getElementById('document_url').value || null
     };
 
+    const url = isEdit ? '/leave-applications/' + appId : '/leave-applications';
+    const method = isEdit ? 'PUT' : 'POST';
+
     const btnSubmit = document.getElementById('btnSubmit');
     btnSubmit.disabled = true;
-    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (isEdit ? 'Updating...' : 'Submitting...');
 
-    fetch('/leave-applications', {
-        method: 'POST',
+    fetch(url, {
+        method: method,
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
@@ -208,13 +337,16 @@ function handleApplicationSubmit(event) {
         return data;
     })
     .then(data => {
-        showSuccessToast('Application Submitted', 'Your leave request has been submitted for review.');
+        showSuccessToast(
+            isEdit ? 'Application Updated' : 'Application Submitted',
+            isEdit ? 'Leave application updated successfully.' : 'Your leave request has been submitted for review.'
+        );
         setTimeout(() => { window.location.href = '/leave/applications/manage'; }, 1200);
     })
     .catch(err => {
-        showErrorAlert('Submission Failed', err.message);
+        showErrorAlert('Operation Failed', err.message);
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Application';
+        btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> ' + (isEdit ? 'Update Application' : 'Submit Application');
     });
 }
 </script>

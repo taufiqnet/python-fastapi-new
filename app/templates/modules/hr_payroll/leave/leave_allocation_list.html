@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Leave Applications | HR & Payroll{% endblock %}
+{% block title %}Leave Allocations | HR & Payroll{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
@@ -24,7 +24,7 @@
     .stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
     .stat-icon.green  { background: #f0fdf4; color: #16a34a; }
     .stat-icon.yellow { background: #fefce8; color: #ca8a04; }
-    .stat-icon.red    { background: #fef2f2; color: #dc2626; }
+    .stat-icon.sky    { background: #f0f9ff; color: #0284c7; }
     .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
 
@@ -73,12 +73,6 @@
 
     .title-name { font-weight: 600; font-size: 13px; color: #111827; }
 
-    .badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
-    .badge-pending   { background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; }
-    .badge-approved  { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
-    .badge-rejected  { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-    .badge-cancelled { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
-
     .action-btn {
         display: inline-flex; align-items: center; justify-content: center;
         width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb;
@@ -86,58 +80,55 @@
     }
     .action-btn.edit  { color: #4f46e5; }
     .action-btn.edit:hover  { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
-    .action-btn.view  { color: #10b981; }
-    .action-btn.view:hover  { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
     .action-btn.delete { color: #ef4444; }
     .action-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
-    .action-btn.disabled { color: #d1d5db; background: #f9fafb; border-color: #f3f4f6; cursor: not-allowed; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Leave Applications</h1>
-        <p class="text-xs text-gray-500 mt-0.5 font-medium">Review and process employee leave requests</p>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Leave Allocations</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Manage annual leave balances and entitlements for employees</p>
     </div>
     
     <div class="flex items-center gap-3">
         <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
             <i class="fas fa-sliders-h text-sm"></i>
         </button>
-        <a href="/leave/applications/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
-            <i class="fas fa-plus"></i> Apply for Leave
+        <a href="/leave/allocations/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-plus"></i> New Allocation
         </a>
     </div>
 </div>
 
 <div class="stat-grid">
     <div class="stat-card">
-        <div class="stat-icon indigo"><i class="fas fa-file-alt"></i></div>
+        <div class="stat-icon indigo"><i class="fas fa-layer-group"></i></div>
         <div>
-            <div class="stat-label">Total Requests</div>
+            <div class="stat-label">Total Allocations</div>
             <div class="stat-value">{{ total_count }}</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon yellow"><i class="fas fa-hourglass-half"></i></div>
+        <div class="stat-icon green"><i class="fas fa-calendar-check"></i></div>
         <div>
-            <div class="stat-label">Pending Review</div>
-            <div class="stat-value">{{ pending_count }}</div>
+            <div class="stat-label">Allocated Days</div>
+            <div class="stat-value">{{ "%.1f"|format(total_allocated_days) }}</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-icon yellow"><i class="fas fa-user-clock"></i></div>
         <div>
-            <div class="stat-label">Approved</div>
-            <div class="stat-value">{{ approved_count }}</div>
+            <div class="stat-label">Used Days</div>
+            <div class="stat-value">{{ "%.1f"|format(total_used_days) }}</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-icon sky"><i class="fas fa-hourglass-half"></i></div>
         <div>
-            <div class="stat-label">Rejected</div>
-            <div class="stat-value">{{ rejected_count }}</div>
+            <div class="stat-label">Remaining Days</div>
+            <div class="stat-value">{{ "%.1f"|format(total_remaining_days) }}</div>
         </div>
     </div>
 </div>
@@ -145,21 +136,20 @@
 <div class="toolbar">
     <div class="toolbar-search">
         <i class="fas fa-search"></i>
-        <input type="text" id="customSearch" placeholder="Search by applicant, leave type, reason...">
+        <input type="text" id="customSearch" placeholder="Search by employee, leave type, year...">
     </div>
-
-    <select id="filterStatus">
-        <option value="">All Statuses</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-        <option value="cancelled">Cancelled</option>
-    </select>
 
     <select id="filterLeaveType">
         <option value="">All Leave Types</option>
         {% for lt in leave_types %}
         <option value="{{ lt.name }}">{{ lt.name }}</option>
+        {% endfor %}
+    </select>
+
+    <select id="filterBusiness">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}">{{ b.name_en }}</option>
         {% endfor %}
     </select>
 
@@ -171,71 +161,72 @@
 
 <div class="table-card">
     <div class="overflow-x-auto">
-        <table id="leaveAppTable" class="w-full text-left display">
+        <table id="leaveAllocTable" class="w-full text-left display">
             <thead>
                 <tr>
-                    <th>Applicant</th>
+                    <th>Employee</th>
                     <th>Leave Type</th>
-                    <th>Dates & Duration</th>
-                    <th>Status</th>
-                    <th style="width:110px">Actions</th>
+                    <th>Year</th>
+                    <th>Allocated</th>
+                    <th>Used</th>
+                    <th>Carried Forward</th>
+                    <th>Remaining</th>
+                    <th>Business Profile</th>
+                    <th style="width:90px">Actions</th>
                     <th class="hidden"></th>
                     <th class="hidden"></th>
                 </tr>
             </thead>
             <tbody>
-                {% for app in applications %}
-                {% set status_str = (app.status.value if app.status.value is defined else app.status)|string %}
-                <tr id="app-row-{{ app.id }}">
+                {% for alloc in allocations %}
+                <tr id="alloc-row-{{ alloc.id }}">
                     <td>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-user-circle text-indigo-500 text-base"></i>
                             <div>
                                 <span class="title-name">
-                                    {% if app.employee %}{{ app.employee.full_name }}{% else %}{{ emp_map.get(app.employee_id, 'Employee') }}{% endif %}
+                                    {% if alloc.employee %}{{ alloc.employee.full_name }}{% else %}{{ emp_map.get(alloc.employee_id, 'Employee') }}{% endif %}
                                 </span>
                             </div>
                         </div>
                     </td>
                     <td class="text-xs text-gray-700 font-medium">
-                        {% if app.leave_type %}{{ app.leave_type.name }}{% else %}{{ lt_map.get(app.leave_type_id, 'Leave') }}{% endif %}
+                        {% if alloc.leave_type %}{{ alloc.leave_type.name }}{% else %}{{ lt_map.get(alloc.leave_type_id, 'Leave') }}{% endif %}
+                    </td>
+                    <td class="text-xs text-gray-800 font-mono font-semibold">
+                        {{ alloc.year }}
+                    </td>
+                    <td class="text-xs text-emerald-700 font-semibold">
+                        {{ "%.1f"|format(alloc.allocated_days) }} Days
+                    </td>
+                    <td class="text-xs text-amber-700 font-semibold">
+                        {{ "%.1f"|format(alloc.used_days) }} Days
+                    </td>
+                    <td class="text-xs text-gray-600 font-medium">
+                        {{ "%.1f"|format(alloc.carried_forward) }} Days
+                    </td>
+                    <td class="text-xs text-indigo-600 font-bold">
+                        {{ "%.1f"|format(alloc.remaining_days) }} Days
                     </td>
                     <td class="text-xs text-gray-600">
-                        <div><i class="far fa-calendar-alt text-gray-400 mr-1"></i> {{ app.start_date }} to {{ app.end_date }}</div>
-                        <div class="text-[11px] text-gray-500 font-semibold mt-0.5">{{ app.total_days }} Days</div>
-                    </td>
-                    <td>
-                        {% if status_str == 'approved' %}
-                        <span class="badge badge-approved"><i class="fas fa-check text-[8px] mr-1"></i> Approved</span>
-                        {% elif status_str == 'rejected' %}
-                        <span class="badge badge-rejected"><i class="fas fa-times text-[8px] mr-1"></i> Rejected</span>
-                        {% elif status_str == 'cancelled' %}
-                        <span class="badge badge-cancelled"><i class="fas fa-ban text-[8px] mr-1"></i> Cancelled</span>
+                        {% if alloc.business_id and biz_map.get(alloc.business_id) %}
+                        {{ biz_map.get(alloc.business_id) }}
                         {% else %}
-                        <span class="badge badge-pending"><i class="fas fa-clock text-[8px] mr-1"></i> Pending</span>
+                        <span class="text-gray-400">— Global —</span>
                         {% endif %}
                     </td>
                     <td>
                         <div class="flex items-center gap-1.5">
-                            {% if status_str == 'pending' %}
-                            <a href="/leave/applications/edit/{{ app.id }}" class="action-btn edit" title="Edit Leave Request">
+                            <a href="/leave/allocations/edit/{{ alloc.id }}" class="action-btn edit" title="Edit Leave Allocation">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            {% else %}
-                            <button type="button" class="action-btn disabled" disabled title="Leave request is already {{ status_str }}">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            {% endif %}
-                            <a href="/leave/applications/detail/{{ app.id }}" class="action-btn view" title="View & Review Application">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <button type="button" class="action-btn delete" onclick="deleteApplication('{{ app.id }}')" title="Delete Application">
+                            <button type="button" class="action-btn delete" onclick="deleteAllocation('{{ alloc.id }}')" title="Delete Leave Allocation">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
                     </td>
-                    <td class="hidden">{{ status_str }}</td>
-                    <td class="hidden">{% if app.leave_type %}{{ app.leave_type.name }}{% else %}{{ lt_map.get(app.leave_type_id, '') }}{% endif %}</td>
+                    <td class="hidden">{% if alloc.leave_type %}{{ alloc.leave_type.name }}{% else %}{{ lt_map.get(alloc.leave_type_id, '') }}{% endif %}</td>
+                    <td class="hidden">{% if alloc.business_id and biz_map.get(alloc.business_id) %}{{ biz_map.get(alloc.business_id) }}{% else %}Global{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -268,19 +259,19 @@
 
 <script>
 $(document).ready(function () {
-    var table = $('#leaveAppTable').DataTable({
+    var table = $('#leaveAllocTable').DataTable({
         responsive: true,
         pageLength: 10,
         dom: 'rt',
-        columnDefs: [{ targets: [5, 6], visible: false, searchable: true }],
+        columnDefs: [{ targets: [9, 10], visible: false, searchable: true }],
         order: [],
-        language: { emptyTable: "No leave applications found." },
+        language: { emptyTable: "No leave allocations found." },
         drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterStatus').on('change', function () { table.column(5).search(this.value).draw(); });
-    $('#filterLeaveType').on('change', function () { table.column(6).search(this.value).draw(); });
+    $('#filterLeaveType').on('change', function () { table.column(9).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(10).search(this.value).draw(); });
     $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
     $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });
@@ -288,8 +279,8 @@ $(document).ready(function () {
     $('#btnClearFilters').on('click', function() {
         $('#customSearch').val('');
         table.search('');
-        $('#filterStatus').val('');
         $('#filterLeaveType').val('');
+        $('#filterBusiness').val('');
         table.columns().search('').draw();
     });
 
@@ -345,10 +336,10 @@ $(document).ready(function () {
 
 function movePage(p) { window._dtTable.page(p).draw('page'); }
 
-function deleteApplication(id) {
+function deleteAllocation(id) {
     Swal.fire({
-        title: 'Delete Leave Request?',
-        text: 'Are you sure you want to delete this application? This action cannot be undone.',
+        title: 'Delete Leave Allocation?',
+        text: 'Are you sure you want to delete this allocation? This action cannot be undone.',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
@@ -357,16 +348,16 @@ function deleteApplication(id) {
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
-            fetch('/leave-applications/' + id, {
+            fetch('/leave-allocations/' + id, {
                 method: 'DELETE',
                 headers: { 'Accept': 'application/json' }
             }).then(response => {
                 if (response.ok || response.status === 204) {
-                    showSuccessToast('Application Deleted', 'Leave application has been removed.');
+                    showSuccessToast('Allocation Deleted', 'Leave allocation record removed successfully.');
                     setTimeout(() => window.location.reload(), 1200);
                 } else {
                     return response.json().then(err => {
-                        throw new Error(err.detail || 'Failed to delete application');
+                        throw new Error(err.detail || 'Failed to delete leave allocation');
                     });
                 }
             }).catch(err => {

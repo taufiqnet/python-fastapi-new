@@ -21,13 +21,13 @@ from app.modules.hr_payroll.leave.schemas import (
     LeaveAllocationUpdate,
     LeaveApplicationCreate,
     LeaveApplicationReview,
+    LeaveApplicationUpdate,
     LeaveTypeCreate,
     LeaveTypeUpdate,
 )
 
 
 class LeaveTypeService:
-
     def __init__(self, repository: LeaveTypeRepository | None = None):
         self.repository = repository or LeaveTypeRepository()
 
@@ -64,15 +64,11 @@ class LeaveTypeService:
     ) -> LeaveType:
         leave_type = self.get_leave_type(db, leave_type_uuid)
         target_business_id = (
-            data.business_id
-            if data.business_id is not None
-            else leave_type.business_id
+            data.business_id if data.business_id is not None else leave_type.business_id
         )
 
         if data.code is not None and data.code != leave_type.code:
-            existing = self.repository.get_by_code(
-                db, data.code, target_business_id
-            )
+            existing = self.repository.get_by_code(db, data.code, target_business_id)
             if existing and existing.id != leave_type_uuid:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -87,7 +83,6 @@ class LeaveTypeService:
 
 
 class LeaveAllocationService:
-
     def __init__(
         self,
         repository: LeaveAllocationRepository | None = None,
@@ -95,9 +90,7 @@ class LeaveAllocationService:
         employee_repository: EmployeeRepository | None = None,
     ):
         self.repository = repository or LeaveAllocationRepository()
-        self.leave_type_repository = (
-            leave_type_repository or LeaveTypeRepository()
-        )
+        self.leave_type_repository = leave_type_repository or LeaveTypeRepository()
         self.employee_repository = employee_repository or EmployeeRepository()
 
     def get_allocations(
@@ -176,7 +169,6 @@ class LeaveAllocationService:
 
 
 class LeaveApplicationService:
-
     def __init__(
         self,
         repository: LeaveApplicationRepository | None = None,
@@ -188,9 +180,7 @@ class LeaveApplicationService:
         self.allocation_repository = (
             allocation_repository or LeaveAllocationRepository()
         )
-        self.leave_type_repository = (
-            leave_type_repository or LeaveTypeRepository()
-        )
+        self.leave_type_repository = leave_type_repository or LeaveTypeRepository()
         self.employee_repository = employee_repository or EmployeeRepository()
 
     def get_applications(
@@ -265,10 +255,7 @@ class LeaveApplicationService:
                     if hasattr(emp_gender, "value")
                     else str(emp_gender)
                 )
-                if (
-                    emp_gender_str.lower()
-                    != leave_type.applicable_gender.value.lower()
-                ):
+                if emp_gender_str.lower() != leave_type.applicable_gender.value.lower():
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail=(
@@ -278,6 +265,28 @@ class LeaveApplicationService:
                     )
 
         return self.repository.create(db, data)
+
+    def update_application(
+        self,
+        db: Session,
+        application_uuid: uuid.UUID,
+        data: LeaveApplicationUpdate,
+    ) -> LeaveApplication:
+        application = self.get_application(db, application_uuid)
+
+        start_date = data.start_date or application.start_date
+        end_date = data.end_date or application.end_date
+
+        if start_date > end_date:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Start date cannot be after end date",
+            )
+
+        if data.total_days is None or data.total_days <= 0:
+            data.total_days = (end_date - start_date).days + 1
+
+        return self.repository.update(db, application, data)
 
     def review_application(
         self,
@@ -325,8 +334,6 @@ class LeaveApplicationService:
             review_note=data.review_note,
         )
 
-    def delete_application(
-        self, db: Session, application_uuid: uuid.UUID
-    ) -> None:
+    def delete_application(self, db: Session, application_uuid: uuid.UUID) -> None:
         application = self.get_application(db, application_uuid)
         self.repository.delete(db, application)
