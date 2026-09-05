@@ -182,6 +182,7 @@ class PayrollRecord(Base, UUIDMixin, TimestampMixin):
     present_days: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
     absent_days: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
     leave_days: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
+    holiday_days: Mapped[int] = mapped_column(SmallInteger, default=0, nullable=False)
     overtime_hours: Mapped[float] = mapped_column(
         Numeric(6, 2), default=0, nullable=False
     )

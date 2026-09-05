@@ -85,6 +85,7 @@ class PayrollRecordBase(BaseModel):
     present_days: int = Field(0, ge=0)
     absent_days: int = Field(0, ge=0)
     leave_days: int = Field(0, ge=0)
+    holiday_days: int = Field(0, ge=0)
     overtime_hours: float = Field(0.0, ge=0.0)
 
     basic_salary: float = Field(0.0, ge=0.0)
@@ -119,6 +120,7 @@ class PayrollRecordUpdate(BaseModel):
     present_days: int | None = Field(None, ge=0)
     absent_days: int | None = Field(None, ge=0)
     leave_days: int | None = Field(None, ge=0)
+    holiday_days: int | None = Field(None, ge=0)
     overtime_hours: float | None = Field(None, ge=0.0)
 
     basic_salary: float | None = Field(None, ge=0.0)

@@ -50,10 +50,14 @@
     <!-- Attendance Card -->
     <div>
         <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Attendance Summary</h3>
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-gray-50 p-4 rounded-xl text-center">
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 bg-gray-50 p-4 rounded-xl text-center">
             <div>
                 <span class="text-[11px] text-gray-500">Working Days</span>
                 <p class="text-sm font-bold text-gray-900">{{ record.working_days }}</p>
+            </div>
+            <div>
+                <span class="text-[11px] text-gray-500">Holidays</span>
+                <p class="text-sm font-bold text-amber-600">{{ record.holiday_days }}</p>
             </div>
             <div>
                 <span class="text-[11px] text-gray-500">Present</span>

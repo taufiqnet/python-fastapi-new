@@ -21,14 +21,14 @@
 </div>
 
 <!-- Summary Metric Cards -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
     <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
         <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-base shrink-0">
             <i class="fas fa-clock"></i>
         </div>
         <div>
             <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Logs</p>
-            <p class="text-xl font-bold text-gray-900">{{ total_count }}</p>
+            <p id="card-total-logs" class="text-xl font-bold text-gray-900">{{ total_count }}</p>
         </div>
     </div>
 
@@ -38,7 +38,7 @@
         </div>
         <div>
             <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Present</p>
-            <p class="text-xl font-bold text-emerald-600">{{ present_count }}</p>
+            <p id="card-present" class="text-xl font-bold text-emerald-600">{{ present_count }}</p>
         </div>
     </div>
 
@@ -48,7 +48,17 @@
         </div>
         <div>
             <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Absent</p>
-            <p class="text-xl font-bold text-rose-600">{{ absent_count }}</p>
+            <p id="card-absent" class="text-xl font-bold text-rose-600">{{ absent_count }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-base shrink-0">
+            <i class="fas fa-umbrella-beach"></i>
+        </div>
+        <div>
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Leave</p>
+            <p id="card-leave" class="text-xl font-bold text-blue-600">{{ leave_count }}</p>
         </div>
     </div>
 
@@ -58,17 +68,17 @@
         </div>
         <div>
             <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Late / Half Day</p>
-            <p class="text-xl font-bold text-amber-600">{{ late_count + half_day_count }}</p>
+            <p id="card-late-half" class="text-xl font-bold text-amber-600">{{ late_count + half_day_count }}</p>
         </div>
     </div>
 </div>
 
 <!-- Filters Bar -->
 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
-    <form method="GET" action="/attendance/manage" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+    <form id="attendance-filter-form" method="GET" action="/attendance/manage" class="grid grid-cols-1 md:grid-cols-6 gap-3">
         <div>
             <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Business</label>
-            <select name="business_id" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+            <select name="business_id" id="filter_business_id" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
                 <option value="">All Businesses</option>
                 {% for b in businesses %}
                 <option value="{{ b.id }}" {% if request.query_params.get('business_id') == b.id|string %}selected{% endif %}>{{ b.name_en }}</option>
@@ -76,24 +86,31 @@
             </select>
         </div>
 
-        <div>
+        <div class="md:col-span-2">
             <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Employee</label>
-            <select name="employee_id" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+            <select name="employee_id" id="filter_employee_id" onchange="applyClientFilter()" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
                 <option value="">All Employees</option>
                 {% for e in employees %}
-                <option value="{{ e.id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>{{ e.full_name }}</option>
+                <option value="{{ e.id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>
+                    ({{ e.employee_id }}) {{ e.full_name }}
+                </option>
                 {% endfor %}
             </select>
         </div>
 
         <div>
-            <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Date</label>
-            <input type="date" name="att_date" value="{{ request.query_params.get('att_date', '') }}" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+            <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Start Date</label>
+            <input type="date" name="start_date" id="filter_start_date" value="{{ start_date }}" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div>
+            <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">End Date</label>
+            <input type="date" name="end_date" id="filter_end_date" value="{{ end_date }}" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
         </div>
 
         <div>
             <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Status</label>
-            <select name="status_filter" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+            <select name="status_filter" id="filter_status" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
                 <option value="">All Statuses</option>
                 <option value="present" {% if request.query_params.get('status_filter') == 'present' %}selected{% endif %}>Present</option>
                 <option value="absent" {% if request.query_params.get('status_filter') == 'absent' %}selected{% endif %}>Absent</option>
@@ -103,12 +120,12 @@
             </select>
         </div>
 
-        <div class="flex items-end gap-2">
-            <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-1">
-                <i class="fas fa-filter text-[10px]"></i> Filter
+        <div class="flex items-end gap-2 md:col-span-6 justify-end pt-2 border-t border-gray-100">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-5 rounded-lg transition-colors flex items-center justify-center gap-1.5">
+                <i class="fas fa-filter text-[10px]"></i> Apply Filter
             </button>
-            <a href="/attendance/manage" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 px-3 rounded-lg transition-colors">
-                Clear
+            <a href="/attendance/manage" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 px-4 rounded-lg transition-colors">
+                Clear Filters
             </a>
         </div>
     </form>
@@ -117,10 +134,11 @@
 <!-- Table Card -->
 <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table class="w-full text-left border-collapse" id="attendance-table">
             <thead>
                 <tr class="bg-gray-50/50 border-b border-gray-200 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                    <th class="px-5 py-3">Employee</th>
+                    <th class="px-5 py-3">Employee ID</th>
+                    <th class="px-5 py-3">Employee Name</th>
                     <th class="px-5 py-3">Date</th>
                     <th class="px-5 py-3">Status</th>
                     <th class="px-5 py-3">Check In / Out</th>
@@ -130,13 +148,17 @@
                     <th class="px-5 py-3 text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 text-xs">
+            <tbody class="divide-y divide-gray-100 text-xs" id="attendance-tbody">
                 {% if records %}
                     {% for r in records %}
                     {% set st = r.status.value if r.status.value else r.status|string %}
-                    <tr class="hover:bg-gray-50/80 transition-colors">
+                    {% set emp = emp_map.get(r.employee_id) %}
+                    <tr class="hover:bg-gray-50/80 transition-colors att-row" data-emp-id="{{ r.employee_id }}" data-status="{{ st }}">
+                        <td class="px-5 py-3.5 font-mono text-gray-600">
+                            {% if emp %}{{ emp.employee_id }}{% else %}—{% endif %}
+                        </td>
                         <td class="px-5 py-3.5 font-semibold text-gray-900">
-                            {{ emp_map.get(r.employee_id, 'Unknown Employee') }}
+                            {% if emp %}{{ emp.full_name }}{% else %}Unknown Employee{% endif %}
                         </td>
                         <td class="px-5 py-3.5 text-gray-600 font-mono">
                             {{ r.date }}
@@ -189,8 +211,8 @@
                     </tr>
                     {% endfor %}
                 {% else %}
-                    <tr>
-                        <td colspan="8" class="px-5 py-8 text-center text-gray-400 font-medium">
+                    <tr id="no-records-row">
+                        <td colspan="9" class="px-5 py-8 text-center text-gray-400 font-medium">
                             <i class="fas fa-inbox text-2xl mb-2 block text-gray-300"></i>
                             No attendance records found matching criteria.
                         </td>
@@ -254,6 +276,39 @@
 
 {% block extra_js %}
 <script>
+function applyClientFilter() {
+    const selectedEmpId = document.getElementById('filter_employee_id').value;
+    const rows = document.querySelectorAll('.att-row');
+    
+    let total = 0;
+    let present = 0;
+    let absent = 0;
+    let leave = 0;
+    let lateHalf = 0;
+
+    rows.forEach(row => {
+        const rowEmpId = row.getAttribute('data-emp-id');
+        const st = row.getAttribute('data-status');
+
+        if (!selectedEmpId || rowEmpId === selectedEmpId) {
+            row.style.display = '';
+            total++;
+            if (st === 'present') present++;
+            else if (st === 'absent') absent++;
+            else if (st === 'on_leave') leave++;
+            else if (st === 'late' || st === 'half_day') lateHalf++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    document.getElementById('card-total-logs').innerText = total;
+    document.getElementById('card-present').innerText = present;
+    document.getElementById('card-absent').innerText = absent;
+    document.getElementById('card-leave').innerText = leave;
+    document.getElementById('card-late-half').innerText = lateHalf;
+}
+
 function openImportModal() {
     document.getElementById('import-excel-modal').classList.remove('hidden');
 }

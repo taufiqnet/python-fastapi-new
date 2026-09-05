@@ -494,6 +494,7 @@ class PayrollRecordService:
 
             # Attendance processing
             present_days = 0
+            att_holiday_days = 0
             overtime_hours = 0.0
             if settings.include_attendance:
                 att_records = self.attendance_repository.get_all(
@@ -510,6 +511,8 @@ class PayrollRecordService:
                         present_days += 1
                     elif st == "half_day":
                         present_days += 0.5
+                    elif st in ("holiday", "weekend"):
+                        att_holiday_days += 1
                     
                     if settings.include_overtime:
                         overtime_hours += float(att.overtime_hours or 0.0)
@@ -536,17 +539,20 @@ class PayrollRecordService:
                         if la.leave_type and not la.leave_type.is_paid:
                             unpaid_leave_days += days
 
+            # Combine holiday days from holiday calendar and attendance records
+            emp_holiday_days = max(holiday_days, att_holiday_days) if settings.include_holidays else 0
+
             # Absent days calculation
             if settings.include_attendance:
                 absent_days = max(
-                    0, int(working_days - (present_days + leave_days + holiday_days))
+                    0, int(working_days - (present_days + leave_days + emp_holiday_days))
                 )
             else:
                 absent_days = 0
 
             # Daily and hourly rates
             daily_rate = basic_salary / working_days if working_days > 0 else 0.0
-            std_hrs = float(settings.standard_hours_per_day or 8.0)
+            std_hrs = float(settings.standard_hours_per_day or 9.0)
             hourly_rate = daily_rate / std_hrs if std_hrs > 0 else 0.0
 
             # Overtime pay
@@ -590,6 +596,7 @@ class PayrollRecordService:
                 existing.present_days = int(present_days)
                 existing.absent_days = absent_days
                 existing.leave_days = leave_days
+                existing.holiday_days = emp_holiday_days
                 existing.overtime_hours = overtime_hours
                 existing.basic_salary = basic_salary
                 existing.house_rent = house_rent
@@ -617,6 +624,7 @@ class PayrollRecordService:
                     present_days=int(present_days),
                     absent_days=absent_days,
                     leave_days=leave_days,
+                    holiday_days=emp_holiday_days,
                     overtime_hours=overtime_hours,
                     basic_salary=basic_salary,
                     house_rent=house_rent,

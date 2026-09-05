@@ -1,7 +1,8 @@
+import calendar
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -28,26 +29,67 @@ def attendance_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
-    business_id: int | None = None,
-    employee_id: uuid.UUID | None = None,
-    att_date: date | None = None,
-    status_filter: str | None = None,
+    business_id: str | None = Query(None),
+    employee_id: str | None = Query(None),
+    att_date: str | None = Query(None),
+    start_date: str | None = Query(None),
+    end_date: str | None = Query(None),
+    status_filter: str | None = Query(None, alias="status_filter"),
     db: Session = Depends(get_db),
 ):
+    parsed_biz_id: int | None = None
+    if business_id and business_id.strip():
+        try:
+            parsed_biz_id = int(business_id.strip())
+        except ValueError:
+            parsed_biz_id = None
+
+    parsed_emp_id: uuid.UUID | None = None
+    if employee_id and employee_id.strip():
+        try:
+            parsed_emp_id = uuid.UUID(employee_id.strip())
+        except ValueError:
+            parsed_emp_id = None
+
+    parsed_att_date: date | None = None
+    if att_date and att_date.strip():
+        try:
+            parsed_att_date = datetime.strptime(att_date.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            parsed_att_date = None
+
+    parsed_start_date: date | None = None
+    if start_date and start_date.strip():
+        try:
+            parsed_start_date = datetime.strptime(start_date.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            parsed_start_date = None
+
+    parsed_end_date: date | None = None
+    if end_date and end_date.strip():
+        try:
+            parsed_end_date = datetime.strptime(end_date.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            parsed_end_date = None
+
+    clean_status = status_filter.strip() if status_filter and status_filter.strip() else None
+
     records = attendance_service.get_records(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
-        employee_id=employee_id,
-        att_date=att_date,
-        status_filter=status_filter,
+        business_id=parsed_biz_id,
+        employee_id=parsed_emp_id,
+        att_date=parsed_att_date,
+        start_date=parsed_start_date,
+        end_date=parsed_end_date,
+        status_filter=clean_status,
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
 
     biz_map = {b.id: b.name_en for b in businesses}
-    emp_map = {e.id: e.full_name for e in employees}
+    emp_map = {e.id: e for e in employees}
 
     total_count = len(records)
     present_count = sum(
@@ -59,6 +101,11 @@ def attendance_list_page(
         1
         for r in records
         if getattr(r.status, "value", r.status) == "absent"
+    )
+    leave_count = sum(
+        1
+        for r in records
+        if getattr(r.status, "value", r.status) == "on_leave"
     )
     late_count = sum(
         1
@@ -85,10 +132,13 @@ def attendance_list_page(
             "total_count": total_count,
             "present_count": present_count,
             "absent_count": absent_count,
+            "leave_count": leave_count,
             "late_count": late_count,
             "half_day_count": half_day_count,
             "total_work_hours": round(total_work_hours, 2),
             "total_overtime_hours": round(total_overtime_hours, 2),
+            "start_date": parsed_start_date.strftime("%Y-%m-%d") if parsed_start_date else "",
+            "end_date": parsed_end_date.strftime("%Y-%m-%d") if parsed_end_date else "",
             "active_page": "attendance",
         },
     )

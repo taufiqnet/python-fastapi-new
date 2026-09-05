@@ -105,3 +105,13 @@ async def test_attendance_views(client: AsyncClient):
     edit_resp = await client.get(f"/attendance/edit/{att_id}")
     assert edit_resp.status_code == 200
     assert "Edit Attendance Record" in edit_resp.text
+
+    # 6. Filter by empty query params and date range
+    empty_params_resp = await client.get("/attendance/manage?business_id=&employee_id=&att_date=&start_date=&end_date=&status_filter=")
+    assert empty_params_resp.status_code == 200
+    assert "Bob Jones" in empty_params_resp.text
+    assert "(EMP-200) Bob Jones" in empty_params_resp.text
+
+    range_resp = await client.get("/attendance/manage?start_date=2025-01-01&end_date=2025-01-31")
+    assert range_resp.status_code == 200
+    assert "Bob Jones" in range_resp.text
