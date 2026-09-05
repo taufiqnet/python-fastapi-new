@@ -34,7 +34,7 @@ def compensation_list_page(
     employees = employee_service.get_employees(db, skip=0, limit=500)
 
     biz_map = {b.id: b.name_en for b in businesses}
-    emp_map = {e.id: f"{e.first_name} {e.last_name}" for e in employees}
+    emp_map = {e.id: e.full_name for e in employees}
 
     total_count = len(salaries)
     total_gross = sum(float(s.gross_salary) for s in salaries)

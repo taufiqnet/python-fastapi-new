@@ -127,7 +127,7 @@
                             <option value="">— Select Employee —</option>
                             {% for e in employees %}
                             <option value="{{ e.id }}" {% if is_edit and record.employee_id == e.id %}selected{% endif %}>
-                                {{ e.first_name }} {{ e.last_name }} ({{ e.employee_code|default('No Code') }})
+                                {{ e.full_name }} ({{ e.employee_id or e.employee_code or 'No Code' }})
                             </option>
                             {% endfor %}
                         </select>

@@ -94,7 +94,7 @@
                             <option value="">— Select Employee —</option>
                             {% for e in employees %}
                             <option value="{{ e.id }}" {% if is_edit and salary.employee_id == e.id %}selected{% endif %}>
-                                {{ e.first_name }} {{ e.last_name }} ({{ e.employee_id }})
+                                {{ e.full_name }} ({{ e.employee_id }})
                             </option>
                             {% endfor %}
                         </select>

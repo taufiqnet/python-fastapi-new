@@ -82,7 +82,7 @@
                 <select name="employee_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
                     <option value="">All Employees</option>
                     {% for e in employees %}
-                    <option value="{{ e.id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>{{ e.first_name }} {{ e.last_name }}</option>
+                    <option value="{{ e.id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>{{ e.full_name }}</option>
                     {% endfor %}
                 </select>
 

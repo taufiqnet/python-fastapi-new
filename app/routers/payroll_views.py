@@ -216,7 +216,7 @@ def record_list_page(
 
     biz_map = {b.id: b.name_en for b in businesses}
     period_map = {p.id: p.name for p in periods}
-    emp_map = {e.id: f"{e.first_name} {e.last_name}" for e in employees}
+    emp_map = {e.id: e.full_name for e in employees}
 
     total_count = len(records)
     total_gross = sum(float(r.gross_salary) for r in records)

@@ -128,7 +128,7 @@
             </div>
             <div>
                 <span class="text-[11px] text-gray-500 block">Working Days</span>
-                <p class="text-sm font-bold text-gray-900">{% if record.period %}{{ (record.period.end_date - record.period.start_date).days + 1 - record.holiday_days }}{% else %}{{ record.working_days - record.holiday_days }}{% endif %}</p>
+                <p class="text-sm font-bold text-gray-900">{{ record.working_days + record.holiday_days + record.absent_days + record.leave_days }}</p>
             </div>
             <div>
                 <span class="text-[11px] text-gray-500 block">Holidays</span>

@@ -13,7 +13,7 @@
             </a>
         </div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
-            {% if employee %}{{ employee.first_name }} {{ employee.last_name }}{% else %}Employee Salary Detail{% endif %}
+            {% if employee %}{{ employee.full_name }}{% else %}Employee Salary Detail{% endif %}
         </h1>
         <p class="text-xs text-gray-500 font-medium">Effective From: {{ salary.effective_from }}</p>
     </div>
