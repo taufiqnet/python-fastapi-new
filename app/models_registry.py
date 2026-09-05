@@ -65,6 +65,7 @@ from app.modules.hr_payroll.payroll.models import (  # noqa: F401
     Holiday,
     PayrollPeriod,
     PayrollRecord,
+    PayrollSettings,
 )
 
 # TODO: Product.business_id and several other models FK to a business/tenant

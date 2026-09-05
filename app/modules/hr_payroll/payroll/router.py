@@ -14,11 +14,14 @@ from app.modules.hr_payroll.payroll.schemas import (
     PayrollRecordCreate,
     PayrollRecordOut,
     PayrollRecordUpdate,
+    PayrollSettingsOut,
+    PayrollSettingsUpdate,
 )
 from app.modules.hr_payroll.payroll.service import (
     HolidayService,
     PayrollPeriodService,
     PayrollRecordService,
+    PayrollSettingsService,
 )
 
 router = APIRouter(prefix="/payroll", tags=["Payroll Management"])
@@ -26,6 +29,7 @@ router = APIRouter(prefix="/payroll", tags=["Payroll Management"])
 holiday_service = HolidayService()
 period_service = PayrollPeriodService()
 record_service = PayrollRecordService()
+settings_service = PayrollSettingsService()
 
 
 # ── Holidays Endpoints ────────────────────────────────────────────────
@@ -186,3 +190,23 @@ def update_payroll_record(
 def delete_payroll_record(record_id: uuid.UUID, db: Session = Depends(get_db)):
     record_service.delete_record(db, record_id)
     return None
+
+
+# ── Payroll Settings Endpoints ─────────────────────────────────────────
+@router.get("/settings", response_model=PayrollSettingsOut)
+def get_payroll_settings(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    return settings_service.get_settings(db, business_id=business_id)
+
+
+@router.put("/settings", response_model=PayrollSettingsOut)
+def update_payroll_settings(
+    data: PayrollSettingsUpdate,
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    return settings_service.update_settings(
+        db, business_id=business_id, data=data
+    )

@@ -8,6 +8,7 @@ from app.modules.hr_payroll.payroll.models import (
     PayrollPeriod,
     PayrollPeriodStatusEnum,
     PayrollRecord,
+    PayrollSettings,
 )
 from app.modules.hr_payroll.payroll.schemas import (
     HolidayCreate,
@@ -16,6 +17,7 @@ from app.modules.hr_payroll.payroll.schemas import (
     PayrollPeriodUpdate,
     PayrollRecordCreate,
     PayrollRecordUpdate,
+    PayrollSettingsUpdate,
 )
 
 
@@ -194,3 +196,38 @@ class PayrollRecordRepository:
     def delete(self, db: Session, record: PayrollRecord) -> None:
         db.delete(record)
         db.commit()
+
+
+class PayrollSettingsRepository:
+    def get_by_business_id(
+        self, db: Session, business_id: int
+    ) -> PayrollSettings | None:
+        return (
+            db.query(PayrollSettings)
+            .filter(PayrollSettings.business_id == business_id)
+            .first()
+        )
+
+    def create(
+        self, db: Session, business_id: int, data: PayrollSettingsUpdate | None = None
+    ) -> PayrollSettings:
+        init_data = {"business_id": business_id}
+        if data:
+            dump = data.model_dump(exclude_unset=True)
+            init_data.update(dump)
+        settings_obj = PayrollSettings(**init_data)
+        db.add(settings_obj)
+        db.commit()
+        db.refresh(settings_obj)
+        return settings_obj
+
+    def update(
+        self, db: Session, settings_obj: PayrollSettings, data: PayrollSettingsUpdate
+    ) -> PayrollSettings:
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(settings_obj, field, value)
+
+        db.commit()
+        db.refresh(settings_obj)
+        return settings_obj

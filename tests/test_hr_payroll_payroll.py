@@ -209,3 +209,83 @@ async def test_payroll_record_crud(client: AsyncClient, sync_db):
     # Delete record
     response = await client.delete(f"/payroll/records/{record_id}")
     assert response.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_bulk_payroll_generation_with_settings(client: AsyncClient):
+    # 1. Create employee
+    emp_res = await client.post(
+        "/employees",
+        json={
+            "first_name": "Charlie",
+            "last_name": "Brown",
+            "employee_id": "EMP-300",
+            "work_email": "charlie.brown@example.com",
+            "phone": "+1234567895",
+            "business_id": 1,
+        },
+    )
+    assert emp_res.status_code == 201
+    emp_id = emp_res.json()["id"]
+
+    # 2. Set employee salary setup
+    salary_payload = {
+        "business_id": 1,
+        "employee_id": emp_id,
+        "basic_salary": 3100.0,
+        "house_rent": 500.0,
+        "medical_allowance": 200.0,
+        "transport_allowance": 100.0,
+        "food_allowance": 0.0,
+        "other_allowance": 0.0,
+        "tax": 100.0,
+        "provident_fund": 50.0,
+        "other_deduction": 0.0,
+        "currency": "USD",
+        "effective_from": "2025-01-01",
+    }
+    sal_res = await client.post("/compensation/salaries", json=salary_payload)
+    assert sal_res.status_code == 201
+
+    # 3. Create Payroll Period (March 2025: 31 days)
+    period_res = await client.post(
+        "/payroll/periods",
+        json={
+            "business_id": 1,
+            "name": "March 2025",
+            "start_date": "2025-03-01",
+            "end_date": "2025-03-31",
+            "status": "draft",
+        },
+    )
+    assert period_res.status_code == 201
+    period_id = period_res.json()["id"]
+
+    # 4. Log 10 present days with 2 overtime hours each
+    for day in range(1, 11):
+        att_d = f"2025-03-{day:02d}"
+        att_res = await client.post(
+            "/attendance",
+            json={
+                "business_id": 1,
+                "employee_id": emp_id,
+                "date": att_d,
+                "status": "present",
+                "work_hours": 10.0,
+                "overtime_hours": 2.0,
+            },
+        )
+        assert att_res.status_code == 201
+
+    # 5. Generate Payroll
+    gen_res = await client.post(f"/payroll/periods/{period_id}/generate")
+    assert gen_res.status_code == 200
+    records = gen_res.json()
+    assert len(records) >= 1
+
+    emp_rec = next(r for r in records if r["employee_id"] == emp_id)
+    assert emp_rec["working_days"] == 31
+    assert emp_rec["present_days"] == 10
+    assert emp_rec["overtime_hours"] == 20.0
+    assert emp_rec["overtime_pay"] > 0
+    assert emp_rec["unpaid_leave_deduction"] > 0

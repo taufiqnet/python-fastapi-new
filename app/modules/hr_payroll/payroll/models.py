@@ -270,3 +270,41 @@ class PayrollRecord(Base, UUIDMixin, TimestampMixin):
     def __repr__(self) -> str:
         paid_label = "Paid" if self.is_paid else "Pending"
         return f"<PayrollRecord {self.period_id} | {self.employee_id} | net={self.net_salary} ({paid_label})>"
+
+
+# ============================================================
+# payroll_settings/
+# ============================================================
+class PayrollSettings(Base, UUIDMixin, TimestampMixin):
+    """Per-business payroll configuration flags."""
+
+    __tablename__ = "payroll_settings"
+
+    business_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    include_attendance: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    include_leave: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    include_holidays: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    include_overtime: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    deduct_absent_days: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    standard_hours_per_day: Mapped[float] = mapped_column(
+        Numeric(4, 2), default=8.0, nullable=False
+    )
+
+    # Relationships
+    business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
+        "BusinessProfile",
+        lazy="selectin",
+    )
+
+    def __repr__(self) -> str:
+        return f"<PayrollSettings business_id={self.business_id}>"

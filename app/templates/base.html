@@ -449,8 +449,8 @@
                 </div>
 
                 <!-- HR & PAYROLL MODULE -->
-                <div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records'] %}expanded{% endif %}" data-module="hr_payroll">
-                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records'] %}active{% endif %}">
+                <div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings'] %}expanded{% endif %}" data-module="hr_payroll">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings'] %}active{% endif %}">
                         <span class="flex items-center">
                             <i class="fas fa-users-cog w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text">HR & Payroll</span>
@@ -556,6 +556,15 @@
                             </span>
                             <span class="sidebar-tooltip">
                                 Payslips
+                            </span>
+                        </a>
+                        <a href="/payroll-settings/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_settings' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-sliders-h w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Payroll Settings
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Payroll Settings
                             </span>
                         </a>
                     </div>

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -38,6 +38,32 @@ def get_attendance_records(
         start_date=start_date,
         end_date=end_date,
         status_filter=status_filter,
+    )
+
+
+@router.get("/attendance/template-excel")
+def download_attendance_excel_template(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = attendance_service.generate_excel_template(db, business_id=business_id)
+    filename = f"attendance_template_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/attendance/import-excel")
+async def import_attendance_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    contents = await file.read()
+    return attendance_service.import_attendance_excel(
+        db, business_id=business_id, file_bytes=contents
     )
 
 

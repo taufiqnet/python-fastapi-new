@@ -3,8 +3,14 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from datetime import timedelta
+
+from app.modules.hr_payroll.attendance.models import AttendanceStatusEnum
+from app.modules.hr_payroll.attendance.repository import AttendanceRepository
 from app.modules.hr_payroll.compensation.repository import EmployeeSalaryRepository
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
+from app.modules.hr_payroll.leave.models import LeaveStatusEnum
+from app.modules.hr_payroll.leave.repository import LeaveApplicationRepository
 from app.modules.hr_payroll.payroll.models import (
     Holiday,
     HolidayTypeEnum,
@@ -12,11 +18,13 @@ from app.modules.hr_payroll.payroll.models import (
     PayrollPeriod,
     PayrollPeriodStatusEnum,
     PayrollRecord,
+    PayrollSettings,
 )
 from app.modules.hr_payroll.payroll.repository import (
     HolidayRepository,
     PayrollPeriodRepository,
     PayrollRecordRepository,
+    PayrollSettingsRepository,
 )
 from app.modules.hr_payroll.payroll.schemas import (
     HolidayCreate,
@@ -25,6 +33,7 @@ from app.modules.hr_payroll.payroll.schemas import (
     PayrollPeriodUpdate,
     PayrollRecordCreate,
     PayrollRecordUpdate,
+    PayrollSettingsUpdate,
 )
 
 
@@ -184,11 +193,19 @@ class PayrollRecordService:
         period_repository: PayrollPeriodRepository | None = None,
         employee_repository: EmployeeRepository | None = None,
         salary_repository: EmployeeSalaryRepository | None = None,
+        attendance_repository: AttendanceRepository | None = None,
+        leave_repository: LeaveApplicationRepository | None = None,
+        holiday_repository: HolidayRepository | None = None,
+        settings_repository: PayrollSettingsRepository | None = None,
     ):
         self.repository = repository or PayrollRecordRepository()
         self.period_repository = period_repository or PayrollPeriodRepository()
         self.employee_repository = employee_repository or EmployeeRepository()
         self.salary_repository = salary_repository or EmployeeSalaryRepository()
+        self.attendance_repository = attendance_repository or AttendanceRepository()
+        self.leave_repository = leave_repository or LeaveApplicationRepository()
+        self.holiday_repository = holiday_repository or HolidayRepository()
+        self.settings_repository = settings_repository or PayrollSettingsRepository()
 
     def _compute_salary_totals(
         self,
@@ -426,6 +443,30 @@ class PayrollRecordService:
                 detail="Cannot generate payroll for a locked or paid payroll period",
             )
 
+        # Get business payroll settings
+        settings = self.settings_repository.get_by_business_id(
+            db, business_id=period.business_id
+        )
+        if not settings:
+            settings = self.settings_repository.create(
+                db, business_id=period.business_id
+            )
+
+        # Total working days in period
+        working_days = (period.end_date - period.start_date).days + 1
+
+        # Holidays in period
+        holiday_days = 0
+        if settings.include_holidays:
+            holidays = self.holiday_repository.get_all(
+                db, business_id=period.business_id, limit=500
+            )
+            for h in holidays:
+                overlap_start = max(period.start_date, h.start_date)
+                overlap_end = min(period.end_date, h.end_date)
+                if overlap_start <= overlap_end:
+                    holiday_days += (overlap_end - overlap_start).days + 1
+
         employees = self.employee_repository.get_all(
             db, business_id=period.business_id, limit=1000
         )
@@ -451,6 +492,79 @@ class PayrollRecordService:
             provident_fund = float(getattr(salary, "provident_fund", 0.0) or 0.0)
             other_deduction = float(getattr(salary, "other_deduction", 0.0) or 0.0)
 
+            # Attendance processing
+            present_days = 0
+            overtime_hours = 0.0
+            if settings.include_attendance:
+                att_records = self.attendance_repository.get_all(
+                    db,
+                    business_id=period.business_id,
+                    employee_id=emp.id,
+                    start_date=period.start_date,
+                    end_date=period.end_date,
+                    limit=500,
+                )
+                for att in att_records:
+                    st = getattr(att.status, "value", att.status)
+                    if st in ("present", "late"):
+                        present_days += 1
+                    elif st == "half_day":
+                        present_days += 0.5
+                    
+                    if settings.include_overtime:
+                        overtime_hours += float(att.overtime_hours or 0.0)
+            else:
+                present_days = working_days
+
+            # Leave processing
+            leave_days = 0
+            unpaid_leave_days = 0
+            if settings.include_leave:
+                leave_apps = self.leave_repository.get_all(
+                    db,
+                    business_id=period.business_id,
+                    employee_id=emp.id,
+                    status=LeaveStatusEnum.APPROVED,
+                    limit=500,
+                )
+                for la in leave_apps:
+                    ov_start = max(period.start_date, la.start_date)
+                    ov_end = min(period.end_date, la.end_date)
+                    if ov_start <= ov_end:
+                        days = (ov_end - ov_start).days + 1
+                        leave_days += days
+                        if la.leave_type and not la.leave_type.is_paid:
+                            unpaid_leave_days += days
+
+            # Absent days calculation
+            if settings.include_attendance:
+                absent_days = max(
+                    0, int(working_days - (present_days + leave_days + holiday_days))
+                )
+            else:
+                absent_days = 0
+
+            # Daily and hourly rates
+            daily_rate = basic_salary / working_days if working_days > 0 else 0.0
+            std_hrs = float(settings.standard_hours_per_day or 8.0)
+            hourly_rate = daily_rate / std_hrs if std_hrs > 0 else 0.0
+
+            # Overtime pay
+            overtime_pay = 0.0
+            if settings.include_overtime and overtime_hours > 0:
+                overtime_pay = round(overtime_hours * hourly_rate * 1.5, 2)
+
+            # Deductions
+            unpaid_leave_ded = 0.0
+            if settings.include_leave and unpaid_leave_days > 0:
+                unpaid_leave_ded += unpaid_leave_days * daily_rate
+
+            absent_ded = 0.0
+            if settings.include_attendance and settings.deduct_absent_days and absent_days > 0:
+                absent_ded += absent_days * daily_rate
+
+            total_unpaid_leave_deduction = round(unpaid_leave_ded + absent_ded, 2)
+
             gross, deductions, net = self._compute_salary_totals(
                 basic_salary=basic_salary,
                 house_rent=house_rent,
@@ -458,11 +572,11 @@ class PayrollRecordService:
                 medical_allowance=medical_allowance,
                 food_allowance=food_allowance,
                 other_allowance=other_allowance,
-                overtime_pay=0.0,
+                overtime_pay=overtime_pay,
                 bonus=0.0,
                 tax=tax,
                 provident_fund=provident_fund,
-                unpaid_leave_deduction=0.0,
+                unpaid_leave_deduction=total_unpaid_leave_deduction,
                 loan_installment=0.0,
                 other_deduction=other_deduction,
             )
@@ -472,14 +586,21 @@ class PayrollRecordService:
             )
 
             if existing:
+                existing.working_days = working_days
+                existing.present_days = int(present_days)
+                existing.absent_days = absent_days
+                existing.leave_days = leave_days
+                existing.overtime_hours = overtime_hours
                 existing.basic_salary = basic_salary
                 existing.house_rent = house_rent
                 existing.medical_allowance = medical_allowance
                 existing.transport_allowance = transport_allowance
                 existing.food_allowance = food_allowance
                 existing.other_allowance = other_allowance
+                existing.overtime_pay = overtime_pay
                 existing.tax = tax
                 existing.provident_fund = provident_fund
+                existing.unpaid_leave_deduction = total_unpaid_leave_deduction
                 existing.other_deduction = other_deduction
                 existing.gross_salary = gross
                 existing.total_deduction = deductions
@@ -492,22 +613,22 @@ class PayrollRecordService:
                     business_id=period.business_id,
                     period_id=period.id,
                     employee_id=emp.id,
-                    working_days=0,
-                    present_days=0,
-                    absent_days=0,
-                    leave_days=0,
-                    overtime_hours=0.0,
+                    working_days=working_days,
+                    present_days=int(present_days),
+                    absent_days=absent_days,
+                    leave_days=leave_days,
+                    overtime_hours=overtime_hours,
                     basic_salary=basic_salary,
                     house_rent=house_rent,
                     transport_allowance=transport_allowance,
                     medical_allowance=medical_allowance,
                     food_allowance=food_allowance,
                     other_allowance=other_allowance,
-                    overtime_pay=0.0,
+                    overtime_pay=overtime_pay,
                     bonus=0.0,
                     tax=tax,
                     provident_fund=provident_fund,
-                    unpaid_leave_deduction=0.0,
+                    unpaid_leave_deduction=total_unpaid_leave_deduction,
                     loan_installment=0.0,
                     other_deduction=other_deduction,
                     payment_method=PaymentMethodEnum.BANK_TRANSFER,
@@ -524,3 +645,24 @@ class PayrollRecordService:
                 generated_records.append(new_rec)
 
         return generated_records
+
+
+class PayrollSettingsService:
+    def __init__(self, repository: PayrollSettingsRepository | None = None):
+        self.repository = repository or PayrollSettingsRepository()
+
+    def get_settings(self, db: Session, business_id: int) -> PayrollSettings:
+        settings_obj = self.repository.get_by_business_id(db, business_id)
+        if not settings_obj:
+            settings_obj = self.repository.create(db, business_id=business_id)
+        return settings_obj
+
+    def update_settings(
+        self, db: Session, business_id: int, data: PayrollSettingsUpdate
+    ) -> PayrollSettings:
+        settings_obj = self.repository.get_by_business_id(db, business_id)
+        if not settings_obj:
+            settings_obj = self.repository.create(db, business_id=business_id, data=data)
+        else:
+            settings_obj = self.repository.update(db, settings_obj, data)
+        return settings_obj

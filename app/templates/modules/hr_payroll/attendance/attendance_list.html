@@ -10,7 +10,10 @@
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Attendance Records</h1>
         <p class="text-xs text-gray-500 font-medium">Track employee daily attendance, check-in/out times, and work hours</p>
     </div>
-    <div>
+    <div class="flex items-center gap-2">
+        <button type="button" onclick="openImportModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+            <i class="fas fa-file-excel"></i> Import Excel
+        </button>
         <a href="/attendance/create" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors">
             <i class="fas fa-plus"></i> Log Attendance
         </a>
@@ -198,10 +201,131 @@
     </div>
 </div>
 
+<!-- Import Excel Modal -->
+<div id="import-excel-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-file-excel text-emerald-600"></i> Import Monthly Attendance Sheet
+            </h3>
+            <button type="button" onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="import-excel-form" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Business Profile <span class="text-rose-500">*</span></label>
+                <select id="import_business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+                    <option value="">-- Select Business --</option>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if request.query_params.get('business_id') == b.id|string or (businesses|length == 1) %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-semibold text-gray-700">Excel File (.xlsx) <span class="text-rose-500">*</span></label>
+                    <button type="button" onclick="downloadTemplate()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium underline">
+                        <i class="fas fa-download text-[10px]"></i> Download Sample Template
+                    </button>
+                </div>
+                <input type="file" id="excel_file" accept=".xlsx, .xls" required class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+                <p class="text-[11px] text-gray-400 mt-1">Upload the monthly attendance Excel sheet provided by HR Manager.</p>
+            </div>
+
+            <div id="import-loading" class="hidden p-3 bg-indigo-50 rounded-lg text-xs text-indigo-700 flex items-center gap-2">
+                <i class="fas fa-spinner fa-spin"></i> Processing full month attendance records...
+            </div>
+
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-upload text-[10px]"></i> Upload & Import
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+function openImportModal() {
+    document.getElementById('import-excel-modal').classList.remove('hidden');
+}
+
+function closeImportModal() {
+    document.getElementById('import-excel-modal').classList.add('hidden');
+    document.getElementById('import-excel-form').reset();
+    document.getElementById('import-loading').classList.add('hidden');
+}
+
+function downloadTemplate() {
+    const bizId = document.getElementById('import_business_id').value;
+    if (!bizId) {
+        showWarningAlert('Business Required', 'Please select a business profile first to download the customized template.');
+        return;
+    }
+    window.location.href = '/attendance/template-excel?business_id=' + bizId;
+}
+
+document.getElementById('import-excel-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const bizId = document.getElementById('import_business_id').value;
+    const fileInput = document.getElementById('excel_file');
+    
+    if (!bizId) {
+        showWarningAlert('Business Required', 'Please select a business profile.');
+        return;
+    }
+    if (!fileInput.files || fileInput.files.length === 0) {
+        showWarningAlert('File Required', 'Please select an Excel file to upload.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    document.getElementById('import-loading').classList.remove('hidden');
+
+    fetch('/attendance/import-excel?business_id=' + bizId, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: formData
+    })
+    .then(async res => {
+        document.getElementById('import-loading').classList.add('hidden');
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to import attendance file.');
+        }
+        return res.json();
+    })
+    .then(data => {
+        closeImportModal();
+        let msg = `Successfully imported/updated ${data.imported_count} attendance records.`;
+        if (data.errors && data.errors.length > 0) {
+            msg += `<br><br><small class="text-rose-600 font-semibold">Note: ${data.errors.length} row(s) had warnings or skipped.</small>`;
+        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Attendance Import Complete',
+            html: msg,
+            confirmButtonColor: '#10b981'
+        }).then(() => {
+            window.location.reload();
+        });
+    })
+    .catch(err => {
+        document.getElementById('import-loading').classList.add('hidden');
+        showErrorAlert('Import Failed', err.message);
+    });
+});
+
 function deleteAttendance(attId) {
     Swal.fire({
         title: 'Delete Attendance Record?',

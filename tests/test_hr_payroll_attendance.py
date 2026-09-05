@@ -112,3 +112,50 @@ async def test_attendance_crud_and_calculation(client: AsyncClient):
 
     verify_res = await client.get(f"/attendance/{att_id}")
     assert verify_res.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_excel_template_and_import(client: AsyncClient):
+    # 1. Create Employee
+    emp_payload = {
+        "first_name": "Bob",
+        "last_name": "Marley",
+        "employee_id": "EMP-200",
+        "work_email": "bob.marley@example.com",
+        "phone": "+1234567891",
+        "is_active": True,
+        "business_id": 1,
+    }
+    emp_res = await client.post("/employees", json=emp_payload)
+    assert emp_res.status_code == 201
+
+    # 2. Download template
+    tpl_res = await client.get("/attendance/template-excel?business_id=1")
+    assert tpl_res.status_code == 200
+    assert "spreadsheetml" in tpl_res.headers["content-type"]
+
+    # 3. Create Excel in memory and import
+    from io import BytesIO
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["Employee ID", "Employee Name", "Date", "Status", "Check In", "Check Out", "Work Hours", "OT Hours", "Note"])
+    ws.append(["EMP-200", "Bob Marley", "2025-01-20", "present", "09:00", "18:00", 8.0, 1.0, "Excel Import Day 1"])
+    ws.append(["EMP-200", "Bob Marley", "2025-01-21", "late", "09:30", "18:00", 7.5, 0.0, "Excel Import Day 2"])
+
+    out = BytesIO()
+    wb.save(out)
+    excel_bytes = out.getvalue()
+
+    files = {"file": ("monthly_attendance.xlsx", excel_bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+    import_res = await client.post("/attendance/import-excel?business_id=1", files=files)
+    assert import_res.status_code == 200, import_res.text
+    imp_data = import_res.json()
+    assert imp_data["imported_count"] == 2
+
+    # 4. Verify imported records via GET
+    records_res = await client.get("/attendance?business_id=1")
+    assert records_res.status_code == 200
+    records = records_res.json()
+    assert len(records) == 2

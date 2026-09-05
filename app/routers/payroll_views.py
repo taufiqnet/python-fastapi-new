@@ -17,6 +17,7 @@ from app.modules.hr_payroll.payroll.service import (
     HolidayService,
     PayrollPeriodService,
     PayrollRecordService,
+    PayrollSettingsService,
 )
 
 router = APIRouter(prefix="", tags=["Payroll Views"])
@@ -25,6 +26,7 @@ templates = Jinja2Templates(directory="app/templates")
 holiday_service = HolidayService()
 period_service = PayrollPeriodService()
 record_service = PayrollRecordService()
+settings_service = PayrollSettingsService()
 employee_service = EmployeeService()
 business_service = BusinessService()
 
@@ -239,6 +241,30 @@ def record_list_page(
             "total_net": total_net,
             "paid_count": paid_count,
             "active_page": "payroll_records",
+        },
+    )
+
+
+# ── Payroll Settings Views ─────────────────────────────────────────────
+@router.get("/payroll-settings/manage", response_class=HTMLResponse)
+def settings_manage_page(
+    request: Request,
+    business_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    selected_business_id = business_id or (businesses[0].id if businesses else 1)
+    
+    settings_obj = settings_service.get_settings(db, business_id=selected_business_id)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/payroll/settings/payroll_settings.html",
+        context={
+            "settings": settings_obj,
+            "businesses": businesses,
+            "selected_business_id": selected_business_id,
+            "active_page": "payroll_settings",
         },
     )
 

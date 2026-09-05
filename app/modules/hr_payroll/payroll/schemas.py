@@ -152,3 +152,31 @@ class PayrollRecordOut(PayrollRecordBase):
     net_salary: float
     created_at: datetime
     updated_at: datetime
+
+
+# ── Payroll Settings Schemas ───────────────────────────────────────────
+class PayrollSettingsBase(BaseModel):
+    include_attendance: bool = True
+    include_leave: bool = True
+    include_holidays: bool = True
+    include_overtime: bool = True
+    deduct_absent_days: bool = True
+    standard_hours_per_day: float = Field(8.0, ge=1.0, le=24.0)
+
+
+class PayrollSettingsUpdate(BaseModel):
+    include_attendance: bool | None = None
+    include_leave: bool | None = None
+    include_holidays: bool | None = None
+    include_overtime: bool | None = None
+    deduct_absent_days: bool | None = None
+    standard_hours_per_day: float | None = Field(None, ge=1.0, le=24.0)
+
+
+class PayrollSettingsOut(PayrollSettingsBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    business_id: int
+    created_at: datetime
+    updated_at: datetime
