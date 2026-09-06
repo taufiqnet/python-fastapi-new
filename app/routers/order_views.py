@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
-from app.modules.ecommerce.orders.models import OrderFulfillmentStatus, OrderPaymentStatus
+from app.modules.ecommerce.orders.models import (
+    OrderFulfillmentStatus,
+    OrderPaymentStatus,
+)
 from app.modules.ecommerce.orders.service import OrderService
 from app.modules.ecommerce.products.service import ProductService
 
@@ -147,6 +150,18 @@ def order_edit_page(
 ):
     order = order_service.get_order(db, order_id=order_id, business_id=business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
+    products = product_service.get_products(db, skip=0, limit=500)
+
+    variants_list = []
+    for p in products:
+        for v in p.variants:
+            variants_list.append({
+                "id": str(v.id),
+                "sku": v.sku,
+                "price": float(v.price),
+                "product_title": p.title,
+                "stock_qty": v.stock_qty,
+            })
 
     shipping_address = next((a for a in order.addresses if a.address_type == "shipping"), None)
     billing_address = next((a for a in order.addresses if a.address_type == "billing"), shipping_address)
@@ -158,6 +173,7 @@ def order_edit_page(
             "order": order,
             "is_edit": True,
             "businesses": businesses,
+            "variants_list": variants_list,
             "shipping_address": shipping_address,
             "billing_address": billing_address,
             "payment_statuses": [s.value for s in OrderPaymentStatus],

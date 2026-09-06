@@ -44,6 +44,7 @@ from app.routers import (
     category_views,
     compensation_views,
     employee_views,
+    inventory_views,
     leave_views,
     model_views,
     order_views,
@@ -84,6 +85,7 @@ app.include_router(brand_views.router)
 app.include_router(model_views.router)
 app.include_router(product_views.router)
 app.include_router(order_views.router)
+app.include_router(inventory_views.router)
 app.include_router(organization_views.router)
 app.include_router(employee_views.router)
 app.include_router(leave_views.router)

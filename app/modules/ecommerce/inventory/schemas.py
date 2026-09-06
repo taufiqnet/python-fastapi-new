@@ -4,7 +4,10 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.modules.ecommerce.inventory.models import ReservationStatus, StockMovementReason
+from app.modules.ecommerce.inventory.models import (
+    ReservationStatus,
+    StockMovementReason,
+)
 
 
 # --- Warehouse Schemas ---

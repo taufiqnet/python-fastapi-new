@@ -15,6 +15,7 @@ from app.modules.ecommerce.orders.models import (
 from app.modules.ecommerce.orders.schemas import (
     OrderCreate,
     OrderStatusUpdate,
+    OrderUpdate,
 )
 
 
@@ -107,6 +108,113 @@ class OrderRepository:
         db.commit()
         db.refresh(order)
         return order
+
+    def update_order(
+        self,
+        db: Session,
+        order: Order,
+        data: OrderUpdate,
+        calculated_total: Decimal | None = None,
+        items_with_prices: list[
+            tuple[
+                uuid.UUID,
+                uuid.UUID | None,
+                str,
+                str,
+                dict | None,
+                int,
+                Decimal,
+                Decimal,
+            ]
+        ]
+        | None = None,
+    ) -> Order:
+        if data.business_id is not None:
+            order.business_id = data.business_id
+        if data.user_id is not None:
+            order.user_id = data.user_id
+        if data.currency is not None:
+            order.currency = data.currency
+        if data.payment_status is not None and data.payment_status != order.payment_status:
+            order.payment_status = data.payment_status
+            history = OrderStatusHistory(
+                order_id=order.id,
+                status_type=OrderStatusType.PAYMENT,
+                status_value=data.payment_status,
+                note=data.note or "Payment status updated during order edit.",
+            )
+            db.add(history)
+        if data.fulfillment_status is not None and data.fulfillment_status != order.fulfillment_status:
+            order.fulfillment_status = data.fulfillment_status
+            history = OrderStatusHistory(
+                order_id=order.id,
+                status_type=OrderStatusType.FULFILLMENT,
+                status_value=data.fulfillment_status,
+                note=data.note or "Fulfillment status updated during order edit.",
+            )
+            db.add(history)
+
+        if items_with_prices is not None and calculated_total is not None:
+            db.query(OrderItem).filter(OrderItem.order_id == order.id).delete()
+            order.subtotal_amount = calculated_total
+            order.total_amount = calculated_total
+
+            for (
+                variant_id,
+                seller_id,
+                title,
+                sku,
+                attrs,
+                qty,
+                unit_price,
+                subtotal,
+            ) in items_with_prices:
+                item = OrderItem(
+                    order_id=order.id,
+                    variant_id=variant_id,
+                    seller_id=seller_id,
+                    product_title=title,
+                    product_sku=sku,
+                    variant_attributes=attrs,
+                    quantity=qty,
+                    unit_price=unit_price,
+                    subtotal=subtotal,
+                )
+                db.add(item)
+
+        if data.shipping_address:
+            db.query(OrderAddress).filter(
+                OrderAddress.order_id == order.id, OrderAddress.address_type == "shipping"
+            ).delete()
+            ship_data = data.shipping_address.model_dump()
+            ship_data.pop("address_type", None)
+            ship_addr = OrderAddress(
+                order_id=order.id,
+                address_type="shipping",
+                **ship_data,
+            )
+            db.add(ship_addr)
+
+        if data.billing_address:
+            db.query(OrderAddress).filter(
+                OrderAddress.order_id == order.id, OrderAddress.address_type == "billing"
+            ).delete()
+            bill_data = data.billing_address.model_dump()
+            bill_data.pop("address_type", None)
+            bill_addr = OrderAddress(
+                order_id=order.id,
+                address_type="billing",
+                **bill_data,
+            )
+            db.add(bill_addr)
+
+        db.commit()
+        db.refresh(order)
+        return order
+
+    def delete_order(self, db: Session, order: Order) -> None:
+        db.delete(order)
+        db.commit()
 
     def get_order_by_id(
         self, db: Session, order_id: uuid.UUID, business_id: int = 1

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Stock Reservations | SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Stock Reservations</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Active, committed, and released stock reservations from checkout carts and customer orders</p>
+    </div>
+
+    <div class="flex items-center gap-2">
+        <a href="/inventory/manage" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+            <i class="fas fa-arrow-left text-[10px]"></i> Back to Inventory Stock
+        </a>
+    </div>
+</div>
+
+<div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50/80 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                    <th class="py-3 px-5">Reservation ID</th>
+                    <th class="py-3 px-5">Inventory Item ID</th>
+                    <th class="py-3 px-5">Qty Reserved</th>
+                    <th class="py-3 px-5">Status</th>
+                    <th class="py-3 px-5">Order / Cart Reference</th>
+                    <th class="py-3 px-5">Expires At</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 text-xs">
+                {% for r in reservations %}
+                <tr class="hover:bg-gray-50/50 transition-colors">
+                    <td class="py-3.5 px-5 font-mono text-xs text-gray-900 font-bold">
+                        {{ r.id }}
+                    </td>
+                    <td class="py-3.5 px-5 font-mono text-indigo-600 font-semibold">
+                        {{ r.inventory_item_id }}
+                    </td>
+                    <td class="py-3.5 px-5 font-bold text-amber-600">
+                        {{ r.quantity }}
+                    </td>
+                    <td class="py-3.5 px-5">
+                        {% set r_stat = r.status.value if r.status.value is defined else r.status %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize {% if r_stat == 'committed' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif r_stat == 'active' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-gray-50 text-gray-600 border border-gray-200{% endif %}">
+                            {{ r_stat }}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-5 font-mono text-gray-700">
+                        {% if r.order_id %}Order: {{ r.order_id }}{% elif r.cart_id %}Cart: {{ r.cart_id }}{% else %}—{% endif %}
+                    </td>
+                    <td class="py-3.5 px-5 text-gray-600">
+                        {{ r.expires_at.strftime('%Y-%m-%d %H:%M') if r.expires_at else 'N/A' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

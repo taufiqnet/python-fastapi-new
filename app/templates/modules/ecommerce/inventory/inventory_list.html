@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Items Management | SaaS Platform{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<style>
+    :root { --indigo: #4f46e5; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green  { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.yellow { background: #fefce8; color: #ca8a04; }
+    .stat-icon.rose   { background: #fff1f2; color: #e11d48; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
+    .toolbar-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
+    .toolbar-search input { width: 100%; padding: 7px 12px 7px 30px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+    .toolbar select { padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+
+    .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table.dataTable thead tr th { background: #f9fafb !important; border-bottom: 1px solid #e5e7eb !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; color: #6b7280 !important; padding: 10px 14px !important; }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+
+    .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; transition: all .15s; font-size: 13px; }
+    .action-btn.adjust { color: #2563eb; } .action-btn.adjust:hover { background: #eff6ff; border-color: #93c5fd; }
+    .action-btn.edit { color: #4f46e5; } .action-btn.edit:hover { background: #eef2ff; border-color: #a5b4fc; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Inventory Stock Items</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Manage warehouse inventory quantities, bin locations, and stock adjustments</p>
+    </div>
+
+    <div class="flex items-center gap-2">
+        <a href="/inventory/warehouses/manage?business_id={{ selected_business_id }}" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+            <i class="fas fa-warehouse text-indigo-600"></i> Warehouses
+        </a>
+        <a href="/inventory/movements/manage" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+            <i class="fas fa-history text-indigo-600"></i> Stock Movements
+        </a>
+        <button type="button" onclick="openItemModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-plus"></i> Add Inventory Item
+        </button>
+    </div>
+</div>
+
+<!-- Stat cards -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-cubes"></i></div>
+        <div>
+            <div class="stat-label">Total Items</div>
+            <div class="stat-value">{{ total_items }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-boxes"></i></div>
+        <div>
+            <div class="stat-label">Total Stock On Hand</div>
+            <div class="stat-value">{{ total_on_hand }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-lock"></i></div>
+        <div>
+            <div class="stat-label">Stock Reserved</div>
+            <div class="stat-value">{{ total_reserved }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon rose"><i class="fas fa-exclamation-triangle"></i></div>
+        <div>
+            <div class="stat-label">Low Stock Items</div>
+            <div class="stat-value">{{ low_stock_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by SKU, product, aisle, bin...">
+    </div>
+
+    <select id="filterWarehouse">
+        <option value="">All Warehouses</option>
+        {% for w in warehouses %}
+        <option value="{{ w.name }}">{{ w.name }}</option>
+        {% endfor %}
+    </select>
+
+    <select id="filterBusiness" onchange="window.location.href='/inventory/manage?business_id='+this.value">
+        {% for b in businesses %}
+        <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- Table Card -->
+<div class="table-card">
+    <div class="overflow-x-auto">
+        <table id="inventoryTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Product / Variant SKU</th>
+                    <th>Warehouse</th>
+                    <th>On Hand</th>
+                    <th>Reserved</th>
+                    <th>Available</th>
+                    <th>Reorder Pt</th>
+                    <th>Location (Bin/Aisle)</th>
+                    <th style="width:100px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in inventory_items %}
+                {% set v_info = variants_map.get(item.variant_id) %}
+                <tr id="item-row-{{ item.id }}">
+                    <td>
+                        <div class="font-bold text-gray-900">{{ v_info.title if v_info else 'Product Variant' }}</div>
+                        <div class="text-[11px] text-indigo-600 font-mono mt-0.5">SKU: {{ v_info.sku if v_info else item.variant_id }}</div>
+                    </td>
+                    <td class="text-xs text-gray-700 font-medium">
+                        {{ warehouses_map.get(item.warehouse_id, 'Warehouse') }}
+                    </td>
+                    <td class="font-bold text-gray-900">{{ item.quantity_on_hand }}</td>
+                    <td class="text-amber-600 font-semibold">{{ item.quantity_reserved }}</td>
+                    <td class="font-bold {% if item.quantity_available <= (item.reorder_point or 0) %}text-rose-600{% else %}text-emerald-600{% endif %}">
+                        {{ item.quantity_available }}
+                    </td>
+                    <td class="text-xs text-gray-500">{{ item.reorder_point if item.reorder_point is not none else '—' }}</td>
+                    <td class="text-xs text-gray-600 font-mono">
+                        {% if item.aisle or item.bin_code %}
+                        Aisle: {{ item.aisle or 'N/A' }} / Bin: {{ item.bin_code or 'N/A' }}
+                        {% else %}
+                        <span class="text-gray-400">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="openAdjustmentModal('{{ item.id }}', '{{ v_info.sku if v_info else item.variant_id }}')" class="action-btn adjust" title="Adjust Stock">
+                                <i class="fas fa-sliders-h"></i>
+                            </button>
+                            <button type="button" onclick='openItemModal({id: "{{ item.id }}", warehouse_id: "{{ item.warehouse_id }}", quantity_on_hand: {{ item.quantity_on_hand }}, reorder_point: {{ item.reorder_point or "null" }}, aisle: "{{ item.aisle or "" }}", bin_code: "{{ item.bin_code or "" }}"})' class="action-btn edit" title="Edit Item">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add/Edit Inventory Item Modal -->
+<div id="item-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 id="item-modal-title" class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-boxes text-indigo-600"></i> Add Inventory Item
+            </h3>
+            <button type="button" onclick="closeItemModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="item-form" class="p-6 space-y-4">
+            <input type="hidden" id="edit_item_id">
+
+            <div id="variant-select-group">
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Product Variant <span class="text-rose-500">*</span></label>
+                <select id="item_variant_id" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                    <option value="">-- Select Variant --</option>
+                    {% for vid, vdata in variants_map.items() %}
+                    <option value="{{ vid }}">{{ vdata.title }} (SKU: {{ vdata.sku }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Warehouse <span class="text-rose-500">*</span></label>
+                <select id="item_warehouse_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                    <option value="">-- Select Warehouse --</option>
+                    {% for w in warehouses %}
+                    <option value="{{ w.id }}">{{ w.name }} ({{ w.code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Quantity On Hand</label>
+                    <input type="number" id="item_qoh" min="0" value="0" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Reorder Point</label>
+                    <input type="number" id="item_reorder_point" min="0" placeholder="Optional" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Aisle</label>
+                    <input type="text" id="item_aisle" placeholder="e.g. A-12" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Bin Code</label>
+                    <input type="text" id="item_bin_code" placeholder="e.g. B-04" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeItemModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg shadow-sm">Save Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Stock Adjustment Modal -->
+<div id="adj-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-sliders-h text-blue-600"></i> Stock Adjustment
+            </h3>
+            <button type="button" onclick="closeAdjModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="adj-form" class="p-6 space-y-4">
+            <input type="hidden" id="adj_inventory_item_id">
+            
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Target Variant SKU</label>
+                <input type="text" id="adj_sku_display" readonly class="w-full text-xs border border-gray-200 bg-gray-50 text-gray-700 font-mono rounded-lg p-2.5 outline-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Delta / Adjustment (+ / -) <span class="text-rose-500">*</span></label>
+                    <input type="number" id="adj_delta" required placeholder="e.g. +10 or -5" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Reason <span class="text-rose-500">*</span></label>
+                    <select id="adj_reason" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none capitalize">
+                        {% for r in reasons %}
+                        <option value="{{ r }}">{{ r|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Notes / Internal Reference</label>
+                <textarea id="adj_notes" rows="2" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none" placeholder="Reason for inventory adjustment..."></textarea>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeAdjModal()" class="px-4 py-2 bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg shadow-sm">Submit Adjustment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    var table = $('#inventoryTable').DataTable({
+        pageLength: 10,
+        dom: 'rtip',
+        language: { emptyTable: "No inventory stock items found." }
+    });
+
+    $('#customSearch').on('input', function() { table.search(this.value).draw(); });
+    $('#filterWarehouse').on('change', function() { table.column(1).search(this.value).draw(); });
+});
+
+function openItemModal(item = null) {
+    document.getElementById('item-modal').classList.remove('hidden');
+    if (item) {
+        document.getElementById('item-modal-title').innerText = 'Edit Inventory Item';
+        document.getElementById('edit_item_id').value = item.id;
+        document.getElementById('variant-select-group').classList.add('hidden');
+        document.getElementById('item_warehouse_id').value = item.warehouse_id;
+        document.getElementById('item_qoh').value = item.quantity_on_hand;
+        document.getElementById('item_reorder_point').value = item.reorder_point || '';
+        document.getElementById('item_aisle').value = item.aisle || '';
+        document.getElementById('item_bin_code').value = item.bin_code || '';
+    } else {
+        document.getElementById('item-modal-title').innerText = 'Add Inventory Item';
+        document.getElementById('edit_item_id').value = '';
+        document.getElementById('variant-select-group').classList.remove('hidden');
+        document.getElementById('item-form').reset();
+    }
+}
+
+function closeItemModal() {
+    document.getElementById('item-modal').classList.add('hidden');
+}
+
+document.getElementById('item-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const itemId = document.getElementById('edit_item_id').value;
+    const isEdit = !!itemId;
+
+    const payload = {
+        warehouse_id: document.getElementById('item_warehouse_id').value,
+        quantity_on_hand: parseInt(document.getElementById('item_qoh').value || 0, 10),
+        reorder_point: document.getElementById('item_reorder_point').value ? parseInt(document.getElementById('item_reorder_point').value, 10) : null,
+        aisle: document.getElementById('item_aisle').value.trim() || null,
+        bin_code: document.getElementById('item_bin_code').value.trim() || null
+    };
+
+    if (!isEdit) {
+        payload.variant_id = document.getElementById('item_variant_id').value;
+        if (!payload.variant_id) {
+            showWarningAlert('Variant Required', 'Please select a product variant.');
+            return;
+        }
+    }
+
+    const url = isEdit ? `/inventory/items/${itemId}` : '/inventory/items';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(async res => {
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to save inventory item.');
+        }
+        return res.json();
+    })
+    .then(() => {
+        showSuccessToast('Saved', 'Inventory item saved successfully.');
+        setTimeout(() => window.location.reload(), 800);
+    })
+    .catch(err => showErrorAlert('Save Failed', err.message));
+});
+
+function openAdjustmentModal(itemId, sku) {
+    document.getElementById('adj_inventory_item_id').value = itemId;
+    document.getElementById('adj_sku_display').value = sku;
+    document.getElementById('adj-modal').classList.remove('hidden');
+}
+
+function closeAdjModal() {
+    document.getElementById('adj-modal').classList.add('hidden');
+    document.getElementById('adj-form').reset();
+}
+
+document.getElementById('adj-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const payload = {
+        inventory_item_id: document.getElementById('adj_inventory_item_id').value,
+        delta: parseInt(document.getElementById('adj_delta').value, 10),
+        reason: document.getElementById('adj_reason').value,
+        notes: document.getElementById('adj_notes').value.trim() || null
+    };
+
+    fetch('/inventory/adjustments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(async res => {
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to adjust stock.');
+        }
+        return res.json();
+    })
+    .then(() => {
+        showSuccessToast('Stock Adjusted', 'Stock adjustment applied successfully.');
+        setTimeout(() => window.location.reload(), 800);
+    })
+    .catch(err => showErrorAlert('Adjustment Failed', err.message));
+});
+</script>
+{% endblock %}

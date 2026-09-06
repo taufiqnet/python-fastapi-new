@@ -69,14 +69,31 @@ class OrderStatusUpdate(BaseModel):
     note: str | None = None
 
 
+class OrderUpdate(BaseModel):
+    business_id: int | None = None
+    user_id: uuid.UUID | None = None
+    currency: str | None = Field(None, max_length=3)
+    payment_status: OrderPaymentStatus | None = None
+    fulfillment_status: OrderFulfillmentStatus | None = None
+    items: list[OrderItemCreate] | None = None
+    shipping_address: OrderAddressCreate | None = None
+    billing_address: OrderAddressCreate | None = None
+    note: str | None = None
+
+
 class OrderSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     business_id: int
+    order_number: str
     user_id: uuid.UUID | None = None
     payment_status: OrderPaymentStatus
     fulfillment_status: OrderFulfillmentStatus
+    subtotal_amount: float = 0.0
+    tax_amount: float = 0.0
+    shipping_amount: float = 0.0
+    discount_amount: float = 0.0
     total_amount: float
     currency: str
     created_at: datetime
