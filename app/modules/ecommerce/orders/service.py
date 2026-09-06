@@ -5,7 +5,10 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.modules.ecommerce.orders.repository import OrderRepository
-from app.modules.ecommerce.orders.models import OrderFulfillmentStatus, OrderPaymentStatus
+from app.modules.ecommerce.orders.models import (
+    OrderFulfillmentStatus,
+    OrderPaymentStatus,
+)
 from app.modules.ecommerce.orders.schemas import (
     OrderCreate,
     OrderDetail,

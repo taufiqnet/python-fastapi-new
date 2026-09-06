@@ -3,7 +3,10 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.ecommerce.orders.models import OrderFulfillmentStatus, OrderPaymentStatus
+from app.modules.ecommerce.orders.models import (
+    OrderFulfillmentStatus,
+    OrderPaymentStatus,
+)
 
 
 class OrderItemCreate(BaseModel):

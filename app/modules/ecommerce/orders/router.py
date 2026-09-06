@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.modules.ecommerce.orders.models import OrderFulfillmentStatus, OrderPaymentStatus
+from app.modules.ecommerce.orders.models import (
+    OrderFulfillmentStatus,
+    OrderPaymentStatus,
+)
 from app.modules.ecommerce.orders.schemas import (
     OrderCreate,
     OrderDetail,

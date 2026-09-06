@@ -25,7 +25,16 @@ class OrderRepository:
         data: OrderCreate,
         calculated_total: Decimal,
         items_with_prices: list[
-            tuple[uuid.UUID, uuid.UUID | None, str, str, dict | None, int, Decimal, Decimal]
+            tuple[
+                uuid.UUID,
+                uuid.UUID | None,
+                str,
+                str,
+                dict | None,
+                int,
+                Decimal,
+                Decimal,
+            ]
         ],
     ) -> Order:
         order_num = f"ORD-{uuid.uuid4().hex[:8].upper()}"
@@ -43,7 +52,16 @@ class OrderRepository:
         db.flush()
 
         # Add Order Items
-        for variant_id, seller_id, title, sku, attrs, qty, unit_price, subtotal in items_with_prices:
+        for (
+            variant_id,
+            seller_id,
+            title,
+            sku,
+            attrs,
+            qty,
+            unit_price,
+            subtotal,
+        ) in items_with_prices:
             item = OrderItem(
                 order_id=order.id,
                 variant_id=variant_id,
