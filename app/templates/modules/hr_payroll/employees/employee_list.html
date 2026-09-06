@@ -101,6 +101,9 @@
     </div>
     
     <div class="flex items-center gap-3">
+        <button type="button" onclick="openImportModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
+            <i class="fas fa-file-excel"></i> Import Excel
+        </button>
         <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
             <i class="fas fa-sliders-h text-sm"></i>
         </button>
@@ -178,9 +181,11 @@
         <table id="employeeTable" class="w-full text-left display">
             <thead>
                 <tr>
-                    <th>Employee</th>
+                    <th>Employee ID</th>
+                    <th>Employee Name</th>
                     <th>Contact Info</th>
-                    <th>Department & Title</th>
+                    <th>Department</th>
+                    <th>Title</th>
                     <th>Business Profile</th>
                     <th>Status</th>
                     <th style="width:110px">Actions</th>
@@ -192,9 +197,11 @@
             <tbody>
                 {% for e in employees %}
                 <tr id="emp-row-{{ e.id }}">
+                    <td class="emp-id font-mono text-gray-700 font-semibold">
+                        {{ e.employee_id }}
+                    </td>
                     <td>
-                        <div class="emp-id">{{ e.employee_id }}</div>
-                        <div class="flex items-center gap-2 mt-0.5">
+                        <div class="flex items-center gap-2">
                             <i class="fas fa-user-circle text-indigo-500 text-base"></i>
                             <div>
                                 <span class="title-name">{{ e.full_name }}</span>
@@ -211,15 +218,17 @@
                         {% endif %}
                     </td>
                     <td class="text-xs text-gray-600">
-                        <div>
-                            {% if e.department_id and dept_map.get(e.department_id) %}
-                            <span class="font-medium text-gray-800">{{ dept_map.get(e.department_id) }}</span>
-                            {% else %}
-                            <span class="text-gray-400">— Unassigned —</span>
-                            {% endif %}
-                        </div>
+                        {% if e.department_id and dept_map.get(e.department_id) %}
+                        <span class="font-medium text-gray-800">{{ dept_map.get(e.department_id) }}</span>
+                        {% else %}
+                        <span class="text-gray-400">— Unassigned —</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-xs text-gray-600">
                         {% if e.job_title_id and jt_map.get(e.job_title_id) %}
-                        <div class="text-gray-500 mt-0.5">{{ jt_map.get(e.job_title_id) }}</div>
+                        <span class="text-gray-700 font-medium">{{ jt_map.get(e.job_title_id) }}</span>
+                        {% else %}
+                        <span class="text-gray-400">— N/A —</span>
                         {% endif %}
                     </td>
                     <td class="text-xs text-gray-600">
@@ -279,6 +288,55 @@
         </div>
     </div>
 </div>
+
+<!-- Import Excel Modal -->
+<div id="import-excel-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-file-excel text-emerald-600"></i> Import Employee Directory
+            </h3>
+            <button type="button" onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="import-excel-form" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Business Profile <span class="text-rose-500">*</span></label>
+                <select id="import_business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+                    <option value="">-- Select Business --</option>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if request.query_params.get('business_id') == b.id|string or (businesses|length == 1) %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-semibold text-gray-700">Excel File (.xlsx) <span class="text-rose-500">*</span></label>
+                    <button type="button" onclick="downloadTemplate()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium underline">
+                        <i class="fas fa-download text-[10px]"></i> Download Sample Template
+                    </button>
+                </div>
+                <input type="file" id="excel_file" accept=".xlsx, .xls" required class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+                <p class="text-[11px] text-gray-400 mt-1">Upload the employee Excel file provided by HR.</p>
+            </div>
+
+            <div id="import-loading" class="hidden p-3 bg-indigo-50 rounded-lg text-xs text-indigo-700 flex items-center gap-2">
+                <i class="fas fa-spinner fa-spin"></i> Processing employee records...
+            </div>
+
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-upload text-[10px]"></i> Upload & Import
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -292,16 +350,16 @@ $(document).ready(function () {
         responsive: true,
         pageLength: 10,
         dom: 'rt',
-        columnDefs: [{ targets: [6, 7, 8], visible: false, searchable: true }],
+        columnDefs: [{ targets: [8, 9, 10], visible: false, searchable: true }],
         order: [],
         language: { emptyTable: "No employees found." },
         drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterStatus').on('change', function () { table.column(6).search(this.value).draw(); });
-    $('#filterDepartment').on('change', function () { table.column(7).search(this.value).draw(); });
-    $('#filterBusiness').on('change', function () { table.column(8).search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(8).search(this.value).draw(); });
+    $('#filterDepartment').on('change', function () { table.column(9).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(10).search(this.value).draw(); });
     $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
     $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });
@@ -366,6 +424,78 @@ $(document).ready(function () {
 });
 
 function movePage(p) { window._dtTable.page(p).draw('page'); }
+
+function openImportModal() {
+    document.getElementById('import-excel-modal').classList.remove('hidden');
+}
+
+function closeImportModal() {
+    document.getElementById('import-excel-modal').classList.add('hidden');
+    document.getElementById('import-excel-form').reset();
+    document.getElementById('import-loading').classList.add('hidden');
+}
+
+function downloadTemplate() {
+    const bizId = document.getElementById('import_business_id').value;
+    if (!bizId) {
+        showWarningAlert('Business Required', 'Please select a business profile first to download the template.');
+        return;
+    }
+    window.location.href = '/employees/template-excel?business_id=' + bizId;
+}
+
+document.getElementById('import-excel-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const bizId = document.getElementById('import_business_id').value;
+    const fileInput = document.getElementById('excel_file');
+    
+    if (!bizId) {
+        showWarningAlert('Business Required', 'Please select a business profile.');
+        return;
+    }
+    if (!fileInput.files || fileInput.files.length === 0) {
+        showWarningAlert('File Required', 'Please select an Excel file to upload.');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    document.getElementById('import-loading').classList.remove('hidden');
+
+    fetch('/employees/import-excel?business_id=' + bizId, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: formData
+    })
+    .then(async res => {
+        document.getElementById('import-loading').classList.add('hidden');
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to import employee file.');
+        }
+        return res.json();
+    })
+    .then(data => {
+        closeImportModal();
+        let msg = `Successfully imported ${data.imported_count} employee record(s).`;
+        if (data.errors && data.errors.length > 0) {
+            msg += `<br><br><small class="text-rose-600 font-semibold">Note: ${data.errors.length} row(s) had warnings or skipped:<br>${data.errors.join('<br>')}</small>`;
+        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Employee Import Complete',
+            html: msg,
+            confirmButtonColor: '#10b981'
+        }).then(() => {
+            window.location.reload();
+        });
+    })
+    .catch(err => {
+        document.getElementById('import-loading').classList.add('hidden');
+        showErrorAlert('Import Failed', err.message);
+    });
+});
 
 function deleteEmployee(id, name) {
     Swal.fire({

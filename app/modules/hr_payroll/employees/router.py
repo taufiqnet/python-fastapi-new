@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -14,6 +14,32 @@ from app.modules.hr_payroll.employees.service import EmployeeService
 router = APIRouter(tags=["Employees"])
 
 employee_service = EmployeeService()
+
+
+@router.get("/employees/template-excel")
+def download_employees_excel_template(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = employee_service.generate_excel_template(db, business_id=business_id)
+    filename = f"employee_template_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/employees/import-excel")
+async def import_employees_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    contents = await file.read()
+    return employee_service.import_employees_excel(
+        db, business_id=business_id, file_bytes=contents
+    )
 
 
 @router.get("/employees", response_model=list[EmployeeOut])

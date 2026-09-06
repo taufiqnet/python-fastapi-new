@@ -25,6 +25,8 @@ from app.modules.hr_payroll.leave.schemas import (
     LeaveTypeCreate,
     LeaveTypeUpdate,
 )
+from io import BytesIO
+import openpyxl
 
 
 class LeaveTypeService:
@@ -80,6 +82,146 @@ class LeaveTypeService:
     def delete_leave_type(self, db: Session, leave_type_uuid: uuid.UUID) -> None:
         leave_type = self.get_leave_type(db, leave_type_uuid)
         self.repository.delete(db, leave_type)
+
+    def generate_excel_template(self, db: Session, business_id: int) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Leave Type Template"
+
+        headers = [
+            "Name",
+            "Code (Short Code e.g. AL, SL)",
+            "Max Days Per Year (0 for unlimited)",
+            "Is Paid (yes/no)",
+            "Requires Document (yes/no)",
+            "Applicable Gender (all/male/female)",
+            "Carry Forward (yes/no)",
+            "Description",
+        ]
+        ws.append(headers)
+
+        ws.append([
+            "Annual Leave",
+            "AL",
+            20,
+            "yes",
+            "no",
+            "all",
+            "yes",
+            "Paid annual holiday entitlement",
+        ])
+        ws.append([
+            "Sick Leave",
+            "SL",
+            10,
+            "yes",
+            "yes",
+            "all",
+            "no",
+            "Medical sick leave",
+        ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 14)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
+    def import_leave_types_excel(
+        self, db: Session, business_id: int, file_bytes: bytes
+    ) -> dict[str, int | list[str]]:
+        try:
+            wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
+            ws = wb.active
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid Excel file format: {str(e)}",
+            )
+
+        rows = list(ws.iter_rows(values_only=True))
+        if not rows:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Excel file is empty.",
+            )
+
+        success_count = 0
+        error_messages: list[str] = []
+
+        header = [str(cell or "").strip().lower() for cell in rows[0]]
+        start_idx = 1 if "name" in header or "code" in header else 0
+
+        for row_idx, row in enumerate(rows[start_idx:], start=start_idx + 1):
+            if not row or not any(row):
+                continue
+
+            name_raw = str(row[0] or "").strip()
+            code_raw = str(row[1] or "").strip().upper() if len(row) > 1 and row[1] else ""
+            max_days_raw = row[2] if len(row) > 2 else 0
+            is_paid_raw = str(row[3] or "yes").strip().lower() if len(row) > 3 and row[3] is not None else "yes"
+            req_doc_raw = str(row[4] or "no").strip().lower() if len(row) > 4 and row[4] is not None else "no"
+            gender_raw = str(row[5] or "all").strip().lower() if len(row) > 5 and row[5] else "all"
+            carry_fwd_raw = str(row[6] or "no").strip().lower() if len(row) > 6 and row[6] is not None else "no"
+            desc_raw = str(row[7] or "").strip() if len(row) > 7 and row[7] else None
+
+            if not name_raw:
+                error_messages.append(f"Row {row_idx}: Missing Leave Type Name.")
+                continue
+
+            if not code_raw:
+                error_messages.append(f"Row {row_idx}: Missing Leave Type Code.")
+                continue
+
+            # Check existing code for warning message
+            existing = self.repository.get_by_code(db, code_raw, business_id)
+            if existing:
+                error_messages.append(f"Row {row_idx}: Skipped - Leave type code '{code_raw}' already exists.")
+                continue
+
+            # Max days parsing
+            try:
+                max_days = int(max_days_raw) if max_days_raw is not None and str(max_days_raw).strip() != "" else 0
+            except (ValueError, TypeError):
+                max_days = 0
+
+            is_paid = is_paid_raw in ("yes", "true", "1")
+            requires_document = req_doc_raw in ("yes", "true", "1")
+            carry_forward = carry_fwd_raw in ("yes", "true", "1")
+
+            try:
+                gender_enum = GenderApplicabilityEnum(gender_raw)
+            except ValueError:
+                gender_enum = GenderApplicabilityEnum.ALL
+
+            create_data = LeaveTypeCreate(
+                business_id=business_id,
+                name=name_raw,
+                code=code_raw,
+                description=desc_raw,
+                max_days_per_year=max_days,
+                is_paid=is_paid,
+                requires_document=requires_document,
+                applicable_gender=gender_enum,
+                carry_forward=carry_forward,
+                is_active=True,
+            )
+
+            try:
+                self.create_leave_type(db, create_data)
+                success_count += 1
+            except HTTPException as hexp:
+                error_messages.append(f"Row {row_idx}: {hexp.detail}")
+            except Exception as ex:
+                error_messages.append(f"Row {row_idx}: Failed to create leave type - {str(ex)}")
+
+        return {
+            "imported_count": success_count,
+            "errors": error_messages,
+        }
 
 
 class LeaveAllocationService:

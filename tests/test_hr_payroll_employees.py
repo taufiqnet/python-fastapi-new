@@ -147,3 +147,59 @@ async def test_employee_crud_and_validation(client: AsyncClient):
 
     res_verify = await client.get(f"/employees/{emp1_id}")
     assert res_verify.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_employee_excel_template_and_import(client: AsyncClient):
+    # Template download
+    tpl_res = await client.get("/employees/template-excel?business_id=1")
+    assert tpl_res.status_code == 200
+    assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in tpl_res.headers["content-type"]
+
+    # Import test file
+    import openpyxl
+    from io import BytesIO
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append([
+        "Employee ID", "First Name", "Middle Name", "Last Name", "Work Email",
+        "Phone", "Department", "Job Title", "Employment Type", "Work Arrangement",
+        "Start Date", "Gender"
+    ])
+    ws.append([
+        "IMP100", "Alice", "", "Wonderland", "alice@example.com",
+        "+111222333", "", "", "full_time", "remote",
+        "2025-01-15", "female"
+    ])
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    files = {
+        "file": (
+            "employees.xlsx",
+            output.getvalue(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    }
+    import_res = await client.post("/employees/import-excel?business_id=1", files=files)
+    assert import_res.status_code == 200
+    res_json = import_res.json()
+    assert res_json["imported_count"] == 1
+
+    # Importing same file again should trigger duplicate warning
+    output.seek(0)
+    files2 = {
+        "file": (
+            "employees.xlsx",
+            output.getvalue(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+    }
+    import_res2 = await client.post("/employees/import-excel?business_id=1", files=files2)
+    assert import_res2.status_code == 200
+    res_json2 = import_res2.json()
+    assert res_json2["imported_count"] == 0
+    assert len(res_json2["errors"]) == 1
+    assert "already exists" in res_json2["errors"][0]

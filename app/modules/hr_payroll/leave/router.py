@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -37,6 +37,32 @@ class LeaveApplicationCancelRequest(BaseModel):
 
 
 # ── Leave Types Endpoints ───────────────────────────────────────────────
+@router.get("/leave/types/template-excel")
+def download_leave_types_excel_template(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = leave_type_service.generate_excel_template(db, business_id=business_id)
+    filename = f"leave_type_template_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/leave/types/import-excel")
+async def import_leave_types_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    contents = await file.read()
+    return leave_type_service.import_leave_types_excel(
+        db, business_id=business_id, file_bytes=contents
+    )
+
+
 @router.get("/leave-types", response_model=list[LeaveTypeOut])
 def get_leave_types(
     skip: int = Query(0, ge=0),
