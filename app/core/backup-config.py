@@ -6,7 +6,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_env: str = "development"
 
-    database_url: str
+    db_name: str
+    db_user: str
+    db_password: str
+    db_host: str = "localhost"
+    db_port: int = 5432
 
     app_host: str = "0.0.0.0"
     app_port: int = 8000
@@ -23,12 +27,17 @@ class Settings(BaseSettings):
     )
 
     @property
-    def async_database_url(self) -> str:
-        return self.database_url.replace(
-            "postgresql://",
-            "postgresql+asyncpg://",
-            1,
+    def database_url(self) -> str:
+        return (
+            f"postgresql://"
+            f"{self.db_user}:{self.db_password}"
+            f"@{self.db_host}:{self.db_port}"
+            f"/{self.db_name}"
         )
+
+    @property
+    def async_database_url(self) -> str:
+        return self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 
 @lru_cache
