@@ -571,8 +571,8 @@
                 </div>
 
                 <!-- ECOMMERCE MODULE -->
-                <div class="sidebar-dropdown {% if active_page in ['categories', 'brands', 'models', 'products', 'orders', 'inventory'] %}expanded{% endif %}" data-module="ecommerce">
-                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['categories', 'brands', 'models', 'products', 'orders', 'inventory'] %}active{% endif %}">
+                <div class="sidebar-dropdown {% if active_page in ['categories', 'customers', 'brands', 'models', 'products', 'orders', 'inventory'] %}expanded{% endif %}" data-module="ecommerce">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['categories', 'customers', 'brands', 'models', 'products', 'orders', 'inventory'] %}active{% endif %}">
                         <span class="flex items-center">
                             <i class="fas fa-shopping-cart w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text">Ecommerce</span>
@@ -588,6 +588,15 @@
                             </span>
                             <span class="sidebar-tooltip">
                                 Category
+                            </span>
+                        </a>
+                        <a href="/customers/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'customers' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-users w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Customers
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Customers
                             </span>
                         </a>
                         <a href="/brands" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'brands' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">

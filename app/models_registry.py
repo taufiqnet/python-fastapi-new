@@ -12,6 +12,7 @@ that's the only place it needs to be added.
 
 from app.modules.ecommerce.brands.models import Brand, ProductModel  # noqa: F401
 from app.modules.ecommerce.categories.models import Category  # noqa: F401
+from app.modules.ecommerce.customer.models import Customer  # noqa: F401
 from app.modules.ecommerce.inventory.models import InventoryItem, Warehouse  # noqa: F401
 from app.modules.ecommerce.products.models import (  # noqa: F401
     AttributeValue,

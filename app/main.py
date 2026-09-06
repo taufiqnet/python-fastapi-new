@@ -17,6 +17,7 @@ from app import models_registry  # noqa: F401
 from app.modules.ecommerce.brands.router import router as brands_router
 from app.modules.ecommerce.cart.router import router as cart_router
 from app.modules.ecommerce.categories.router import router as categories_router
+from app.modules.ecommerce.customer.router import router as customers_router
 from app.modules.ecommerce.inventory.router import router as inventory_router
 from app.modules.ecommerce.notifications.router import router as notifications_router
 from app.modules.ecommerce.orders.router import router as orders_router
@@ -43,6 +44,7 @@ from app.routers import (
     business_views,
     category_views,
     compensation_views,
+    customer_views,
     employee_views,
     inventory_views,
     leave_views,
@@ -81,6 +83,7 @@ app.add_middleware(
 
 app.include_router(business_views.router)
 app.include_router(category_views.router)
+app.include_router(customer_views.router)
 app.include_router(brand_views.router)
 app.include_router(model_views.router)
 app.include_router(product_views.router)
@@ -98,6 +101,7 @@ app.include_router(business.router)
 #ecommerce module router
 app.include_router(brands_router)
 app.include_router(categories_router)
+app.include_router(customers_router)
 app.include_router(products_router)
 app.include_router(inventory_router)
 app.include_router(pricing_router)
