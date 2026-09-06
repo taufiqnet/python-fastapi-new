@@ -29,6 +29,14 @@ class ProductRepository:
     def get_by_slug(self, db: Session, slug: str) -> Product | None:
         return db.query(Product).filter(Product.slug == slug).first()
 
+    def get_by_title(
+        self, db: Session, title: str, business_id: int | None = None
+    ) -> Product | None:
+        query = db.query(Product).filter(Product.title == title)
+        if business_id is not None:
+            query = query.filter(Product.business_id == business_id)
+        return query.first()
+
     def get_all(
         self,
         db: Session,
@@ -274,6 +282,11 @@ class ProductRepository:
         self, db: Session, variant_id: uuid.UUID
     ) -> ProductVariant | None:
         return db.query(ProductVariant).filter(ProductVariant.id == variant_id).first()
+
+    def get_variant_by_sku(
+        self, db: Session, sku: str
+    ) -> ProductVariant | None:
+        return db.query(ProductVariant).filter(ProductVariant.sku == sku).first()
 
     def update_variant(
         self, db: Session, variant: ProductVariant, data: VariantUpdate

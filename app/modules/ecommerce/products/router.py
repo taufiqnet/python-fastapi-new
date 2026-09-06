@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.common.enums import Status
@@ -25,6 +25,32 @@ service = ProductService()
 
 
 # --- Product Endpoints ---
+@router.get("/template-excel")
+def download_products_excel_template(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = service.generate_excel_template(db, business_id=business_id)
+    filename = f"product_template_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/import-excel")
+async def import_products_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    contents = await file.read()
+    return service.import_products_excel(
+        db, business_id=business_id, file_bytes=contents
+    )
+
+
 @router.get("/", response_model=list[ProductListItem])
 def get_products(
     skip: int = Query(0, ge=0),

@@ -20,6 +20,14 @@ class BrandRepository:
     def get_by_slug(self, db: Session, slug: str) -> Brand | None:
         return db.query(Brand).filter(Brand.slug == slug).first()
 
+    def get_by_name(
+        self, db: Session, name: str, business_id: int | None = None
+    ) -> Brand | None:
+        query = db.query(Brand).filter(Brand.name == name)
+        if business_id is not None:
+            query = query.filter(Brand.business_id == business_id)
+        return query.first()
+
     def get_all(
         self,
         db: Session,
@@ -70,6 +78,14 @@ class BrandRepository:
 
     def get_model_by_slug(self, db: Session, slug: str) -> ProductModel | None:
         return db.query(ProductModel).filter(ProductModel.slug == slug).first()
+
+    def get_model_by_name(
+        self, db: Session, name: str, brand_id: uuid.UUID | None = None
+    ) -> ProductModel | None:
+        query = db.query(ProductModel).filter(ProductModel.name == name)
+        if brand_id is not None:
+            query = query.filter(ProductModel.brand_id == brand_id)
+        return query.first()
 
     def get_all_models(
         self,

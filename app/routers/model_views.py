@@ -5,12 +5,14 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.ecommerce.brands.service import BrandService
 
 router = APIRouter(prefix="", tags=["Model Views"])
 templates = Jinja2Templates(directory="app/templates")
 brand_service = BrandService()
+business_service = BusinessService()
 
 
 @router.get("/brands/models", response_class=HTMLResponse)
@@ -22,6 +24,7 @@ def model_list_page(
 ):
     models = brand_service.get_all_models(db, skip=skip, limit=limit)
     brands = brand_service.get_brands(db, skip=0, limit=500)
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
     brand_map = {b.id: b.name for b in brands}
 
     total_count = len(models)
@@ -34,6 +37,7 @@ def model_list_page(
         context={
             "models": models,
             "brands": brands,
+            "businesses": businesses,
             "brand_map": brand_map,
             "total_count": total_count,
             "active_count": active_count,

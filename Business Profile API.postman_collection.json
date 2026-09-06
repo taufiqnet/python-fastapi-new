@@ -3713,896 +3713,2571 @@
       ]
     },
     {
-      "name": "Attendance",
+      "name": "HR & Payroll",
       "item": [
         {
-          "name": "Create Attendance Record",
-          "event": [
+          "name": "Organization",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const json = pm.response.json();",
-                  "    pm.collectionVariables.set(\"attendance_id\", json.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"date\": \"2025-01-15\",\n  \"status\": \"present\",\n  \"check_in\": \"09:00:00\",\n  \"check_out\": \"17:30:00\",\n  \"work_hours\": 8.5,\n  \"overtime_hours\": 0.5,\n  \"source\": \"manual\",\n  \"note\": \"Logged via API\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/attendance",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Attendance Records",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance?skip=0&limit=100&business_id={{business_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance"
-              ],
-              "query": [
-                {
-                  "key": "skip",
-                  "value": "0"
+              "name": "Download Departments Excel Template",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/departments/template-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "departments",
+                    "template-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
                 },
-                {
-                  "key": "limit",
-                  "value": "100"
-                },
-                {
-                  "key": "business_id",
-                  "value": "{{business_id}}"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Attendance Record",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/{{attendance_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "{{attendance_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Attendance Record",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"late\",\n  \"check_in\": \"09:30:00\",\n  \"work_hours\": 8.0,\n  \"note\": \"Late arrival due to traffic\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/attendance/{{attendance_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "{{attendance_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Attendance Record",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/attendance/{{attendance_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "attendance",
-                "{{attendance_id}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Compensation",
-      "item": [
-        {
-          "name": "Create Salary Structure",
-          "event": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const json = pm.response.json();",
-                  "    pm.collectionVariables.set(\"salary_id\", json.id);",
-                  "}"
+              "name": "Import Departments via Excel",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/departments/import-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "departments",
+                    "import-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
                 ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"basic_salary\": 5000.0,\n  \"house_rent\": 1000.0,\n  \"medical_allowance\": 500.0,\n  \"transport_allowance\": 300.0,\n  \"food_allowance\": 200.0,\n  \"other_allowance\": 100.0,\n  \"tax\": 500.0,\n  \"provident_fund\": 300.0,\n  \"other_deduction\": 100.0,\n  \"effective_from\": \"2025-01-01\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/compensation/salaries",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "compensation",
-                "salaries"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Salary Structures",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/compensation/salaries?skip=0&limit=100&business_id={{business_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "compensation",
-                "salaries"
-              ],
-              "query": [
-                {
-                  "key": "skip",
-                  "value": "0"
-                },
-                {
-                  "key": "limit",
-                  "value": "100"
-                },
-                {
-                  "key": "business_id",
-                  "value": "{{business_id}}"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Salary Structure",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "compensation",
-                "salaries",
-                "{{salary_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Salary Structure by Employee",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/compensation/salaries/employee/{{employee_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "compensation",
-                "salaries",
-                "employee",
-                "{{employee_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Salary Structure",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"basic_salary\": 6000.0,\n  \"house_rent\": 1200.0\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "compensation",
-                "salaries",
-                "{{salary_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Salary Structure",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "compensation",
-                "salaries",
-                "{{salary_id}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Payroll",
-      "item": [
-        {
-          "name": "Create Holiday",
-          "event": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const json = pm.response.json();",
-                  "    pm.collectionVariables.set(\"holiday_id\", json.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"name\": \"New Year's Day\",\n  \"holiday_type\": \"public\",\n  \"start_date\": \"2025-01-01\",\n  \"end_date\": \"2025-01-01\",\n  \"is_paid\": true,\n  \"description\": \"Public Holiday\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/payroll/holidays",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "holidays"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Holidays",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/holidays?skip=0&limit=100&business_id={{business_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "holidays"
-              ],
-              "query": [
-                {
-                  "key": "skip",
-                  "value": "0"
+              "name": "List Departments",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/departments?skip=0&limit=100&business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "departments"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
                 },
-                {
-                  "key": "limit",
-                  "value": "100"
-                },
-                {
-                  "key": "business_id",
-                  "value": "{{business_id}}"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Holiday",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "holidays",
-                "{{holiday_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Holiday",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"New Year's Day (Observed)\",\n  \"is_paid\": true\n}"
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "holidays",
-                "{{holiday_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Holiday",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "holidays",
-                "{{holiday_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Payroll Period",
-          "event": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const json = pm.response.json();",
-                  "    pm.collectionVariables.set(\"period_id\", json.id);",
-                  "}"
+              "name": "Create Department",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/departments",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "departments"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
                 ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"name\": \"Engineering\",\n  \"slug\": \"engineering\",\n  \"description\": \"Software development and engineering team\",\n  \"is_active\": true,\n  \"multiple_heads_allowed\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"name\": \"January 2025\",\n  \"start_date\": \"2025-01-01\",\n  \"end_date\": \"2025-01-31\",\n  \"status\": \"draft\",\n  \"payment_date\": \"2025-01-31\",\n  \"notes\": \"January monthly payroll run\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/payroll/periods",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "periods"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Payroll Periods",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/periods?skip=0&limit=100&business_id={{business_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "periods"
-              ],
-              "query": [
+              "response": [],
+              "event": [
                 {
-                  "key": "skip",
-                  "value": "0"
-                },
-                {
-                  "key": "limit",
-                  "value": "100"
-                },
-                {
-                  "key": "business_id",
-                  "value": "{{business_id}}"
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"department_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Payroll Period",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/periods/{{period_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "periods",
-                "{{period_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Payroll Period",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"processing\"\n}"
             },
-            "url": {
-              "raw": "{{base_url}}/payroll/periods/{{period_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "periods",
-                "{{period_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Payroll Period",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/periods/{{period_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "periods",
-                "{{period_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Create Payroll Record",
-          "event": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "    const json = pm.response.json();",
-                  "    pm.collectionVariables.set(\"record_id\", json.id);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+              "name": "Get Department",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/departments/{{department_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "departments",
+                    "{{department_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"business_id\": 1,\n  \"period_id\": \"{{period_id}}\",\n  \"employee_id\": \"{{employee_id}}\",\n  \"working_days\": 22,\n  \"present_days\": 22,\n  \"absent_days\": 0,\n  \"leave_days\": 0,\n  \"overtime_hours\": 5.0,\n  \"basic_salary\": 5000.0,\n  \"house_rent\": 1000.0,\n  \"transport_allowance\": 300.0,\n  \"medical_allowance\": 500.0,\n  \"food_allowance\": 200.0,\n  \"other_allowance\": 100.0,\n  \"overtime_pay\": 150.0,\n  \"bonus\": 0.0,\n  \"tax\": 500.0,\n  \"provident_fund\": 300.0,\n  \"unpaid_leave_deduction\": 0.0,\n  \"loan_installment\": 0.0,\n  \"other_deduction\": 50.0,\n  \"payment_method\": \"bank_transfer\",\n  \"bank_account\": \"BD1234567890\",\n  \"is_paid\": false,\n  \"note\": \"January Payslip\"\n}"
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/payroll/records",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "records"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "List Payroll Records",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/records?skip=0&limit=100&business_id={{business_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "records"
-              ],
-              "query": [
-                {
-                  "key": "skip",
-                  "value": "0"
+            {
+              "name": "Update Department",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/departments/{{department_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "departments",
+                    "{{department_id}}"
+                  ]
                 },
-                {
-                  "key": "limit",
-                  "value": "100"
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Software Engineering\",\n  \"description\": \"Software development, QA, and DevOps engineering team\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Department",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/departments/{{department_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "departments",
+                    "{{department_id}}"
+                  ]
                 },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Download Job Titles Excel Template",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/job-titles/template-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "job-titles",
+                    "template-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Import Job Titles via Excel",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/job-titles/import-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "job-titles",
+                    "import-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Job Titles",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/job-titles?skip=0&limit=100&business_id={{business_id}}&department_id={{department_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "job-titles"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "department_id",
+                      "value": "{{department_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Job Title",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/job-titles",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "job-titles"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"department_id\": \"{{department_id}}\",\n  \"name\": \"Senior Software Engineer\",\n  \"short_name\": \"SSE\",\n  \"description\": \"Senior level software engineer responsible for core application architecture\",\n  \"is_active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
                 {
-                  "key": "business_id",
-                  "value": "{{business_id}}"
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"job_title_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
                 }
               ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Payroll Record",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/records/{{record_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "records",
-                "{{record_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Update Payroll Record",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"is_paid\": true,\n  \"note\": \"Paid via bank disbursement\"\n}"
             },
-            "url": {
-              "raw": "{{base_url}}/payroll/records/{{record_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "records",
-                "{{record_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Delete Payroll Record",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/records/{{record_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "records",
-                "{{record_id}}"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Generate Period Payroll",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+            {
+              "name": "Get Job Title",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/job-titles/{{job_title_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "job-titles",
+                    "{{job_title_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
               },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/payroll/periods/{{period_id}}/generate",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "payroll",
-                "periods",
-                "{{period_id}}",
-                "generate"
-              ]
+              "response": []
+            },
+            {
+              "name": "Update Job Title",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/job-titles/{{job_title_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "job-titles",
+                    "{{job_title_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Lead Software Engineer\",\n  \"short_name\": \"LSE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Job Title",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/job-titles/{{job_title_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "job-titles",
+                    "{{job_title_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
             }
-          },
-          "response": []
+          ]
+        },
+        {
+          "name": "Employees",
+          "item": [
+            {
+              "name": "Download Employees Excel Template",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/employees/template-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "template-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Import Employees via Excel",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/employees/import-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "import-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Employees",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/employees?skip=0&limit=100&business_id={{business_id}}&department_id={{department_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "department_id",
+                      "value": "{{department_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Employee",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/employees",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"EMP-2025-001\",\n  \"first_name\": \"John\",\n  \"middle_name\": \"M.\",\n  \"last_name\": \"Doe\",\n  \"gender\": \"male\",\n  \"date_of_birth\": \"1990-05-15\",\n  \"marital_status\": \"single\",\n  \"nationality\": \"American\",\n  \"national_id\": \"NID-987654321\",\n  \"passport_no\": \"A12345678\",\n  \"work_email\": \"john.doe@example.com\",\n  \"personal_email\": \"john.personal@example.com\",\n  \"phone\": \"+1234567890\",\n  \"emergency_contact\": \"+10987654321\",\n  \"linkedin\": \"https://linkedin.com/in/johndoe\",\n  \"residential_address\": \"123 Main Street, Tech City\",\n  \"department_id\": \"{{department_id}}\",\n  \"job_title_id\": \"{{job_title_id}}\",\n  \"team\": \"Backend Core\",\n  \"employment_type\": \"full_time\",\n  \"start_date\": \"2025-01-01\",\n  \"work_arrangement\": \"hybrid\",\n  \"working_hours\": 8.0,\n  \"working_days_per_week\": 5,\n  \"working_days\": \"Mon,Tue,Wed,Thu,Fri\",\n  \"skills_expertise\": \"Python, FastAPI, PostgreSQL, Docker\",\n  \"is_department_head\": false,\n  \"is_active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"employee_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Employee",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/employees/{{employee_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "{{employee_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Employee",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/employees/{{employee_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "{{employee_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"first_name\": \"Johnathan\",\n  \"phone\": \"+19998887777\",\n  \"team\": \"Platform Engineering\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Employee",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/employees/{{employee_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "{{employee_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Leave Management",
+          "item": [
+            {
+              "name": "Download Leave Types Excel Template",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave/types/template-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave",
+                    "types",
+                    "template-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Import Leave Types via Excel",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/leave/types/import-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave",
+                    "types",
+                    "import-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Leave Types",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave-types?skip=0&limit=100&business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-types"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Leave Type",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/leave-types",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-types"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"name\": \"Casual Leave\",\n  \"code\": \"CL\",\n  \"description\": \"Paid casual leave entitlement per year\",\n  \"max_days_per_year\": 14.0,\n  \"is_paid\": true,\n  \"requires_document\": false,\n  \"applicable_gender\": \"all\",\n  \"carry_forward\": false,\n  \"is_active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"leave_type_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Leave Type",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave-types/{{leave_type_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-types",
+                    "{{leave_type_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Leave Type",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/leave-types/{{leave_type_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-types",
+                    "{{leave_type_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"description\": \"Updated casual leave entitlement with documentation rules\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Leave Type",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/leave-types/{{leave_type_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-types",
+                    "{{leave_type_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "List Leave Allocations",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave-allocations?skip=0&limit=100&business_id={{business_id}}&employee_id={{employee_id}}&year=2025",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-allocations"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "employee_id",
+                      "value": "{{employee_id}}"
+                    },
+                    {
+                      "key": "year",
+                      "value": "2025"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Leave Allocation",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/leave-allocations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-allocations"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"leave_type_id\": \"{{leave_type_id}}\",\n  \"year\": 2025,\n  \"allocated_days\": 14.0,\n  \"used_days\": 0.0,\n  \"carried_forward\": 0.0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"leave_allocation_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Leave Allocation",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave-allocations/{{leave_allocation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-allocations",
+                    "{{leave_allocation_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Leave Allocation",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/leave-allocations/{{leave_allocation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-allocations",
+                    "{{leave_allocation_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"allocated_days\": 16.0,\n  \"used_days\": 1.0,\n  \"carried_forward\": 2.0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Leave Allocation",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/leave-allocations/{{leave_allocation_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-allocations",
+                    "{{leave_allocation_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "List Leave Applications",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave-applications?skip=0&limit=100&business_id={{business_id}}&employee_id={{employee_id}}&status=pending",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-applications"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "employee_id",
+                      "value": "{{employee_id}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "pending"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Leave Application",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/leave-applications",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-applications"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"leave_type_id\": \"{{leave_type_id}}\",\n  \"start_date\": \"2025-06-01\",\n  \"end_date\": \"2025-06-03\",\n  \"total_days\": 3.0,\n  \"reason\": \"Personal family emergency\",\n  \"document_url\": \"https://example.com/medical_cert.pdf\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"leave_application_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Leave Application",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave-applications/{{leave_application_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-applications",
+                    "{{leave_application_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Leave Application",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/leave-applications/{{leave_application_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-applications",
+                    "{{leave_application_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"start_date\": \"2025-06-01\",\n  \"end_date\": \"2025-06-02\",\n  \"total_days\": 2.0,\n  \"reason\": \"Personal family emergency (adjusted dates)\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Review Leave Application (Approve/Reject)",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/leave-applications/{{leave_application_id}}/review",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-applications",
+                    "{{leave_application_id}}",
+                    "review"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"approved\",\n  \"reviewed_by_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"review_note\": \"Approved by HR manager\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Cancel Leave Application",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/leave-applications/{{leave_application_id}}/cancel",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-applications",
+                    "{{leave_application_id}}",
+                    "cancel"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Plans changed, cancelling leave application\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Leave Application",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/leave-applications/{{leave_application_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave-applications",
+                    "{{leave_application_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Attendance",
+          "item": [
+            {
+              "name": "Download Attendance Excel Template",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/attendance/template-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "template-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Import Attendance via Excel",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/attendance/import-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "import-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Attendance Records",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/attendance?skip=0&limit=100&business_id={{business_id}}&employee_id={{employee_id}}&date=2025-01-15&start_date=2025-01-01&end_date=2025-01-31&status=present",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "employee_id",
+                      "value": "{{employee_id}}"
+                    },
+                    {
+                      "key": "date",
+                      "value": "2025-01-15"
+                    },
+                    {
+                      "key": "start_date",
+                      "value": "2025-01-01"
+                    },
+                    {
+                      "key": "end_date",
+                      "value": "2025-01-31"
+                    },
+                    {
+                      "key": "status",
+                      "value": "present"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Attendance Record",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/attendance",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"date\": \"2025-01-15\",\n  \"status\": \"present\",\n  \"check_in\": \"09:00:00\",\n  \"check_out\": \"17:30:00\",\n  \"work_hours\": 8.5,\n  \"overtime_hours\": 0.5,\n  \"source\": \"manual\",\n  \"note\": \"Logged via API\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"attendance_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Attendance Record",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/attendance/{{attendance_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "{{attendance_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Attendance Record",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/attendance/{{attendance_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "{{attendance_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"late\",\n  \"check_in\": \"09:30:00\",\n  \"work_hours\": 8.0,\n  \"note\": \"Late arrival due to traffic\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Attendance Record",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/attendance/{{attendance_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "{{attendance_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Compensation",
+          "item": [
+            {
+              "name": "Download Compensation Excel Template",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/compensation/template-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "template-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Import Compensation via Excel",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/compensation/import-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "import-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Salary Structures",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/compensation/salaries?skip=0&limit=100&business_id={{business_id}}&employee_id={{employee_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "salaries"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "employee_id",
+                      "value": "{{employee_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Get Salary Structure by Employee",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/compensation/salaries/employee/{{employee_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "salaries",
+                    "employee",
+                    "{{employee_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Salary Structure",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/compensation/salaries",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "salaries"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"basic_salary\": 5000.0,\n  \"house_rent\": 1000.0,\n  \"medical_allowance\": 500.0,\n  \"transport_allowance\": 300.0,\n  \"food_allowance\": 200.0,\n  \"other_allowance\": 100.0,\n  \"tax\": 500.0,\n  \"provident_fund\": 300.0,\n  \"other_deduction\": 100.0,\n  \"effective_from\": \"2025-01-01\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"salary_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Salary Structure",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "salaries",
+                    "{{salary_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Salary Structure",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "salaries",
+                    "{{salary_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"basic_salary\": 6000.0,\n  \"house_rent\": 1200.0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Salary Structure",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/compensation/salaries/{{salary_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "salaries",
+                    "{{salary_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Payroll",
+          "item": [
+            {
+              "name": "Get Payroll Settings",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/settings?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "settings"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Payroll Settings",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/payroll/settings?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "settings"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"include_attendance\": true,\n  \"include_leave\": true,\n  \"include_holidays\": true,\n  \"include_overtime\": true,\n  \"deduct_absent_days\": true,\n  \"standard_hours_per_day\": 8.0\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List Holidays",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/holidays?skip=0&limit=100&business_id={{business_id}}&holiday_type=public",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "holidays"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "holiday_type",
+                      "value": "public"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Holiday",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/payroll/holidays",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "holidays"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"name\": \"New Year's Day\",\n  \"holiday_type\": \"public\",\n  \"start_date\": \"2025-01-01\",\n  \"end_date\": \"2025-01-01\",\n  \"is_paid\": true,\n  \"description\": \"Public Holiday\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"holiday_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Holiday",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "holidays",
+                    "{{holiday_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Holiday",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "holidays",
+                    "{{holiday_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"New Year's Day (Observed)\",\n  \"is_paid\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Holiday",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/payroll/holidays/{{holiday_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "holidays",
+                    "{{holiday_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "List Payroll Periods",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/periods?skip=0&limit=100&business_id={{business_id}}&status=draft",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "periods"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "status",
+                      "value": "draft"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Payroll Period",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/payroll/periods",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "periods"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"name\": \"January 2025\",\n  \"start_date\": \"2025-01-01\",\n  \"end_date\": \"2025-01-31\",\n  \"status\": \"draft\",\n  \"payment_date\": \"2025-01-31\",\n  \"notes\": \"January monthly payroll run\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"period_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Payroll Period",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/periods/{{period_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "periods",
+                    "{{period_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Generate Period Payroll",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/payroll/periods/{{period_id}}/generate",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "periods",
+                    "{{period_id}}",
+                    "generate"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Payroll Period",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/payroll/periods/{{period_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "periods",
+                    "{{period_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"processing\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Payroll Period",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/payroll/periods/{{period_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "periods",
+                    "{{period_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "List Payroll Records",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/records?skip=0&limit=100&business_id={{business_id}}&period_id={{period_id}}&employee_id={{employee_id}}&is_paid=false",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "records"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "period_id",
+                      "value": "{{period_id}}"
+                    },
+                    {
+                      "key": "employee_id",
+                      "value": "{{employee_id}}"
+                    },
+                    {
+                      "key": "is_paid",
+                      "value": "false"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Payroll Record",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/payroll/records",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "records"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"period_id\": \"{{period_id}}\",\n  \"employee_id\": \"{{employee_id}}\",\n  \"working_days\": 22,\n  \"present_days\": 22,\n  \"absent_days\": 0,\n  \"leave_days\": 0,\n  \"holiday_days\": 0,\n  \"overtime_hours\": 5.0,\n  \"basic_salary\": 5000.0,\n  \"house_rent\": 1000.0,\n  \"transport_allowance\": 300.0,\n  \"medical_allowance\": 500.0,\n  \"food_allowance\": 200.0,\n  \"other_allowance\": 100.0,\n  \"overtime_pay\": 150.0,\n  \"bonus\": 0.0,\n  \"tax\": 500.0,\n  \"provident_fund\": 300.0,\n  \"unpaid_leave_deduction\": 0.0,\n  \"loan_installment\": 0.0,\n  \"other_deduction\": 50.0,\n  \"payment_method\": \"bank_transfer\",\n  \"bank_account\": \"BD1234567890\",\n  \"is_paid\": false,\n  \"note\": \"January Payslip\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "if (pm.response.code === 201) {",
+                      "    const json = pm.response.json();",
+                      "    pm.collectionVariables.set(\"record_id\", json.id);",
+                      "}"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Get Payroll Record",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/records/{{record_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "records",
+                    "{{record_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Payroll Record",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/payroll/records/{{record_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "records",
+                    "{{record_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"is_paid\": true,\n  \"note\": \"Paid via bank disbursement\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Payroll Record",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/payroll/records/{{record_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "records",
+                    "{{record_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            }
+          ]
         }
       ]
     }
@@ -4735,6 +6410,36 @@
     },
     {
       "key": "record_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "department_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "job_title_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "employee_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leave_type_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leave_allocation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "leave_application_id",
       "value": "",
       "type": "string"
     }

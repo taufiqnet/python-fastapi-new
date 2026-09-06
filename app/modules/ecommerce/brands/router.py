@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -20,6 +20,32 @@ service = BrandService()
 
 
 # --- Brand Endpoints ---
+@router.get("/template-excel")
+def download_brands_excel_template(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = service.generate_excel_template(db, business_id=business_id)
+    filename = f"brand_template_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/import-excel")
+async def import_brands_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    contents = await file.read()
+    return service.import_brands_excel(
+        db, business_id=business_id, file_bytes=contents
+    )
+
+
 @router.get("/", response_model=list[BrandOut])
 def get_brands(
     skip: int = Query(0, ge=0),
@@ -69,6 +95,32 @@ def delete_brand(brand_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 # --- ProductModel Endpoints ---
+@router.get("/models/template-excel")
+def download_models_excel_template(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = service.generate_model_excel_template(db, business_id=business_id)
+    filename = f"model_template_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/models/import-excel")
+async def import_models_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    contents = await file.read()
+    return service.import_models_excel(
+        db, business_id=business_id, file_bytes=contents
+    )
+
+
 @router.get("/{brand_id}/models", response_model=list[ProductModelOut])
 def get_brand_models(
     brand_id: uuid.UUID,

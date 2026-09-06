@@ -14,6 +14,14 @@ class CategoryRepository:
     def get_by_slug(self, db: Session, slug: str) -> Category | None:
         return db.query(Category).filter(Category.slug == slug).first()
 
+    def get_by_name(
+        self, db: Session, name: str, business_id: int | None = None
+    ) -> Category | None:
+        query = db.query(Category).filter(Category.name == name)
+        if business_id is not None:
+            query = query.filter(Category.business_id == business_id)
+        return query.first()
+
     def get_all(
         self,
         db: Session,
