@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -24,6 +24,32 @@ job_title_service = JobTitleService()
 
 
 # --- Departments Endpoints ---
+@router.get("/departments/template-excel")
+def download_departments_excel_template(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = department_service.generate_excel_template(db, business_id=business_id)
+    filename = f"department_template_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/departments/import-excel")
+async def import_departments_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    contents = await file.read()
+    return department_service.import_departments_excel(
+        db, business_id=business_id, file_bytes=contents
+    )
+
+
 @router.get("/departments", response_model=list[DepartmentOut])
 def get_departments(
     skip: int = Query(0, ge=0),
@@ -68,6 +94,32 @@ def delete_department(department_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 # --- Job Titles Endpoints ---
+@router.get("/job-titles/template-excel")
+def download_job_titles_excel_template(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = job_title_service.generate_excel_template(db, business_id=business_id)
+    filename = f"job_title_template_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/job-titles/import-excel")
+async def import_job_titles_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    contents = await file.read()
+    return job_title_service.import_job_titles_excel(
+        db, business_id=business_id, file_bytes=contents
+    )
+
+
 @router.get("/job-titles", response_model=list[JobTitleOut])
 def get_job_titles(
     skip: int = Query(0, ge=0),
