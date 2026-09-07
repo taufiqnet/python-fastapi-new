@@ -6,7 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-from app.database import Base, engine
+from app.database import Base, SessionLocal, engine
+from app.core.identity.seed import seed_system_admin_and_permissions_sync
 
 # Registers every module's models with Base.metadata in one place — see
 # app/models_registry.py. Import must happen before create_all() below.
@@ -61,6 +62,8 @@ from app.routers import (
     payroll_views,
     product_views,
     recruitment_views,
+    role_views,
+    user_views,
     tasks,
 )
 
@@ -69,6 +72,11 @@ logger = logging.getLogger(__name__)
 if settings.app_env in ("development", "test", "local"):
     try:
         Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        try:
+            seed_system_admin_and_permissions_sync(db)
+        finally:
+            db.close()
     except Exception:
         logger.exception("Failed to create database tables on startup")
         raise
@@ -107,6 +115,8 @@ app.include_router(certificate_views.router)
 app.include_router(appointment_views.router)
 app.include_router(notice_views.router)
 app.include_router(recruitment_views.router)
+app.include_router(role_views.router)
+app.include_router(user_views.router)
 app.include_router(auth.router)
 app.include_router(business.router)
 

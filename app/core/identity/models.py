@@ -2,13 +2,12 @@
 SQLAlchemy models for the user system: core identity + RBAC + role profiles.
 
 Design:
-- User: pure auth/identity. No role-specific fields here.
-- Role / UserRole: many-to-many, so a single account can hold multiple
-  roles (e.g. a vendor who also shops as a customer).
-- CustomerProfile / VendorProfile: one-to-one extensions holding
-  role-specific data. VendorProfile links to BusinessProfile.
-- Address: many-to-one with User, supports multiple shipping/billing
-  addresses per account.
+- User: pure auth/identity with business scoping & superuser support.
+- Role / UserRole: many-to-many, so a single account can hold multiple roles.
+- Permission: granular permissions (module, feature, action, code).
+- RolePermission / UserPermission: associations for assigned permissions.
+- CustomerProfile / VendorProfile: one-to-one extensions holding role-specific data.
+- Address: many-to-one with User, supports multiple shipping/billing addresses per account.
 """
 
 import enum
@@ -44,6 +43,11 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255))
     phone: Mapped[str | None] = mapped_column(String(30), default=None)
 
+    business_id: Mapped[int | None] = mapped_column(
+        ForeignKey("business_profiles.id"), nullable=True, default=None, index=True
+    )
+    is_superuser: Mapped[bool] = mapped_column(Boolean, default=False)
+
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -56,6 +60,10 @@ class User(Base):
     roles: Mapped[list["Role"]] = relationship(
         secondary="user_roles", back_populates="users"
     )
+    direct_permissions: Mapped[list["Permission"]] = relationship(
+        secondary="user_permissions", back_populates="users"
+    )
+    business_profile: Mapped["BusinessProfile | None"] = relationship("BusinessProfile")
     customer_profile: Mapped["CustomerProfile | None"] = relationship(
         back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
@@ -67,11 +75,28 @@ class User(Base):
     )
 
     def has_role(self, role_name: str) -> bool:
+        if self.is_superuser:
+            return True
         return any(r.name == role_name for r in self.roles)
+
+    def get_all_permission_codes(self) -> set[str]:
+        if self.is_superuser:
+            return {"*"}
+        codes = {p.code for p in self.direct_permissions}
+        for role in self.roles:
+            for p in role.permissions:
+                codes.add(p.code)
+        return codes
+
+    def has_permission(self, permission_code: str) -> bool:
+        if self.is_superuser:
+            return True
+        all_codes = self.get_all_permission_codes()
+        return permission_code in all_codes or "*" in all_codes
 
 
 # ---------------------------------------------------------------------------
-# RBAC
+# RBAC & Permissions
 # ---------------------------------------------------------------------------
 
 
@@ -86,11 +111,42 @@ class Role(Base):
     __tablename__ = "roles"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(50), unique=True)
+    name: Mapped[str] = mapped_column(String(100))
     description: Mapped[str | None] = mapped_column(Text, default=None)
+    business_id: Mapped[int | None] = mapped_column(
+        ForeignKey("business_profiles.id"), nullable=True, default=None, index=True
+    )
 
     users: Mapped[list["User"]] = relationship(
         secondary="user_roles", back_populates="roles"
+    )
+    permissions: Mapped[list["Permission"]] = relationship(
+        secondary="role_permissions", back_populates="roles"
+    )
+    business_profile: Mapped["BusinessProfile | None"] = relationship("BusinessProfile")
+
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    module: Mapped[str] = mapped_column(
+        String(50), index=True
+    )  # e.g., general, hrm, ecommerce
+    feature: Mapped[str] = mapped_column(
+        String(50), index=True
+    )  # e.g., departments, products
+    action: Mapped[str] = mapped_column(String(20))  # view, create, update, delete
+    code: Mapped[str] = mapped_column(
+        String(100), unique=True, index=True
+    )  # e.g., hrm:departments:view
+    name: Mapped[str | None] = mapped_column(String(100), default=None)
+
+    roles: Mapped[list["Role"]] = relationship(
+        secondary="role_permissions", back_populates="permissions"
+    )
+    users: Mapped[list["User"]] = relationship(
+        secondary="user_permissions", back_populates="direct_permissions"
     )
 
 
@@ -101,6 +157,30 @@ class UserRole(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), primary_key=True)
     assigned_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class RolePermission(Base):
+    __tablename__ = "role_permissions"
+    __table_args__ = (
+        UniqueConstraint("role_id", "permission_id", name="uq_role_permission"),
+    )
+
+    role_id: Mapped[int] = mapped_column(ForeignKey("roles.id"), primary_key=True)
+    permission_id: Mapped[int] = mapped_column(
+        ForeignKey("permissions.id"), primary_key=True
+    )
+
+
+class UserPermission(Base):
+    __tablename__ = "user_permissions"
+    __table_args__ = (
+        UniqueConstraint("user_id", "permission_id", name="uq_user_permission"),
+    )
+
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    permission_id: Mapped[int] = mapped_column(
+        ForeignKey("permissions.id"), primary_key=True
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +228,6 @@ class VendorProfile(Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime, default=None)
 
     user: Mapped["User"] = relationship(back_populates="vendor_profile")
-    # business_profile: Mapped["BusinessProfile"] = relationship()  # link to your existing model
 
 
 # ---------------------------------------------------------------------------

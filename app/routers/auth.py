@@ -2,11 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
-from app.core.security import create_access_token, verify_password
-from app.database import get_async_db
 from app.core.identity.models import User
 from app.core.identity.schemas import (
     AddressCreate,
@@ -18,6 +17,9 @@ from app.core.identity.schemas import (
     VendorProfileResponse,
 )
 from app.core.identity.service import UserService
+from app.core.security import create_access_token, verify_password
+from app.core.tenancy.models import BusinessProfile
+from app.database import get_async_db
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -30,6 +32,22 @@ async def login_page(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
+    )
+
+
+@router.get("/register", response_class=HTMLResponse)
+async def register_page(
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
+):
+    result = await db.execute(
+        select(BusinessProfile).where(BusinessProfile.is_active)
+    )
+    businesses = list(result.scalars().all())
+    return templates.TemplateResponse(
+        request=request,
+        name="register.html",
+        context={"businesses": businesses},
     )
 
 
@@ -53,12 +71,12 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_async_db),
 ):
-    user = await service.get_user_by_username(db, form_data.username)
+    user = await service.get_user_by_username_or_email(db, form_data.username)
 
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password",
+            detail="Invalid email/username or password",
         )
 
     token = create_access_token({"sub": str(user.id)})

@@ -9,9 +9,8 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-
 # ---------------------------------------------------------------------------
-# Original schemas (unchanged)
+# Original schemas
 # ---------------------------------------------------------------------------
 
 
@@ -19,6 +18,8 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
+    phone: str | None = None
+    business_id: int | None = None
 
 
 class Token(BaseModel):
@@ -27,8 +28,19 @@ class Token(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# Roles
+# Permissions & Roles
 # ---------------------------------------------------------------------------
+
+
+class PermissionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    module: str
+    feature: str
+    action: str
+    code: str
+    name: str | None = None
 
 
 class RoleName(str, Enum):
@@ -38,12 +50,21 @@ class RoleName(str, Enum):
     STAFF = "staff"
 
 
+class RoleCreate(BaseModel):
+    name: str
+    description: str | None = None
+    business_id: int | None = None
+    permission_ids: list[int] = []
+
+
 class RoleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     name: str
     description: str | None = None
+    business_id: int | None = None
+    permissions: list[PermissionResponse] = []
 
 
 # ---------------------------------------------------------------------------
@@ -111,8 +132,20 @@ class AddressResponse(AddressCreate):
 
 
 # ---------------------------------------------------------------------------
-# User response — now carries roles + whichever profile applies
+# User response & update schemas
 # ---------------------------------------------------------------------------
+
+
+class UserUpdate(BaseModel):
+    username: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    business_id: int | None = None
+    is_active: bool | None = None
+    is_superuser: bool | None = None
+    password: str | None = None
+    role_ids: list[int] = []
+    permission_ids: list[int] = []
 
 
 class UserResponse(BaseModel):
@@ -122,11 +155,14 @@ class UserResponse(BaseModel):
     username: str
     email: EmailStr
     phone: str | None = None
+    business_id: int | None = None
+    is_superuser: bool = False
     is_active: bool
     is_verified: bool
     created_at: datetime
 
     roles: list[RoleResponse] = []
+    direct_permissions: list[PermissionResponse] = []
     customer_profile: CustomerProfileResponse | None = None
     vendor_profile: VendorProfileResponse | None = None
     addresses: list[AddressResponse] = []

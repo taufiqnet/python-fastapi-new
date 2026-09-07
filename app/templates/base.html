@@ -19,10 +19,7 @@
             font-family: 'Inter', sans-serif;
         }
 
-        /* Prevent SweetAlert2 swal2-height-auto class from overriding html/body height.
-           SweetAlert2 adds this class to BOTH <html> and <body> when a modal opens/closes;
-           overriding only body left <html> collapsed to height:auto, which shrank the
-           100vh flex layout and exposed a blank gap at the bottom of the page. */
+        /* Prevent SweetAlert2 swal2-height-auto class from overriding html/body height. */
         html.swal2-height-auto {
             height: 100% !important;
         }
@@ -35,7 +32,6 @@
            Sidebar Theme Variables
            ============================================ */
         #sidebar {
-            /* Default (Light) theme values */
             --sb-bg: #ffffff;
             --sb-header-bg: #ffffff;
             --sb-footer-bg: rgba(249, 250, 251, 0.7);
@@ -62,7 +58,6 @@
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
 
-        /* Navy Blue theme (default) */
         #sidebar[data-theme="navy"] {
             --sb-bg: #101c3f;
             --sb-header-bg: #0d1836;
@@ -86,7 +81,6 @@
             --sb-tooltip-text: #ffffff;
         }
 
-        /* Slate theme */
         #sidebar[data-theme="slate"] {
             --sb-bg: #1e293b;
             --sb-header-bg: #172033;
@@ -110,7 +104,6 @@
             --sb-tooltip-text: #ffffff;
         }
 
-        /* Purple theme */
         #sidebar[data-theme="purple"] {
             --sb-bg: #1e1b3a;
             --sb-header-bg: #191634;
@@ -134,7 +127,6 @@
             --sb-tooltip-text: #ffffff;
         }
 
-        /* Emerald theme */
         #sidebar[data-theme="emerald"] {
             --sb-bg: #0b2b28;
             --sb-header-bg: #082421;
@@ -158,7 +150,6 @@
             --sb-tooltip-text: #ffffff;
         }
 
-        /* Map existing Tailwind utility classes used inside the sidebar to theme variables */
         #sidebar .bg-white { background-color: var(--sb-header-bg); }
         #sidebar .border-gray-200 { border-color: var(--sb-border-strong); }
         #sidebar .border-gray-100 { border-color: var(--sb-border); }
@@ -176,7 +167,6 @@
         #sidebar .bg-indigo-100 { background-color: var(--sb-avatar-bg); color: var(--sb-avatar-text); }
         #sidebar .bg-gray-50\/70 { background-color: var(--sb-footer-bg); }
 
-        /* Theme switcher */
         .sidebar-theme-row {
             padding: 0.6rem 1rem 0.75rem;
             border-bottom: 1px solid var(--sb-border);
@@ -221,7 +211,6 @@
             box-shadow: 0 0 0 2px var(--sb-bg), 0 0 0 4px var(--sb-accent);
         }
 
-        /* Sidebar */
         .sidebar-collapsed {
             width: 5.5rem !important;
         }
@@ -264,7 +253,6 @@
             display: none;
         }
 
-        /* Tooltip */
         .sidebar-tooltip {
             position: absolute;
             left: 68px;
@@ -296,7 +284,6 @@
             overflow: visible !important;
         }
 
-        /* Scrollbar */
         .custom-scrollbar::-webkit-scrollbar {
             width: 5px;
         }
@@ -314,7 +301,6 @@
             background: var(--sb-scrollbar-hover, #9ca3af);
         }
 
-        /* Sidebar Dropdown CSS */
         .sidebar-dropdown-toggle {
             display: flex;
             align-items: center;
@@ -443,6 +429,38 @@
                             </span>
                             <span class="sidebar-tooltip">
                                 Business Profiles
+                            </span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- GENERAL / USERS & PERMISSIONS MODULE -->
+                <div class="sidebar-dropdown {% if active_page in ['users', 'roles'] %}expanded{% endif %}" data-module="general_admin">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['users', 'roles'] %}active{% endif %}">
+                        <span class="flex items-center">
+                            <i class="fas fa-user-shield w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text">General & Admin</span>
+                        </span>
+                        <i class="fas fa-chevron-right text-[10px] dropdown-arrow"></i>
+                    </button>
+
+                    <div class="sidebar-dropdown-menu space-y-1">
+                        <a href="/users/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'users' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-users-cog w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                User Accounts
+                            </span>
+                            <span class="sidebar-tooltip">
+                                User Accounts
+                            </span>
+                        </a>
+                        <a href="/roles/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'roles' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-key w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Roles & Permissions
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Roles & Permissions
                             </span>
                         </a>
                     </div>

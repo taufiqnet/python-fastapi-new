@@ -75,9 +75,24 @@ async def get_current_user(
 async def get_current_admin(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    if not current_user.has_role("admin"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
-        )
-    return current_user
+    if current_user.is_superuser or current_user.has_role("admin"):
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin access required",
+    )
+
+
+def require_permission(module: str, feature: str, action: str):
+    async def permission_checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.is_superuser:
+            return current_user
+        code = f"{module}:{feature}:{action}"
+        if not current_user.has_permission(code):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied. Required permission: {code}",
+            )
+        return current_user
+
+    return permission_checker

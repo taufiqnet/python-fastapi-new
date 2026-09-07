@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}User Management | SaaS Platform{% endblock %}
+
+{% block head %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<style>
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .stat-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.purple { background: #f3e8ff; color: #9333ea; }
+    .stat-icon.amber { background: #fffbeb; color: #d97706; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .table-card {
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 12px; overflow: hidden;
+    }
+
+    table.dataTable thead tr th {
+        background: #f9fafb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        font-size: 10px !important; font-weight: 700 !important;
+        text-transform: uppercase; letter-spacing: .6px;
+        color: #6b7280 !important; padding: 10px 14px !important;
+        white-space: nowrap;
+    }
+    table.dataTable tbody td { padding: 10px 14px !important; font-size: 13px; vertical-align: middle; }
+    table.dataTable tbody tr:hover td { background: #f9fafb !important; }
+
+    .badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+    }
+    .badge-active   { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-inactive { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+    .badge-admin    { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .badge-indigo   { background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe; }
+
+    .action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 6px;
+        border: 1px solid #e5e7eb; background: #fff;
+        cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none;
+    }
+    .action-btn.edit { color: #4f46e5; }
+    .action-btn.edit:hover { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
+    .action-btn.delete { color: #ef4444; }
+    .action-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">User Accounts & Access</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Manage user credentials, business profile tenancy, assigned roles, and direct permissions</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        <a href="/users/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-user-plus"></i> Create New User
+        </a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-users"></i></div>
+        <div>
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value">{{ users|length }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
+        <div>
+            <div class="stat-label">Active Users</div>
+            <div class="stat-value">{{ users | selectattr('is_active') | list | length }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><i class="fas fa-user-shield"></i></div>
+        <div>
+            <div class="stat-label">System Admin</div>
+            <div class="stat-value">{{ users | selectattr('is_superuser') | list | length }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="fas fa-building"></i></div>
+        <div>
+            <div class="stat-label">Business Tenants</div>
+            <div class="stat-value">{{ businesses|length }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="table-card">
+    <div class="overflow-x-auto">
+        <table id="userTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>User Profile</th>
+                    <th>Email & Contact</th>
+                    <th>Business Profile</th>
+                    <th>Assigned Roles</th>
+                    <th>Status</th>
+                    <th style="width:100px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs uppercase">
+                                {{ u.username[:2] }}
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900 flex items-center gap-1.5">
+                                    {{ u.username }}
+                                    {% if u.is_superuser %}
+                                        <span class="badge badge-admin"><i class="fas fa-shield-alt text-[8px]"></i> System Admin</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-[10px] text-gray-400">ID: #{{ u.id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="text-xs font-mono text-gray-700">{{ u.email }}</div>
+                        <div class="text-[11px] text-gray-400">{{ u.phone or '—' }}</div>
+                    </td>
+                    <td>
+                        {% if u.business_profile %}
+                            <span class="badge badge-indigo">
+                                <i class="fas fa-building text-[8px]"></i> {{ u.business_profile.name_en }} (#{{ u.business_id }})
+                            </span>
+                        {% elif u.business_id %}
+                            <span class="badge badge-indigo">
+                                <i class="fas fa-building text-[8px]"></i> Business #{{ u.business_id }}
+                            </span>
+                        {% else %}
+                            <span class="text-xs text-gray-400 font-medium">Global (No Tenant)</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex flex-wrap gap-1">
+                            {% for r in u.roles %}
+                                <span class="px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-[11px] font-medium border border-gray-200">
+                                    {{ r.name }}
+                                </span>
+                            {% else %}
+                                <span class="text-xs text-gray-400 font-medium">No roles</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        {% if u.is_active %}
+                            <span class="badge badge-active"><i class="fas fa-circle text-[6px]"></i> Active</span>
+                        {% else %}
+                            <span class="badge badge-inactive"><i class="fas fa-circle text-[6px]"></i> Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <a href="/users/{{ u.id }}/edit" class="action-btn edit" title="Edit User Account">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if not u.is_superuser %}
+                            <button type="button" class="action-btn delete" onclick="deleteUser({{ u.id }}, '{{ u.username|e }}')" title="Delete User Account">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteUser(id, username) {
+    Swal.fire({
+        title: 'Delete User Account?',
+        text: 'Are you sure you want to delete user "' + username + '"? This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/users/api/' + id, {
+                method: 'DELETE'
+            }).then(response => {
+                if (response.ok) {
+                    showSuccessToast('User deleted successfully').then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    return response.json().then(err => {
+                        showErrorAlert('Error', err.detail || 'Failed to delete user');
+                    });
+                }
+            }).catch(err => {
+                showErrorAlert('Error', err.message);
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

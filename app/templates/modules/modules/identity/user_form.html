@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit User Account{% else %}Create User Account{% endif %} | SaaS Platform{% endblock %}
+
+{% block head %}
+<style>
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    .permission-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+    }
+
+    .permission-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .permission-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #111827;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .btn-perm-action {
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+    }
+
+    .btn-perm-check-all { color: #4f46e5; background: #eef2ff; border-color: #c7d2fe; }
+    .btn-perm-check-all:hover { background: #e0e7ff; }
+
+    .btn-perm-clear-all { color: #6b7280; background: #f3f4f6; }
+    .btn-perm-clear-all:hover { background: #e5e7eb; }
+
+    .btn-toggle-row {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #4f46e5;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        cursor: pointer;
+    }
+    .btn-toggle-row:hover { background: #e0e7ff; }
+
+    .perm-table { width: 100%; border-collapse: collapse; }
+    .perm-table th {
+        background: #ffffff; padding: 12px 16px;
+        font-size: 11px; font-weight: 700; color: #6b7280;
+        text-transform: uppercase; letter-spacing: 0.5px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    .perm-table td {
+        padding: 12px 16px; font-size: 13px;
+        border-bottom: 1px solid #f3f4f6; vertical-align: middle;
+    }
+
+    .col-header-btn {
+        display: inline-flex; align-items: center; gap: 4px;
+        color: #4f46e5; cursor: pointer; font-weight: 700; user-select: none;
+    }
+    .col-header-btn:hover { color: #3730a3; }
+
+    .perm-checkbox {
+        width: 18px; height: 18px; border-radius: 4px;
+        border: 1px solid #d1d5db; accent-color: #4f46e5; cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit User: {{ user.username }}{% else %}Create New User Account{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Configure credentials, tenancy business profile, assigned roles, and direct fine-grained permissions</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        <a href="/users/manage" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Back to Users
+        </a>
+    </div>
+</div>
+
+<form id="userForm" method="POST">
+    <!-- User Account Details -->
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
+        <h2 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-user-circle text-indigo-600"></i> Account Identity & Tenant Scoping
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label for="username" class="block text-xs font-semibold text-gray-700 mb-1.5">Username *</label>
+                <input type="text" id="username" name="username" class="w-full h-11 px-3.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600" placeholder="john_doe" value="{{ user.username if user else '' }}" required>
+            </div>
+
+            <div>
+                <label for="email" class="block text-xs font-semibold text-gray-700 mb-1.5">Email Address *</label>
+                <input type="email" id="email" name="email" class="w-full h-11 px-3.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600" placeholder="john@example.com" value="{{ user.email if user else '' }}" required>
+            </div>
+
+            <div>
+                <label for="password" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                    Password {% if is_edit %}<span class="text-gray-400 font-normal">(Leave blank to keep current)</span>{% else %}*{% endif %}
+                </label>
+                <input type="password" id="password" name="password" class="w-full h-11 px-3.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600" placeholder="Enter password" {% if not is_edit %}required{% endif %}>
+            </div>
+
+            <div>
+                <label for="phone" class="block text-xs font-semibold text-gray-700 mb-1.5">Phone Number</label>
+                <input type="text" id="phone" name="phone" class="w-full h-11 px-3.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600" placeholder="+8801700000000" value="{{ user.phone if user and user.phone else '' }}">
+            </div>
+
+            <div>
+                <label for="business_id" class="block text-xs font-semibold text-gray-700 mb-1.5">Business Profile Tenant</label>
+                <select id="business_id" name="business_id" class="w-full h-11 px-3.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
+                    <option value="">Global / System Level (Unassigned)</option>
+                    {% for b in businesses %}
+                        <option value="{{ b.id }}" {% if user and user.business_id == b.id %}selected{% endif %}>
+                            {{ b.name_en }} (#{{ b.id }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex items-center gap-6 pt-6">
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="is_active" name="is_active" class="w-4 h-4 text-indigo-600 rounded border-gray-300" {% if not user or user.is_active %}checked{% endif %}>
+                    <span class="text-xs font-semibold text-gray-700">Account Active</span>
+                </label>
+
+                <label class="inline-flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="is_superuser" name="is_superuser" class="w-4 h-4 text-indigo-600 rounded border-gray-300" {% if user and user.is_superuser %}checked{% endif %}>
+                    <span class="text-xs font-bold text-red-600"><i class="fas fa-shield-alt mr-1"></i> System Admin (Full Permissions)</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role Assignment -->
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
+        <h2 class="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <i class="fas fa-user-shield text-indigo-600"></i> Assign Roles
+        </h2>
+        <p class="text-xs text-gray-500 mb-4">Roles grant predefined sets of permissions to the user.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {% for r in roles %}
+            <label class="flex items-start gap-3 p-3 border border-gray-200 rounded-xl hover:bg-indigo-50/50 cursor-pointer transition-colors">
+                <input type="checkbox" name="role_ids" value="{{ r.id }}" class="mt-0.5 w-4 h-4 text-indigo-600 rounded border-gray-300"
+                       {% if is_edit and r.id in assigned_role_ids %}checked{% endif %}>
+                <div>
+                    <div class="text-xs font-bold text-gray-900">{{ r.name }}</div>
+                    <div class="text-[10px] text-gray-500 mt-0.5">{{ r.description or 'No description' }}</div>
+                </div>
+            </label>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Direct Permission Matrix Header -->
+    <div class="mb-4">
+        <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+            <i class="fas fa-key text-indigo-600"></i> Direct Custom Permissions Matrix
+        </h2>
+        <p class="text-xs text-gray-500 mt-0.5">Override or grant additional direct fine-grained permissions to this user</p>
+    </div>
+
+    <!-- Permission Cards -->
+    {% for module_key, module_info in system_modules.items() %}
+    <div class="permission-card" id="card-{{ module_key }}">
+        <div class="permission-header">
+            <div class="permission-title">
+                <i class="{{ module_info.icon }} text-indigo-600 text-base"></i>
+                <span>{{ module_info.title }}</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="button" class="btn-perm-action btn-perm-check-all" onclick="checkAllModule('{{ module_key }}')">Check All</button>
+                <button type="button" class="btn-perm-action btn-perm-clear-all" onclick="clearAllModule('{{ module_key }}')">Clear All</button>
+            </div>
+        </div>
+
+        <table class="perm-table">
+            <thead>
+                <tr>
+                    <th style="width: 35%;">MODULE NAME</th>
+                    <th style="width: 15%; text-align: left;">ROW TOGGLE</th>
+                    <th style="width: 12.5%; text-align: center;">
+                        <span class="col-header-btn" onclick="toggleColumn('{{ module_key }}', 'view')">VIEW <i class="fas fa-caret-down text-xs"></i></span>
+                    </th>
+                    <th style="width: 12.5%; text-align: center;">
+                        <span class="col-header-btn" onclick="toggleColumn('{{ module_key }}', 'create')">CREATE <i class="fas fa-caret-down text-xs"></i></span>
+                    </th>
+                    <th style="width: 12.5%; text-align: center;">
+                        <span class="col-header-btn" onclick="toggleColumn('{{ module_key }}', 'update')">UPDATE <i class="fas fa-caret-down text-xs"></i></span>
+                    </th>
+                    <th style="width: 12.5%; text-align: center;">
+                        <span class="col-header-btn" onclick="toggleColumn('{{ module_key }}', 'delete')">DELETE <i class="fas fa-caret-down text-xs"></i></span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for feature_key, feature_name in module_info.features %}
+                <tr id="row-{{ module_key }}-{{ feature_key }}">
+                    <td class="font-semibold text-gray-900">{{ feature_name }}</td>
+                    <td>
+                        <button type="button" class="btn-toggle-row" onclick="toggleRow('{{ module_key }}', '{{ feature_key }}')">Toggle Row</button>
+                    </td>
+
+                    {% for act in ['view', 'create', 'update', 'delete'] %}
+                    {% set code = module_key ~ ':' ~ feature_key ~ ':' ~ act %}
+                    {% set match_perm = (permissions | selectattr('code', 'equalto', code) | list | first) %}
+                    <td style="text-align: center;">
+                        {% if match_perm %}
+                        <input type="checkbox" name="permission_ids" value="{{ match_perm.id }}" 
+                               class="perm-checkbox perm-mod-{{ module_key }} perm-act-{{ module_key }}-{{ act }} perm-row-{{ module_key }}-{{ feature_key }}"
+                               {% if is_edit and match_perm.id in assigned_perm_ids %}checked{% endif %}>
+                        {% else %}
+                        <span class="text-gray-300">—</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+    <!-- Submit bar -->
+    <div class="flex items-center justify-end gap-3 pt-4">
+        <a href="/users/manage" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors">Cancel</a>
+        <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm">
+            <i class="fas fa-save mr-1.5"></i> Save User Account
+        </button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function checkAllModule(moduleKey) {
+    document.querySelectorAll('.perm-mod-' + moduleKey).forEach(cb => cb.checked = true);
+}
+
+function clearAllModule(moduleKey) {
+    document.querySelectorAll('.perm-mod-' + moduleKey).forEach(cb => cb.checked = false);
+}
+
+function toggleColumn(moduleKey, action) {
+    const cbs = document.querySelectorAll('.perm-act-' + moduleKey + '-' + action);
+    const anyUnchecked = Array.from(cbs).some(cb => !cb.checked);
+    cbs.forEach(cb => cb.checked = anyUnchecked);
+}
+
+function toggleRow(moduleKey, featureKey) {
+    const cbs = document.querySelectorAll('.perm-row-' + moduleKey + '-' + featureKey);
+    const anyUnchecked = Array.from(cbs).some(cb => !cb.checked);
+    cbs.forEach(cb => cb.checked = anyUnchecked);
+}
+
+document.getElementById('userForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const phone = document.getElementById('phone').value.trim();
+    const businessIdVal = document.getElementById('business_id').value;
+    const isActive = document.getElementById('is_active').checked;
+    const isSuperuser = document.getElementById('is_superuser').checked;
+
+    const checkedRoles = Array.from(document.querySelectorAll('input[name="role_ids"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+    const checkedPerms = Array.from(document.querySelectorAll('input[name="permission_ids"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+    const isEdit = {{ 'true' if is_edit else 'false' }};
+    const userId = {{ user.id if user else 0 }};
+
+    if (isEdit) {
+        const payload = {
+            username: username,
+            email: email,
+            password: password || null,
+            phone: phone || null,
+            business_id: businessIdVal ? parseInt(businessIdVal) : null,
+            is_active: isActive,
+            is_superuser: isSuperuser,
+            role_ids: checkedRoles,
+            permission_ids: checkedPerms
+        };
+
+        try {
+            const response = await fetch('/users/api/' + userId, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                showSuccessToast('User account updated successfully').then(() => {
+                    window.location.href = '/users/manage';
+                });
+            } else {
+                const err = await response.json();
+                showErrorAlert('Error', err.detail || 'Failed to update user account');
+            }
+        } catch (err) {
+            showErrorAlert('Error', err.message);
+        }
+    } else {
+        const payload = {
+            username: username,
+            email: email,
+            password: password,
+            phone: phone || null,
+            business_id: businessIdVal ? parseInt(businessIdVal) : null,
+        };
+
+        try {
+            const response = await fetch('/users/api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const createdUser = await response.json();
+                // update roles and permissions
+                const updatePayload = {
+                    is_active: isActive,
+                    is_superuser: isSuperuser,
+                    role_ids: checkedRoles,
+                    permission_ids: checkedPerms
+                };
+                await fetch('/users/api/' + createdUser.id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatePayload)
+                });
+
+                showSuccessToast('User account created successfully').then(() => {
+                    window.location.href = '/users/manage';
+                });
+            } else {
+                const err = await response.json();
+                showErrorAlert('Error', err.detail || 'Failed to create user account');
+            }
+        } catch (err) {
+            showErrorAlert('Error', err.message);
+        }
+    }
+});
+</script>
+{% endblock %}

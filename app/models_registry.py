@@ -10,25 +10,27 @@ When you add a new module with models.py, add one import line below —
 that's the only place it needs to be added.
 """
 
+from app.core.identity.models import (  # noqa: F401
+    Address,
+    CustomerProfile,
+    Permission,
+    Role,
+    RolePermission,
+    User,
+    UserPermission,
+    UserRole,
+    VendorProfile,
+)
+from app.core.tenancy.models import BusinessProfile  # noqa: F401
 from app.modules.ecommerce.brands.models import Brand, ProductModel  # noqa: F401
+from app.modules.ecommerce.cart.models import Cart, CartItem  # noqa: F401
 from app.modules.ecommerce.categories.models import Category  # noqa: F401
 from app.modules.ecommerce.customer.models import Customer  # noqa: F401
 from app.modules.ecommerce.inventory.models import InventoryItem, Warehouse  # noqa: F401
-from app.modules.ecommerce.products.models import (  # noqa: F401
-    AttributeValue,
-    Product,
-    ProductAttribute,
-    ProductImage,
-    ProductTag,
-    ProductVariant,
+from app.modules.ecommerce.notifications.models import (  # noqa: F401
+    Notification,
+    NotificationPreference,
 )
-from app.modules.ecommerce.sellers.models import Seller  # noqa: F401
-from app.modules.ecommerce.pricing.models import (  # noqa: F401
-    CurrencyRate,
-    PriceHistory,
-    TaxRule,
-)
-from app.modules.ecommerce.cart.models import Cart, CartItem  # noqa: F401
 from app.modules.ecommerce.orders.models import (  # noqa: F401
     Order,
     OrderAddress,
@@ -40,45 +42,49 @@ from app.modules.ecommerce.payments.models import (  # noqa: F401
     PaymentMethod,
     Refund,
 )
+from app.modules.ecommerce.pricing.models import (  # noqa: F401
+    CurrencyRate,
+    PriceHistory,
+    TaxRule,
+)
+from app.modules.ecommerce.products.models import (  # noqa: F401
+    AttributeValue,
+    Product,
+    ProductAttribute,
+    ProductImage,
+    ProductTag,
+    ProductVariant,
+)
+from app.modules.ecommerce.reviews.models import Review, ReviewVote  # noqa: F401
+from app.modules.ecommerce.sellers.models import Seller  # noqa: F401
 from app.modules.ecommerce.shipping.models import (  # noqa: F401
     Shipment,
     ShippingRate,
     ShippingZone,
 )
-from app.modules.ecommerce.reviews.models import Review, ReviewVote  # noqa: F401
-from app.modules.ecommerce.notifications.models import (  # noqa: F401
-    Notification,
-    NotificationPreference,
-)
-from app.modules.hr_payroll.organization.models import (  # noqa: F401
-    Department,
-    JobTitle,
-)
+from app.modules.hr_payroll.appointments.models import AppointmentLetter  # noqa: F401
+from app.modules.hr_payroll.attendance.models import Attendance  # noqa: F401
+from app.modules.hr_payroll.certificates.models import SalaryCertificate  # noqa: F401
+from app.modules.hr_payroll.compensation.models import EmployeeSalary  # noqa: F401
 from app.modules.hr_payroll.employees.models import Employee  # noqa: F401
 from app.modules.hr_payroll.leave.models import (  # noqa: F401
     LeaveAllocation,
     LeaveApplication,
     LeaveType,
 )
-from app.modules.hr_payroll.attendance.models import Attendance  # noqa: F401
-from app.modules.hr_payroll.compensation.models import EmployeeSalary  # noqa: F401
+from app.modules.hr_payroll.notice_board.models import Notice, NoticeReadReceipt  # noqa: F401
+from app.modules.hr_payroll.organization.models import (  # noqa: F401
+    Department,
+    JobTitle,
+)
 from app.modules.hr_payroll.payroll.models import (  # noqa: F401
     Holiday,
     PayrollPeriod,
     PayrollRecord,
     PayrollSettings,
 )
-from app.modules.hr_payroll.certificates.models import SalaryCertificate  # noqa: F401
-from app.modules.hr_payroll.appointments.models import AppointmentLetter  # noqa: F401
-from app.modules.hr_payroll.notice_board.models import Notice, NoticeReadReceipt  # noqa: F401
 from app.modules.hr_payroll.recruitment.models import (  # noqa: F401
     Candidate,
     Interview,
     InterviewEvaluation,
 )
-
-from app.core.tenancy.models import BusinessProfile  # noqa: F401
-
-# TODO: confirm whether the `tasks` module has its own models.py. If it does,
-# import its models here too — nothing currently registers them.
-# from app.modules.<tasks_module_path>.models import ...  # noqa: F401
