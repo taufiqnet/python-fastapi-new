@@ -1,9 +1,18 @@
 import enum
 import uuid
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import UUID, Enum as SAEnum
+from sqlalchemy.types import UUID
+from sqlalchemy.types import Enum as SAEnum
 
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
@@ -51,8 +60,12 @@ class Notice(Base, UUIDMixin, TimestampMixin):
         nullable=True,
     )
 
-    publish_date: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
-    expiry_date: Mapped[DateTime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    publish_date: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    expiry_date: Mapped[DateTime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -62,7 +75,9 @@ class Notice(Base, UUIDMixin, TimestampMixin):
     )
 
     # Relationships
-    department: Mapped["Department | None"] = relationship("Department", lazy="selectin")  # noqa: F821
+    department: Mapped["Department | None"] = relationship(  # noqa: F821
+        "Department", lazy="selectin"
+    )
     created_by: Mapped["Employee | None"] = relationship("Employee", lazy="selectin")  # noqa: F821
 
     def __repr__(self) -> str:

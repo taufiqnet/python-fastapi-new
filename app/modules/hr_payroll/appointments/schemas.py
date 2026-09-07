@@ -1,6 +1,7 @@
 import datetime
 import uuid
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.modules.hr_payroll.appointments.models import AppointmentStatusEnum
 from app.modules.hr_payroll.employees.models import EmploymentTypeEnum

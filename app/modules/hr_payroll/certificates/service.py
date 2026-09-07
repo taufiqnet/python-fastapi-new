@@ -1,14 +1,21 @@
 import datetime
 import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.modules.hr_payroll.certificates.models import SalaryCertificate, CertificateStatusEnum
+from app.modules.hr_payroll.certificates.models import (
+    CertificateStatusEnum,
+    SalaryCertificate,
+)
 from app.modules.hr_payroll.certificates.repository import SalaryCertificateRepository
-from app.modules.hr_payroll.certificates.schemas import SalaryCertificateCreate, SalaryCertificateUpdate
-from app.modules.hr_payroll.employees.models import Employee
+from app.modules.hr_payroll.certificates.schemas import (
+    SalaryCertificateCreate,
+    SalaryCertificateUpdate,
+)
 from app.modules.hr_payroll.compensation.models import EmployeeSalary
+from app.modules.hr_payroll.employees.models import Employee
 
 
 class SalaryCertificateService:
@@ -48,7 +55,10 @@ class SalaryCertificateService:
         if not employee or employee.business_id != cert_in.business_id:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Employee with ID '{cert_in.employee_id}' not found in business '{cert_in.business_id}'.",
+                detail=(
+                    f"Employee with ID '{cert_in.employee_id}' "
+                    f"not found in business '{cert_in.business_id}'."
+                ),
             )
 
         # Get active salary compensation snapshot

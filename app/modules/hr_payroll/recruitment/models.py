@@ -3,7 +3,8 @@ import uuid
 
 from sqlalchemy import DateTime, ForeignKey, Integer, SmallInteger, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import UUID, Enum as SAEnum
+from sqlalchemy.types import UUID
+from sqlalchemy.types import Enum as SAEnum
 
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
@@ -74,7 +75,11 @@ class Candidate(Base, UUIDMixin, TimestampMixin):
 
     @property
     def full_name(self) -> str:
-        return f"{self.first_name} {self.last_name}".strip() if self.last_name else self.first_name
+        return (
+            f"{self.first_name} {self.last_name}".strip()
+            if self.last_name
+            else self.first_name
+        )
 
     def __repr__(self) -> str:
         return f"<Candidate {self.full_name} [{self.status}]>"
@@ -107,7 +112,9 @@ class Interview(Base, UUIDMixin, TimestampMixin):
         default=InterviewStageEnum.TECHNICAL,
         nullable=False,
     )
-    scheduled_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
+    scheduled_at: Mapped[DateTime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
     duration_minutes: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
     location_link: Mapped[str | None] = mapped_column(String(500), nullable=True)
     status: Mapped[InterviewStatusEnum] = mapped_column(
@@ -117,7 +124,9 @@ class Interview(Base, UUIDMixin, TimestampMixin):
     )
 
     # Relationships
-    candidate: Mapped["Candidate"] = relationship("Candidate", back_populates="interviews", lazy="selectin")
+    candidate: Mapped["Candidate"] = relationship(
+        "Candidate", back_populates="interviews", lazy="selectin"
+    )
     interviewer: Mapped["Employee"] = relationship("Employee", lazy="selectin")  # noqa: F821
     evaluations: Mapped[list["InterviewEvaluation"]] = relationship(
         "InterviewEvaluation", back_populates="interview", cascade="all, delete-orphan"
@@ -143,9 +152,15 @@ class InterviewEvaluation(Base, UUIDMixin, TimestampMixin):
         ForeignKey("employees.id", ondelete="CASCADE"),
         nullable=False,
     )
-    technical_score: Mapped[int] = mapped_column(SmallInteger, default=3, nullable=False)
-    communication_score: Mapped[int] = mapped_column(SmallInteger, default=3, nullable=False)
-    culture_fit_score: Mapped[int] = mapped_column(SmallInteger, default=3, nullable=False)
+    technical_score: Mapped[int] = mapped_column(
+        SmallInteger, default=3, nullable=False
+    )
+    communication_score: Mapped[int] = mapped_column(
+        SmallInteger, default=3, nullable=False
+    )
+    culture_fit_score: Mapped[int] = mapped_column(
+        SmallInteger, default=3, nullable=False
+    )
     recommendation: Mapped[RecommendationEnum] = mapped_column(
         SAEnum(RecommendationEnum, name="evaluation_recommendation"),
         nullable=False,
@@ -153,7 +168,9 @@ class InterviewEvaluation(Base, UUIDMixin, TimestampMixin):
     feedback_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships
-    interview: Mapped["Interview"] = relationship("Interview", back_populates="evaluations", lazy="selectin")
+    interview: Mapped["Interview"] = relationship(
+        "Interview", back_populates="evaluations", lazy="selectin"
+    )
     evaluator: Mapped["Employee"] = relationship("Employee", lazy="selectin")  # noqa: F821
 
     def __repr__(self) -> str:

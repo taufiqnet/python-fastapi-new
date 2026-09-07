@@ -1,8 +1,12 @@
 import datetime
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.hr_payroll.certificates.models import CertificatePurposeEnum, CertificateStatusEnum
+from pydantic import BaseModel, ConfigDict
+
+from app.modules.hr_payroll.certificates.models import (
+    CertificatePurposeEnum,
+    CertificateStatusEnum,
+)
 
 
 class SalaryCertificateBase(BaseModel):

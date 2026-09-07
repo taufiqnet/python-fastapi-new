@@ -77,11 +77,7 @@ from app.modules.hr_payroll.recruitment.models import (  # noqa: F401
     InterviewEvaluation,
 )
 
-# TODO: Product.business_id and several other models FK to a business/tenant
-# table (e.g. BusinessProfile). If that model isn't imported somewhere before
-# create_all()/alembic autogenerate runs, SQLAlchemy won't know the target
-# table exists. Uncomment and fix the path once confirmed:
-# from app.modules.<business_module_path>.models import BusinessProfile  # noqa: F401
+from app.core.tenancy.models import BusinessProfile  # noqa: F401
 
 # TODO: confirm whether the `tasks` module has its own models.py. If it does,
 # import its models here too — nothing currently registers them.

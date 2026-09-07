@@ -1,4 +1,5 @@
 import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -31,7 +32,9 @@ class RecruitmentService:
         limit: int = 100,
         business_id: int | None = None,
     ) -> list[Candidate]:
-        return self.repo.get_candidates(db, skip=skip, limit=limit, business_id=business_id)
+        return self.repo.get_candidates(
+            db, skip=skip, limit=limit, business_id=business_id
+        )
 
     def get_candidate(self, db: Session, candidate_id: uuid.UUID) -> Candidate:
         cand = self.repo.get_candidate(db, candidate_id)
@@ -76,7 +79,11 @@ class RecruitmentService:
         candidate_id: uuid.UUID | None = None,
     ) -> list[Interview]:
         return self.repo.get_interviews(
-            db, skip=skip, limit=limit, business_id=business_id, candidate_id=candidate_id
+            db,
+            skip=skip,
+            limit=limit,
+            business_id=business_id,
+            candidate_id=candidate_id,
         )
 
     def get_interview(self, db: Session, interview_id: uuid.UUID) -> Interview:
@@ -103,7 +110,10 @@ class RecruitmentService:
         created_interview = self.repo.create_interview(db, interview)
 
         # Automatically transition candidate status to INTERVIEW_SCHEDULED
-        if candidate.status in (CandidateStatusEnum.APPLIED, CandidateStatusEnum.SCREENING):
+        if candidate.status in (
+            CandidateStatusEnum.APPLIED,
+            CandidateStatusEnum.SCREENING,
+        ):
             candidate.status = CandidateStatusEnum.INTERVIEW_SCHEDULED
             db.commit()
 

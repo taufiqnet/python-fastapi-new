@@ -1,13 +1,19 @@
-import datetime
 import uuid
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.modules.hr_payroll.appointments.models import AppointmentLetter, AppointmentStatusEnum
+from app.modules.hr_payroll.appointments.models import (
+    AppointmentLetter,
+    AppointmentStatusEnum,
+)
 from app.modules.hr_payroll.appointments.repository import AppointmentLetterRepository
-from app.modules.hr_payroll.appointments.schemas import AppointmentLetterCreate, AppointmentLetterUpdate
-from app.modules.hr_payroll.employees.models import Employee
+from app.modules.hr_payroll.appointments.schemas import (
+    AppointmentLetterCreate,
+    AppointmentLetterUpdate,
+)
 from app.modules.hr_payroll.compensation.models import EmployeeSalary
+from app.modules.hr_payroll.employees.models import Employee
 
 
 class AppointmentLetterService:
@@ -23,7 +29,9 @@ class AppointmentLetterService:
     ) -> list[AppointmentLetter]:
         return self.repo.get_all(db, skip=skip, limit=limit, business_id=business_id)
 
-    def get_appointment(self, db: Session, appointment_id: uuid.UUID) -> AppointmentLetter:
+    def get_appointment(
+        self, db: Session, appointment_id: uuid.UUID
+    ) -> AppointmentLetter:
         appt = self.repo.get_by_id(db, appointment_id)
         if not appt:
             raise HTTPException(

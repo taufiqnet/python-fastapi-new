@@ -1,8 +1,13 @@
 import uuid
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.modules.hr_payroll.recruitment.models import Candidate, Interview, InterviewEvaluation
+from app.modules.hr_payroll.recruitment.models import (
+    Candidate,
+    Interview,
+    InterviewEvaluation,
+)
 
 
 class RecruitmentRepository:
@@ -32,7 +37,9 @@ class RecruitmentRepository:
         db.refresh(obj_in)
         return obj_in
 
-    def update_candidate(self, db: Session, db_obj: Candidate, update_data: dict) -> Candidate:
+    def update_candidate(
+        self, db: Session, db_obj: Candidate, update_data: dict
+    ) -> Candidate:
         for field, value in update_data.items():
             if value is not None:
                 setattr(db_obj, field, value)
@@ -73,7 +80,9 @@ class RecruitmentRepository:
         db.refresh(obj_in)
         return obj_in
 
-    def update_interview(self, db: Session, db_obj: Interview, update_data: dict) -> Interview:
+    def update_interview(
+        self, db: Session, db_obj: Interview, update_data: dict
+    ) -> Interview:
         for field, value in update_data.items():
             if value is not None:
                 setattr(db_obj, field, value)
@@ -86,7 +95,9 @@ class RecruitmentRepository:
         db.commit()
 
     # Evaluations
-    def create_evaluation(self, db: Session, obj_in: InterviewEvaluation) -> InterviewEvaluation:
+    def create_evaluation(
+        self, db: Session, obj_in: InterviewEvaluation
+    ) -> InterviewEvaluation:
         db.add(obj_in)
         db.commit()
         db.refresh(obj_in)

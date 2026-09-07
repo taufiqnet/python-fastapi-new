@@ -1,4 +1,5 @@
 import uuid
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -24,7 +25,9 @@ class AppointmentLetterRepository:
             ).all()
         )
 
-    def get_by_id(self, db: Session, appointment_id: uuid.UUID) -> AppointmentLetter | None:
+    def get_by_id(
+        self, db: Session, appointment_id: uuid.UUID
+    ) -> AppointmentLetter | None:
         return db.get(AppointmentLetter, appointment_id)
 
     def create(self, db: Session, obj_in: AppointmentLetter) -> AppointmentLetter:

@@ -1,8 +1,12 @@
 import datetime
 import uuid
-from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.hr_payroll.notice_board.models import NoticeCategoryEnum, NoticeTargetEnum
+from pydantic import BaseModel, ConfigDict
+
+from app.modules.hr_payroll.notice_board.models import (
+    NoticeCategoryEnum,
+    NoticeTargetEnum,
+)
 
 
 class NoticeBase(BaseModel):

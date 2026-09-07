@@ -1,9 +1,14 @@
 import datetime
 import uuid
+
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.modules.hr_payroll.notice_board.models import Notice, NoticeReadReceipt, NoticeTargetEnum
+from app.modules.hr_payroll.notice_board.models import (
+    Notice,
+    NoticeReadReceipt,
+    NoticeTargetEnum,
+)
 
 
 class NoticeBoardRepository:
@@ -29,9 +34,9 @@ class NoticeBoardRepository:
         if active_only:
             now = datetime.datetime.now(datetime.timezone.utc)
             query = query.where(
-                Notice.is_active == True,
+                Notice.is_active.is_(True),
                 Notice.publish_date <= now,
-                or_(Notice.expiry_date == None, Notice.expiry_date >= now),
+                or_(Notice.expiry_date.is_(None), Notice.expiry_date >= now),
             )
         return list(
             db.scalars(

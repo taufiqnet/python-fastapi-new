@@ -3,7 +3,8 @@ import uuid
 
 from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import UUID, Enum as SAEnum
+from sqlalchemy.types import UUID
+from sqlalchemy.types import Enum as SAEnum
 
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
@@ -23,7 +24,7 @@ class CertificatePurposeEnum(str, enum.Enum):
 
 
 class SalaryCertificate(Base, UUIDMixin, TimestampMixin):
-    """Salary Certificate model representing official salary documentation issued to employees."""
+    """Salary Certificate model representing official salary certificates."""
 
     __tablename__ = "salary_certificates"
 
@@ -47,7 +48,9 @@ class SalaryCertificate(Base, UUIDMixin, TimestampMixin):
         nullable=False,
     )
     addressed_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    include_breakdown: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    include_breakdown: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
     status: Mapped[CertificateStatusEnum] = mapped_column(
         SAEnum(CertificateStatusEnum, name="certificate_status"),
         default=CertificateStatusEnum.DRAFT,
@@ -55,9 +58,15 @@ class SalaryCertificate(Base, UUIDMixin, TimestampMixin):
     )
 
     # Salary figures frozen at time of issue
-    basic_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0, nullable=False)
-    gross_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0, nullable=False)
-    net_salary: Mapped[float] = mapped_column(Numeric(12, 2), default=0.0, nullable=False)
+    basic_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
+    gross_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
+    net_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Relationships

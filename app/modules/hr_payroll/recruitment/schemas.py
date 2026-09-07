@@ -1,5 +1,6 @@
 import datetime
 import uuid
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.modules.hr_payroll.recruitment.models import (

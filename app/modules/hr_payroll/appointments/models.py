@@ -3,7 +3,8 @@ import uuid
 
 from sqlalchemy import Date, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import UUID, Enum as SAEnum
+from sqlalchemy.types import UUID
+from sqlalchemy.types import Enum as SAEnum
 
 from app.common.models import TimestampMixin, UUIDMixin
 from app.database import Base
@@ -44,7 +45,9 @@ class AppointmentLetter(Base, UUIDMixin, TimestampMixin):
         nullable=True,
     )
     offered_joining_date: Mapped[Date] = mapped_column(Date, nullable=False)
-    probation_period_months: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    probation_period_months: Mapped[int] = mapped_column(
+        Integer, default=3, nullable=False
+    )
     employment_type: Mapped[EmploymentTypeEnum] = mapped_column(
         SAEnum(EmploymentTypeEnum, name="appointment_employment_type"),
         default=EmploymentTypeEnum.FULL_TIME,
@@ -72,7 +75,9 @@ class AppointmentLetter(Base, UUIDMixin, TimestampMixin):
 
     # Relationships
     job_title: Mapped["JobTitle | None"] = relationship("JobTitle", lazy="selectin")  # noqa: F821
-    department: Mapped["Department | None"] = relationship("Department", lazy="selectin")  # noqa: F821
+    department: Mapped["Department | None"] = relationship(  # noqa: F821
+        "Department", lazy="selectin"
+    )
     employee: Mapped["Employee | None"] = relationship("Employee", lazy="selectin")  # noqa: F821
 
     def __repr__(self) -> str:
