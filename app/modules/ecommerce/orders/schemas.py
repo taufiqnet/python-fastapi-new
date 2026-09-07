@@ -32,6 +32,10 @@ class OrderCreate(BaseModel):
     shipping_address: OrderAddressCreate
     billing_address: OrderAddressCreate | None = None
     currency: str = Field("USD", max_length=3)
+    shipping_amount: float = Field(0.0)
+    tax_amount: float = Field(0.0)
+    discount_amount: float = Field(0.0)
+    customer_note: str | None = None
 
 
 class OrderItemOut(BaseModel):
@@ -78,6 +82,10 @@ class OrderUpdate(BaseModel):
     items: list[OrderItemCreate] | None = None
     shipping_address: OrderAddressCreate | None = None
     billing_address: OrderAddressCreate | None = None
+    shipping_amount: float | None = None
+    tax_amount: float | None = None
+    discount_amount: float | None = None
+    customer_note: str | None = None
     note: str | None = None
 
 

@@ -39,6 +39,11 @@ class OrderRepository:
         ],
     ) -> Order:
         order_num = f"ORD-{uuid.uuid4().hex[:8].upper()}"
+        shipping = Decimal(str(data.shipping_amount))
+        tax = Decimal(str(data.tax_amount))
+        discount = Decimal(str(data.discount_amount))
+        total = max(Decimal("0.00"), calculated_total + shipping + tax - discount)
+
         order = Order(
             business_id=data.business_id,
             user_id=data.user_id,
@@ -46,8 +51,12 @@ class OrderRepository:
             payment_status=OrderPaymentStatus.UNPAID,
             fulfillment_status=OrderFulfillmentStatus.PENDING,
             subtotal_amount=calculated_total,
-            total_amount=calculated_total,
+            shipping_amount=shipping,
+            tax_amount=tax,
+            discount_amount=discount,
+            total_amount=total,
             currency=data.currency,
+            customer_note=data.customer_note,
         )
         db.add(order)
         db.flush()
@@ -135,6 +144,14 @@ class OrderRepository:
             order.user_id = data.user_id
         if data.currency is not None:
             order.currency = data.currency
+        if data.shipping_amount is not None:
+            order.shipping_amount = Decimal(str(data.shipping_amount))
+        if data.tax_amount is not None:
+            order.tax_amount = Decimal(str(data.tax_amount))
+        if data.discount_amount is not None:
+            order.discount_amount = Decimal(str(data.discount_amount))
+        if data.customer_note is not None:
+            order.customer_note = data.customer_note
         if data.payment_status is not None and data.payment_status != order.payment_status:
             order.payment_status = data.payment_status
             history = OrderStatusHistory(
@@ -157,7 +174,6 @@ class OrderRepository:
         if items_with_prices is not None and calculated_total is not None:
             db.query(OrderItem).filter(OrderItem.order_id == order.id).delete()
             order.subtotal_amount = calculated_total
-            order.total_amount = calculated_total
 
             for (
                 variant_id,
@@ -181,6 +197,11 @@ class OrderRepository:
                     subtotal=subtotal,
                 )
                 db.add(item)
+
+        order.total_amount = max(
+            Decimal("0.00"),
+            order.subtotal_amount + order.shipping_amount + order.tax_amount - order.discount_amount
+        )
 
         if data.shipping_address:
             db.query(OrderAddress).filter(

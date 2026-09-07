@@ -449,8 +449,8 @@
                 </div>
 
                 <!-- HR & PAYROLL MODULE -->
-                <div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings'] %}expanded{% endif %}" data-module="hr_payroll">
-                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings'] %}active{% endif %}">
+                <div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings', 'salary_certificates', 'appointment_letters', 'notice_board', 'recruitment_candidates', 'recruitment_interviews'] %}expanded{% endif %}" data-module="hr_payroll">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings', 'salary_certificates', 'appointment_letters', 'notice_board', 'recruitment_candidates', 'recruitment_interviews'] %}active{% endif %}">
                         <span class="flex items-center">
                             <i class="fas fa-users-cog w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text">HR & Payroll</span>
@@ -459,6 +459,51 @@
                     </button>
 
                     <div class="sidebar-dropdown-menu space-y-1">
+                        <a href="/notices/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'notice_board' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-bullhorn w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Notice Board
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Notice Board
+                            </span>
+                        </a>
+                        <a href="/recruitment/candidates/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'recruitment_candidates' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-user-tie w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Candidates
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Candidates
+                            </span>
+                        </a>
+                        <a href="/recruitment/interviews/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'recruitment_interviews' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-calendar-alt w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Interviews
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Interviews
+                            </span>
+                        </a>
+                        <a href="/appointment-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'appointment_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-envelope-open-text w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Appointment Letters
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Appointment Letters
+                            </span>
+                        </a>
+                        <a href="/salary-certificates/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'salary_certificates' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-file-invoice w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Salary Certificates
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Salary Certificates
+                            </span>
+                        </a>
                         <a href="/departments/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'departments' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                             <i class="fas fa-sitemap w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">

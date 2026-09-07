@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment Letter | {{ appointment.candidate_name }}{% endblock %}
+
+{% block head %}
+<style>
+@media print {
+    body * { visibility: hidden; }
+    #printableArea, #printableArea * { visibility: visible; }
+    #printableArea { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; }
+    .no-print { display: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mb-6 no-print flex items-center justify-between">
+    <a href="/appointment-letters/manage" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition-colors">
+        <i class="fas fa-arrow-left mr-1"></i> Back to List
+    </a>
+    <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-2">
+        <i class="fas fa-print"></i> Print Letter
+    </button>
+</div>
+
+<div id="printableArea" class="max-w-3xl mx-auto bg-white border border-gray-300 rounded-2xl p-10 shadow-sm text-gray-800 space-y-6">
+    <!-- Header -->
+    <div class="flex items-start justify-between border-b border-gray-200 pb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ business.name_en if business else 'Company Name' }}</h1>
+            <p class="text-xs text-gray-500 mt-1 max-w-sm">{{ business.full_address if business else '' }}</p>
+        </div>
+        <div class="text-right">
+            <span class="inline-block px-3 py-1 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-full border border-emerald-100">JOB OFFER & APPOINTMENT</span>
+            <div class="text-xs text-gray-500 mt-2">Date: {{ appointment.issue_date }}</div>
+        </div>
+    </div>
+
+    <!-- Candidate Info -->
+    <div class="text-xs text-gray-700 space-y-1">
+        <div class="font-bold text-gray-900 text-sm">{{ appointment.candidate_name }}</div>
+        <div>Email: {{ appointment.candidate_email }}</div>
+        <div>Phone: {{ appointment.candidate_phone if appointment.candidate_phone else 'N/A' }}</div>
+    </div>
+
+    <!-- Subject -->
+    <div class="py-2">
+        <h2 class="text-sm font-bold text-gray-900 uppercase">SUBJECT: LETTER OF APPOINTMENT FOR {{ appointment.job_title.name if appointment.job_title else 'POSITION' }}</h2>
+    </div>
+
+    <!-- Body -->
+    <div class="text-xs leading-relaxed text-gray-700 space-y-3">
+        <p>Dear <strong>{{ appointment.candidate_name }}</strong>,</p>
+        <p>
+            We are pleased to offer you employment at <strong>{{ business.name_en if business else 'our company' }}</strong> for the position of <strong>{{ appointment.job_title.name if appointment.job_title else 'Team Member' }}</strong> in the <strong>{{ appointment.department.name if appointment.department else 'General' }}</strong> department.
+        </p>
+        <p>
+            Your scheduled starting date of employment will be <strong>{{ appointment.offered_joining_date }}</strong>.
+        </p>
+    </div>
+
+    <!-- Offer Details Table -->
+    <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <table class="w-full text-xs text-left">
+            <thead class="bg-gray-50 border-b border-gray-200 text-gray-600 font-bold uppercase text-[10px]">
+                <tr>
+                    <th class="p-3">Terms / Component</th>
+                    <th class="p-3">Details</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr>
+                    <td class="p-3 font-semibold">Employment Type</td>
+                    <td class="p-3 capitalize">{{ appointment.employment_type.value.replace('_', ' ') if appointment.employment_type else 'Full Time' }}</td>
+                </tr>
+                <tr>
+                    <td class="p-3 font-semibold">Probation Period</td>
+                    <td class="p-3">{{ appointment.probation_period_months }} Months</td>
+                </tr>
+                <tr>
+                    <td class="p-3 font-semibold">Offered Basic Salary</td>
+                    <td class="p-3 font-medium">৳{{ "%.2f"|format(appointment.offered_basic_salary) }} / month</td>
+                </tr>
+                <tr class="bg-gray-50 font-bold">
+                    <td class="p-3">Offered Gross Salary</td>
+                    <td class="p-3 text-emerald-700">৳{{ "%.2f"|format(appointment.offered_gross_salary) }} / month</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if appointment.terms_and_conditions %}
+    <div class="text-xs text-gray-700 space-y-1">
+        <div class="font-bold text-gray-900">Terms & Conditions:</div>
+        <p class="whitespace-pre-line text-gray-600">{{ appointment.terms_and_conditions }}</p>
+    </div>
+    {% endif %}
+
+    <div class="text-xs text-gray-600 leading-relaxed">
+        This offer is valid until <strong>{{ appointment.valid_until }}</strong>. Please sign and return a copy of this letter to confirm your acceptance.
+    </div>
+
+    <!-- Signatures -->
+    <div class="pt-12 grid grid-cols-2 gap-8 text-xs">
+        <div>
+            <div class="border-t border-gray-300 pt-2 font-semibold text-gray-800">Authorized Management</div>
+            <div class="text-gray-400 text-[11px]">{{ business.name_en if business else '' }}</div>
+        </div>
+        <div class="text-right">
+            <div class="border-t border-gray-300 pt-2 font-semibold text-gray-800">Candidate Acceptance & Date</div>
+            <div class="text-gray-400 text-[11px]">{{ appointment.candidate_name }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

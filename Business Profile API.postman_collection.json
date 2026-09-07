@@ -6278,6 +6278,412 @@
               "response": []
             }
           ]
+        },
+        {
+          "name": "Salary Certificates",
+          "item": [
+            {
+              "name": "List Salary Certificates",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/salary-certificates?skip=0&limit=100&business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "salary-certificates"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Salary Certificate",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/salary-certificates",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "salary-certificates"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"employee_id\": \"{{employee_id}}\",\n  \"issue_date\": \"2025-01-15\",\n  \"purpose\": \"bank_loan\",\n  \"addressed_to\": \"Bank of America\",\n  \"include_breakdown\": true,\n  \"notes\": \"Salary certificate for home loan application\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Appointment Letters",
+          "item": [
+            {
+              "name": "List Appointment Letters",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/appointment-letters?skip=0&limit=100&business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointment-letters"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Appointment Letter",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/appointment-letters",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointment-letters"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"candidate_name\": \"John Smith\",\n  \"candidate_email\": \"john.smith@example.com\",\n  \"candidate_phone\": \"+1234567890\",\n  \"offered_joining_date\": \"2025-02-01\",\n  \"probation_period_months\": 3,\n  \"employment_type\": \"full_time\",\n  \"offered_basic_salary\": 6000.0,\n  \"offered_gross_salary\": 8500.0,\n  \"issue_date\": \"2025-01-15\",\n  \"valid_until\": \"2025-01-25\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Convert Appointment to Employee",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/appointment-letters/{{appointment_id}}/convert-to-employee",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointment-letters",
+                    "{{appointment_id}}",
+                    "convert-to-employee"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Notice Board",
+          "item": [
+            {
+              "name": "List Notices",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/notices?skip=0&limit=100&business_id={{business_id}}&active_only=true",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notices"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "active_only",
+                      "value": "true"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Notice",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/notices",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notices"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"title\": \"Company Annual Meeting\",\n  \"content\": \"Annual general meeting scheduled for next week.\",\n  \"category\": \"event\",\n  \"target_audience\": \"all\",\n  \"publish_date\": \"2025-01-15T09:00:00Z\",\n  \"is_pinned\": true,\n  \"is_active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Recruitment & Interviews",
+          "item": [
+            {
+              "name": "List Candidates",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/candidates?skip=0&limit=100&business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "candidates"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Create Candidate",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/candidates",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "candidates"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"first_name\": \"Alice\",\n  \"last_name\": \"Wonder\",\n  \"email\": \"alice@example.com\",\n  \"phone\": \"+1234567890\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Schedule Interview",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/interviews",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "interviews"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"business_id\": 1,\n  \"candidate_id\": \"{{candidate_id}}\",\n  \"interviewer_id\": \"{{employee_id}}\",\n  \"stage\": \"technical\",\n  \"scheduled_at\": \"2025-01-20T10:00:00Z\",\n  \"duration_minutes\": 60\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Submit Interview Evaluation",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/evaluations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "evaluations"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"interview_id\": \"{{interview_id}}\",\n  \"evaluator_id\": \"{{employee_id}}\",\n  \"technical_score\": 5,\n  \"communication_score\": 4,\n  \"culture_fit_score\": 5,\n  \"recommendation\": \"strong_hire\",\n  \"feedback_notes\": \"Excellent technical candidate\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            }
+          ]
         }
       ]
     }

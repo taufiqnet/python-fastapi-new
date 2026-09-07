@@ -117,6 +117,18 @@ class Order(Base, UUIDMixin, TimestampMixin):
     coupon_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
     customer_note: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Payment/delivery metadata captured on the order form. These were
+    # previously UI-only (never persisted), which is why they always
+    # reset to their defaults when re-opening an order for edit.
+    payment_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    payment_channel: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    delivery_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    courier_company: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    tracking_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    other_charges: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), default=Decimal("0.00"), nullable=False
+    )
+
     cancelled_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

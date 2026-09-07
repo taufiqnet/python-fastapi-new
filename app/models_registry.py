@@ -68,6 +68,14 @@ from app.modules.hr_payroll.payroll.models import (  # noqa: F401
     PayrollRecord,
     PayrollSettings,
 )
+from app.modules.hr_payroll.certificates.models import SalaryCertificate  # noqa: F401
+from app.modules.hr_payroll.appointments.models import AppointmentLetter  # noqa: F401
+from app.modules.hr_payroll.notice_board.models import Notice, NoticeReadReceipt  # noqa: F401
+from app.modules.hr_payroll.recruitment.models import (  # noqa: F401
+    Candidate,
+    Interview,
+    InterviewEvaluation,
+)
 
 # TODO: Product.business_id and several other models FK to a business/tenant
 # table (e.g. BusinessProfile). If that model isn't imported somewhere before

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Appointment Letters | HR & Payroll{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<style>
+    :root { --indigo: #4f46e5; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green  { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.yellow { background: #fefce8; color: #ca8a04; }
+    .stat-icon.sky    { background: #f0f9ff; color: #0284c7; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
+    .toolbar-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
+    .toolbar-search input { width: 100%; padding: 7px 12px 7px 30px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+    .toolbar select { padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+
+    .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table.dataTable thead tr th { background: #f9fafb !important; border-bottom: 1px solid #e5e7eb !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; color: #6b7280 !important; padding: 10px 14px !important; }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+
+    .badge { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
+    .badge-accepted { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-sent     { background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
+    .badge-draft    { background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; }
+
+    .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none; }
+    .action-btn.view { color: #10b981; }
+    .action-btn.edit { color: #4f46e5; }
+    .action-btn.convert { color: #0284c7; }
+    .action-btn.delete { color: #ef4444; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Appointment Letters</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Issue job offer letters and onboard candidates into employees</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        <a href="/appointment-letters/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-plus"></i> Create Appointment Letter
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-envelope-open-text"></i></div>
+        <div>
+            <div class="stat-label">Total Offers</div>
+            <div class="stat-value">{{ total_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
+        <div>
+            <div class="stat-label">Accepted / Onboarded</div>
+            <div class="stat-value">{{ accepted_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon sky"><i class="fas fa-paper-plane"></i></div>
+        <div>
+            <div class="stat-label">Pending / Sent</div>
+            <div class="stat-value">{{ pending_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-file-alt"></i></div>
+        <div>
+            <div class="stat-label">Draft</div>
+            <div class="stat-value">{{ draft_count }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search candidate, position, status...">
+    </div>
+
+    <select id="filterStatus">
+        <option value="">All Statuses</option>
+        <option value="Accepted">Accepted</option>
+        <option value="Sent">Sent</option>
+        <option value="Draft">Draft</option>
+    </select>
+
+    <button type="button" id="btnClearFilters" class="px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-red-50 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors cursor-pointer">
+        Clear Filters
+    </button>
+</div>
+
+<div class="table-card">
+    <div class="overflow-x-auto">
+        <table id="apptTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Candidate</th>
+                    <th>Position / Dept</th>
+                    <th>Joining Date</th>
+                    <th>Offered Gross</th>
+                    <th>Status</th>
+                    <th style="width:130px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in appointments %}
+                <tr>
+                    <td>
+                        <div class="font-semibold text-xs text-gray-900">{{ a.candidate_name }}</div>
+                        <div class="text-[10px] text-gray-400 font-mono">{{ a.candidate_email }}</div>
+                    </td>
+                    <td>
+                        <div class="text-xs text-gray-800 font-medium">{{ a.job_title.name if a.job_title else 'N/A' }}</div>
+                        <div class="text-[10px] text-gray-400">{{ a.department.name if a.department else 'N/A' }}</div>
+                    </td>
+                    <td class="text-xs text-gray-600">{{ a.offered_joining_date }}</td>
+                    <td class="text-xs font-semibold text-gray-900">৳{{ "%.2f"|format(a.offered_gross_salary) }}</td>
+                    <td>
+                        {% if a.status.value == 'accepted' %}
+                        <span class="badge badge-accepted">Accepted</span>
+                        {% elif a.status.value == 'sent' %}
+                        <span class="badge badge-sent">Sent</span>
+                        {% else %}
+                        <span class="badge badge-draft">Draft</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <a href="/appointment-letters/detail/{{ a.id }}" class="action-btn view" title="View / Print Offer">
+                                <i class="fas fa-print"></i>
+                            </a>
+                            <a href="/appointment-letters/edit/{{ a.id }}" class="action-btn edit" title="Edit Letter">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if a.status.value != 'accepted' %}
+                            <button type="button" class="action-btn convert" onclick="convertToEmployee('{{ a.id }}', '{{ a.candidate_name }}')" title="Convert to Employee">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                            {% endif %}
+                            <button type="button" class="action-btn delete" onclick="deleteAppt('{{ a.id }}', '{{ a.candidate_name }}')" title="Delete Letter">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script>
+$(document).ready(function () {
+    var table = $('#apptTable').DataTable({
+        pageLength: 10,
+        dom: 'rtip',
+        language: { emptyTable: "No appointment letters created yet." }
+    });
+
+    $('#customSearch').on('input', function () { table.search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(4).search(this.value).draw(); });
+    $('#btnClearFilters').on('click', function() {
+        $('#customSearch').val('');
+        $('#filterStatus').val('');
+        table.search('').columns().search('').draw();
+    });
+});
+
+function convertToEmployee(id, name) {
+    Swal.fire({
+        title: 'Onboard Candidate?',
+        text: 'Convert "' + name + '" into an active Employee profile with base compensation?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#0284c7',
+        confirmButtonText: 'Yes, Onboard'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/appointment-letters/' + id + '/convert-to-employee', { method: 'POST' })
+            .then(res => {
+                if (res.ok) {
+                    showSuccessToast('Candidate Onboarded', name + ' is now an employee.');
+                    setTimeout(() => window.location.href = '/employees/manage', 1200);
+                } else {
+                    showErrorAlert('Error', 'Failed to convert candidate.');
+                }
+            });
+        }
+    });
+}
+
+function deleteAppt(id, name) {
+    Swal.fire({
+        title: 'Delete Offer Letter?',
+        text: 'Are you sure you want to delete offer for "' + name + '"?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Yes, Delete'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/appointment-letters/' + id, { method: 'DELETE' })
+            .then(res => {
+                if (res.ok) {
+                    showSuccessToast('Deleted', 'Appointment letter removed.');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    showErrorAlert('Error', 'Failed to delete letter.');
+                }
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

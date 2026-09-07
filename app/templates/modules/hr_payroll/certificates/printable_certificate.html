@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Salary Certificate | {{ certificate.certificate_no }}{% endblock %}
+
+{% block head %}
+<style>
+@media print {
+    body * { visibility: hidden; }
+    #printableArea, #printableArea * { visibility: visible; }
+    #printableArea { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; }
+    .no-print { display: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mb-6 no-print flex items-center justify-between">
+    <a href="/salary-certificates/manage" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition-colors">
+        <i class="fas fa-arrow-left mr-1"></i> Back to List
+    </a>
+    <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-2">
+        <i class="fas fa-print"></i> Print Certificate
+    </button>
+</div>
+
+<div id="printableArea" class="max-w-3xl mx-auto bg-white border border-gray-300 rounded-2xl p-10 shadow-sm text-gray-800 space-y-6">
+    <!-- Header -->
+    <div class="flex items-start justify-between border-b border-gray-200 pb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ business.name_en if business else 'Company Name' }}</h1>
+            <p class="text-xs text-gray-500 mt-1 max-w-sm">{{ business.full_address if business else '' }}</p>
+            <p class="text-xs text-gray-500">Phone: {{ business.phone if business else 'N/A' }} | Email: {{ business.email if business else 'N/A' }}</p>
+        </div>
+        <div class="text-right">
+            <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-100">SALARY CERTIFICATE</span>
+            <div class="text-xs font-mono text-gray-500 mt-2">Ref: {{ certificate.certificate_no }}</div>
+            <div class="text-xs text-gray-500">Date: {{ certificate.issue_date }}</div>
+        </div>
+    </div>
+
+    <!-- Recipient -->
+    <div class="text-xs text-gray-700 space-y-1">
+        <div class="font-semibold text-gray-900">Addressed To:</div>
+        <div>{{ certificate.addressed_to if certificate.addressed_to else 'To Whom It May Concern' }}</div>
+    </div>
+
+    <!-- Subject -->
+    <div class="text-center py-2">
+        <h2 class="text-base font-bold text-gray-900 underline uppercase tracking-wide">TO WHOM IT MAY CONCERN</h2>
+    </div>
+
+    <!-- Statement -->
+    <div class="text-xs leading-relaxed text-gray-700 space-y-3">
+        <p>
+            This is to certify that <strong>{{ certificate.employee.full_name if certificate.employee else 'Employee' }}</strong> (Employee ID: <strong>{{ certificate.employee.employee_id if certificate.employee else '' }}</strong>) is a full-time employee at <strong>{{ business.name_en if business else 'our company' }}</strong>.
+        </p>
+        <p>
+            {{ certificate.employee.first_name }} holds the position of <strong>{{ certificate.employee.job_title.name if certificate.employee and certificate.employee.job_title else 'Employee' }}</strong> in the <strong>{{ certificate.employee.department.name if certificate.employee and certificate.employee.department else 'General' }}</strong> department and has been with the company since <strong>{{ certificate.employee.start_date if certificate.employee and certificate.employee.start_date else 'N/A' }}</strong>.
+        </p>
+        <p>
+            As per our official records, the monthly salary compensation for {{ certificate.employee.first_name }} is as follows:
+        </p>
+    </div>
+
+    <!-- Compensation Table -->
+    <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <table class="w-full text-xs text-left">
+            <thead class="bg-gray-50 border-b border-gray-200 text-gray-600 font-bold uppercase text-[10px]">
+                <tr>
+                    <th class="p-3">Salary Component</th>
+                    <th class="p-3 text-right">Amount (BDT)</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr>
+                    <td class="p-3">Basic Salary</td>
+                    <td class="p-3 text-right font-medium">৳{{ "%.2f"|format(certificate.basic_salary) }}</td>
+                </tr>
+                <tr>
+                    <td class="p-3 font-semibold">Total Gross Salary</td>
+                    <td class="p-3 text-right font-semibold text-gray-900">৳{{ "%.2f"|format(certificate.gross_salary) }}</td>
+                </tr>
+                <tr class="bg-gray-50 font-bold">
+                    <td class="p-3">Net Payable Salary</td>
+                    <td class="p-3 text-right text-indigo-700">৳{{ "%.2f"|format(certificate.net_salary) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="text-xs text-gray-700 leading-relaxed">
+        <p>This certificate is issued upon the employee's request for the purpose of <strong>{{ certificate.purpose.value.replace('_', ' ') }}</strong> and carries no financial liability or guarantee on behalf of this company.</p>
+    </div>
+
+    <!-- Signatures -->
+    <div class="pt-12 grid grid-cols-2 gap-8 text-xs">
+        <div>
+            <div class="border-t border-gray-300 pt-2 font-semibold text-gray-800">Authorized HR Department</div>
+            <div class="text-gray-400 text-[11px]">{{ business.name_en if business else '' }}</div>
+        </div>
+        <div class="text-right">
+            <div class="border-t border-gray-300 pt-2 font-semibold text-gray-800">Official Stamp & Signature</div>
+            <div class="text-gray-400 text-[11px]">Human Resources Division</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

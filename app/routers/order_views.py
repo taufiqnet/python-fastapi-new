@@ -197,11 +197,17 @@ def order_edit_page(
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     selected_business_id = order.business_id or business_id
 
-    products = product_service.get_products(
-        db, business_id=selected_business_id, skip=0, limit=500
+    from app.modules.ecommerce.products.models import ProductVariant
+
+    # Scope to the order's business first (mirrors order_create_page), then
+    # fall back to the full catalog. Prevents a variant belonging to a
+    # product outside a hard limit/other business from silently having no
+    # matching <option>, which left the product/variant dropdowns blank.
+    all_products = product_service.get_products(
+        db, business_id=selected_business_id, skip=0, limit=1000
     )
-    if not products:
-        products = product_service.get_products(db, skip=0, limit=500)
+    if not all_products:
+        all_products = product_service.get_products(db, skip=0, limit=1000)
 
     customers = customer_service.get_customers(
         db, business_id=selected_business_id, is_active=True, skip=0, limit=500
@@ -209,7 +215,7 @@ def order_edit_page(
 
     products_data = []
     variant_to_product_map = {}
-    for p in products:
+    for p in all_products:
         variants_data = []
         for v in p.variants:
             variant_to_product_map[str(v.id)] = str(p.id)
@@ -242,14 +248,19 @@ def order_edit_page(
     if order and order.items:
         for item in order.items:
             var_id_str = str(item.variant_id)
+            if var_id_str not in variant_to_product_map:
+                v_obj = db.query(ProductVariant).filter(ProductVariant.id == item.variant_id).first()
+                if v_obj:
+                    variant_to_product_map[var_id_str] = str(v_obj.product_id)
+
             prod_id_str = variant_to_product_map.get(var_id_str, "")
             order_items_data.append(
                 {
                     "variant_id": var_id_str,
                     "product_id": prod_id_str,
                     "quantity": item.quantity,
-                    "unit_price": float(item.unit_price) if item.unit_price else 0.0,
-                    "subtotal": float(item.subtotal) if item.subtotal else 0.0,
+                    "unit_price": float(item.unit_price) if item.unit_price is not None else 0.0,
+                    "subtotal": float(item.subtotal) if item.subtotal is not None else 0.0,
                 }
             )
 
@@ -269,7 +280,7 @@ def order_edit_page(
             "businesses": businesses,
             "selected_business_id": selected_business_id,
             "customers": customers,
-            "products": products,
+            "products": all_products,
             "products_data": products_data,
             "order_items_data": order_items_data,
             "shipping_address": shipping_address,
