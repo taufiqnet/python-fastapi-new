@@ -35,7 +35,13 @@ class OrderCreate(BaseModel):
     shipping_amount: float = Field(0.0)
     tax_amount: float = Field(0.0)
     discount_amount: float = Field(0.0)
+    other_charges: float = Field(0.0)
     customer_note: str | None = None
+    payment_method: str | None = Field(None, max_length=50)
+    payment_channel: str | None = Field(None, max_length=50)
+    delivery_method: str | None = Field(None, max_length=50)
+    courier_company: str | None = Field(None, max_length=50)
+    tracking_id: str | None = Field(None, max_length=100)
 
 
 class OrderItemOut(BaseModel):
@@ -85,7 +91,13 @@ class OrderUpdate(BaseModel):
     shipping_amount: float | None = None
     tax_amount: float | None = None
     discount_amount: float | None = None
+    other_charges: float | None = None
     customer_note: str | None = None
+    payment_method: str | None = Field(None, max_length=50)
+    payment_channel: str | None = Field(None, max_length=50)
+    delivery_method: str | None = Field(None, max_length=50)
+    courier_company: str | None = Field(None, max_length=50)
+    tracking_id: str | None = Field(None, max_length=100)
     note: str | None = None
 
 
@@ -102,8 +114,14 @@ class OrderSummary(BaseModel):
     tax_amount: float = 0.0
     shipping_amount: float = 0.0
     discount_amount: float = 0.0
+    other_charges: float = 0.0
     total_amount: float
     currency: str
+    payment_method: str | None = None
+    payment_channel: str | None = None
+    delivery_method: str | None = None
+    courier_company: str | None = None
+    tracking_id: str | None = None
     created_at: datetime
 
 

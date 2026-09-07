@@ -210,15 +210,16 @@
                         </div>
 
                         <!-- Items Table Header -->
-                        <div class="bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 mb-2">
-                            <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider items-center">
+                        <div class="bg-gray-50/80 p-2.5 rounded-lg border border-gray-200 mb-2 flex items-center gap-2">
+                            <div class="grid grid-cols-12 gap-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider items-center flex-1 min-w-0">
                                 <div class="col-span-3">Product Name</div>
                                 <div class="col-span-3">Variant</div>
-                                <div class="col-span-2 text-center">Cost Price (৳)</div>
+                                <div class="col-span-1 text-center">Cost (৳)</div>
                                 <div class="col-span-2 text-center">Unit Price (৳)</div>
                                 <div class="col-span-1 text-center">Qty</div>
-                                <div class="col-span-1 text-right">Subtotal</div>
+                                <div class="col-span-2 text-right">Subtotal</div>
                             </div>
+                            <div class="w-7 shrink-0" aria-hidden="true"></div>
                         </div>
 
                         <!-- Container for Line Items -->
@@ -609,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createRow(itemData = null) {
         const newRow = document.createElement('div');
-        newRow.className = 'item-row p-3 rounded-xl border border-gray-200 bg-white';
+        newRow.className = 'item-row p-3 rounded-xl border border-gray-200 bg-white flex items-center gap-2';
 
         let productOptionsHtml = '<option value="">-- Select Product --</option>';
         productsData.forEach(p => {
@@ -621,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const unitPrice = itemData ? itemData.unit_price.toFixed(2) : '0.00';
 
         newRow.innerHTML = `
-            <div class="grid grid-cols-12 gap-2 items-center">
+            <div class="grid grid-cols-12 gap-2 items-center flex-1 min-w-0">
                 <div class="col-span-3">
                     <select class="product-select w-full text-xs">
                         ${productOptionsHtml}
@@ -632,7 +633,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <option value="">-- Select Variant --</option>
                     </select>
                 </div>
-                <div class="col-span-2">
+                <div class="col-span-1">
                     <input type="text" readonly class="cost-price-input w-full text-xs border border-gray-200 rounded-lg p-2 text-center bg-gray-50 font-medium text-gray-700 outline-none" value="0.00">
                 </div>
                 <div class="col-span-2">
@@ -641,13 +642,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="col-span-1">
                     <input type="number" min="1" value="${qty}" class="qty-input w-full text-xs border border-gray-200 rounded-lg p-2 text-center bg-white font-medium focus:ring-1 focus:ring-blue-500 outline-none" required>
                 </div>
-                <div class="col-span-1 flex items-center justify-end gap-1 min-w-0">
-                    <span class="subtotal-display text-[11px] font-bold text-gray-900 truncate">৳0.00</span>
-                    <button type="button" class="remove-row-btn w-6 h-6 rounded-full border border-gray-200 bg-gray-50 hover:bg-rose-50 hover:text-rose-600 text-gray-400 flex items-center justify-center transition-colors shrink-0" title="Remove Item">
-                        <i class="fas fa-trash-alt text-[9px]"></i>
-                    </button>
+                <div class="col-span-2 flex items-center justify-end">
+                    <span class="subtotal-display text-xs font-bold text-gray-900 whitespace-nowrap tabular-nums">৳0.00</span>
                 </div>
             </div>
+            <button type="button" class="remove-row-btn w-7 h-7 rounded-full border border-gray-200 bg-gray-50 hover:bg-rose-50 hover:text-rose-600 text-gray-400 flex items-center justify-center transition-colors shrink-0" title="Remove Item">
+                <i class="fas fa-trash-alt text-[10px]"></i>
+            </button>
         `;
 
         itemsContainer.appendChild(newRow);
@@ -664,21 +665,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Populate initial rows
-    if (initialOrderItems && initialOrderItems.length > 0) {
-        initialOrderItems.forEach(item => createRow(item));
-    } else {
-        createRow();
-    }
-
-    // Add Product Line Button
-    if (addItemBtn) {
-        addItemBtn.addEventListener('click', function() {
-            createRow();
-        });
-    }
-
     // Order Summary Calculation
+    // NOTE: this must be declared BEFORE "Populate initial rows" below.
+    // In edit mode, createRow(item) synchronously triggers a product/variant
+    // 'change' event, which calls calculateOrderTotals(). If these consts and
+    // this function aren't defined yet, referencing them throws a
+    // ReferenceError (temporal dead zone) that aborts the rest of createRow()
+    // mid-flight — which is why the variant dropdown and totals never
+    // finished populating on edit, while create (which starts with no items)
+    // never hit this path.
     const shippingFeeInput = document.getElementById('shipping_fee');
     const taxAmountInput = document.getElementById('tax_amount');
     const otherChargesInput = document.getElementById('other_charges');
@@ -706,6 +701,20 @@ document.addEventListener('DOMContentLoaded', function() {
     [shippingFeeInput, taxAmountInput, otherChargesInput, discountAmountInput].forEach(inp => {
         if (inp) inp.addEventListener('input', calculateOrderTotals);
     });
+
+    // Populate initial rows
+    if (initialOrderItems && initialOrderItems.length > 0) {
+        initialOrderItems.forEach(item => createRow(item));
+    } else {
+        createRow();
+    }
+
+    // Add Product Line Button
+    if (addItemBtn) {
+        addItemBtn.addEventListener('click', function() {
+            createRow();
+        });
+    }
 
     calculateOrderTotals();
 
