@@ -80,16 +80,22 @@ def get_default_permissions_list() -> list[dict]:
 
 async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
     # 1. Seed Permissions
+    all_perms = []
     for perm_data in get_default_permissions_list():
         result = await db.execute(
             select(Permission).where(Permission.code == perm_data["code"])
         )
         existing_perm = result.scalar_one_or_none()
         if not existing_perm:
-            perm = Permission(**perm_data)
-            db.add(perm)
+            existing_perm = Permission(**perm_data)
+            db.add(existing_perm)
+        all_perms.append(existing_perm)
 
     await db.flush()
+
+    # Fetch all permissions from DB
+    res_perms = await db.execute(select(Permission))
+    db_all_perms = list(res_perms.scalars().all())
 
     # 2. Seed Default Admin Role
     result = await db.execute(select(Role).where(Role.name == "admin", Role.business_id.is_(None)))
@@ -102,6 +108,11 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
         )
         db.add(admin_role)
         await db.flush()
+
+    # Assign all permissions to system admin role
+    for p in db_all_perms:
+        if p not in admin_role.permissions:
+            admin_role.permissions.append(p)
 
     # 3. Seed System Admin User
     admin_email = "admin@example.com"
@@ -131,12 +142,17 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
 
 
 def seed_system_admin_and_permissions_sync(db: Session) -> None:
-    # Sync version for sync table startup if needed
+    # Sync version for sync table startup
+    db_all_perms = []
     for perm_data in get_default_permissions_list():
         existing = db.query(Permission).filter(Permission.code == perm_data["code"]).first()
         if not existing:
-            db.add(Permission(**perm_data))
+            existing = Permission(**perm_data)
+            db.add(existing)
+        db_all_perms.append(existing)
     db.flush()
+
+    db_all_perms = db.query(Permission).all()
 
     admin_role = db.query(Role).filter(Role.name == "admin", Role.business_id.is_(None)).first()
     if not admin_role:
@@ -147,6 +163,10 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         )
         db.add(admin_role)
         db.flush()
+
+    for p in db_all_perms:
+        if p not in admin_role.permissions:
+            admin_role.permissions.append(p)
 
     admin_email = "admin@example.com"
     admin_user = db.query(User).filter((User.email == admin_email) | (User.username == "admin")).first()

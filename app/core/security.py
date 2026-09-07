@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +11,7 @@ from app.core.identity.models import User
 from app.core.identity.repository import UserRepository
 from app.database import get_async_db
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token", auto_error=False)
 user_repo = UserRepository()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -45,29 +45,55 @@ def decode_access_token(token: str) -> dict:
         )
 
 
+def extract_token_from_request(request: Request, header_token: str | None = None) -> str | None:
+    if header_token:
+        return header_token
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header[7:]
+    cookie_token = request.cookies.get("access_token")
+    if cookie_token:
+        if cookie_token.startswith("Bearer "):
+            return cookie_token[7:]
+        return cookie_token
+    return None
+
+
+async def get_current_user_optional(
+    request: Request,
+    header_token: str | None = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_async_db),
+) -> User | None:
+    token = extract_token_from_request(request, header_token)
+    if not token:
+        return None
+    try:
+        payload = decode_access_token(token)
+        sub = payload.get("sub")
+        if sub is None:
+            return None
+        sub_str = str(sub)
+        user = None
+        if sub_str.isdigit():
+            user = await user_repo.get_by_id(db, int(sub_str))
+        if user is None:
+            user = await user_repo.get_by_username(db, sub_str)
+        return user
+    except Exception:
+        return None
+
+
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    request: Request,
+    header_token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_async_db),
 ) -> User:
-    payload = decode_access_token(token)
-    sub = payload.get("sub")
-    if sub is None:
+    user = await get_current_user_optional(request, header_token, db)
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload",
-        )
-    
-    sub_str = str(sub)
-    user = None
-    if sub_str.isdigit():
-        user = await user_repo.get_by_id(db, int(sub_str))
-    if user is None:
-        user = await user_repo.get_by_username(db, sub_str)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
         )
     return user
 

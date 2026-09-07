@@ -1,19 +1,20 @@
 import logging
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
+from app.core.deps import get_current_user_optional
 from app.core.identity.seed import seed_system_admin_and_permissions, seed_system_admin_and_permissions_sync
 from app.database import AsyncSessionLocal, Base, SessionLocal, async_engine, engine
 
-# Registers every module's models with Base.metadata in one place — see
-# app/models_registry.py. Import must happen before create_all() below.
+# Registers every module's models with Base.metadata in one place
 from app import models_registry  # noqa: F401
 
-# Confirmed shims — these all just re-exported their module's real router.
+# Routers
 from app.modules.ecommerce.brands.router import router as brands_router
 from app.modules.ecommerce.cart.router import router as cart_router
 from app.modules.ecommerce.categories.router import router as categories_router
@@ -97,6 +98,42 @@ async def on_startup():
         logger.exception("Failed async startup table creation or seeding")
 
 
+@app.middleware("http")
+async def auth_and_cache_middleware(request: Request, call_next):
+    path = request.url.path
+
+    # Exempt public/API/static routes from HTML auth redirect
+    is_public = (
+        path.startswith("/auth")
+        or path.startswith("/static")
+        or path.startswith("/health")
+        or "/api/" in path
+        or path.endswith("/api")
+        or request.headers.get("accept", "").find("text/html") == -1
+    )
+
+    if not is_public and path != "/":
+        async with AsyncSessionLocal() as db:
+            current_user = await get_current_user_optional(request, None, db)
+            if not current_user or not current_user.is_active:
+                redirect_res = RedirectResponse(url="/auth/login", status_code=302)
+                redirect_res.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+                redirect_res.headers["Pragma"] = "no-cache"
+                redirect_res.headers["Expires"] = "0"
+                return redirect_res
+
+    response = await call_next(request)
+
+    # Set no-cache headers on HTML responses to prevent stale pages when pressing browser Back button
+    content_type = response.headers.get("content-type", "")
+    if "text/html" in content_type:
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+
+    return response
+
+
 os.makedirs("app/static/ecommerce/images", exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
@@ -108,6 +145,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(business_views.router)
 app.include_router(category_views.router)
 app.include_router(customer_views.router)
@@ -128,10 +166,9 @@ app.include_router(notice_views.router)
 app.include_router(recruitment_views.router)
 app.include_router(role_views.router)
 app.include_router(user_views.router)
-app.include_router(auth.router)
 app.include_router(business.router)
 
-#ecommerce module router
+# ecommerce module router
 app.include_router(brands_router)
 app.include_router(categories_router)
 app.include_router(customers_router)
@@ -146,7 +183,7 @@ app.include_router(reviews_router)
 app.include_router(notifications_router)
 app.include_router(search_router)
 
-#hr payroll router
+# hr payroll router
 app.include_router(organization_router)
 app.include_router(employees_router)
 app.include_router(leave_router)
@@ -158,7 +195,7 @@ app.include_router(appointments_router)
 app.include_router(notices_router)
 app.include_router(recruitment_router)
 
-#project management router
+# project management router
 app.include_router(tasks.router)
 
 

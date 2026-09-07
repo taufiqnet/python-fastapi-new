@@ -349,6 +349,7 @@
 
                         if (response.ok && data.access_token) {
                             localStorage.setItem("access_token", data.access_token);
+                            document.cookie = "access_token=" + encodeURIComponent("Bearer " + data.access_token) + "; path=/; SameSite=Lax";
                             window.location.href = "/";
                         } else {
                             if (errorText) {

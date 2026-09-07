@@ -83,7 +83,14 @@ async def role_edit_page(
     )
     businesses = list(result.scalars().all())
 
-    assigned_perm_ids = {p.id for p in role.permissions}
+    # If editing system admin role (ID 1 or name 'admin' with global scope) or if role permissions are empty, ensure all permissions are assigned
+    if role.id == 1 or (role.name == "admin" and role.business_id is None):
+        assigned_perm_ids = {p.id for p in permissions}
+        if len(role.permissions) < len(permissions):
+            role.permissions = permissions
+            await db.commit()
+    else:
+        assigned_perm_ids = {p.id for p in role.permissions}
 
     return templates.TemplateResponse(
         request=request,
