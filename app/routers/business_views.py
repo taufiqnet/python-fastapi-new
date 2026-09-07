@@ -32,27 +32,8 @@ async def root_or_business_list_page(
         res = RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
         return add_no_cache_headers(res)
 
-    businesses = service.list_businesses(db, skip=skip, limit=limit)
-    total_count = len(businesses)
-    active_count = sum(1 for b in businesses if getattr(b, "is_active", True))
-    inactive_count = total_count - active_count
-    countries = sorted(
-        list({b.country for b in businesses if getattr(b, "country", None)})
-    )
-
-    response = templates.TemplateResponse(
-        request=request,
-        name="modules/tenancy/business_list.html",
-        context={
-            "businesses": businesses,
-            "total_count": total_count,
-            "active_count": active_count,
-            "inactive_count": inactive_count,
-            "countries_count": len(countries),
-            "countries": countries,
-        },
-    )
-    return add_no_cache_headers(response)
+    res = RedirectResponse(url="/users/manage", status_code=status.HTTP_302_FOUND)
+    return add_no_cache_headers(res)
 
 
 @router.get("/businesses/manage", response_class=HTMLResponse)

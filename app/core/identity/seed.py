@@ -4,7 +4,7 @@ Seeding script for default system permissions and System Admin user.
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.identity.models import Permission, Role, User
 from app.core.security import hash_password
@@ -80,7 +80,6 @@ def get_default_permissions_list() -> list[dict]:
 
 async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
     # 1. Seed Permissions
-    all_perms = []
     for perm_data in get_default_permissions_list():
         result = await db.execute(
             select(Permission).where(Permission.code == perm_data["code"])
@@ -89,7 +88,6 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
         if not existing_perm:
             existing_perm = Permission(**perm_data)
             db.add(existing_perm)
-        all_perms.append(existing_perm)
 
     await db.flush()
 
@@ -98,7 +96,11 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
     db_all_perms = list(res_perms.scalars().all())
 
     # 2. Seed Default Admin Role
-    result = await db.execute(select(Role).where(Role.name == "admin", Role.business_id.is_(None)))
+    result = await db.execute(
+        select(Role)
+        .options(selectinload(Role.permissions))
+        .where(Role.name == "admin", Role.business_id.is_(None))
+    )
     admin_role = result.scalar_one_or_none()
     if not admin_role:
         admin_role = Role(
@@ -108,15 +110,25 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
         )
         db.add(admin_role)
         await db.flush()
+        result = await db.execute(
+            select(Role)
+            .options(selectinload(Role.permissions))
+            .where(Role.id == admin_role.id)
+        )
+        admin_role = result.scalar_one()
 
     # Assign all permissions to system admin role
+    admin_role.permissions.clear()
     for p in db_all_perms:
-        if p not in admin_role.permissions:
-            admin_role.permissions.append(p)
+        admin_role.permissions.append(p)
 
     # 3. Seed System Admin User
     admin_email = "admin@example.com"
-    result = await db.execute(select(User).where((User.email == admin_email) | (User.username == "admin")))
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.roles))
+        .where((User.email == admin_email) | (User.username == "admin"))
+    )
     admin_user = result.scalar_one_or_none()
 
     if not admin_user:
@@ -135,7 +147,8 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
     else:
         admin_user.is_superuser = True
         admin_user.is_active = True
-        if admin_role and admin_role not in admin_user.roles:
+        user_role_ids = {r.id for r in admin_user.roles}
+        if admin_role and admin_role.id not in user_role_ids:
             admin_user.roles.append(admin_role)
 
     await db.commit()
@@ -143,13 +156,11 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
 
 def seed_system_admin_and_permissions_sync(db: Session) -> None:
     # Sync version for sync table startup
-    db_all_perms = []
     for perm_data in get_default_permissions_list():
         existing = db.query(Permission).filter(Permission.code == perm_data["code"]).first()
         if not existing:
             existing = Permission(**perm_data)
             db.add(existing)
-        db_all_perms.append(existing)
     db.flush()
 
     db_all_perms = db.query(Permission).all()
@@ -164,9 +175,7 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         db.add(admin_role)
         db.flush()
 
-    for p in db_all_perms:
-        if p not in admin_role.permissions:
-            admin_role.permissions.append(p)
+    admin_role.permissions = list(db_all_perms)
 
     admin_email = "admin@example.com"
     admin_user = db.query(User).filter((User.email == admin_email) | (User.username == "admin")).first()
@@ -186,7 +195,8 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
     else:
         admin_user.is_superuser = True
         admin_user.is_active = True
-        if admin_role and admin_role not in admin_user.roles:
+        user_role_ids = {r.id for r in admin_user.roles}
+        if admin_role and admin_role.id not in user_role_ids:
             admin_user.roles.append(admin_role)
 
     db.commit()
