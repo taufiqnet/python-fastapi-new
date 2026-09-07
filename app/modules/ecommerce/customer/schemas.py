@@ -6,10 +6,10 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class CustomerBase(BaseModel):
     first_name: str = Field(..., max_length=100)
-    last_name: str = Field(..., max_length=100)
+    last_name: str | None = Field(None, max_length=100)
     email: str | None = Field(None, max_length=255)
     phone: str = Field(..., max_length=50)
-    address: str | None = None
+    address: str = Field(...)
     is_active: bool = True
     business_id: int | None = None
 

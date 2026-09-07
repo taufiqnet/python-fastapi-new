@@ -9,6 +9,7 @@ from app.modules.ecommerce.customer.schemas import CustomerCreate, CustomerUpdat
 
 
 class CustomerService:
+
     def __init__(self, repository: CustomerRepository | None = None):
         self.repository = repository or CustomerRepository()
 
@@ -39,15 +40,15 @@ class CustomerService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="First name is required",
             )
-        if not data.last_name or not data.last_name.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Last name is required",
-            )
         if not data.phone or not data.phone.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Phone number is required",
+            )
+        if not data.address or not data.address.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Full Address is required",
             )
 
         return self.repository.create(db, data)
@@ -62,15 +63,15 @@ class CustomerService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="First name cannot be empty",
             )
-        if data.last_name is not None and not data.last_name.strip():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Last name cannot be empty",
-            )
         if data.phone is not None and not data.phone.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Phone number cannot be empty",
+            )
+        if data.address is not None and not data.address.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Full Address cannot be empty",
             )
 
         return self.repository.update(db, customer, data)

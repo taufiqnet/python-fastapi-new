@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
+from app.modules.ecommerce.customer.service import CustomerService
 from app.modules.ecommerce.orders.models import (
     OrderFulfillmentStatus,
     OrderPaymentStatus,
@@ -19,6 +20,7 @@ templates = Jinja2Templates(directory="app/templates")
 order_service = OrderService()
 product_service = ProductService()
 business_service = BusinessService()
+customer_service = CustomerService()
 
 
 @router.get("/orders/manage", response_class=HTMLResponse)
@@ -87,17 +89,20 @@ def order_list_page(
 def order_create_page(request: Request, db: Session = Depends(get_db)):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     products = product_service.get_products(db, skip=0, limit=500)
+    customers = customer_service.get_customers(db, skip=0, limit=500)
 
     variants_list = []
     for p in products:
         for v in p.variants:
-            variants_list.append({
-                "id": str(v.id),
-                "sku": v.sku,
-                "price": float(v.price),
-                "product_title": p.title,
-                "stock_qty": v.stock_qty,
-            })
+            variants_list.append(
+                {
+                    "id": str(v.id),
+                    "sku": v.sku,
+                    "price": float(v.price),
+                    "product_title": p.title,
+                    "stock_qty": v.stock_qty,
+                }
+            )
 
     return templates.TemplateResponse(
         request=request,
@@ -106,6 +111,7 @@ def order_create_page(request: Request, db: Session = Depends(get_db)):
             "order": None,
             "is_edit": False,
             "businesses": businesses,
+            "customers": customers,
             "variants_list": variants_list,
             "currencies": ["USD", "EUR", "GBP", "CAD"],
             "active_page": "orders",
@@ -121,10 +127,18 @@ def order_detail_page(
     db: Session = Depends(get_db),
 ):
     order = order_service.get_order(db, order_id=order_id, business_id=business_id)
-    business = business_service.get_business(db, order.business_id) if order.business_id else None
+    business = (
+        business_service.get_business(db, order.business_id)
+        if order.business_id
+        else None
+    )
 
-    shipping_address = next((a for a in order.addresses if a.address_type == "shipping"), None)
-    billing_address = next((a for a in order.addresses if a.address_type == "billing"), shipping_address)
+    shipping_address = next(
+        (a for a in order.addresses if a.address_type == "shipping"), None
+    )
+    billing_address = next(
+        (a for a in order.addresses if a.address_type == "billing"), shipping_address
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -151,20 +165,27 @@ def order_edit_page(
     order = order_service.get_order(db, order_id=order_id, business_id=business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     products = product_service.get_products(db, skip=0, limit=500)
+    customers = customer_service.get_customers(db, skip=0, limit=500)
 
     variants_list = []
     for p in products:
         for v in p.variants:
-            variants_list.append({
-                "id": str(v.id),
-                "sku": v.sku,
-                "price": float(v.price),
-                "product_title": p.title,
-                "stock_qty": v.stock_qty,
-            })
+            variants_list.append(
+                {
+                    "id": str(v.id),
+                    "sku": v.sku,
+                    "price": float(v.price),
+                    "product_title": p.title,
+                    "stock_qty": v.stock_qty,
+                }
+            )
 
-    shipping_address = next((a for a in order.addresses if a.address_type == "shipping"), None)
-    billing_address = next((a for a in order.addresses if a.address_type == "billing"), shipping_address)
+    shipping_address = next(
+        (a for a in order.addresses if a.address_type == "shipping"), None
+    )
+    billing_address = next(
+        (a for a in order.addresses if a.address_type == "billing"), shipping_address
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -173,6 +194,7 @@ def order_edit_page(
             "order": order,
             "is_edit": True,
             "businesses": businesses,
+            "customers": customers,
             "variants_list": variants_list,
             "shipping_address": shipping_address,
             "billing_address": billing_address,
