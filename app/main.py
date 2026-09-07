@@ -6,15 +6,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
-from app.database import Base, SessionLocal, engine
-from app.core.identity.seed import seed_system_admin_and_permissions_sync
+from app.core.identity.seed import seed_system_admin_and_permissions, seed_system_admin_and_permissions_sync
+from app.database import AsyncSessionLocal, Base, SessionLocal, async_engine, engine
 
 # Registers every module's models with Base.metadata in one place — see
 # app/models_registry.py. Import must happen before create_all() below.
 from app import models_registry  # noqa: F401
 
 # Confirmed shims — these all just re-exported their module's real router.
-# Importing directly here removes that indirection for every one of them.
 from app.modules.ecommerce.brands.router import router as brands_router
 from app.modules.ecommerce.cart.router import router as cart_router
 from app.modules.ecommerce.categories.router import router as categories_router
@@ -85,6 +84,18 @@ app = FastAPI(
     title="E-Commerce API",
     version="1.0.0",
 )
+
+
+@app.on_event("startup")
+async def on_startup():
+    try:
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        async with AsyncSessionLocal() as db:
+            await seed_system_admin_and_permissions(db)
+    except Exception:
+        logger.exception("Failed async startup table creation or seeding")
+
 
 os.makedirs("app/static/ecommerce/images", exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
