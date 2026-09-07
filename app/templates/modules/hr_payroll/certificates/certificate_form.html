@@ -2,97 +2,185 @@
 
 {% block title %}{% if is_edit %}Edit Salary Certificate{% else %}Generate Salary Certificate{% endif %} | HR & Payroll{% endblock %}
 
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .form-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: #4f46e5;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto mb-8">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">{% if is_edit %}Edit Salary Certificate{% else %}Generate Salary Certificate{% endif %}</h1>
-            <p class="text-xs text-gray-500 mt-0.5">Create official salary certificate documentation</p>
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/salary-certificates/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Salary Certificates
+            </a>
         </div>
-        <a href="/salary-certificates/manage" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition-colors">
-            <i class="fas fa-arrow-left mr-1"></i> Back to List
-        </a>
-    </div>
-
-    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <form id="cert-form" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">Business Profile <span class="text-rose-500">*</span></label>
-                    <select id="business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
-                        <option value="">-- Select Business --</option>
-                        {% for b in businesses %}
-                        <option value="{{ b.id }}" {% if certificate and certificate.business_id == b.id %}selected{% endif %}>{{ b.name_en }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">Employee <span class="text-rose-500">*</span></label>
-                    <select id="employee_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
-                        <option value="">-- Select Employee --</option>
-                        {% for e in employees %}
-                        <option value="{{ e.id }}" {% if certificate and certificate.employee_id == e.id %}selected{% endif %}>{{ e.full_name }} ({{ e.employee_id }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">Issue Date <span class="text-rose-500">*</span></label>
-                    <input type="date" id="issue_date" value="{{ certificate.issue_date if certificate else '' }}" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">Purpose <span class="text-rose-500">*</span></label>
-                    <select id="purpose" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
-                        <option value="general" {% if certificate and certificate.purpose.value == 'general' %}selected{% endif %}>General</option>
-                        <option value="bank_loan" {% if certificate and certificate.purpose.value == 'bank_loan' %}selected{% endif %}>Bank Loan</option>
-                        <option value="visa_application" {% if certificate and certificate.purpose.value == 'visa_application' %}selected{% endif %}>Visa Application</option>
-                        <option value="tenancy" {% if certificate and certificate.purpose.value == 'tenancy' %}selected{% endif %}>Tenancy</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Addressed To</label>
-                <input type="text" id="addressed_to" value="{{ certificate.addressed_to if certificate and certificate.addressed_to else '' }}" placeholder="e.g. Standard Chartered Bank / To Whom It May Concern" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
-            </div>
-
-            {% if is_edit %}
-            <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Status</label>
-                <select id="status" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
-                    <option value="draft" {% if certificate.status.value == 'draft' %}selected{% endif %}>Draft</option>
-                    <option value="issued" {% if certificate.status.value == 'issued' %}selected{% endif %}>Issued</option>
-                    <option value="revoked" {% if certificate.status.value == 'revoked' %}selected{% endif %}>Revoked</option>
-                </select>
-            </div>
-            {% endif %}
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">Notes / Remarks</label>
-                <textarea id="notes" rows="3" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">{{ certificate.notes if certificate and certificate.notes else '' }}</textarea>
-            </div>
-
-            <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
-                <a href="/salary-certificates/manage" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">Cancel</a>
-                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm">
-                    {% if is_edit %}Update Certificate{% else %}Generate Certificate{% endif %}
-                </button>
-            </div>
-        </form>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Salary Certificate{% else %}Generate Salary Certificate{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            Create official salary certificate documentation
+        </p>
     </div>
 </div>
+
+<form id="certForm" class="space-y-6" onsubmit="handleCertificateSubmit(event)">
+    <input type="hidden" id="certId" value="{% if is_edit %}{{ certificate.id }}{% endif %}">
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active">
+                <i class="fas fa-certificate text-xs"></i> Certificate Information
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        <select id="business_id" name="business_id" required class="form-input">
+                            <option value="">— Select Business —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if certificate and certificate.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }} (ID: {{ b.id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="employee_id">Employee <span class="text-red-500">*</span></label>
+                        <select id="employee_id" name="employee_id" required class="form-input">
+                            <option value="">— Select Employee —</option>
+                            {% for e in employees %}
+                            <option value="{{ e.id }}" {% if certificate and certificate.employee_id == e.id %}selected{% endif %}>
+                                {{ e.full_name }} ({{ e.employee_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="issue_date">Issue Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="issue_date" name="issue_date" class="form-input" required
+                               value="{% if certificate %}{{ certificate.issue_date }}{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="purpose">Purpose <span class="text-red-500">*</span></label>
+                        <select id="purpose" name="purpose" required class="form-input">
+                            <option value="general" {% if certificate and certificate.purpose.value == 'general' %}selected{% endif %}>General</option>
+                            <option value="bank_loan" {% if certificate and certificate.purpose.value == 'bank_loan' %}selected{% endif %}>Bank Loan</option>
+                            <option value="visa_application" {% if certificate and certificate.purpose.value == 'visa_application' %}selected{% endif %}>Visa Application</option>
+                            <option value="tenancy" {% if certificate and certificate.purpose.value == 'tenancy' %}selected{% endif %}>Tenancy</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group {% if not is_edit %}md:col-span-2{% endif %}">
+                        <label class="form-label" for="addressed_to">Addressed To</label>
+                        <input type="text" id="addressed_to" name="addressed_to" class="form-input" max="255"
+                               value="{% if certificate and certificate.addressed_to %}{{ certificate.addressed_to }}{% endif %}"
+                               placeholder="e.g. Standard Chartered Bank / To Whom It May Concern">
+                    </div>
+
+                    {% if is_edit %}
+                    <div class="form-group">
+                        <label class="form-label" for="status">Certificate Status</label>
+                        <select id="status" name="status" class="form-input">
+                            <option value="draft" {% if certificate.status.value == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="issued" {% if certificate.status.value == 'issued' %}selected{% endif %}>Issued</option>
+                            <option value="revoked" {% if certificate.status.value == 'revoked' %}selected{% endif %}>Revoked</option>
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="notes">Notes / Remarks</label>
+                        <textarea id="notes" name="notes" rows="3" class="form-input"
+                                  placeholder="Additional notes or remarks...">{% if certificate and certificate.notes %}{{ certificate.notes }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/salary-certificates/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Certificate{% else %}Generate Certificate{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.getElementById('cert-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const isEdit = {{ 'true' if is_edit else 'false' }};
-    const certId = "{{ certificate.id if certificate else '' }}";
+function handleCertificateSubmit(event) {
+    event.preventDefault();
+    const isEdit = "{{ is_edit }}" === "True";
+    const certId = document.getElementById('certId').value;
 
     const payload = {
         business_id: parseInt(document.getElementById('business_id').value),
@@ -110,20 +198,41 @@ document.getElementById('cert-form').addEventListener('submit', function(e) {
     const url = isEdit ? '/salary-certificates/' + certId : '/salary-certificates';
     const method = isEdit ? 'PUT' : 'POST';
 
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
     fetch(url, {
         method: method,
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
         body: JSON.stringify(payload)
     })
-    .then(res => {
-        if (!res.ok) return res.json().then(err => { throw new Error(err.detail || 'Failed'); });
-        return res.json();
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'Failed to save salary certificate';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
     })
     .then(data => {
-        showSuccessToast('Success', isEdit ? 'Certificate updated.' : 'Certificate generated.');
-        setTimeout(() => window.location.href = '/salary-certificates/manage', 1000);
+        showSuccessToast(
+            isEdit ? 'Certificate Updated' : 'Certificate Generated',
+            isEdit ? 'Salary certificate details updated successfully.' : 'New salary certificate generated successfully.'
+        );
+        setTimeout(() => { window.location.href = '/salary-certificates/manage'; }, 1200);
     })
-    .catch(err => showErrorAlert('Error', err.message));
-});
+    .catch(err => {
+        showErrorAlert('Save Failed', err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Certificate' : 'Generate Certificate');
+    });
+}
 </script>
 {% endblock %}
