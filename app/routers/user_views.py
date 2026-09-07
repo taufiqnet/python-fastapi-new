@@ -26,6 +26,7 @@ async def user_list_page(
         select(BusinessProfile).where(BusinessProfile.is_active)
     )
     businesses = list(result.scalars().all())
+    roles = await user_service.get_roles(db)
 
     return templates.TemplateResponse(
         request=request,
@@ -33,6 +34,7 @@ async def user_list_page(
         context={
             "users": users,
             "businesses": businesses,
+            "roles": roles,
             "selected_business_id": business_id,
             "active_page": "users",
         },
