@@ -91,6 +91,9 @@ async def employee_create2_page(request: Request, db: Session = Depends(get_db),
     job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
 
+    active_departments = [d for d in departments if getattr(d, "is_active", True)]
+    active_job_titles = [j for j in job_titles if getattr(j, "is_active", True)]
+
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/employees/employee_form2.html",
@@ -99,8 +102,8 @@ async def employee_create2_page(request: Request, db: Session = Depends(get_db),
             "employee": None,
             "is_edit": False,
             "businesses": businesses,
-            "departments": departments,
-            "job_titles": job_titles,
+            "departments": active_departments,
+            "job_titles": active_job_titles,
             "all_employees": employees,
             "gender_options": [e.value for e in GenderEnum],
             "marital_status_options": [e.value for e in MaritalStatusEnum],
@@ -119,6 +122,9 @@ async def employee_create_page(request: Request, db: Session = Depends(get_db), 
     job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
 
+    active_departments = [d for d in departments if getattr(d, "is_active", True)]
+    active_job_titles = [j for j in job_titles if getattr(j, "is_active", True)]
+
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/employees/employee_form2.html",
@@ -127,8 +133,8 @@ async def employee_create_page(request: Request, db: Session = Depends(get_db), 
             "employee": None,
             "is_edit": False,
             "businesses": businesses,
-            "departments": departments,
-            "job_titles": job_titles,
+            "departments": active_departments,
+            "job_titles": active_job_titles,
             "all_employees": employees,
             "gender_options": [e.value for e in GenderEnum],
             "marital_status_options": [e.value for e in MaritalStatusEnum],
@@ -175,6 +181,13 @@ async def employee_edit_page(
     job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
 
+    active_departments = [
+        d for d in departments if getattr(d, "is_active", True) or (employee and d.id == employee.department_id)
+    ]
+    active_job_titles = [
+        j for j in job_titles if getattr(j, "is_active", True) or (employee and j.id == employee.job_title_id)
+    ]
+
     # Exclude current employee from manager choices to avoid self-selection
     other_employees = [e for e in employees if e.id != employee_id]
 
@@ -186,8 +199,8 @@ async def employee_edit_page(
             "employee": employee,
             "is_edit": True,
             "businesses": businesses,
-            "departments": departments,
-            "job_titles": job_titles,
+            "departments": active_departments,
+            "job_titles": active_job_titles,
             "all_employees": other_employees,
             "gender_options": [e.value for e in GenderEnum],
             "marital_status_options": [e.value for e in MaritalStatusEnum],

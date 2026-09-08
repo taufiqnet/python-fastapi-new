@@ -107,6 +107,9 @@
         <button type="button" onclick="openImportModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
             <i class="fas fa-file-excel"></i> Import Excel
         </button>
+        <a href="javascript:void(0)" onclick="exportEmployees()" class="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
+            <i class="fas fa-file-download"></i> Export Excel
+        </a>
         <a href="/employees/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
             <i class="fas fa-plus"></i> Create Employee
         </a>
@@ -442,6 +445,16 @@ function downloadTemplate() {
         return;
     }
     window.location.href = '/employees/template-excel?business_id=' + bizId;
+}
+
+function exportEmployees() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bizId = urlParams.get('business_id');
+    let exportUrl = '/employees/export-excel';
+    if (bizId) {
+        exportUrl += '?business_id=' + bizId;
+    }
+    window.location.href = exportUrl;
 }
 
 document.getElementById('import-excel-form').addEventListener('submit', function(e) {

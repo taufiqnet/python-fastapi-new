@@ -16,6 +16,20 @@ router = APIRouter(tags=["Employees"])
 employee_service = EmployeeService()
 
 
+@router.get("/employees/export-excel")
+def export_employees_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = employee_service.generate_export_excel(db, business_id=business_id)
+    filename = "employees_export.xlsx" if not business_id else f"employees_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/employees/template-excel")
 def download_employees_excel_template(
     business_id: int = Query(...),

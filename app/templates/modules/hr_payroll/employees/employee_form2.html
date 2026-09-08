@@ -87,7 +87,12 @@
                         <input type="text" id="employee_id" name="employee_id" required class="form-input"
                                value="{{ (employee.employee_id or '') if employee else '' }}"
                                placeholder="e.g. EMP-001">
+                        <p id="empIdWarning" class="text-xs font-semibold text-amber-600 hidden mt-1 flex items-center gap-1">
+                            <i class="fas fa-exclamation-triangle"></i> Warning: This Employee ID is already assigned to another employee!
+                        </p>
                     </div>
+
+                    <div class="hidden md:block"></div>
 
                     <div class="form-group">
                         <label class="form-label" for="first_name">First Name <span class="text-red-500">*</span></label>
@@ -329,10 +334,57 @@
 
 {% block extra_js %}
 <script>
+const existingEmployeesList = [
+    {% for emp in all_employees %}
+    { id: "{{ emp.id }}", employee_id: "{{ emp.employee_id }}".trim().toLowerCase(), name: "{{ emp.full_name }}" },
+    {% endfor %}
+];
+
+document.addEventListener('DOMContentLoaded', function() {
+    const dobInput = document.getElementById('date_of_birth');
+    if (dobInput) {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        dobInput.max = yesterday.toISOString().split('T')[0];
+    }
+
+    const empIdInput = document.getElementById('employee_id');
+    const empIdWarning = document.getElementById('empIdWarning');
+    const currentEmpId = "{% if is_edit and employee %}{{ employee.id }}{% endif %}";
+
+    if (empIdInput) {
+        empIdInput.addEventListener('input', function() {
+            const val = this.value.trim().toLowerCase();
+            if (!val) {
+                empIdWarning.classList.add('hidden');
+                return;
+            }
+            const duplicate = existingEmployeesList.find(e => e.employee_id === val && e.id !== currentEmpId);
+            if (duplicate) {
+                empIdWarning.classList.remove('hidden');
+                empIdWarning.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Warning: Employee ID "${this.value.trim()}" is already assigned to ${duplicate.name}!`;
+            } else {
+                empIdWarning.classList.add('hidden');
+            }
+        });
+    }
+});
+
 function handleEmployee2Submit(event) {
     event.preventDefault();
     const isEdit = "{{ is_edit }}" === "True";
     const empId = document.getElementById('empId').value;
+
+    const dobInput = document.getElementById('date_of_birth');
+    if (dobInput && dobInput.value) {
+        const selectedDob = new Date(dobInput.value);
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        if (selectedDob >= today) {
+            showWarningAlert('Invalid Date of Birth', 'Date of Birth cannot be today or a future date.');
+            return;
+        }
+    }
 
     const payload = {};
     const form = document.getElementById('employeeForm2');
@@ -392,7 +444,11 @@ function handleEmployee2Submit(event) {
         setTimeout(() => { window.location.href = '/employees/manage'; }, 1200);
     })
     .catch(err => {
-        showErrorAlert('Save Failed', err.message);
+        if (err.message && err.message.toLowerCase().includes('already exists')) {
+            showWarningAlert('Duplicate Employee ID / Email', err.message);
+        } else {
+            showErrorAlert('Save Failed', err.message);
+        }
         btnSubmit.disabled = false;
         btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Employee' : 'Save Employee');
     });

@@ -213,6 +213,13 @@ class EmployeeService:
             business_id=data.business_id,
         )
 
+        # Validate Date of Birth cannot be today or future date
+        if data.date_of_birth and data.date_of_birth >= date.today():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Date of birth cannot be today or a future date.",
+            )
+
         return self.repository.create(db, data)
 
     def update_employee(
@@ -309,6 +316,13 @@ class EmployeeService:
             exclude_employee_id=employee_uuid,
         )
 
+        # Validate Date of Birth cannot be today or future date
+        if data.date_of_birth and data.date_of_birth >= date.today():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Date of birth cannot be today or a future date.",
+            )
+
         return self.repository.update(db, employee, data)
 
     def delete_employee(self, db: Session, employee_uuid: uuid.UUID) -> None:
@@ -362,6 +376,62 @@ class EmployeeService:
             max_len = max(len(str(cell.value or "")) for cell in col)
             col_letter = openpyxl.utils.get_column_letter(col[0].column)
             ws.column_dimensions[col_letter].width = max(max_len + 3, 14)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Employees Directory"
+
+        headers = [
+            "Employee ID",
+            "First Name",
+            "Middle Name",
+            "Last Name",
+            "Full Name",
+            "Work Email",
+            "Personal Email",
+            "Phone",
+            "Department",
+            "Job Title",
+            "Business Profile",
+            "Employment Type",
+            "Work Arrangement",
+            "Start Date",
+            "Status",
+        ]
+        ws.append(headers)
+
+        employees = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        departments = {d.id: d.name for d in self.department_repository.get_all(db, limit=1000)}
+        job_titles = {j.id: j.name for j in self.job_title_repository.get_all(db, limit=1000)}
+
+        for emp in employees:
+            ws.append([
+                emp.employee_id or "",
+                emp.first_name or "",
+                emp.middle_name or "",
+                emp.last_name or "",
+                emp.full_name or "",
+                emp.work_email or "",
+                emp.personal_email or "",
+                emp.phone or "",
+                departments.get(emp.department_id, "") if emp.department_id else "",
+                job_titles.get(emp.job_title_id, "") if emp.job_title_id else "",
+                str(emp.business_id) if emp.business_id else "",
+                emp.employment_type.value if emp.employment_type else "",
+                emp.work_arrangement.value if emp.work_arrangement else "",
+                emp.start_date.strftime("%Y-%m-%d") if emp.start_date else "",
+                "Active" if emp.is_active else "Inactive",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
 
         output = BytesIO()
         wb.save(output)
