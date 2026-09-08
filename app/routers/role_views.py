@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.deps import get_current_user_optional
 from app.core.identity.schemas import RoleCreate, RoleResponse
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
@@ -27,6 +28,7 @@ async def role_list_page(
     business_id: int | None = None,
     db: AsyncSession = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, db)
     roles = await user_service.get_roles(db, business_id=business_id)
     result = await db.execute(
         select(BusinessProfile).where(BusinessProfile.is_active)
@@ -37,6 +39,7 @@ async def role_list_page(
         request=request,
         name="modules/identity/role_list.html",
         context={
+            "current_user": current_user,
             "roles": roles,
             "businesses": businesses,
             "selected_business_id": business_id,
@@ -50,6 +53,7 @@ async def role_create_page(
     request: Request,
     db: AsyncSession = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, db)
     permissions = await user_service.get_all_permissions(db)
     result = await db.execute(
         select(BusinessProfile).where(BusinessProfile.is_active)
@@ -60,6 +64,7 @@ async def role_create_page(
         request=request,
         name="modules/identity/role_form.html",
         context={
+            "current_user": current_user,
             "role": None,
             "is_edit": False,
             "permissions": permissions,
@@ -76,6 +81,7 @@ async def role_edit_page(
     request: Request,
     db: AsyncSession = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, db)
     role = await user_service.get_role_by_id(db, role_id)
     permissions = await user_service.get_all_permissions(db)
     result = await db.execute(
@@ -96,6 +102,7 @@ async def role_edit_page(
         request=request,
         name="modules/identity/role_form.html",
         context={
+            "current_user": current_user,
             "role": role,
             "is_edit": True,
             "assigned_perm_ids": assigned_perm_ids,

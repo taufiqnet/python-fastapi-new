@@ -5,8 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user_optional
 from app.core.tenancy.service import BusinessService
-from app.database import get_db
+from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.models import (
     EmploymentTypeEnum,
     GenderEnum,
@@ -29,14 +30,16 @@ business_service = BusinessService()
 
 
 @router.get("/employees/manage", response_class=HTMLResponse)
-def employee_list_page(
+async def employee_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
     department_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     employees = employee_service.get_employees(
         db,
         skip=skip,
@@ -63,6 +66,7 @@ def employee_list_page(
         request=request,
         name="modules/hr_payroll/employees/employee_list.html",
         context={
+            "current_user": current_user,
             "employees": employees,
             "businesses": businesses,
             "departments": departments,
@@ -80,7 +84,8 @@ def employee_list_page(
 
 
 @router.get("/employees/create2", response_class=HTMLResponse)
-def employee_create2_page(request: Request, db: Session = Depends(get_db)):
+async def employee_create2_page(request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)):
+    current_user = await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     departments = department_service.get_departments(db, skip=0, limit=500)
     job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
@@ -90,6 +95,7 @@ def employee_create2_page(request: Request, db: Session = Depends(get_db)):
         request=request,
         name="modules/hr_payroll/employees/employee_form2.html",
         context={
+            "current_user": current_user,
             "employee": None,
             "is_edit": False,
             "businesses": businesses,
@@ -106,7 +112,8 @@ def employee_create2_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/employees/create", response_class=HTMLResponse)
-def employee_create_page(request: Request, db: Session = Depends(get_db)):
+async def employee_create_page(request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)):
+    current_user = await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     departments = department_service.get_departments(db, skip=0, limit=500)
     job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
@@ -116,6 +123,7 @@ def employee_create_page(request: Request, db: Session = Depends(get_db)):
         request=request,
         name="modules/hr_payroll/employees/employee_form2.html",
         context={
+            "current_user": current_user,
             "employee": None,
             "is_edit": False,
             "businesses": businesses,
@@ -132,9 +140,10 @@ def employee_create_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/employees/detail/{employee_id}", response_class=HTMLResponse)
-def employee_detail_page(
-    employee_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+async def employee_detail_page(
+    employee_id: uuid.UUID, request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     employee = employee_service.get_employee(db, employee_id)
     business = None
     if employee.business_id:
@@ -147,6 +156,7 @@ def employee_detail_page(
         request=request,
         name="modules/hr_payroll/employees/employee_detail.html",
         context={
+            "current_user": current_user,
             "employee": employee,
             "business": business,
             "active_page": "employees",
@@ -155,9 +165,10 @@ def employee_detail_page(
 
 
 @router.get("/employees/edit/{employee_id}", response_class=HTMLResponse)
-def employee_edit_page(
-    employee_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+async def employee_edit_page(
+    employee_id: uuid.UUID, request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     employee = employee_service.get_employee(db, employee_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     departments = department_service.get_departments(db, skip=0, limit=500)
@@ -171,6 +182,7 @@ def employee_edit_page(
         request=request,
         name="modules/hr_payroll/employees/employee_form2.html",
         context={
+            "current_user": current_user,
             "employee": employee,
             "is_edit": True,
             "businesses": businesses,

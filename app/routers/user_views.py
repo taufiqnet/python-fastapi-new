@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.deps import get_current_user_optional
 from app.core.identity.schemas import UserCreate, UserResponse, UserUpdate
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
@@ -21,6 +22,7 @@ async def user_list_page(
     business_id: int | None = None,
     db: AsyncSession = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, db)
     users = await user_service.get_all_users(db, business_id=business_id)
     result = await db.execute(
         select(BusinessProfile).where(BusinessProfile.is_active)
@@ -32,6 +34,7 @@ async def user_list_page(
         request=request,
         name="modules/identity/user_list.html",
         context={
+            "current_user": current_user,
             "users": users,
             "businesses": businesses,
             "roles": roles,
@@ -46,6 +49,7 @@ async def user_create_page(
     request: Request,
     db: AsyncSession = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, db)
     roles = await user_service.get_roles(db)
     permissions = await user_service.get_all_permissions(db)
     result = await db.execute(
@@ -57,6 +61,7 @@ async def user_create_page(
         request=request,
         name="modules/identity/user_form.html",
         context={
+            "current_user": current_user,
             "user": None,
             "is_edit": False,
             "roles": roles,
@@ -74,6 +79,7 @@ async def user_edit_page(
     request: Request,
     db: AsyncSession = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, db)
     user = await user_service.get_user_by_id(db, user_id)
     roles = await user_service.get_roles(db, business_id=user.business_id)
     permissions = await user_service.get_all_permissions(db)
@@ -89,6 +95,7 @@ async def user_edit_page(
         request=request,
         name="modules/identity/user_form.html",
         context={
+            "current_user": current_user,
             "user": user,
             "is_edit": True,
             "roles": roles,

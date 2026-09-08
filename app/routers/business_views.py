@@ -37,9 +37,10 @@ async def root_or_business_list_page(
 
 
 @router.get("/businesses/manage", response_class=HTMLResponse)
-def business_manage_page(
-    request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
+async def business_manage_page(
+    request: Request, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), async_db=Depends(get_async_db)
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     businesses = service.list_businesses(db, skip=skip, limit=limit)
     total_count = len(businesses)
     active_count = sum(1 for b in businesses if getattr(b, "is_active", True))
@@ -52,6 +53,7 @@ def business_manage_page(
         request=request,
         name="modules/tenancy/business_list.html",
         context={
+            "current_user": current_user,
             "businesses": businesses,
             "total_count": total_count,
             "active_count": active_count,
@@ -63,11 +65,13 @@ def business_manage_page(
 
 
 @router.get("/businesses/create", response_class=HTMLResponse)
-def business_create_page(request: Request):
+async def business_create_page(request: Request, async_db=Depends(get_async_db)):
+    current_user = await get_current_user_optional(request, None, async_db)
     return templates.TemplateResponse(
         request=request,
         name="modules/tenancy/business_form.html",
         context={
+            "current_user": current_user,
             "business": None,
             "is_edit": False,
         },
@@ -75,28 +79,32 @@ def business_create_page(request: Request):
 
 
 @router.get("/businesses/{business_id}", response_class=HTMLResponse)
-def business_detail_page(
-    business_id: int, request: Request, db: Session = Depends(get_db)
+async def business_detail_page(
+    business_id: int, request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     business = service.get_business(db, business_id)
     return templates.TemplateResponse(
         request=request,
         name="modules/tenancy/business_detail.html",
         context={
+            "current_user": current_user,
             "business": business,
         },
     )
 
 
 @router.get("/businesses/{business_id}/edit", response_class=HTMLResponse)
-def business_edit_page(
-    business_id: int, request: Request, db: Session = Depends(get_db)
+async def business_edit_page(
+    business_id: int, request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     business = service.get_business(db, business_id)
     return templates.TemplateResponse(
         request=request,
         name="modules/tenancy/business_form.html",
         context={
+            "current_user": current_user,
             "business": business,
             "is_edit": True,
         },
