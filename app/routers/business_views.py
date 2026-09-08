@@ -59,10 +59,18 @@ async def root_or_business_list_page(
     result = await db.execute(select(BusinessProfile).where(BusinessProfile.is_active))
     all_businesses = list(result.scalars().all())
 
-    # Selected business context
-    current_business = None
-    target_biz_id = switch_business_id or current_user.business_id
+    # Tenant Isolation Enforcement:
+    # Business switching across tenants is restricted to superusers (`is_superuser`).
+    # Non-superusers (including local tenant admins) are hard-locked to `business_id`.
+    if is_superuser:
+        target_biz_id = switch_business_id or current_user.business_id
+    else:
+        target_biz_id = current_user.business_id
+        all_businesses = [
+            b for b in all_businesses if b.id == current_user.business_id
+        ]
 
+    current_business = None
     if target_biz_id:
         res = await db.execute(
             select(BusinessProfile).where(BusinessProfile.id == target_biz_id)
@@ -72,7 +80,10 @@ async def root_or_business_list_page(
     if not current_business and all_businesses:
         current_business = all_businesses[0]
 
-    biz_filter_id = current_business.id if current_business else None
+    if not is_superuser and current_user.business_id:
+        biz_filter_id = current_user.business_id
+    else:
+        biz_filter_id = current_business.id if current_business else None
 
     # Contextual stats
     stats = {
@@ -154,9 +165,13 @@ async def root_or_business_list_page(
         active_biz = sum(1 for b in all_businesses if b.is_active)
 
         user_count_query = select(func.count(User.id))
-        total_users = (await db.execute(user_count_query)).scalar() or 0
-
         role_count_query = select(func.count(Role.id))
+
+        if not is_superuser and biz_filter_id:
+            user_count_query = user_count_query.where(User.business_id == biz_filter_id)
+            role_count_query = role_count_query.where(Role.business_id == biz_filter_id)
+
+        total_users = (await db.execute(user_count_query)).scalar() or 0
         total_roles = (await db.execute(role_count_query)).scalar() or 0
 
         stats["admin"] = {
