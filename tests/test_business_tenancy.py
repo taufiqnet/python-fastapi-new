@@ -77,7 +77,7 @@ def test_business_crud_and_views():
 
     # 5. Test HTML View routes
     # List Page
-    page_res = client.get("/")
+    page_res = client.get("/businesses/manage")
     assert page_res.status_code == 200
     assert "Updated Test Corp" in page_res.text
 

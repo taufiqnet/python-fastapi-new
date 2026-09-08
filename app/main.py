@@ -6,10 +6,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from fastapi.templating import Jinja2Templates
+
 from app.core.config import settings
 from app.core.deps import get_current_user_optional
 from app.core.identity.seed import seed_system_admin_and_permissions, seed_system_admin_and_permissions_sync
 from app.database import AsyncSessionLocal, Base, SessionLocal, async_engine, engine
+
+# Ensure template responses automatically receive request.state.user as current_user
+_original_template_response = Jinja2Templates.TemplateResponse
+
+
+def _custom_template_response(self, *args, **kwargs):
+    request = kwargs.get("request")
+    if not request and args:
+        request = args[0]
+    context = kwargs.get("context")
+    if not context and len(args) >= 3:
+        context = args[2]
+
+    if request and isinstance(context, dict) and "current_user" not in context:
+        user = getattr(request.state, "user", None)
+        if user:
+            context["current_user"] = user
+
+    return _original_template_response(self, *args, **kwargs)
+
+
+Jinja2Templates.TemplateResponse = _custom_template_response
 
 # Registers every module's models with Base.metadata in one place
 from app import models_registry  # noqa: F401
@@ -112,15 +136,28 @@ async def auth_and_cache_middleware(request: Request, call_next):
         or request.headers.get("accept", "").find("text/html") == -1
     )
 
-    if not is_public and path != "/":
+    override = app.dependency_overrides.get(get_current_user_optional)
+    if override:
+        import inspect
+
+        if inspect.iscoroutinefunction(override):
+            current_user = await override(request)
+        else:
+            current_user = override(request)
+    else:
         async with AsyncSessionLocal() as db:
             current_user = await get_current_user_optional(request, None, db)
-            if not current_user or not current_user.is_active:
-                redirect_res = RedirectResponse(url="/auth/login", status_code=302)
-                redirect_res.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
-                redirect_res.headers["Pragma"] = "no-cache"
-                redirect_res.headers["Expires"] = "0"
-                return redirect_res
+
+    if current_user and current_user.is_active:
+        request.state.user = current_user
+    elif not is_public and path != "/":
+        redirect_res = RedirectResponse(url="/auth/login", status_code=302)
+        redirect_res.headers["Cache-Control"] = (
+            "no-cache, no-store, must-revalidate, max-age=0"
+        )
+        redirect_res.headers["Pragma"] = "no-cache"
+        redirect_res.headers["Expires"] = "0"
+        return redirect_res
 
     response = await call_next(request)
 
