@@ -37,6 +37,20 @@ class LeaveApplicationCancelRequest(BaseModel):
 
 
 # ── Leave Types Endpoints ───────────────────────────────────────────────
+@router.get("/leave/types/export-excel")
+def export_leave_types_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = leave_type_service.generate_export_excel(db, business_id=business_id)
+    filename = "leave_types_export.xlsx" if not business_id else f"leave_types_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/leave/types/template-excel")
 def download_leave_types_excel_template(
     business_id: int = Query(...),
@@ -105,6 +119,20 @@ def delete_leave_type(leave_type_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 # ── Leave Allocations Endpoints ──────────────────────────────────────────
+@router.get("/leave/allocations/export-excel")
+def export_leave_allocations_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = leave_allocation_service.generate_export_excel(db, business_id=business_id)
+    filename = "leave_allocations_export.xlsx" if not business_id else f"leave_allocations_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/leave-allocations", response_model=list[LeaveAllocationOut])
 def get_leave_allocations(
     skip: int = Query(0, ge=0),
@@ -160,6 +188,20 @@ def delete_leave_allocation(allocation_id: uuid.UUID, db: Session = Depends(get_
 
 
 # ── Leave Applications Endpoints ─────────────────────────────────────────
+@router.get("/leave/applications/export-excel")
+def export_leave_applications_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = leave_application_service.generate_export_excel(db, business_id=business_id)
+    filename = "leave_applications_export.xlsx" if not business_id else f"leave_applications_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/leave-applications", response_model=list[LeaveApplicationOut])
 def get_leave_applications(
     skip: int = Query(0, ge=0),

@@ -7,8 +7,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user_optional
 from app.core.tenancy.service import BusinessService
-from app.database import get_db
+from app.database import get_async_db, get_db
 from app.modules.hr_payroll.attendance.models import (
     AttendanceSourceEnum,
     AttendanceStatusEnum,
@@ -25,7 +26,7 @@ business_service = BusinessService()
 
 
 @router.get("/attendance/manage", response_class=HTMLResponse)
-def attendance_list_page(
+async def attendance_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
@@ -36,7 +37,9 @@ def attendance_list_page(
     end_date: str | None = Query(None),
     status_filter: str | None = Query(None, alias="status_filter"),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     parsed_biz_id: int | None = None
     if business_id and business_id.strip():
         try:
@@ -124,6 +127,7 @@ def attendance_list_page(
         request=request,
         name="modules/hr_payroll/attendance/attendance_list.html",
         context={
+            "current_user": current_user,
             "records": records,
             "businesses": businesses,
             "employees": employees,

@@ -26,6 +26,9 @@ from app.modules.hr_payroll.payroll.repository import (
     PayrollRecordRepository,
     PayrollSettingsRepository,
 )
+from io import BytesIO
+import openpyxl
+from app.core.tenancy.repository import BusinessRepository
 from app.modules.hr_payroll.payroll.schemas import (
     HolidayCreate,
     HolidayUpdate,
@@ -90,6 +93,50 @@ class HolidayService:
     def delete_holiday(self, db: Session, holiday_uuid: uuid.UUID) -> None:
         holiday = self.get_holiday(db, holiday_uuid)
         self.repository.delete(db, holiday)
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Holidays"
+
+        headers = [
+            "Holiday ID",
+            "Holiday Name",
+            "Holiday Type",
+            "Start Date",
+            "End Date",
+            "Description",
+            "Status",
+            "Business Profile ID",
+            "Business Profile Name",
+        ]
+        ws.append(headers)
+
+        holidays = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
+
+        for h in holidays:
+            ws.append([
+                str(h.id),
+                h.name or "",
+                h.holiday_type.value if h.holiday_type else "",
+                h.start_date.strftime("%Y-%m-%d") if h.start_date else "",
+                h.end_date.strftime("%Y-%m-%d") if h.end_date else "",
+                h.description or "",
+                "Active" if h.is_active else "Inactive",
+                str(h.business_id) if h.business_id else "",
+                businesses.get(h.business_id, "") if h.business_id else "Global",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
 
 
 class PayrollPeriodService:
@@ -184,6 +231,48 @@ class PayrollPeriodService:
                 detail="Cannot delete a locked or paid payroll period",
             )
         self.repository.delete(db, period)
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Payroll Periods"
+
+        headers = [
+            "Period ID",
+            "Period Name",
+            "Start Date",
+            "End Date",
+            "Status",
+            "Is Locked",
+            "Business Profile ID",
+            "Business Profile Name",
+        ]
+        ws.append(headers)
+
+        periods = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
+
+        for p in periods:
+            ws.append([
+                str(p.id),
+                p.name or "",
+                p.start_date.strftime("%Y-%m-%d") if p.start_date else "",
+                p.end_date.strftime("%Y-%m-%d") if p.end_date else "",
+                p.status.value if p.status else "",
+                "Yes" if p.is_locked else "No",
+                str(p.business_id) if p.business_id else "",
+                businesses.get(p.business_id, "") if p.business_id else "Global",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
 
 
 class PayrollRecordService:
@@ -426,6 +515,62 @@ class PayrollRecordService:
                 detail="Cannot delete a payslip in a locked or paid payroll period",
             )
         self.repository.delete(db, record)
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Payslips"
+
+        headers = [
+            "Payslip ID",
+            "Period",
+            "Employee ID",
+            "Employee Name",
+            "Basic Salary",
+            "Gross Salary",
+            "Total Deduction",
+            "Net Salary",
+            "Payment Method",
+            "Is Paid",
+            "Business Profile ID",
+            "Business Profile Name",
+        ]
+        ws.append(headers)
+
+        records = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        employees = {e.id: e for e in self.employee_repository.get_all(db, limit=2000)}
+        periods = {p.id: p.name for p in self.period_repository.get_all(db, limit=1000)}
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
+
+        for r in records:
+            emp = employees.get(r.employee_id)
+            emp_code = emp.employee_id if emp else ""
+            emp_name = emp.full_name if emp else ""
+
+            ws.append([
+                str(r.id),
+                periods.get(r.period_id, ""),
+                emp_code,
+                emp_name,
+                float(r.basic_salary or 0.0),
+                float(r.gross_salary or 0.0),
+                float(r.total_deduction or 0.0),
+                float(r.net_salary or 0.0),
+                r.payment_method.value if r.payment_method else "",
+                "Yes" if r.is_paid else "No",
+                str(r.business_id) if r.business_id else "",
+                businesses.get(r.business_id, "") if r.business_id else "Global",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
 
     def generate_period_payroll(
         self, db: Session, period_uuid: uuid.UUID
@@ -674,3 +819,48 @@ class PayrollSettingsService:
         else:
             settings_obj = self.repository.update(db, settings_obj, data)
         return settings_obj
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Payroll Settings"
+
+        headers = [
+            "Settings ID",
+            "Business Profile ID",
+            "Business Profile Name",
+            "Standard Hours Per Day",
+            "Include Attendance",
+            "Include Overtime",
+            "Include Leave",
+            "Include Holidays",
+            "Deduct Absent Days",
+        ]
+        ws.append(headers)
+
+        biz_repo = BusinessRepository()
+        businesses = biz_repo.get_all(db, skip=0, limit=1000)
+        target_businesses = [b for b in businesses if business_id is None or b.id == business_id]
+
+        for b in target_businesses:
+            st = self.get_settings(db, business_id=b.id)
+            ws.append([
+                str(st.id),
+                str(b.id),
+                b.name_en or "",
+                float(st.standard_hours_per_day or 9.0),
+                "Yes" if st.include_attendance else "No",
+                "Yes" if st.include_overtime else "No",
+                "Yes" if st.include_leave else "No",
+                "Yes" if st.include_holidays else "No",
+                "Yes" if st.deduct_absent_days else "No",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()

@@ -198,6 +198,66 @@ class EmployeeSalaryService:
         salary = self.get_salary(db, salary_uuid)
         self.repository.delete(db, salary)
 
+    def generate_export_excel(self, db: Session, business_id: int) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Compensation"
+
+        headers = [
+            "Business Profile ID",
+            "Business Profile Name",
+            "Employee ID",
+            "Employee Name",
+            "Basic Salary",
+            "House Rent",
+            "Medical Allowance",
+            "Transport Allowance",
+            "Food Allowance",
+            "Other Allowance",
+            "Tax",
+            "Provident Fund",
+            "Other Deduction",
+            "Gross Salary",
+            "Net Salary",
+            "Effective From",
+        ]
+        ws.append(headers)
+
+        salaries = self.get_salaries(db, business_id=business_id, limit=2000)
+        for s in salaries:
+            business_name = s.business_profile.name if s.business_profile else ""
+            emp_code = s.employee.employee_id if s.employee else ""
+            emp_name = s.employee.full_name if s.employee else ""
+            eff_date = s.effective_from.strftime("%Y-%m-%d") if s.effective_from else ""
+
+            ws.append([
+                s.business_id,
+                business_name,
+                emp_code,
+                emp_name,
+                float(s.basic_salary or 0),
+                float(s.house_rent or 0),
+                float(s.medical_allowance or 0),
+                float(s.transport_allowance or 0),
+                float(s.food_allowance or 0),
+                float(s.other_allowance or 0),
+                float(s.tax or 0),
+                float(s.provident_fund or 0),
+                float(s.other_deduction or 0),
+                float(s.gross_salary or 0),
+                float(s.net_salary or 0),
+                eff_date,
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 14)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
         wb = openpyxl.Workbook()
         ws = wb.active

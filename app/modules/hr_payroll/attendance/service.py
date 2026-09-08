@@ -17,6 +17,7 @@ from app.modules.hr_payroll.attendance.schemas import (
 from io import BytesIO
 import openpyxl
 
+from app.core.tenancy.repository import BusinessRepository
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 
 
@@ -308,6 +309,62 @@ class AttendanceService:
                 8.0,
                 1.0,
                 "Sample entry",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Attendance Records"
+
+        headers = [
+            "Attendance ID",
+            "Employee ID",
+            "Employee Name",
+            "Date",
+            "Status",
+            "Check In",
+            "Check Out",
+            "Work Hours",
+            "Overtime Hours",
+            "Source",
+            "Note",
+            "Business Profile ID",
+            "Business Profile Name",
+        ]
+        ws.append(headers)
+
+        records = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        employees = {e.id: e for e in self.employee_repository.get_all(db, limit=2000)}
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
+
+        for r in records:
+            emp = employees.get(r.employee_id)
+            emp_code = emp.employee_id if emp else ""
+            emp_name = emp.full_name if emp else ""
+            ws.append([
+                str(r.id),
+                emp_code,
+                emp_name,
+                r.date.strftime("%Y-%m-%d") if r.date else "",
+                r.status.value if r.status else "",
+                r.check_in.strftime("%H:%M:%S") if r.check_in else "",
+                r.check_out.strftime("%H:%M:%S") if r.check_out else "",
+                r.work_hours or 0.0,
+                r.overtime_hours or 0.0,
+                r.source.value if r.source else "",
+                r.note or "",
+                str(r.business_id) if r.business_id else "",
+                businesses.get(r.business_id, "") if r.business_id else "Global",
             ])
 
         for col in ws.columns:

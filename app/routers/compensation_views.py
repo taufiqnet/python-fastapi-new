@@ -5,8 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user_optional
 from app.core.tenancy.service import BusinessService
-from app.database import get_db
+from app.database import get_async_db, get_db
 from app.modules.hr_payroll.compensation.service import EmployeeSalaryService
 from app.modules.hr_payroll.employees.service import EmployeeService
 
@@ -19,14 +20,16 @@ business_service = BusinessService()
 
 
 @router.get("/compensation/manage", response_class=HTMLResponse)
-def compensation_list_page(
+async def compensation_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
     employee_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     salaries = compensation_service.get_salaries(
         db, skip=skip, limit=limit, business_id=business_id, employee_id=employee_id
     )
@@ -45,6 +48,7 @@ def compensation_list_page(
         request=request,
         name="modules/hr_payroll/compensation/salary_list.html",
         context={
+            "current_user": current_user,
             "salaries": salaries,
             "businesses": businesses,
             "employees": employees,

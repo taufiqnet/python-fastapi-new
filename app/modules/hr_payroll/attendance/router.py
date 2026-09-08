@@ -41,6 +41,20 @@ def get_attendance_records(
     )
 
 
+@router.get("/attendance/export-excel")
+def export_attendance_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = attendance_service.generate_export_excel(db, business_id=business_id)
+    filename = "attendance_export.xlsx" if not business_id else f"attendance_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/attendance/template-excel")
 def download_attendance_excel_template(
     business_id: int = Query(...),

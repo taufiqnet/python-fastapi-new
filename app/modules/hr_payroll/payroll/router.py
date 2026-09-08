@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -33,6 +33,20 @@ settings_service = PayrollSettingsService()
 
 
 # ── Holidays Endpoints ────────────────────────────────────────────────
+@router.get("/holidays/export-excel")
+def export_holidays_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = holiday_service.generate_export_excel(db, business_id=business_id)
+    filename = "holidays_export.xlsx" if not business_id else f"holidays_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/holidays", response_model=list[HolidayOut])
 def get_holidays(
     skip: int = Query(0, ge=0),
@@ -80,6 +94,20 @@ def delete_holiday(holiday_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 # ── Payroll Periods Endpoints ──────────────────────────────────────────
+@router.get("/periods/export-excel")
+def export_payroll_periods_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = period_service.generate_export_excel(db, business_id=business_id)
+    filename = "payroll_periods_export.xlsx" if not business_id else f"payroll_periods_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/periods", response_model=list[PayrollPeriodOut])
 def get_payroll_periods(
     skip: int = Query(0, ge=0),
@@ -140,6 +168,20 @@ def delete_payroll_period(period_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 # ── Payroll Records (Payslips) Endpoints ──────────────────────────────
+@router.get("/records/export-excel")
+def export_payroll_records_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = record_service.generate_export_excel(db, business_id=business_id)
+    filename = "payroll_records_export.xlsx" if not business_id else f"payroll_records_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/records", response_model=list[PayrollRecordOut])
 def get_payroll_records(
     skip: int = Query(0, ge=0),
@@ -193,6 +235,20 @@ def delete_payroll_record(record_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 # ── Payroll Settings Endpoints ─────────────────────────────────────────
+@router.get("/settings/export-excel")
+def export_payroll_settings_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = settings_service.generate_export_excel(db, business_id=business_id)
+    filename = "payroll_settings_export.xlsx" if not business_id else f"payroll_settings_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/settings", response_model=PayrollSettingsOut)
 def get_payroll_settings(
     business_id: int = Query(...),

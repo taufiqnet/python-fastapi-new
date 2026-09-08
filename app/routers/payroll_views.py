@@ -5,8 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user_optional
 from app.core.tenancy.service import BusinessService
-from app.database import get_db
+from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.service import EmployeeService
 from app.modules.hr_payroll.payroll.models import (
     HolidayTypeEnum,
@@ -33,14 +34,16 @@ business_service = BusinessService()
 
 # ── Holiday Views ──────────────────────────────────────────────────────
 @router.get("/holidays/manage", response_class=HTMLResponse)
-def holiday_list_page(
+async def holiday_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
     holiday_type: str | None = None,
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     holidays = holiday_service.get_holidays(
         db, skip=skip, limit=limit, business_id=business_id, holiday_type=holiday_type
     )
@@ -55,6 +58,7 @@ def holiday_list_page(
         request=request,
         name="modules/hr_payroll/payroll/holidays/holiday_list.html",
         context={
+            "current_user": current_user,
             "holidays": holidays,
             "businesses": businesses,
             "biz_map": biz_map,
@@ -106,14 +110,16 @@ def holiday_edit_page(
 
 # ── Payroll Period Views ───────────────────────────────────────────────
 @router.get("/payroll-periods/manage", response_class=HTMLResponse)
-def period_list_page(
+async def period_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
     status_filter: str | None = None,
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     periods = period_service.get_periods(
         db, skip=skip, limit=limit, business_id=business_id, status_filter=status_filter
     )
@@ -138,6 +144,7 @@ def period_list_page(
         request=request,
         name="modules/hr_payroll/payroll/periods/period_list.html",
         context={
+            "current_user": current_user,
             "periods": periods,
             "businesses": businesses,
             "biz_map": biz_map,
@@ -191,7 +198,7 @@ def period_edit_page(
 
 # ── Payroll Record (Payslip) Views ──────────────────────────────────────
 @router.get("/payroll-records/manage", response_class=HTMLResponse)
-def record_list_page(
+async def record_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
@@ -200,7 +207,9 @@ def record_list_page(
     employee_id: uuid.UUID | None = None,
     is_paid: bool | None = None,
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     records = record_service.get_records(
         db,
         skip=skip,
@@ -228,6 +237,7 @@ def record_list_page(
         request=request,
         name="modules/hr_payroll/payroll/records/record_list.html",
         context={
+            "current_user": current_user,
             "records": records,
             "businesses": businesses,
             "periods": periods,
@@ -247,11 +257,13 @@ def record_list_page(
 
 # ── Payroll Settings Views ─────────────────────────────────────────────
 @router.get("/payroll-settings/manage", response_class=HTMLResponse)
-def settings_manage_page(
+async def settings_manage_page(
     request: Request,
     business_id: int | None = None,
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     selected_business_id = business_id or (businesses[0].id if businesses else 1)
     
@@ -261,6 +273,7 @@ def settings_manage_page(
         request=request,
         name="modules/hr_payroll/payroll/settings/payroll_settings.html",
         context={
+            "current_user": current_user,
             "settings": settings_obj,
             "businesses": businesses,
             "selected_business_id": selected_business_id,

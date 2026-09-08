@@ -16,6 +16,20 @@ router = APIRouter(prefix="/compensation", tags=["Compensation Management"])
 salary_service = EmployeeSalaryService()
 
 
+@router.get("/export-excel")
+def export_compensation_excel(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+):
+    excel_data = salary_service.generate_export_excel(db, business_id=business_id)
+    filename = f"compensation_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/template-excel")
 def download_compensation_excel_template(
     business_id: int = Query(...),

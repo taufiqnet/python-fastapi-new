@@ -3,6 +3,7 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.repository import BusinessRepository
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 from app.modules.hr_payroll.leave.models import (
     GenderApplicabilityEnum,
@@ -125,6 +126,56 @@ class LeaveTypeService:
             max_len = max(len(str(cell.value or "")) for cell in col)
             col_letter = openpyxl.utils.get_column_letter(col[0].column)
             ws.column_dimensions[col_letter].width = max(max_len + 3, 14)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Leave Types"
+
+        headers = [
+            "Leave Type ID",
+            "Name",
+            "Code",
+            "Description",
+            "Max Days Per Year",
+            "Is Paid",
+            "Requires Document",
+            "Applicable Gender",
+            "Carry Forward",
+            "Status",
+            "Business Profile ID",
+            "Business Profile Name",
+        ]
+        ws.append(headers)
+
+        types = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
+
+        for t in types:
+            ws.append([
+                str(t.id),
+                t.name or "",
+                t.code or "",
+                t.description or "",
+                t.max_days_per_year or 0,
+                "Yes" if t.is_paid else "No",
+                "Yes" if t.requires_document else "No",
+                t.applicable_gender.value if t.applicable_gender else "",
+                "Yes" if t.carry_forward else "No",
+                "Active" if t.is_active else "Inactive",
+                str(t.business_id) if t.business_id else "",
+                businesses.get(t.business_id, "") if t.business_id else "Global",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
 
         output = BytesIO()
         wb.save(output)
@@ -308,6 +359,64 @@ class LeaveAllocationService:
     def delete_allocation(self, db: Session, allocation_uuid: uuid.UUID) -> None:
         allocation = self.get_allocation(db, allocation_uuid)
         self.repository.delete(db, allocation)
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Leave Allocations"
+
+        headers = [
+            "Allocation ID",
+            "Employee ID",
+            "Employee Name",
+            "Leave Type",
+            "Year",
+            "Allocated Days",
+            "Used Days",
+            "Carried Forward",
+            "Remaining Balance",
+            "Business Profile ID",
+            "Business Profile Name",
+        ]
+        ws.append(headers)
+
+        allocations = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        employees = {e.id: e for e in self.employee_repository.get_all(db, limit=2000)}
+        leave_types = {l.id: l.name for l in self.leave_type_repository.get_all(db, limit=1000)}
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
+
+        for a in allocations:
+            emp = employees.get(a.employee_id)
+            emp_code = emp.employee_id if emp else ""
+            emp_name = emp.full_name if emp else ""
+            allocated = float(a.allocated_days or 0.0)
+            carried = float(a.carried_forward or 0.0)
+            used = float(a.used_days or 0.0)
+            remaining = allocated + carried - used
+
+            ws.append([
+                str(a.id),
+                emp_code,
+                emp_name,
+                leave_types.get(a.leave_type_id, ""),
+                a.year,
+                allocated,
+                used,
+                carried,
+                remaining,
+                str(a.business_id) if a.business_id else "",
+                businesses.get(a.business_id, "") if a.business_id else "Global",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
 
 
 class LeaveApplicationService:
@@ -633,3 +742,59 @@ class LeaveApplicationService:
     def delete_application(self, db: Session, application_uuid: uuid.UUID) -> None:
         application = self.get_application(db, application_uuid)
         self.repository.delete(db, application)
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Leave Requests"
+
+        headers = [
+            "Application ID",
+            "Employee ID",
+            "Employee Name",
+            "Leave Type",
+            "Start Date",
+            "End Date",
+            "Total Days",
+            "Reason",
+            "Status",
+            "Review Note",
+            "Business Profile ID",
+            "Business Profile Name",
+        ]
+        ws.append(headers)
+
+        apps = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        employees = {e.id: e for e in self.employee_repository.get_all(db, limit=2000)}
+        leave_types = {l.id: l.name for l in self.leave_type_repository.get_all(db, limit=1000)}
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
+
+        for a in apps:
+            emp = employees.get(a.employee_id)
+            emp_code = emp.employee_id if emp else ""
+            emp_name = emp.full_name if emp else ""
+
+            ws.append([
+                str(a.id),
+                emp_code,
+                emp_name,
+                leave_types.get(a.leave_type_id, ""),
+                a.start_date.strftime("%Y-%m-%d") if a.start_date else "",
+                a.end_date.strftime("%Y-%m-%d") if a.end_date else "",
+                a.total_days or 0,
+                a.reason or "",
+                a.status.value if a.status else "",
+                a.review_note or "",
+                str(a.business_id) if a.business_id else "",
+                businesses.get(a.business_id, "") if a.business_id else "Global",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
