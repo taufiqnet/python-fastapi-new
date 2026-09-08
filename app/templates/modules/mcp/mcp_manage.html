@@ -1,0 +1,484 @@
+{% extends "base.html" %}
+
+{% block title %}MCP AI Reports Hub - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Top Header -->
+    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 flex items-center gap-1.5">
+                    <i class="fas fa-robot text-xs"></i> Model Context Protocol (MCP)
+                </span>
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active
+                </span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 mt-2">MCP AI Reports & Intelligence Hub</h1>
+            <p class="text-sm text-gray-500 mt-1">Exposing HR & Payroll services directly to AI clients like Claude with granular RBAC & tenant scoping.</p>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <a href="#quick-presets" class="px-4 py-2.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl text-xs font-semibold transition-colors flex items-center space-x-1.5">
+                <i class="fas fa-bolt"></i>
+                <span>Quick Presets</span>
+            </a>
+            <a href="#setup-guide" class="px-4 py-2.5 bg-gray-900 text-white hover:bg-gray-800 rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center space-x-1.5">
+                <i class="fas fa-book-open"></i>
+                <span>Setup Guide</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Presets -->
+    <div id="quick-presets" class="space-y-3">
+        <h2 class="text-base font-bold text-gray-900 flex items-center space-x-2">
+            <i class="fas fa-magic text-indigo-600"></i>
+            <span>Instant Query Presets</span>
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            <!-- Card 1 -->
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group preset-card"
+                 data-tool="get_leave_summary_report">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-calendar-alt text-base"></i>
+                    </div>
+                    <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                        hrm:leave_applications:view
+                    </span>
+                </div>
+                <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    Leave Summary Report
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Aggregated leave request counts by leave type and status for a date range.</p>
+                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-indigo-600 font-medium">
+                    <span>Run Query</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group preset-card"
+                 data-tool="get_payroll_summary_report">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-file-invoice-dollar text-base"></i>
+                    </div>
+                    <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                        hrm:payroll_records:view
+                    </span>
+                </div>
+                <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    Payroll Summary Report
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Total headcount, basic, gross, net, and deductions for a payroll period.</p>
+                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-indigo-600 font-medium">
+                    <span>Run Query</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group preset-card"
+                 data-tool="list_employees">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-users text-base"></i>
+                    </div>
+                    <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                        hrm:employees:view
+                    </span>
+                </div>
+                <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    Employee Directory
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">List non-financial employee profiles filtered by tenant business profile.</p>
+                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-indigo-600 font-medium">
+                    <span>Run Query</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group preset-card"
+                 data-tool="get_attendance_summary">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-clock text-base"></i>
+                    </div>
+                    <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                        hrm:attendance:view
+                    </span>
+                </div>
+                <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    Attendance Summary
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Work hours, overtime, and present/absent days for an employee.</p>
+                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-indigo-600 font-medium">
+                    <span>Run Query</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            <!-- Card 5 -->
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group preset-card"
+                 data-tool="get_employee_payslip">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-receipt text-base"></i>
+                    </div>
+                    <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-rose-50 text-rose-700">
+                        Dual Permissions
+                    </span>
+                </div>
+                <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    Employee Payslip Statement
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Single employee payslip (requires both payroll_records:view & compensation:view).</p>
+                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-indigo-600 font-medium">
+                    <span>Run Query</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+            <!-- Card 6 -->
+            <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group preset-card"
+                 data-tool="get_employee_leave_balance">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-umbrella-beach text-base"></i>
+                    </div>
+                    <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                        hrm:leave_allocations:view
+                    </span>
+                </div>
+                <h3 class="text-sm font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    Employee Leave Balance
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Per-leave-type allocated, used, carried forward, and remaining days.</p>
+                <div class="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between text-xs text-indigo-600 font-medium">
+                    <span>Run Query</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Interactive Execution Form -->
+    <div id="interactive-tester" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-6">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-sm">
+                    <i class="fas fa-terminal"></i>
+                </div>
+                <div>
+                    <h2 class="text-base font-bold text-gray-900">Interactive MCP Tool Tester</h2>
+                    <p class="text-xs text-gray-500">Test backend MCP tools live using the authenticated session identity.</p>
+                </div>
+            </div>
+            <span class="text-xs text-gray-500 font-medium">Acting User: <strong class="text-gray-900">{{ current_user.username }}</strong> (ID: {{ current_user.id }})</span>
+        </div>
+
+        <form id="mcp-tool-form" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Select MCP Tool</label>
+                    <select id="tool-select" name="tool_name" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        <option value="list_employees">list_employees (hrm:employees:view)</option>
+                        <option value="get_employee">get_employee (hrm:employees:view)</option>
+                        <option value="list_leave_applications">list_leave_applications (hrm:leave_applications:view)</option>
+                        <option value="get_employee_leave_balance">get_employee_leave_balance (hrm:leave_allocations:view)</option>
+                        <option value="get_leave_summary_report" selected>get_leave_summary_report (hrm:leave_applications:view)</option>
+                        <option value="get_employee_payslip">get_employee_payslip (hrm:payroll_records:view & hrm:compensation:view)</option>
+                        <option value="get_payroll_summary_report">get_payroll_summary_report (hrm:payroll_records:view)</option>
+                        <option value="get_attendance_summary">get_attendance_summary (hrm:attendance:view)</option>
+                    </select>
+                </div>
+
+                <div id="field-business-id">
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Business Profile</label>
+                    <select id="param-business-id" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        {% for b in businesses %}
+                        <option value="{{ b.id }}" {% if current_user.business_id == b.id %}selected{% endif %}>{{ b.name_en }} (ID: {{ b.id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dynamic Dynamic Inputs Container -->
+            <div id="dynamic-inputs" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                <!-- Inputs rendered via JS -->
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-2">
+                <button type="submit" id="btn-run-mcp" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-xl shadow-sm transition-all flex items-center space-x-2">
+                    <i class="fas fa-play text-xs"></i>
+                    <span>Execute MCP Tool</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- Result Container -->
+        <div id="result-wrapper" class="hidden space-y-3 pt-4 border-t border-gray-100">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center space-x-2">
+                    <i class="fas fa-check-circle text-emerald-500 text-sm"></i>
+                    <span>Execution Result Output</span>
+                </h3>
+                <span id="result-status-badge" class="px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700">200 OK</span>
+            </div>
+
+            <div class="bg-gray-900 rounded-xl p-4 text-emerald-400 font-mono text-xs overflow-x-auto shadow-inner">
+                <pre id="json-output" class="whitespace-pre-wrap leading-relaxed"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step-by-Step Installation & Integration Guide -->
+    <div id="setup-guide" class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-6">
+        <div class="flex items-center space-x-3 border-b border-gray-100 pb-4">
+            <div class="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center font-bold">
+                <i class="fas fa-terminal"></i>
+            </div>
+            <div>
+                <h2 class="text-base font-bold text-gray-900">Step-by-Step Installation & Usage Guide</h2>
+                <p class="text-xs text-gray-500">How to run and connect this read-only MCP server with Claude Desktop or Claude Code.</p>
+            </div>
+        </div>
+
+        <div class="space-y-6 text-sm text-gray-700">
+
+            <!-- Step 1 -->
+            <div class="flex items-start space-x-4">
+                <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    1
+                </div>
+                <div class="flex-1 space-y-2">
+                    <h3 class="font-semibold text-gray-900">Install MCP SDK Dependencies</h3>
+                    <p class="text-xs text-gray-500">Install the Python MCP SDK using the isolated dependency footprint in <code class="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded font-mono text-[11px]">app/mcp/requirements.txt</code>:</p>
+                    <div class="bg-gray-900 text-gray-100 p-3 rounded-xl font-mono text-xs flex items-center justify-between">
+                        <code>pip install -r app/mcp/requirements.txt</code>
+                        <button onclick="navigator.clipboard.writeText('pip install -r app/mcp/requirements.txt')" class="text-gray-400 hover:text-white text-xs"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="flex items-start space-x-4">
+                <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    2
+                </div>
+                <div class="flex-1 space-y-2">
+                    <h3 class="font-semibold text-gray-900">Configure Acting User & Environment</h3>
+                    <p class="text-xs text-gray-500">Set the <code class="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded font-mono text-[11px]">MCP_ACTING_USER_ID</code> environment variable to a valid database User ID to enforce RBAC permissions and tenant scoping:</p>
+                    <div class="bg-gray-900 text-gray-100 p-3 rounded-xl font-mono text-xs flex items-center justify-between">
+                        <code>export MCP_ACTING_USER_ID={{ current_user.id }}</code>
+                        <button onclick="navigator.clipboard.writeText('export MCP_ACTING_USER_ID={{ current_user.id }}')" class="text-gray-400 hover:text-white text-xs"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="flex items-start space-x-4">
+                <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    3
+                </div>
+                <div class="flex-1 space-y-2">
+                    <h3 class="font-semibold text-gray-900">Run stdio Transport Server</h3>
+                    <p class="text-xs text-gray-500">Launch the MCP server entrypoint in stdio transport mode:</p>
+                    <div class="bg-gray-900 text-gray-100 p-3 rounded-xl font-mono text-xs flex items-center justify-between">
+                        <code>python -m app.mcp.hr_report_server</code>
+                        <button onclick="navigator.clipboard.writeText('python -m app.mcp.hr_report_server')" class="text-gray-400 hover:text-white text-xs"><i class="fas fa-copy"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="flex items-start space-x-4">
+                <div class="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    4
+                </div>
+                <div class="flex-1 space-y-2">
+                    <h3 class="font-semibold text-gray-900">Claude Desktop Configuration</h3>
+                    <p class="text-xs text-gray-500">Copy this configuration snippet into your <code class="bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded font-mono text-[11px]">claude_desktop_config.json</code>:</p>
+                    <div class="bg-gray-900 text-emerald-400 p-4 rounded-xl font-mono text-xs overflow-x-auto shadow-inner relative">
+                        <pre><code>{
+  "mcpServers": {
+    "hr_payroll_reports": {
+      "command": "python",
+      "args": ["-m", "app.mcp.hr_report_server"],
+      "env": {
+        "MCP_ACTING_USER_ID": "{{ current_user.id }}",
+        "DATABASE_URL": "sqlite:///./app.db",
+        "APP_ENV": "production"
+      }
+    }
+  }
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const employeesList = [
+        {% for e in employees %}
+        { id: "{{ e.id }}", name: "{{ e.full_name }} ({{ e.employee_id }})" },
+        {% endfor %}
+    ];
+
+    const periodsList = [
+        {% for p in periods %}
+        { id: "{{ p.id }}", name: "{{ p.name }}" },
+        {% endfor %}
+    ];
+
+    const toolSelect = document.getElementById('tool-select');
+    const dynamicInputs = document.getElementById('dynamic-inputs');
+    const mcpForm = document.getElementById('mcp-tool-form');
+    const resultWrapper = document.getElementById('result-wrapper');
+    const jsonOutput = document.getElementById('json-output');
+    const resultBadge = document.getElementById('result-status-badge');
+
+    function renderDynamicInputs() {
+        const selectedTool = toolSelect.value;
+        let html = '';
+
+        if (selectedTool === 'get_leave_summary_report' || selectedTool === 'list_leave_applications') {
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period Start</label>
+                    <input type="date" id="param-period-start" value="2025-01-01" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period End</label>
+                    <input type="date" id="param-period-end" value="2025-12-31" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            `;
+        }
+
+        if (selectedTool === 'get_employee' || selectedTool === 'get_employee_leave_balance' || selectedTool === 'get_attendance_summary' || selectedTool === 'get_employee_payslip') {
+            let empOptions = employeesList.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Employee</label>
+                    <select id="param-employee-id" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        ${empOptions || '<option value="">No employees available</option>'}
+                    </select>
+                </div>
+            `;
+        }
+
+        if (selectedTool === 'get_payroll_summary_report' || selectedTool === 'get_employee_payslip') {
+            let periodOptions = periodsList.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Payroll Period</label>
+                    <select id="param-payroll-period-id" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        ${periodOptions || '<option value="">No payroll periods available</option>'}
+                    </select>
+                </div>
+            `;
+        }
+
+        if (selectedTool === 'get_attendance_summary') {
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period Start</label>
+                    <input type="date" id="param-period-start" value="2025-01-01" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period End</label>
+                    <input type="date" id="param-period-end" value="2025-12-31" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            `;
+        }
+
+        dynamicInputs.innerHTML = html;
+    }
+
+    toolSelect.addEventListener('change', renderDynamicInputs);
+    renderDynamicInputs();
+
+    // Preset cards click
+    document.querySelectorAll('.preset-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const tool = card.getAttribute('data-tool');
+            toolSelect.value = tool;
+            renderDynamicInputs();
+            document.getElementById('interactive-tester').scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+
+    // Form Submit
+    mcpForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const selectedTool = toolSelect.value;
+        const bizIdVal = document.getElementById('param-business-id').value;
+
+        const args = {};
+        if (bizIdVal) args.business_id = parseInt(bizIdVal);
+
+        const empInput = document.getElementById('param-employee-id');
+        if (empInput && empInput.value) args.employee_id = empInput.value;
+
+        const startInput = document.getElementById('param-period-start');
+        if (startInput && startInput.value) args.period_start = startInput.value;
+
+        const endInput = document.getElementById('param-period-end');
+        if (endInput && endInput.value) args.period_end = endInput.value;
+
+        const periodInput = document.getElementById('param-payroll-period-id');
+        if (periodInput && periodInput.value) args.payroll_period_id = periodInput.value;
+
+        const btnRun = document.getElementById('btn-run-mcp');
+        const origText = btnRun.innerHTML;
+        btnRun.disabled = true;
+        btnRun.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i> Running...';
+
+        try {
+            const response = await fetch('/mcp/api/run-tool', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tool_name: selectedTool,
+                    arguments: args
+                })
+            });
+
+            const data = await response.json();
+            resultWrapper.classList.remove('hidden');
+
+            if (!response.ok) {
+                resultBadge.className = 'px-2.5 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700';
+                resultBadge.textContent = 'Error';
+                jsonOutput.textContent = JSON.stringify(data, null, 2);
+            } else {
+                resultBadge.className = 'px-2.5 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700';
+                resultBadge.textContent = '200 OK';
+                jsonOutput.textContent = JSON.stringify(data, null, 2);
+            }
+        } catch (err) {
+            resultWrapper.classList.remove('hidden');
+            resultBadge.className = 'px-2.5 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700';
+            resultBadge.textContent = 'Client Error';
+            jsonOutput.textContent = err.message;
+        } finally {
+            btnRun.disabled = false;
+            btnRun.innerHTML = origText;
+        }
+    });
+</script>
+{% endblock %}

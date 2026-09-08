@@ -451,8 +451,8 @@
 
                 <!-- GENERAL / USERS & PERMISSIONS MODULE -->
                 {% if current_user and current_user.has_permission('general:users_permissions:view') %}
-                <div class="sidebar-dropdown {% if active_page in ['users', 'roles'] %}expanded{% endif %}" data-module="general_admin">
-                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['users', 'roles'] %}active{% endif %}">
+                <div class="sidebar-dropdown {% if active_page in ['users', 'roles', 'mcp'] %}expanded{% endif %}" data-module="general_admin">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['users', 'roles', 'mcp'] %}active{% endif %}">
                         <span class="flex items-center">
                             <i class="fas fa-user-shield w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text">General & Admin</span>
@@ -477,6 +477,15 @@
                             </span>
                             <span class="sidebar-tooltip">
                                 Roles & Permissions
+                            </span>
+                        </a>
+                        <a href="/mcp/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'mcp' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-robot w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                MCP AI Reports Hub
+                            </span>
+                            <span class="sidebar-tooltip">
+                                MCP AI Reports Hub
                             </span>
                         </a>
                     </div>

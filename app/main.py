@@ -88,6 +88,7 @@ from app.routers import (
     recruitment_views,
     role_views,
     user_views,
+    mcp_views,
     tasks,
 )
 
@@ -203,6 +204,7 @@ app.include_router(notice_views.router)
 app.include_router(recruitment_views.router)
 app.include_router(role_views.router)
 app.include_router(user_views.router)
+app.include_router(mcp_views.router)
 app.include_router(business.router)
 
 # ecommerce module router

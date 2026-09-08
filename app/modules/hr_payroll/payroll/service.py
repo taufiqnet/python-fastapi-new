@@ -572,6 +572,50 @@ class PayrollRecordService:
         wb.save(output)
         return output.getvalue()
 
+    def get_payroll_summary_report(
+        self, db: Session, business_id: int, period_id: uuid.UUID
+    ) -> dict:
+        # Added for MCP read-only report aggregation (totals only, no individual employee records)
+        period = self.period_repository.get_by_id(db, period_id)
+        if not period:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Payroll period not found",
+            )
+        if period.business_id != business_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payroll period does not belong to specified business profile",
+            )
+
+        records = self.repository.get_all(
+            db, business_id=business_id, period_id=period_id, limit=5000
+        )
+
+        total_gross = sum(float(r.gross_salary or 0) for r in records)
+        total_net = sum(float(r.net_salary or 0) for r in records)
+        total_deductions = sum(float(r.total_deduction or 0) for r in records)
+        total_basic = sum(float(r.basic_salary or 0) for r in records)
+        total_overtime_pay = sum(float(r.overtime_pay or 0) for r in records)
+        total_bonus = sum(float(r.bonus or 0) for r in records)
+        paid_count = sum(1 for r in records if r.is_paid)
+
+        return {
+            "business_id": business_id,
+            "period_id": str(period_id),
+            "period_name": period.name,
+            "period_status": str(period.status.value if hasattr(period.status, "value") else period.status),
+            "headcount": len(records),
+            "total_basic_salary": round(total_basic, 2),
+            "total_gross_salary": round(total_gross, 2),
+            "total_net_salary": round(total_net, 2),
+            "total_deductions": round(total_deductions, 2),
+            "total_overtime_pay": round(total_overtime_pay, 2),
+            "total_bonus": round(total_bonus, 2),
+            "paid_count": paid_count,
+            "unpaid_count": len(records) - paid_count,
+        }
+
     def generate_period_payroll(
         self, db: Session, period_uuid: uuid.UUID
     ) -> list[PayrollRecord]:

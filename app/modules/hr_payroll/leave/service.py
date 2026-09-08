@@ -798,3 +798,43 @@ class LeaveApplicationService:
         output = BytesIO()
         wb.save(output)
         return output.getvalue()
+
+    def get_leave_summary_report(
+        self, db: Session, business_id: int, period_start, period_end
+    ) -> dict:
+        # Added for MCP read-only report aggregation
+        from datetime import datetime
+        if isinstance(period_start, str):
+            period_start_dt = datetime.strptime(period_start, "%Y-%m-%d").date()
+        else:
+            period_start_dt = period_start
+        if isinstance(period_end, str):
+            period_end_dt = datetime.strptime(period_end, "%Y-%m-%d").date()
+        else:
+            period_end_dt = period_end
+
+        apps = self.repository.get_all(db, business_id=business_id, limit=5000)
+        filtered_apps = [
+            a for a in apps
+            if a.start_date <= period_end_dt and a.end_date >= period_start_dt
+        ]
+
+        summary_by_type: dict[str, dict[str, int]] = {}
+        for app in filtered_apps:
+            lt_name = app.leave_type.name if app.leave_type else "Unknown"
+            if lt_name not in summary_by_type:
+                summary_by_type[lt_name] = {
+                    "pending": 0, "approved": 0, "rejected": 0, "cancelled": 0, "total": 0
+                }
+            st_str = str(app.status.value if hasattr(app.status, "value") else app.status).lower()
+            if st_str in summary_by_type[lt_name]:
+                summary_by_type[lt_name][st_str] += 1
+            summary_by_type[lt_name]["total"] += 1
+
+        return {
+            "business_id": business_id,
+            "period_start": str(period_start_dt),
+            "period_end": str(period_end_dt),
+            "total_applications": len(filtered_apps),
+            "by_leave_type": summary_by_type,
+        }

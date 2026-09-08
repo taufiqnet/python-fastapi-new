@@ -64,7 +64,10 @@ All tools are **read-only** — this server must not create, update, or delete a
 
 1. `app/mcp/hr_report_server.py` — the MCP server entrypoint.
 2. Any new minimal read/aggregation methods added to the relevant HR/payroll service(s), each with a one-line comment noting why it was needed.
-3. A short addition to `app/mcp/README.md` documenting these new tools alongside the existing ones, including the two-permission case for `get_employee_payslip`.
+3. A short addition to `app/mcp/README.md` documenting these new tools alongside the existing ones, including the two-permission case for `get_employee_payslip`. Explicitly state in this README that:
+   - No LLM API key, OpenRouter account, or Claude Code license is required to use this server — MCP servers don't run a model themselves, they only provide tools that an already-connected AI client calls.
+   - The intended client is the free Claude Desktop app (signed in with any claude.ai plan, Free included), connected via a local `stdio` entry in `claude_desktop_config.json` — not a remote/hosted connector, so the Free plan's one-custom-connector limit does not apply here.
+   - Include a copy-pasteable `claude_desktop_config.json` snippet for this specific server, following the same format as the one already documented for `user_server.py`.
 4. Tests (pytest) covering: a permission-denied case for `get_employee_payslip` when the acting user lacks `hrm:compensation:view`, a tenant-scoping case (business A cannot see business B's employees or payroll), and a happy path for `get_leave_summary_report` and `get_payroll_summary_report` confirming they return aggregates only, never per-employee salary rows.
 5. A one-line confirmation in your final summary that you ran the "delete `app/mcp/`, run the existing test suite" check described above, and that it passed with zero failures.
 

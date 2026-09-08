@@ -376,6 +376,60 @@ class AttendanceService:
         wb.save(output)
         return output.getvalue()
 
+    def get_attendance_summary(
+        self, db: Session, employee_id: uuid.UUID, period_start, period_end
+    ) -> dict:
+        # Added for MCP read-only report aggregation
+        if isinstance(period_start, str):
+            start_dt = datetime.strptime(period_start, "%Y-%m-%d").date()
+        else:
+            start_dt = period_start
+
+        if isinstance(period_end, str):
+            end_dt = datetime.strptime(period_end, "%Y-%m-%d").date()
+        else:
+            end_dt = period_end
+
+        records = self.repository.get_all(
+            db,
+            employee_id=employee_id,
+            start_date=start_dt,
+            end_date=end_dt,
+            limit=5000,
+        )
+
+        status_counts = {
+            "present": 0,
+            "absent": 0,
+            "late": 0,
+            "half_day": 0,
+            "on_leave": 0,
+            "holiday": 0,
+            "weekend": 0,
+        }
+        total_work_hours = 0.0
+        total_overtime_hours = 0.0
+
+        for r in records:
+            st_val = str(r.status.value if hasattr(r.status, "value") else r.status).lower()
+            if st_val in status_counts:
+                status_counts[st_val] += 1
+            else:
+                status_counts[st_val] = 1
+
+            total_work_hours += float(r.work_hours or 0.0)
+            total_overtime_hours += float(r.overtime_hours or 0.0)
+
+        return {
+            "employee_id": str(employee_id),
+            "period_start": str(start_dt),
+            "period_end": str(end_dt),
+            "total_records": len(records),
+            "status_counts": status_counts,
+            "total_work_hours": round(total_work_hours, 2),
+            "total_overtime_hours": round(total_overtime_hours, 2),
+        }
+
     def import_attendance_excel(
         self, db: Session, business_id: int, file_bytes: bytes
     ) -> dict[str, int | list[str]]:
