@@ -10,7 +10,10 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user_optional
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
-from app.mcp import hr_report_server
+try:
+    from app.mcp import hr_report_server
+except ImportError:
+    hr_report_server = None
 from app.modules.hr_payroll.employees.service import EmployeeService
 from app.modules.hr_payroll.payroll.service import PayrollPeriodService
 
@@ -70,6 +73,12 @@ async def run_mcp_tool(
 
     tool_name = req.tool_name
     args = req.arguments or {}
+
+    if not hr_report_server:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="MCP HR Report Server is not installed or available.",
+        )
 
     tool_map = {
         "list_employees": hr_report_server.list_employees,

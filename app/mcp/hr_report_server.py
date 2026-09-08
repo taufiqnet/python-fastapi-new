@@ -55,19 +55,21 @@ def resolve_acting_user() -> User:
     except ValueError:
         raise RuntimeError(f"Invalid MCP_ACTING_USER_ID: '{acting_user_id_str}'")
 
-    async def _fetch():
-        async with AsyncSessionLocal() as async_db:
-            repo = UserRepository()
-            u = await repo.get_by_id(async_db, user_id)
-            if u:
-                # Pre-evaluate permission codes while session is active to prevent DetachedInstanceError
-                _ = u.get_all_permission_codes()
-            return u
-
-    user = asyncio.run(_fetch())
-    if not user:
-        raise RuntimeError(f"Acting user with ID {user_id} not found in database")
-    return user
+    db = SessionLocal()
+    try:
+        from sqlalchemy.orm import selectinload
+        from app.core.identity.models import Role
+        user = db.query(User).options(
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.direct_permissions),
+        ).filter(User.id == user_id).first()
+        if not user:
+            raise RuntimeError(f"Acting user with ID {user_id} not found in database")
+        # Pre-evaluate permission codes while session is active to prevent DetachedInstanceError
+        _ = user.get_all_permission_codes()
+        return user
+    finally:
+        db.close()
 
 
 def check_permissions(acting_user: User, required_permissions: list[str]) -> None:
@@ -332,7 +334,7 @@ def get_employee_leave_balance(employee_id: str) -> dict[str, Any] | str:
 
 
 @mcp.tool()
-def get_leave_summary_report(business_id: int, period_start: str, period_end: str) -> dict[str, Any] | str:
+def get_leave_summary_report(business_id: int | None = None, period_start: str = "2025-01-01", period_end: str = "2025-12-31") -> dict[str, Any] | str:
     """
     Get aggregated leave summary counts by type and status for a date range.
     Requires permission: hrm:leave_applications:view
@@ -427,7 +429,7 @@ def get_employee_payslip(employee_id: str, payroll_period_id: str) -> dict[str, 
 
 
 @mcp.tool()
-def get_payroll_summary_report(business_id: int, payroll_period_id: str) -> dict[str, Any] | str:
+def get_payroll_summary_report(payroll_period_id: str, business_id: int | None = None) -> dict[str, Any] | str:
     """
     Get aggregated payroll totals (headcount, total gross, net, deductions) for a period.
     Requires permission: hrm:payroll_records:view
