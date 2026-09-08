@@ -226,6 +226,16 @@ async def test_category_api_crud(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_category_html_views(client: AsyncClient):
+    # Override user to superuser/admin to view all ecommerce menus in sidebar
+    from app.core.deps import get_current_user_optional
+    from app.core.identity.models import User
+
+    admin_user = User(username="admin", email="admin@example.com", is_superuser=True, is_active=True)
+    async def _override_admin(*args, **kwargs):
+        return admin_user
+
+    app.dependency_overrides[get_current_user_optional] = _override_admin
+
     # 1. Manage Page
     manage_resp = await client.get("/categories/manage")
     assert manage_resp.status_code == 200
