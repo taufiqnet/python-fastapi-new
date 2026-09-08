@@ -11,8 +11,8 @@ class BusinessProfileCreate(BaseModel):
     company_tagline: str | None = ""
     description: str | None = ""
 
-    cr_number: str | None = ""
-    vat_number: str | None = ""
+    cr_number: str | None = None
+    vat_number: str | None = None
     tax_number: str | None = ""
     license_number: str | None = ""
     license_expiry_date: date | None = None
@@ -79,10 +79,12 @@ class BusinessProfileCreate(BaseModel):
     is_active: bool = True
 
     @field_validator(
-        "email", "support_email", "sales_email", "invoice_email", mode="before"
+        "email", "support_email", "sales_email", "invoice_email", "cr_number", "vat_number", mode="before"
     )
     @classmethod
-    def blank_email_to_none(cls, v):
+    def blank_to_none(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
         if v == "" or v is None:
             return None
         return v

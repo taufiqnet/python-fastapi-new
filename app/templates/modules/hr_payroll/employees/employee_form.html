@@ -407,10 +407,8 @@ function handleEmployeeSubmit(event) {
 
     const dobInput = document.getElementById('date_of_birth');
     if (dobInput && dobInput.value) {
-        const selectedDob = new Date(dobInput.value);
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        if (selectedDob >= today) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        if (dobInput.value >= todayStr) {
             showWarningAlert('Invalid Date of Birth', 'Date of Birth cannot be today or a future date.');
             return;
         }

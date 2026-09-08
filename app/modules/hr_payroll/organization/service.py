@@ -95,6 +95,44 @@ class DepartmentService:
         department = self.get_department(db, department_id)
         self.repository.delete(db, department)
 
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Departments"
+
+        headers = [
+            "Department ID",
+            "Department Name",
+            "Slug",
+            "Description",
+            "Business Profile ID",
+            "Multiple Heads Allowed",
+            "Status",
+        ]
+        ws.append(headers)
+
+        departments = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+
+        for d in departments:
+            ws.append([
+                str(d.id),
+                d.name or "",
+                d.slug or "",
+                d.description or "",
+                str(d.business_id) if d.business_id else "Global",
+                "Yes" if d.multiple_heads_allowed else "No",
+                "Active" if d.is_active else "Inactive",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -305,6 +343,52 @@ class JobTitleService:
     def delete_job_title(self, db: Session, job_title_id: uuid.UUID) -> None:
         job_title = self.get_job_title(db, job_title_id)
         self.repository.delete(db, job_title)
+
+    def generate_export_excel(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        department_id: uuid.UUID | None = None,
+    ) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Job Titles"
+
+        headers = [
+            "Job Title ID",
+            "Job Title Name",
+            "Short Name",
+            "Department",
+            "Business Profile ID",
+            "Description",
+            "Status",
+        ]
+        ws.append(headers)
+
+        job_titles = self.repository.get_all(
+            db, skip=0, limit=2000, business_id=business_id, department_id=department_id
+        )
+        departments = {d.id: d.name for d in self.department_repository.get_all(db, limit=1000)}
+
+        for j in job_titles:
+            ws.append([
+                str(j.id),
+                j.name or "",
+                j.short_name or "",
+                departments.get(j.department_id, "") if j.department_id else "Unassigned",
+                str(j.business_id) if j.business_id else "Global",
+                j.description or "",
+                "Active" if j.is_active else "Inactive",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
 
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
         wb = openpyxl.Workbook()

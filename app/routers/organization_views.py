@@ -5,8 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user_optional
 from app.core.tenancy.service import BusinessService
-from app.database import get_db
+from app.database import get_async_db, get_db
 from app.modules.hr_payroll.organization.service import (
     DepartmentService,
     JobTitleService,
@@ -22,13 +23,15 @@ business_service = BusinessService()
 
 # --- Department Views ---
 @router.get("/departments/manage", response_class=HTMLResponse)
-def department_list_page(
+async def department_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     departments = department_service.get_departments(
         db, skip=skip, limit=limit, business_id=business_id
     )
@@ -46,6 +49,7 @@ def department_list_page(
         request=request,
         name="modules/hr_payroll/organization/departments/department_list.html",
         context={
+            "current_user": current_user,
             "departments": departments,
             "businesses": businesses,
             "biz_map": biz_map,
@@ -115,14 +119,16 @@ def department_edit_page(
 
 # --- Job Title Views ---
 @router.get("/job-titles/manage", response_class=HTMLResponse)
-def job_title_list_page(
+async def job_title_list_page(
     request: Request,
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
     department_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     job_titles = job_title_service.get_job_titles(
         db,
         skip=skip,
@@ -147,6 +153,7 @@ def job_title_list_page(
         request=request,
         name="modules/hr_payroll/organization/job_titles/job_title_list.html",
         context={
+            "current_user": current_user,
             "job_titles": job_titles,
             "businesses": businesses,
             "departments": departments,

@@ -34,8 +34,8 @@ class BusinessProfile(Base):
     favicon: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     # Registration & Compliance
-    cr_number: Mapped[str | None] = mapped_column(String(50), unique=True, default="")
-    vat_number: Mapped[str | None] = mapped_column(String(50), unique=True, default="")
+    cr_number: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True, default=None)
+    vat_number: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True, default=None)
     tax_number: Mapped[str | None] = mapped_column(String(50), default="")
     license_number: Mapped[str | None] = mapped_column(String(100), default="")
     license_expiry_date: Mapped[date | None] = mapped_column(Date, nullable=True)

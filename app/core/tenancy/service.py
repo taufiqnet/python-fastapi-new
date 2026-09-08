@@ -11,13 +11,20 @@ class BusinessService:
         self.repository = BusinessRepository()
 
     def create_business(self, db: Session, data: BusinessProfileCreate):
-        if data.cr_number and self.repository.get_by_cr_number(db, data.cr_number):
+        cr = data.cr_number.strip() if data.cr_number else None
+        vat = data.vat_number.strip() if data.vat_number else None
+
+        if cr and self.repository.get_by_cr_number(db, cr):
             raise HTTPException(status_code=400, detail="CR number already exists")
 
-        if data.vat_number and self.repository.get_by_vat_number(db, data.vat_number):
+        if vat and self.repository.get_by_vat_number(db, vat):
             raise HTTPException(status_code=400, detail="VAT number already exists")
 
-        business = BusinessProfile(**data.model_dump())
+        dump = data.model_dump()
+        dump["cr_number"] = cr
+        dump["vat_number"] = vat
+
+        business = BusinessProfile(**dump)
 
         return self.repository.create(db, business)
 
@@ -37,15 +44,22 @@ class BusinessService:
     ):
         business = self.get_business(db, business_id)
 
-        if data.cr_number and data.cr_number != business.cr_number:
-            if self.repository.get_by_cr_number(db, data.cr_number):
+        cr = data.cr_number.strip() if data.cr_number else None
+        vat = data.vat_number.strip() if data.vat_number else None
+
+        if cr and cr != business.cr_number:
+            if self.repository.get_by_cr_number(db, cr):
                 raise HTTPException(status_code=400, detail="CR number already exists")
 
-        if data.vat_number and data.vat_number != business.vat_number:
-            if self.repository.get_by_vat_number(db, data.vat_number):
+        if vat and vat != business.vat_number:
+            if self.repository.get_by_vat_number(db, vat):
                 raise HTTPException(status_code=400, detail="VAT number already exists")
 
-        return self.repository.update(db, business, data.model_dump())
+        dump = data.model_dump()
+        dump["cr_number"] = cr
+        dump["vat_number"] = vat
+
+        return self.repository.update(db, business, dump)
 
     def delete_business(self, db: Session, business_id: int):
         business = self.get_business(db, business_id)

@@ -24,6 +24,20 @@ job_title_service = JobTitleService()
 
 
 # --- Departments Endpoints ---
+@router.get("/departments/export-excel")
+def export_departments_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = department_service.generate_export_excel(db, business_id=business_id)
+    filename = "departments_export.xlsx" if not business_id else f"departments_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/departments/template-excel")
 def download_departments_excel_template(
     business_id: int = Query(...),
@@ -94,6 +108,23 @@ def delete_department(department_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 # --- Job Titles Endpoints ---
+@router.get("/job-titles/export-excel")
+def export_job_titles_excel(
+    business_id: int | None = Query(None),
+    department_id: uuid.UUID | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    excel_data = job_title_service.generate_export_excel(
+        db, business_id=business_id, department_id=department_id
+    )
+    filename = "job_titles_export.xlsx" if not business_id else f"job_titles_export_business_{business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/job-titles/template-excel")
 def download_job_titles_excel_template(
     business_id: int = Query(...),
