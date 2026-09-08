@@ -3,6 +3,7 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.repository import BusinessRepository
 from app.modules.hr_payroll.organization.models import Department, JobTitle
 from app.modules.hr_payroll.organization.repository import (
     DepartmentRepository,
@@ -106,12 +107,15 @@ class DepartmentService:
             "Slug",
             "Description",
             "Business Profile ID",
+            "Business Profile Name",
             "Multiple Heads Allowed",
             "Status",
         ]
         ws.append(headers)
 
         departments = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
 
         for d in departments:
             ws.append([
@@ -119,7 +123,8 @@ class DepartmentService:
                 d.name or "",
                 d.slug or "",
                 d.description or "",
-                str(d.business_id) if d.business_id else "Global",
+                str(d.business_id) if d.business_id else "",
+                businesses.get(d.business_id, "") if d.business_id else "Global",
                 "Yes" if d.multiple_heads_allowed else "No",
                 "Active" if d.is_active else "Inactive",
             ])
@@ -360,6 +365,7 @@ class JobTitleService:
             "Short Name",
             "Department",
             "Business Profile ID",
+            "Business Profile Name",
             "Description",
             "Status",
         ]
@@ -369,6 +375,8 @@ class JobTitleService:
             db, skip=0, limit=2000, business_id=business_id, department_id=department_id
         )
         departments = {d.id: d.name for d in self.department_repository.get_all(db, limit=1000)}
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
 
         for j in job_titles:
             ws.append([
@@ -376,7 +384,8 @@ class JobTitleService:
                 j.name or "",
                 j.short_name or "",
                 departments.get(j.department_id, "") if j.department_id else "Unassigned",
-                str(j.business_id) if j.business_id else "Global",
+                str(j.business_id) if j.business_id else "",
+                businesses.get(j.business_id, "") if j.business_id else "Global",
                 j.description or "",
                 "Active" if j.is_active else "Inactive",
             ])

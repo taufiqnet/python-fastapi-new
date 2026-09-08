@@ -9,6 +9,7 @@ from app.modules.hr_payroll.employees.schemas import (
     EmployeeCreate,
     EmployeeUpdate,
 )
+from app.core.tenancy.repository import BusinessRepository
 from app.modules.hr_payroll.organization.repository import (
     DepartmentRepository,
     JobTitleRepository,
@@ -397,7 +398,8 @@ class EmployeeService:
             "Phone",
             "Department",
             "Job Title",
-            "Business Profile",
+            "Business Profile ID",
+            "Business Profile Name",
             "Employment Type",
             "Work Arrangement",
             "Start Date",
@@ -408,6 +410,8 @@ class EmployeeService:
         employees = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
         departments = {d.id: d.name for d in self.department_repository.get_all(db, limit=1000)}
         job_titles = {j.id: j.name for j in self.job_title_repository.get_all(db, limit=1000)}
+        biz_repo = BusinessRepository()
+        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
 
         for emp in employees:
             ws.append([
@@ -422,6 +426,7 @@ class EmployeeService:
                 departments.get(emp.department_id, "") if emp.department_id else "",
                 job_titles.get(emp.job_title_id, "") if emp.job_title_id else "",
                 str(emp.business_id) if emp.business_id else "",
+                businesses.get(emp.business_id, "") if emp.business_id else "Global",
                 emp.employment_type.value if emp.employment_type else "",
                 emp.work_arrangement.value if emp.work_arrangement else "",
                 emp.start_date.strftime("%Y-%m-%d") if emp.start_date else "",
