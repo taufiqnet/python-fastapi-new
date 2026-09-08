@@ -829,6 +829,9 @@
                         </div>
                     </div>
                     <div class="flex items-center space-x-1 sidebar-text">
+                        <button type="button" id="change-password-btn" title="Change Password" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors">
+                            <i class="fas fa-key text-sm"></i>
+                        </button>
                         <a href="/auth/logout" id="logout-btn" title="Logout" class="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors">
                             <i class="fas fa-sign-out-alt text-sm"></i>
                         </a>
@@ -864,6 +867,62 @@
         <div class="flex-1 overflow-y-auto p-4 lg:p-5">
             {% block content %}{% endblock %}
         </div>
+
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden transform transition-all">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <i class="fas fa-key text-sm"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-900">Change Password</h3>
+                </div>
+                <button type="button" id="close-change-password-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+            <form id="change-password-form" class="p-6 space-y-4" autocomplete="off">
+                <input type="text" name="username" value="{{ current_user.username if current_user else '' }}" autocomplete="username" class="hidden" style="display:none;" aria-hidden="true" tabindex="-1" />
+                <div>
+                    <label for="change-new-password" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">New Password</label>
+                    <div class="relative">
+                        <input type="password" id="change-new-password" name="new_password" required placeholder="Enter new password" autocomplete="new-password"
+                            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors pr-10" />
+                        <button type="button" class="toggle-password-visibility absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" data-target="change-new-password">
+                            <i class="fas fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="change-confirm-password" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Confirm Password</label>
+                    <div class="relative">
+                        <input type="password" id="change-confirm-password" name="confirm_password" required placeholder="Confirm new password" autocomplete="new-password"
+                            class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors pr-10" />
+                        <button type="button" class="toggle-password-visibility absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" data-target="change-confirm-password">
+                            <i class="fas fa-eye text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="change-password-error" class="hidden text-xs text-red-600 bg-red-50 border border-red-100 p-2.5 rounded-xl flex items-center space-x-1.5 font-medium">
+                    <i class="fas fa-exclamation-circle text-xs shrink-0"></i>
+                    <span id="change-password-error-text">Password and Confirm Password do not match</span>
+                </div>
+
+                <div class="pt-2 flex items-center justify-end space-x-3">
+                    <button type="button" id="cancel-change-password-modal" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" id="submit-change-password-btn" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm transition-colors flex items-center space-x-1.5">
+                        <i class="fas fa-save text-xs"></i>
+                        <span>Update Password</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     </main>
 
@@ -1011,6 +1070,139 @@
                 confirmButtonColor: '#f59e0b'
             });
         };
+
+        // Change Password Modal logic
+        const changePasswordBtn = document.getElementById('change-password-btn');
+        const changePasswordModal = document.getElementById('change-password-modal');
+        const closeChangePasswordModal = document.getElementById('close-change-password-modal');
+        const cancelChangePasswordModal = document.getElementById('cancel-change-password-modal');
+        const changePasswordForm = document.getElementById('change-password-form');
+
+        const changePasswordError = document.getElementById('change-password-error');
+        const changePasswordErrorText = document.getElementById('change-password-error-text');
+
+        function openChangePasswordModal() {
+            if (changePasswordForm) changePasswordForm.reset();
+            hideChangePasswordError();
+            // Reset input types to password and eye icons to fa-eye
+            document.querySelectorAll('.toggle-password-visibility').forEach(btn => {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                if (input) input.type = 'password';
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+            if (changePasswordModal) changePasswordModal.classList.remove('hidden');
+        }
+
+        function closeChangePasswordModalFunc() {
+            if (changePasswordModal) changePasswordModal.classList.add('hidden');
+            hideChangePasswordError();
+        }
+
+        function showChangePasswordError(msg) {
+            if (changePasswordErrorText) changePasswordErrorText.textContent = msg;
+            if (changePasswordError) changePasswordError.classList.remove('hidden');
+        }
+
+        function hideChangePasswordError() {
+            if (changePasswordError) changePasswordError.classList.add('hidden');
+        }
+
+        if (changePasswordBtn) {
+            changePasswordBtn.addEventListener('click', openChangePasswordModal);
+        }
+        if (closeChangePasswordModal) {
+            closeChangePasswordModal.addEventListener('click', closeChangePasswordModalFunc);
+        }
+        if (cancelChangePasswordModal) {
+            cancelChangePasswordModal.addEventListener('click', closeChangePasswordModalFunc);
+        }
+
+        // Toggle Password Visibility Handler
+        document.querySelectorAll('.toggle-password-visibility').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const icon = this.querySelector('i');
+                if (input) {
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        if (icon) {
+                            icon.classList.remove('fa-eye');
+                            icon.classList.add('fa-eye-slash');
+                        }
+                    } else {
+                        input.type = 'password';
+                        if (icon) {
+                            icon.classList.remove('fa-eye-slash');
+                            icon.classList.add('fa-eye');
+                        }
+                    }
+                }
+            });
+        });
+
+        // Submit Change Password Form
+        if (changePasswordForm) {
+            changePasswordForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                hideChangePasswordError();
+
+                const newPassword = document.getElementById('change-new-password').value;
+                const confirmPassword = document.getElementById('change-confirm-password').value;
+
+                if (!newPassword || !confirmPassword) {
+                    showChangePasswordError('Please fill in both password fields.');
+                    return;
+                }
+
+                if (newPassword !== confirmPassword) {
+                    showChangePasswordError('Password and Confirm Password do not match');
+                    return;
+                }
+
+                const submitBtn = document.getElementById('submit-change-password-btn');
+                const origHtml = submitBtn ? submitBtn.innerHTML : '';
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i><span>Updating...</span>';
+                }
+
+                try {
+                    const response = await fetch('/auth/change-password', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            new_password: newPassword,
+                            confirm_password: confirmPassword
+                        })
+                    });
+
+                    const resData = await response.json();
+
+                    if (!response.ok) {
+                        showChangePasswordError(resData.detail || 'Failed to update password.');
+                    } else {
+                        closeChangePasswordModalFunc();
+                        showSuccessToast('Success', resData.message || 'Password changed successfully!');
+                    }
+                } catch (err) {
+                    console.error('Change password failed:', err);
+                    showErrorAlert('Error', 'An unexpected error occurred.');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = origHtml;
+                    }
+                }
+            });
+        }
 
         // Logout Handler
         const logoutBtn = document.getElementById('logout-btn');
