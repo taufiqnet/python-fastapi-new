@@ -512,18 +512,143 @@
                     </button>
 
                     <div class="sidebar-dropdown-menu space-y-1">
-                        {% if current_user.has_permission('hrm:notice_board:view') %}
-                        <a href="/notices/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'notice_board' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-bullhorn w-4 text-sm shrink-0"></i>
+                                                <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 sidebar-text first:pt-1">Workforce</p>
+{% if current_user.has_permission('hrm:departments:view') %}
+                        <a href="/departments/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'departments' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-sitemap w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Notice Board
+                                Department
                             </span>
                             <span class="sidebar-tooltip">
-                                Notice Board
+                                Department
                             </span>
                         </a>
                         {% endif %}
-                        {% if current_user.has_permission('hrm:recruitment:view') %}
+{% if current_user.has_permission('hrm:job_titles:view') %}
+                        <a href="/job-titles/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'job_titles' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-user-tie w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Job Title
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Job Title
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:employees:view') %}
+                        <a href="/employees/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'employees' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-id-badge w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Employees
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Employees
+                            </span>
+                        </a>
+                        {% endif %}
+                        <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 sidebar-text first:pt-1">Attendance & leave</p>
+{% if current_user.has_permission('hrm:attendance:view') %}
+                        <a href="/attendance/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'attendance' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-clock w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Attendance
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Attendance
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:leave_types:view') %}
+                        <a href="/leave/types/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'leave_types' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-umbrella-beach w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Leave Types
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Leave Types
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:leave_allocations:view') %}
+                        <a href="/leave/allocations/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'leave_allocations' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-layer-group w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Leave Allocations
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Leave Allocations
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:leave_applications:view') %}
+                        <a href="/leave/applications/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'leave_applications' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-calendar-check w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Leave Requests
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Leave Requests
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:holidays:view') %}
+                        <a href="/holidays/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'holidays' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-calendar-alt w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Holidays
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Holidays
+                            </span>
+                        </a>
+                        {% endif %}
+                        <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 sidebar-text first:pt-1">Payroll</p>
+{% if current_user.has_permission('hrm:payroll_periods:view') %}
+                        <a href="/payroll-periods/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_periods' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-clock w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Payroll Periods
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Payroll Periods
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:payroll_records:view') %}
+                        <a href="/payroll-records/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_records' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-file-invoice-dollar w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Payslips
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Payslips
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:compensation:view') %}
+                        <a href="/compensation/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'compensation' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-money-bill-wave w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Compensation
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Compensation
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:payroll_settings:view') %}
+                        <a href="/payroll-settings/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_settings' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-sliders-h w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Payroll Settings
+                            </span>
+                            <span class="sidebar-tooltip">
+                                Payroll Settings
+                            </span>
+                        </a>
+                        {% endif %}
+                        <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 sidebar-text first:pt-1">Recruitment</p>
+{% if current_user.has_permission('hrm:recruitment:view') %}
                         <a href="/recruitment/candidates/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'recruitment_candidates' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                             <i class="fas fa-user-tie w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
@@ -543,7 +668,8 @@
                             </span>
                         </a>
                         {% endif %}
-                        {% if current_user.has_permission('hrm:appointment_letters:view') %}
+                        <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 sidebar-text first:pt-1">Documents</p>
+{% if current_user.has_permission('hrm:appointment_letters:view') %}
                         <a href="/appointment-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'appointment_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                             <i class="fas fa-envelope-open-text w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
@@ -554,7 +680,7 @@
                             </span>
                         </a>
                         {% endif %}
-                        {% if current_user.has_permission('hrm:salary_certificates:view') %}
+{% if current_user.has_permission('hrm:salary_certificates:view') %}
                         <a href="/salary-certificates/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'salary_certificates' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                             <i class="fas fa-file-invoice w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
@@ -565,138 +691,19 @@
                             </span>
                         </a>
                         {% endif %}
-                        {% if current_user.has_permission('hrm:departments:view') %}
-                        <a href="/departments/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'departments' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-sitemap w-4 text-sm shrink-0"></i>
+                        <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 sidebar-text first:pt-1">Announcements</p>
+{% if current_user.has_permission('hrm:notice_board:view') %}
+                        <a href="/notices/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'notice_board' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-bullhorn w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Department
+                                Notice Board
                             </span>
                             <span class="sidebar-tooltip">
-                                Department
+                                Notice Board
                             </span>
                         </a>
                         {% endif %}
-                        {% if current_user.has_permission('hrm:job_titles:view') %}
-                        <a href="/job-titles/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'job_titles' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-user-tie w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Job Title
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Job Title
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:employees:view') %}
-                        <a href="/employees/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'employees' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-id-badge w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Employees
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Employees
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:leave_types:view') %}
-                        <a href="/leave/types/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'leave_types' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-umbrella-beach w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Leave Types
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Leave Types
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:leave_allocations:view') %}
-                        <a href="/leave/allocations/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'leave_allocations' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-layer-group w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Leave Allocations
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Leave Allocations
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:leave_applications:view') %}
-                        <a href="/leave/applications/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'leave_applications' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-calendar-check w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Leave Requests
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Leave Requests
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:attendance:view') %}
-                        <a href="/attendance/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'attendance' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-clock w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Attendance
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Attendance
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:compensation:view') %}
-                        <a href="/compensation/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'compensation' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-money-bill-wave w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Compensation
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Compensation
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:holidays:view') %}
-                        <a href="/holidays/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'holidays' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-calendar-alt w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Holidays
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Holidays
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:payroll_periods:view') %}
-                        <a href="/payroll-periods/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_periods' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-clock w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Payroll Periods
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Payroll Periods
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:payroll_records:view') %}
-                        <a href="/payroll-records/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_records' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-file-invoice-dollar w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Payslips
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Payslips
-                            </span>
-                        </a>
-                        {% endif %}
-                        {% if current_user.has_permission('hrm:payroll_settings:view') %}
-                        <a href="/payroll-settings/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_settings' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-sliders-h w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Payroll Settings
-                            </span>
-                            <span class="sidebar-tooltip">
-                                Payroll Settings
-                            </span>
-                        </a>
-                        {% endif %}
+
                     </div>
                 </div>
                 {% endif %}

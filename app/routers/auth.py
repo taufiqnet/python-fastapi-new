@@ -1,18 +1,20 @@
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user, get_current_user_optional
 from app.core.identity.models import User
 from app.core.identity.schemas import (
     AddressCreate,
     AddressResponse,
+    ChangePasswordRequest,
     Token,
     UserCreate,
     UserResponse,
+    UserUpdate,
     VendorProfileCreate,
     VendorProfileResponse,
 )
@@ -132,6 +134,29 @@ async def create_vendor_profile(
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     return await service.create_vendor_profile(db, current_user.id, data)
+
+
+@router.post("/auth/change-password")
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
+
+    if not data.new_password or len(data.new_password.strip()) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password cannot be empty",
+        )
+
+    if data.new_password != data.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password and confirm password do not match",
+        )
+
+    await service.update_user(db, current_user.id, UserUpdate(password=data.new_password))
+    return {"message": "Password changed successfully"}
 
 
 @router.post("/auth/me/addresses", response_model=AddressResponse, status_code=201)
