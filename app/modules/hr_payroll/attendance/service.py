@@ -320,7 +320,15 @@ class AttendanceService:
         wb.save(output)
         return output.getvalue()
 
-    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+    def generate_export_excel(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        employee_id: uuid.UUID | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
+        status_filter: str | None = None,
+    ) -> bytes:
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Attendance Records"
@@ -342,7 +350,16 @@ class AttendanceService:
         ]
         ws.append(headers)
 
-        records = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        records = self.repository.get_all(
+            db,
+            skip=0,
+            limit=5000,
+            business_id=business_id,
+            employee_id=employee_id,
+            start_date=start_date,
+            end_date=end_date,
+            status=status_filter,
+        )
         employees = {e.id: e for e in self.employee_repository.get_all(db, limit=2000)}
         biz_repo = BusinessRepository()
         businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}

@@ -44,9 +44,20 @@ def get_attendance_records(
 @router.get("/attendance/export-excel")
 def export_attendance_excel(
     business_id: int | None = Query(None),
+    employee_id: uuid.UUID | None = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
 ):
-    excel_data = attendance_service.generate_export_excel(db, business_id=business_id)
+    excel_data = attendance_service.generate_export_excel(
+        db,
+        business_id=business_id,
+        employee_id=employee_id,
+        start_date=start_date,
+        end_date=end_date,
+        status_filter=status_filter,
+    )
     filename = "attendance_export.xlsx" if not business_id else f"attendance_export_business_{business_id}.xlsx"
     return Response(
         content=excel_data,

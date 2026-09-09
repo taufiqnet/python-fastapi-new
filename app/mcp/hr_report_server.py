@@ -39,6 +39,8 @@ from app.services.ai.tools import (
     execute_get_payroll_summary_report,
     execute_list_employees,
     execute_list_leave_applications,
+    execute_resolve_business,
+    execute_resolve_payroll_period,
     execute_search_employees,
 )
 
@@ -252,6 +254,35 @@ def get_payroll_status(payroll_period_id: str, business_id: int | None = None) -
     try:
         res = execute_get_payroll_status(
             db, user, payroll_period_id=payroll_period_id, business_id=business_id
+        )
+        return _format_res(res)
+    finally:
+        db.close()
+
+
+@mcp.tool()
+def resolve_business(name: str) -> dict[str, Any] | str:
+    user = resolve_acting_user()
+    db = SessionLocal()
+    try:
+        res = execute_resolve_business(db, user, name=name)
+        return _format_res(res)
+    finally:
+        db.close()
+
+
+@mcp.tool()
+def resolve_payroll_period(
+    business_id: int,
+    month: str | None = None,
+    year: int | None = None,
+    label: str | None = None,
+) -> dict[str, Any] | str:
+    user = resolve_acting_user()
+    db = SessionLocal()
+    try:
+        res = execute_resolve_payroll_period(
+            db, user, business_id=business_id, month=month, year=year, label=label
         )
         return _format_res(res)
     finally:

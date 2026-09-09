@@ -2,6 +2,31 @@
 
 {% block title %}Attendance Management | HR & Payroll{% endblock %}
 
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--single {
+        height: 34px !important;
+        padding: 3px 6px !important;
+        border-color: #e5e7eb !important;
+        border-radius: 0.5rem !important;
+        font-size: 0.75rem !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 26px !important;
+        color: #374151 !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 32px !important;
+    }
+    .select2-dropdown {
+        border-color: #e5e7eb !important;
+        border-radius: 0.5rem !important;
+        font-size: 0.75rem !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <!-- Header -->
@@ -91,10 +116,10 @@
 
         <div class="md:col-span-2">
             <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Employee</label>
-            <select name="employee_id" id="filter_employee_id" onchange="applyClientFilter()" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+            <select name="employee_id" id="filter_employee_id" class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
                 <option value="">All Employees</option>
                 {% for e in employees %}
-                <option value="{{ e.id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>
+                <option value="{{ e.id }}" data-business-id="{{ e.business_id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>
                     ({{ e.employee_id }}) {{ e.full_name }}
                 </option>
                 {% endfor %}
@@ -123,13 +148,17 @@
             </select>
         </div>
 
-        <div class="flex items-end gap-2 md:col-span-6 justify-end pt-2 border-t border-gray-100">
+        <div class="flex flex-wrap items-end gap-2 md:col-span-6 justify-end pt-2 border-t border-gray-100">
             <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-5 rounded-lg transition-colors flex items-center justify-center gap-1.5">
                 <i class="fas fa-filter text-[10px]"></i> Apply Filter
             </button>
             <a href="/attendance/manage" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 px-4 rounded-lg transition-colors">
                 Clear Filters
             </a>
+            <button type="button" id="btnExportSearch" disabled
+                    class="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
+                <i class="fas fa-file-download text-[10px]"></i> Export Search Results
+            </button>
         </div>
     </form>
 </div>
@@ -324,39 +353,113 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
-function applyClientFilter() {
-    const selectedEmpId = document.getElementById('filter_employee_id').value;
-    const rows = document.querySelectorAll('.att-row');
-    
-    let total = 0;
-    let present = 0;
-    let absent = 0;
-    let leave = 0;
-    let lateHalf = 0;
+$(document).ready(function () {
+    // 1. Initialize Select2 on Business and Employee dropdowns
+    $('#filter_business_id').select2({
+        placeholder: "All Businesses",
+        allowClear: true,
+        width: '100%'
+    });
 
-    rows.forEach(row => {
-        const rowEmpId = row.getAttribute('data-emp-id');
-        const st = row.getAttribute('data-status');
+    $('#filter_employee_id').select2({
+        placeholder: "All Employees",
+        allowClear: true,
+        width: '100%'
+    });
 
-        if (!selectedEmpId || rowEmpId === selectedEmpId) {
-            row.style.display = '';
-            total++;
-            if (st === 'present') present++;
-            else if (st === 'absent') absent++;
-            else if (st === 'on_leave') leave++;
-            else if (st === 'late' || st === 'half_day') lateHalf++;
-        } else {
-            row.style.display = 'none';
+    // Save all employee options for dynamic filtering
+    var allEmployeeOptions = $('#filter_employee_id option').map(function() {
+        return {
+            value: $(this).val(),
+            text: $(this).text(),
+            bizId: $(this).attr('data-business-id'),
+            selected: $(this).is(':selected')
+        };
+    }).get();
+
+    function updateEmployeeOptions() {
+        var selectedBiz = $('#filter_business_id').val();
+        var currentEmpVal = $('#filter_employee_id').val();
+
+        var $empSelect = $('#filter_employee_id');
+        $empSelect.empty();
+        $empSelect.append('<option value="">All Employees</option>');
+
+        allEmployeeOptions.forEach(function(opt) {
+            if (!opt.value) return;
+            if (!selectedBiz || opt.bizId === selectedBiz) {
+                var isSel = (opt.value === currentEmpVal);
+                var $o = $('<option></option>')
+                    .val(opt.value)
+                    .text(opt.text)
+                    .attr('data-business-id', opt.bizId);
+                if (isSel) $o.prop('selected', true);
+                $empSelect.append($o);
+            }
+        });
+
+        $empSelect.trigger('change.select2');
+    }
+
+    // Filter employees when business changes
+    $('#filter_business_id').on('change', function() {
+        updateEmployeeOptions();
+    });
+
+    // Initial employee option filtering on page load
+    updateEmployeeOptions();
+
+    // 2. Date Range Validation: Start Date cannot be future date comparing to End Date
+    function validateDates() {
+        var startDateVal = $('#filter_start_date').val();
+        var endDateVal = $('#filter_end_date').val();
+
+        if (startDateVal && endDateVal) {
+            if (startDateVal > endDateVal) {
+                showWarningAlert('Invalid Date Range', 'Start Date cannot be a future date compared to End Date.');
+                return false;
+            }
+        }
+        return true;
+    }
+
+    $('#attendance-filter-form').on('submit', function(e) {
+        if (!validateDates()) {
+            e.preventDefault();
+            return false;
         }
     });
 
-    document.getElementById('card-total-logs').innerText = total;
-    document.getElementById('card-present').innerText = present;
-    document.getElementById('card-absent').innerText = absent;
-    document.getElementById('card-leave').innerText = leave;
-    document.getElementById('card-late-half').innerText = lateHalf;
-}
+    $('#filter_start_date, #filter_end_date').on('change', function() {
+        validateDates();
+    });
+
+    // 3. Search Export Button State & Action
+    var searchParams = new URLSearchParams(window.location.search);
+    var hasSearchParams = false;
+    ['business_id', 'employee_id', 'start_date', 'end_date', 'status_filter'].forEach(function(param) {
+        if (searchParams.get(param) && searchParams.get(param).trim() !== '') {
+            hasSearchParams = true;
+        }
+    });
+
+    var $btnExportSearch = $('#btnExportSearch');
+    if (hasSearchParams) {
+        $btnExportSearch.prop('disabled', false).removeClass('opacity-50 disabled:cursor-not-allowed');
+    } else {
+        $btnExportSearch.prop('disabled', true).addClass('opacity-50 disabled:cursor-not-allowed');
+    }
+
+    $btnExportSearch.on('click', function() {
+        if ($btnExportSearch.is(':disabled')) return;
+        var exportUrl = '/attendance/export-excel?' + searchParams.toString();
+        window.location.href = exportUrl;
+    });
+});
 
 function openImportModal() {
     document.getElementById('import-excel-modal').classList.remove('hidden');

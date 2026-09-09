@@ -2,159 +2,305 @@
 
 {% block title %}Payroll Payslips | HR & Payroll{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<style>
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .stat-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.blue    { background: #eff6ff; color: #2563eb; }
+    .stat-icon.rose    { background: #fff1f2; color: #e11d48; }
+    .stat-icon.emerald { background: #ecfdf5; color: #059669; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar {
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px; margin-bottom: 12px;
+    }
+    .toolbar-search {
+        position: relative; flex: 1; min-width: 200px;
+    }
+    .toolbar-search i {
+        position: absolute; left: 10px; top: 50%;
+        transform: translateY(-50%); color: #9ca3af; font-size: 13px;
+    }
+    .toolbar-search input {
+        width: 100%; padding: 7px 12px 7px 30px;
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        background: #f9fafb; color: #374151; font-size: 13px; outline: none;
+        transition: border-color .15s, background .15s;
+    }
+    .toolbar-search input:focus {
+        border-color: var(--indigo);
+        box-shadow: 0 0 0 2px rgba(79,70,229,.08);
+        background: #fff;
+    }
+    .toolbar select {
+        padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb;
+        border-radius: 8px; background: #f9fafb; color: #374151;
+        font-size: 13px; cursor: pointer; outline: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .toolbar select:focus { border-color: var(--indigo); background-color: #fff; }
+
+    .table-card {
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 12px; overflow: hidden;
+    }
+
+    table.dataTable { border-collapse: collapse !important; }
+    table.dataTable thead tr th {
+        background: #f9fafb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        font-size: 10px !important; font-weight: 700 !important;
+        text-transform: uppercase; letter-spacing: .6px;
+        color: #6b7280 !important; padding: 10px 14px !important;
+        white-space: nowrap;
+    }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+    table.dataTable tbody tr:hover td { background: #f9fafb !important; }
+    table.dataTable.no-footer { border-bottom: 1px solid #f3f4f6 !important; }
+
+    .dataTables_filter, .dataTables_length { display: none !important; }
+    .dataTables_wrapper .dataTables_paginate { padding: 10px 14px !important; }
+
+    .dt-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 14px; border-top: 1px solid #f3f4f6;
+        background: #fafafa; flex-wrap: wrap; gap: 8px;
+    }
+    .dt-footer .dt-info { font-size: 12px; color: #9ca3af; }
+    .dt-footer .dt-perpage {
+        display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+    }
+    .dt-perpage select {
+        padding: 3px 22px 3px 8px; border: 1px solid #e5e7eb;
+        border-radius: 6px; background: #fff; color: #374151;
+        font-size: 12px; cursor: pointer; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 6px center;
+    }
+
+    .badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+    }
+    .badge-paid    { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-pending { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+
+    .action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 6px;
+        border: 1px solid #e5e7eb; background: #fff;
+        cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none;
+    }
+    .action-btn.view   { color: #10b981; }
+    .action-btn.view:hover   { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+    .action-btn.edit   { color: #4f46e5; }
+    .action-btn.edit:hover   { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
+    .action-btn.delete { color: #ef4444; }
+    .action-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <!-- Page Header -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Payroll Payslips</h1>
-        <p class="text-xs text-gray-500 font-medium">Individual employee payslip snapshots, earnings, deductions, and payment statuses</p>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Individual employee payslip snapshots, earnings, deductions, and payment statuses</p>
     </div>
+    
     <div class="flex items-center gap-3">
-        <button type="button" onclick="openExportModal()" class="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition-colors">
-            <i class="fas fa-file-download text-[10px]"></i> Export Excel
+        <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
+            <i class="fas fa-sliders-h text-sm"></i>
         </button>
-        <a href="/payroll-records/create" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
-            <i class="fas fa-plus text-[10px]"></i> Generate Payslip
+        <button type="button" onclick="openExportModal()" class="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
+            <i class="fas fa-file-download"></i> Export Excel
+        </button>
+
+        <a href="/payroll-records/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-plus"></i> Generate Payslip
         </a>
     </div>
 </div>
 
 <!-- Stats Cards -->
-<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Payslips</span>
-            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
-                <i class="fas fa-file-invoice-dollar"></i>
-            </div>
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-file-invoice-dollar"></i></div>
+        <div>
+            <div class="stat-label">Total Payslips</div>
+            <div class="stat-value">{{ total_count }}</div>
         </div>
-        <div class="text-2xl font-bold text-gray-900">{{ total_count }}</div>
     </div>
-
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Gross Payroll</span>
-            <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
-                <i class="fas fa-coins"></i>
-            </div>
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-coins"></i></div>
+        <div>
+            <div class="stat-label">Gross Payroll</div>
+            <div class="stat-value">${{ "%.2f"|format(total_gross) }}</div>
         </div>
-        <div class="text-2xl font-bold text-blue-600">${{ "%.2f"|format(total_gross) }}</div>
     </div>
-
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Deductions</span>
-            <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
-                <i class="fas fa-minus-circle"></i>
-            </div>
+    <div class="stat-card">
+        <div class="stat-icon rose"><i class="fas fa-minus-circle"></i></div>
+        <div>
+            <div class="stat-label">Total Deductions</div>
+            <div class="stat-value">${{ "%.2f"|format(total_deduction) }}</div>
         </div>
-        <div class="text-2xl font-bold text-rose-600">${{ "%.2f"|format(total_deduction) }}</div>
     </div>
-
-    <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-1">
-            <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Net Disbursement</span>
-            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
-                <i class="fas fa-wallet"></i>
-            </div>
+    <div class="stat-card">
+        <div class="stat-icon emerald"><i class="fas fa-wallet"></i></div>
+        <div>
+            <div class="stat-label">Net Disbursement</div>
+            <div class="stat-value">${{ "%.2f"|format(total_net) }}</div>
         </div>
-        <div class="text-2xl font-bold text-emerald-600">${{ "%.2f"|format(total_net) }}</div>
     </div>
 </div>
 
-<!-- Filters & Table Card -->
-<div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-    <div class="p-4 border-b border-gray-200 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-center gap-3">
-            <form method="GET" action="/payroll-records/manage" class="flex flex-wrap items-center gap-3">
-                <select name="business_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
-                    <option value="">All Businesses</option>
-                    {% for b in businesses %}
-                    <option value="{{ b.id }}" {% if request.query_params.get('business_id') == b.id|string %}selected{% endif %}>{{ b.name_en }}</option>
-                    {% endfor %}
-                </select>
-
-                <select name="period_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
-                    <option value="">All Payroll Periods</option>
-                    {% for p in periods %}
-                    <option value="{{ p.id }}" {% if request.query_params.get('period_id') == p.id|string %}selected{% endif %}>{{ p.name }}</option>
-                    {% endfor %}
-                </select>
-
-                <select name="employee_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white focus:outline-none focus:border-indigo-500">
-                    <option value="">All Employees</option>
-                    {% for e in employees %}
-                    <option value="{{ e.id }}" {% if request.query_params.get('employee_id') == e.id|string %}selected{% endif %}>{{ e.full_name }}</option>
-                    {% endfor %}
-                </select>
-
-                {% if request.query_params.get('business_id') or request.query_params.get('period_id') or request.query_params.get('employee_id') %}
-                <a href="/payroll-records/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">Clear Filters</a>
-                {% endif %}
-            </form>
-        </div>
+<!-- Search & Filter Toolbar -->
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by employee, ID, business, period...">
     </div>
 
+    <select id="filterBusiness">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}">{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+
+    <select id="filterPeriod">
+        <option value="">All Payroll Periods</option>
+        {% for p in periods %}
+        <option value="{{ p.name }}">{{ p.name }}</option>
+        {% endfor %}
+    </select>
+
+    <select id="filterStatus">
+        <option value="">All Statuses</option>
+        <option value="Paid">Paid</option>
+        <option value="Pending">Pending</option>
+    </select>
+
+    <button type="button" id="btnClearFilters" 
+            class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+        <i class="fas fa-times-circle text-xs"></i> Clear Filters
+    </button>
+</div>
+
+<!-- Table Card -->
+<div class="table-card">
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table id="recordsTable" class="w-full text-left display">
             <thead>
-                <tr class="border-b border-gray-200 bg-gray-50 text-[11px] uppercase tracking-wider font-semibold text-gray-500">
-                    <th class="py-3 px-4">Employee</th>
-                    <th class="py-3 px-4">Period</th>
-                    <th class="py-3 px-4">Gross Salary</th>
-                    <th class="py-3 px-4">Deductions</th>
-                    <th class="py-3 px-4">Net Salary</th>
-                    <th class="py-3 px-4">Payment Method</th>
-                    <th class="py-3 px-4">Payment Status</th>
-                    <th class="py-3 px-4 text-right">Actions</th>
+                <tr>
+                    <th>Employee ID</th>
+                    <th>Employee</th>
+                    <th>Business</th>
+                    <th>Period</th>
+                    <th>Gross Salary</th>
+                    <th>Deductions</th>
+                    <th>Net Salary</th>
+                    <th>Payment Method</th>
+                    <th>Payment Status</th>
+                    <th style="width:110px">Actions</th>
+                    <th class="hidden"></th>
+                    <th class="hidden"></th>
+                    <th class="hidden"></th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 text-xs font-medium text-gray-700">
-                {% if records %}
-                    {% for r in records %}
-                    <tr class="hover:bg-gray-50/80 transition-colors">
-                        <td class="py-3 px-4 font-semibold text-gray-900">
-                            {{ emp_map.get(r.employee_id, 'Unknown Employee') }}
-                        </td>
-                        <td class="py-3 px-4 text-gray-600 font-medium">
-                            {{ period_map.get(r.period_id, '—') }}
-                        </td>
-                        <td class="py-3 px-4 text-gray-900 font-semibold">${{ "%.2f"|format(r.gross_salary) }}</td>
-                        <td class="py-3 px-4 text-rose-600 font-semibold">${{ "%.2f"|format(r.total_deduction) }}</td>
-                        <td class="py-3 px-4 text-emerald-600 font-bold">${{ "%.2f"|format(r.net_salary) }}</td>
-                        <td class="py-3 px-4 text-gray-500 uppercase text-[10px] tracking-wider">{{ r.payment_method.value|default(r.payment_method)|replace('_', ' ') }}</td>
-                        <td class="py-3 px-4">
-                            {% if r.is_paid %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Paid</span>
-                            {% else %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">Pending</span>
-                            {% endif %}
-                        </td>
-                        <td class="py-3 px-4 text-right whitespace-nowrap">
-                            <div class="flex items-center justify-end gap-2">
-                                <a href="/payroll-records/detail/{{ r.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 transition-colors" title="View Payslip">
-                                    <i class="fas fa-eye text-xs"></i>
-                                </a>
-                                <a href="/payroll-records/edit/{{ r.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 transition-colors" title="Edit">
-                                    <i class="fas fa-edit text-xs"></i>
-                                </a>
-                                <button onclick="deleteRecord('{{ r.id }}')" class="p-1.5 text-gray-500 hover:text-red-600 transition-colors" title="Delete">
-                                    <i class="fas fa-trash text-xs"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="8" class="py-8 text-center text-gray-500 text-xs">
-                            No payslip records found. Click "Generate Payslip" to create one.
-                        </td>
-                    </tr>
-                {% endif %}
+            <tbody>
+                {% for r in records %}
+                <tr id="record-row-{{ r.id }}">
+                    <td class="text-xs text-gray-600 font-mono">
+                        {{ r.employee.employee_id if r.employee else emp_code_map.get(r.employee_id, '—') }}
+                    </td>
+                    <td class="font-semibold text-gray-900">
+                        {{ emp_map.get(r.employee_id, 'Unknown Employee') }}
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {{ biz_map.get(r.business_id, '—') }}
+                    </td>
+                    <td class="text-xs text-gray-600 font-medium">
+                        {{ period_map.get(r.period_id, '—') }}
+                    </td>
+                    <td class="text-xs text-gray-900 font-semibold">${{ "%.2f"|format(r.gross_salary) }}</td>
+                    <td class="text-xs text-rose-600 font-semibold">${{ "%.2f"|format(r.total_deduction) }}</td>
+                    <td class="text-xs text-emerald-600 font-bold">${{ "%.2f"|format(r.net_salary) }}</td>
+                    <td class="text-xs text-gray-500 uppercase tracking-wider text-[10px]">{{ r.payment_method.value|default(r.payment_method)|replace('_', ' ') }}</td>
+                    <td>
+                        {% if r.is_paid %}
+                        <span class="badge badge-paid">
+                            <i class="fas fa-check-circle text-[8px] mr-1"></i> Paid
+                        </span>
+                        {% else %}
+                        <span class="badge badge-pending">
+                            <i class="fas fa-clock text-[8px] mr-1"></i> Pending
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <a href="/payroll-records/detail/{{ r.id }}" class="action-btn view" title="View Payslip">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="/payroll-records/edit/{{ r.id }}" class="action-btn edit" title="Edit Payslip">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="action-btn delete" onclick="deleteRecord('{{ r.id }}')" title="Delete Payslip">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="hidden">{% if r.is_paid %}Paid{% else %}Pending{% endif %}</td>
+                    <td class="hidden">{{ biz_map.get(r.business_id, '') }}</td>
+                    <td class="hidden">{{ period_map.get(r.period_id, '') }}</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
+    </div>
+
+    <div class="dt-footer">
+        <div class="dt-info" id="dtInfo"></div>
+        <div class="flex items-center gap-4 flex-wrap">
+            <div class="dt-perpage">
+                Show
+                <select id="dtPerPage">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+                entries
+            </div>
+            <div id="dtPagination"></div>
+        </div>
     </div>
 </div>
 
@@ -207,7 +353,93 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
 <script>
+$(document).ready(function () {
+    var table = $('#recordsTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        dom: 'rt',
+        columnDefs: [{ targets: [10, 11, 12], visible: false, searchable: true }],
+        order: [],
+        language: { emptyTable: "No payslip records found." },
+        drawCallback: function () { updateFooter(this.api()); }
+    });
+
+    $('#customSearch').on('input', function () { table.search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(11).search(this.value).draw(); });
+    $('#filterPeriod').on('change', function () { table.column(12).search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(10).search(this.value).draw(); });
+    $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
+
+    $('#btnToggleFilters').on('click', function() {
+        $('.toolbar').slideToggle(200);
+    });
+
+    $('#btnClearFilters').on('click', function() {
+        $('#customSearch').val('');
+        table.search('');
+        $('#filterBusiness').val('');
+        $('#filterPeriod').val('');
+        $('#filterStatus').val('');
+        table.columns().search('').draw();
+    });
+
+    function updateFooter(api) {
+        var info = api.page.info();
+        var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
+        var end   = Math.min(info.end, info.recordsDisplay);
+        var total = info.recordsDisplay;
+        var overall = info.recordsTotal;
+
+        if (total === 0) {
+            $('#dtInfo').text('No entries found');
+        } else if (total < overall) {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' filtered (total ' + overall + ')');
+        } else {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' entries');
+        }
+
+        var pages = info.pages;
+        var current = info.page;
+        var html = '';
+        var btnClass = 'inline-flex items-center justify-center w-7 h-7 rounded text-xs border transition-colors ';
+        var base   = btnClass + 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer';
+        var active = btnClass + 'border-indigo-600 bg-indigo-600 text-white font-semibold cursor-default';
+        var disabled = btnClass + 'border-gray-100 bg-white text-gray-300 cursor-default';
+
+        if (current === 0) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        }
+
+        var start_p = Math.max(0, current - 2);
+        var end_p   = Math.min(pages - 1, current + 2);
+        if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
+        if (start_p > 1) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        for (var i = start_p; i <= end_p; i++) {
+            html += '<button class="' + (i === current ? active : base) + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
+        }
+        if (end_p < pages - 2) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
+
+        if (current >= pages - 1) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        }
+
+        $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
+    }
+    window._dtTable = table;
+});
+
+function movePage(p) { window._dtTable.page(p).draw('page'); }
+
 function openExportModal() {
     document.getElementById('export-excel-modal').classList.remove('hidden');
 }

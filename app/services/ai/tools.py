@@ -10,9 +10,12 @@ from datetime import datetime
 from typing import Any
 
 from fastapi import HTTPException
+from sqlalchemy import extract
 from sqlalchemy.orm import Session
 
 from app.core.identity.models import User
+from app.core.tenancy.models import BusinessProfile
+from app.modules.hr_payroll.payroll.models import PayrollPeriod
 from app.modules.hr_payroll.attendance.service import AttendanceService
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 from app.modules.hr_payroll.employees.service import EmployeeService
@@ -74,6 +77,148 @@ def parse_uuid(val: str, field_name: str = "ID") -> uuid.UUID:
 # ---------------------------------------------------------------------------
 # Tool Implementations
 # ---------------------------------------------------------------------------
+
+def execute_resolve_business(
+    db: Session,
+    user: User,
+    name: str,
+) -> AIResponseEnvelope:
+    """
+    Requires permission: general:business_profile:view
+    Fuzzy/partial match against BusinessProfile.name_en, scoped to businesses the acting user can see.
+    Returns matches as ListResponse with columns [business_id, name].
+    """
+    try:
+        check_permissions(user, ["general:business_profile:view"])
+
+        query = db.query(BusinessProfile)
+
+        if not user.is_superuser:
+            if user.business_id is not None:
+                query = query.filter(BusinessProfile.id == user.business_id)
+            else:
+                return ListResponse(
+                    title="Business Profiles",
+                    total=0,
+                    page=1,
+                    page_size=20,
+                    columns=["business_id", "name"],
+                    rows=[],
+                )
+
+        if name:
+            clean_name = name.strip()
+            query = query.filter(BusinessProfile.name_en.ilike(f"%{clean_name}%"))
+
+        businesses = query.all()
+
+        rows = [{"business_id": b.id, "name": b.name_en} for b in businesses]
+
+        return ListResponse(
+            title="Business Profiles",
+            total=len(rows),
+            page=1,
+            page_size=max(1, len(rows)),
+            columns=["business_id", "name"],
+            rows=rows,
+        )
+    except PermissionError as e:
+        return ErrorResponse(message=str(e))
+    except Exception as e:
+        return ErrorResponse(message=f"Unexpected error: {str(e)}")
+
+
+def execute_resolve_payroll_period(
+    db: Session,
+    user: User,
+    business_id: int,
+    month: str | None = None,
+    year: int | None = None,
+    label: str | None = None,
+) -> AIResponseEnvelope:
+    """
+    Requires permission: hrm:payroll_periods:view
+    Matches PayrollPeriod by month/year or label within that business.
+    Returns matches as ListResponse.
+    """
+    try:
+        check_permissions(user, ["hrm:payroll_periods:view"])
+        eff_biz_id = validate_and_get_business_id(user, business_id)
+
+        query = db.query(PayrollPeriod).filter(PayrollPeriod.business_id == eff_biz_id)
+
+        if label and str(label).strip():
+            clean_label = str(label).strip()
+            query = query.filter(PayrollPeriod.name.ilike(f"%{clean_label}%"))
+
+        if year is not None:
+            try:
+                yr_num = int(year)
+                query = query.filter(
+                    (extract("year", PayrollPeriod.start_date) == yr_num)
+                    | (PayrollPeriod.name.ilike(f"%{yr_num}%"))
+                )
+            except (ValueError, TypeError):
+                if str(year).strip():
+                    query = query.filter(PayrollPeriod.name.ilike(f"%{str(year).strip()}%"))
+
+        if month is not None:
+            clean_m = str(month).strip()
+            if clean_m:
+                month_names = {
+                    "january": 1, "jan": 1, "1": 1, "01": 1,
+                    "february": 2, "feb": 2, "2": 2, "02": 2,
+                    "march": 3, "mar": 3, "3": 3, "03": 3,
+                    "april": 4, "apr": 4, "4": 4, "04": 4,
+                    "may": 5, "5": 5, "05": 5,
+                    "june": 6, "jun": 6, "6": 6, "06": 6,
+                    "july": 7, "jul": 7, "7": 7, "07": 7,
+                    "august": 8, "aug": 8, "8": 8, "08": 8,
+                    "september": 9, "sep": 9, "sept": 9, "9": 9, "09": 9,
+                    "october": 10, "oct": 10, "10": 10,
+                    "november": 11, "nov": 11, "11": 11,
+                    "december": 12, "dec": 12, "12": 12,
+                }
+                m_lower = clean_m.lower()
+                if m_lower in month_names:
+                    m_num = month_names[m_lower]
+                    query = query.filter(
+                        (extract("month", PayrollPeriod.start_date) == m_num)
+                        | (PayrollPeriod.name.ilike(f"%{clean_m}%"))
+                    )
+                else:
+                    query = query.filter(PayrollPeriod.name.ilike(f"%{clean_m}%"))
+
+        periods = query.all()
+
+        columns = ["payroll_period_id", "name", "start_date", "end_date", "status"]
+        rows = [
+            {
+                "payroll_period_id": str(p.id),
+                "name": p.name,
+                "start_date": str(p.start_date),
+                "end_date": str(p.end_date),
+                "status": p.status.value if hasattr(p.status, "value") else str(p.status),
+            }
+            for p in periods
+        ]
+
+        return ListResponse(
+            title="Payroll Periods",
+            total=len(rows),
+            page=1,
+            page_size=max(1, len(rows)),
+            columns=columns,
+            rows=rows,
+        )
+    except PermissionError as e:
+        return ErrorResponse(message=str(e))
+    except ValueError as e:
+        return ErrorResponse(message=str(e))
+    except HTTPException as e:
+        return ErrorResponse(message=str(e.detail))
+    except Exception as e:
+        return ErrorResponse(message=f"Unexpected error: {str(e)}")
 
 def execute_search_employees(
     db: Session,
@@ -827,6 +972,37 @@ AI_TOOLS_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "resolve_business",
+            "description": "Fuzzy/partial match against business profile name, scoped to accessible businesses. Returns matching business profiles as {business_id, name}. Requires permission: general:business_profile:view",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Business name search query or partial name"},
+                },
+                "required": ["name"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "resolve_payroll_period",
+            "description": "Matches payroll periods by month, year, or label within a business. Returns matching payroll periods with payroll_period_id. Requires permission: hrm:payroll_periods:view",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "business_id": {"type": "integer", "description": "Target business ID"},
+                    "month": {"type": "string", "description": "Optional month name or number"},
+                    "year": {"type": "integer", "description": "Optional year number"},
+                    "label": {"type": "string", "description": "Optional period name or label search query"},
+                },
+                "required": ["business_id"],
+            },
+        },
+    },
 ]
 
 
@@ -862,6 +1038,10 @@ def dispatch_tool_call(
         res = execute_get_department_employee_count(db, user, **args)
     elif name == "get_payroll_status":
         res = execute_get_payroll_status(db, user, **args)
+    elif name == "resolve_business":
+        res = execute_resolve_business(db, user, **args)
+    elif name == "resolve_payroll_period":
+        res = execute_resolve_payroll_period(db, user, **args)
     else:
         res = ErrorResponse(message=f"Unknown tool: '{name}'")
 
