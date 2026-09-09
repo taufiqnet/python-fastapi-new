@@ -151,6 +151,36 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
         if admin_role and admin_role.id not in user_role_ids:
             admin_user.roles.append(admin_role)
 
+    # 4. Seed Demo User
+    demo_email = "demo@gmail.com"
+    result = await db.execute(
+        select(User)
+        .options(selectinload(User.roles))
+        .where((User.email == demo_email) | (User.username == demo_email) | (User.username == "demo"))
+    )
+    demo_user = result.scalar_one_or_none()
+
+    if not demo_user:
+        demo_user = User(
+            username=demo_email,
+            email=demo_email,
+            password_hash=hash_password("12345678"),
+            is_active=True,
+            is_verified=True,
+            is_superuser=True,
+            business_id=None,
+        )
+        if admin_role and admin_role not in demo_user.roles:
+            demo_user.roles.append(admin_role)
+        db.add(demo_user)
+    else:
+        demo_user.is_superuser = True
+        demo_user.is_active = True
+        demo_user.password_hash = hash_password("12345678")
+        user_role_ids = {r.id for r in demo_user.roles}
+        if admin_role and admin_role.id not in user_role_ids:
+            demo_user.roles.append(admin_role)
+
     await db.commit()
 
 
@@ -198,5 +228,30 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         user_role_ids = {r.id for r in admin_user.roles}
         if admin_role and admin_role.id not in user_role_ids:
             admin_user.roles.append(admin_role)
+
+    demo_email = "demo@gmail.com"
+    demo_user = db.query(User).filter(
+        (User.email == demo_email) | (User.username == demo_email) | (User.username == "demo")
+    ).first()
+    if not demo_user:
+        demo_user = User(
+            username=demo_email,
+            email=demo_email,
+            password_hash=hash_password("12345678"),
+            is_active=True,
+            is_verified=True,
+            is_superuser=True,
+            business_id=None,
+        )
+        if admin_role and admin_role not in demo_user.roles:
+            demo_user.roles.append(admin_role)
+        db.add(demo_user)
+    else:
+        demo_user.is_superuser = True
+        demo_user.is_active = True
+        demo_user.password_hash = hash_password("12345678")
+        user_role_ids = {r.id for r in demo_user.roles}
+        if admin_role and admin_role.id not in user_role_ids:
+            demo_user.roles.append(admin_role)
 
     db.commit()
