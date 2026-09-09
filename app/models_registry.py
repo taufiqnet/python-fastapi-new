@@ -88,3 +88,4 @@ from app.modules.hr_payroll.recruitment.models import (  # noqa: F401
     Interview,
     InterviewEvaluation,
 )
+from app.services.ai.models import AIConversation  # noqa: F401

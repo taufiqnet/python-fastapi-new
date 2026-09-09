@@ -4,7 +4,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user_optional
+from fastapi import HTTPException, status
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.identity.schemas import UserCreate, UserResponse, UserUpdate
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
@@ -21,6 +22,7 @@ async def user_list_page(
     request: Request,
     business_id: int | None = None,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "view")),
 ):
     current_user = await get_current_user_optional(request, None, db)
     users = await user_service.get_all_users(db, business_id=business_id)
@@ -48,6 +50,7 @@ async def user_list_page(
 async def user_create_page(
     request: Request,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "create")),
 ):
     current_user = await get_current_user_optional(request, None, db)
     roles = await user_service.get_roles(db)
@@ -78,6 +81,7 @@ async def user_edit_page(
     user_id: int,
     request: Request,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "update")),
 ):
     current_user = await get_current_user_optional(request, None, db)
     user = await user_service.get_user_by_id(db, user_id)
@@ -113,6 +117,7 @@ async def user_edit_page(
 async def list_users_api(
     business_id: int | None = None,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "view")),
 ):
     return await user_service.get_all_users(db, business_id=business_id)
 
@@ -121,6 +126,7 @@ async def list_users_api(
 async def create_user_api(
     data: UserCreate,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "create")),
 ):
     return await user_service.create_user(db, data)
 
@@ -129,6 +135,7 @@ async def create_user_api(
 async def get_user_api(
     user_id: int,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "view")),
 ):
     return await user_service.get_user_by_id(db, user_id)
 
@@ -138,6 +145,7 @@ async def update_user_api(
     user_id: int,
     data: UserUpdate,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "update")),
 ):
     return await user_service.update_user(db, user_id, data)
 
@@ -146,5 +154,6 @@ async def update_user_api(
 async def delete_user_api(
     user_id: int,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "delete")),
 ):
     await user_service.delete_user(db, user_id)

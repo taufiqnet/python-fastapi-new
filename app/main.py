@@ -66,6 +66,7 @@ from app.modules.hr_payroll.notice_board.router import router as notices_router
 from app.modules.hr_payroll.recruitment.router import router as recruitment_router
 
 from app.routers import (
+    ai_chat,
     appointment_views,
     attendance_views,
     auth,
@@ -184,6 +185,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(ai_chat.router)
 app.include_router(business_views.router)
 app.include_router(category_views.router)
 app.include_router(customer_views.router)
@@ -201,7 +203,7 @@ app.include_router(payroll_views.router)
 app.include_router(certificate_views.router)
 app.include_router(appointment_views.router)
 app.include_router(notice_views.router)
-app.include_router(recruitment_views.router)
+app.include_router(recruitment_router)
 app.include_router(role_views.router)
 app.include_router(user_views.router)
 app.include_router(mcp_views.router)

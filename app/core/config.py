@@ -4,16 +4,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    # Application
     app_env: str = "development"
 
+    # Database
     database_url: str
 
+    # Server
     app_host: str = "0.0.0.0"
     app_port: int = 8000
 
+    # Authentication
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
+
+    # OpenRouter
+    openrouter_api_key: str
+    openrouter_model: str = "openrouter/free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     model_config = SettingsConfigDict(
         env_file=".env",

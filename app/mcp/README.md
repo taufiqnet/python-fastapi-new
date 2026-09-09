@@ -1,64 +1,59 @@
-# HR & Payroll Reports MCP Server (`app/mcp/hr_report_server.py`)
+# Native AI Chat Assistant & HR Reports MCP Server (`app/mcp/hr_report_server.py` & `app/services/ai/`)
 
-The Model Context Protocol (MCP) HR Report Server exposes read-only tools for employee, leave, attendance, and payroll data from the HR & Payroll module. It allows AI clients (e.g., Claude Desktop, Claude Code) to answer questions and generate reports via natural language.
-
----
-
-## Isolation & Architecture
-
-- **Optional Add-On Component**: The server is isolated under `app/mcp/` and uses its own dependency footprint (`app/mcp/requirements.txt`).
-- **One-Directional Dependency**: `app/mcp/` imports from `app/core/` and `app/modules/`. Nothing in `app/core/` or `app/modules/` imports from `app/mcp/`.
-- **Zero Impact on Startup/Performance**: No changes to `app/main.py`. Removing `app/mcp/` leaves the main application completely functional.
+The application-native AI Chat Assistant integrates OpenRouter LLMs directly into the FastAPI SaaS platform, replacing external clients like Claude Desktop while reusing shared, read-only HR & Payroll tools (`app/services/ai/tools.py`).
 
 ---
 
-## How to Run Locally
+## Architecture
 
-Set the `MCP_ACTING_USER_ID` environment variable to a valid user ID in the database and run the process over stdio transport:
-
-```bash
-export MCP_ACTING_USER_ID=1
-export DATABASE_URL="sqlite:///./app.db" # or your database connection URL
-python -m app.mcp.hr_report_server
+```
+Frontend Chat UI (app/templates/modules/mcp/mcp_manage.html)
+      ↓
+FastAPI AI Chat Endpoint (POST /api/ai/chat)
+      ↓
+OpenRouter API (backend-side only)
+      ↓
+Tool Calling & Permission Enforcement (app/services/ai/tools.py)
+      ↓
+Existing FastAPI Services & Database
 ```
 
+- **Shared Tool Layer**: Business tool execution logic lives in `app/services/ai/tools.py` with standard token-optimized response envelopes.
+- **OpenRouter Provider**: Managed backend-side via `app/services/ai/provider.py`. The OpenRouter API key is never exposed to the frontend.
+- **RBAC & Multi-Tenancy**: Every tool invocation resolves the logged-in user via `Depends(get_current_user)`, checking required permission codes and restricting operations to `user.business_id`.
+
 ---
 
-## Claude Desktop Configuration
+## Environment Setup
 
-Add the following snippet to your `claude_desktop_config.json`:
+Add the following environment variables to your `.env` configuration:
 
-```json
-{
-  "mcpServers": {
-    "hr_payroll_reports": {
-      "command": "python",
-      "args": [
-        "-m",
-        "app.mcp.hr_report_server"
-      ],
-      "env": {
-        "MCP_ACTING_USER_ID": "1",
-        "DATABASE_URL": "sqlite:///./app.db",
-        "APP_ENV": "development"
-      }
-    }
-  }
-}
+```env
+OPENROUTER_API_KEY=your_openrouter_api_key_here
+OPENROUTER_MODEL=openrouter/free
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 ```
 
----
+### Obtaining an OpenRouter Key
+1. Sign up at [https://openrouter.ai/](https://openrouter.ai/).
+2. Navigate to Keys and create a new API Key.
+3. Paste the key in `OPENROUTER_API_KEY`.
 
-## Authorization & Multi-Tenancy
-
-Every tool execution evaluates:
-1. **Acting User Context**: Resolved at runtime via `UserRepository.get_by_id(user_id)`. If `MCP_ACTING_USER_ID` is missing or invalid, the server halts.
-2. **Permission Checks**: The acting user must possess the required RBAC permission code(s) via `user.has_permission(code)`.
-3. **Tenant Scoping**: Non-superusers are strictly scoped to their assigned `business_id`. Any attempt to query or specify another tenant's data yields a tenant scoping violation error.
+*Note: Claude Desktop is no longer required for this feature as the assistant is built directly into the web application UI at `/mcp/manage`.*
 
 ---
 
-## Required Tools Reference
+## Authorization & Security
+
+Every AI chat request evaluates:
+1. **Authenticated Session Identity**: Resolved at runtime via `get_current_user`.
+2. **Permission Checks**: The active user must possess required RBAC permission code(s) (e.g., `hrm:employees:view`, `hrm:compensation:view`).
+3. **Tenant Scoping**: Non-superusers are strictly scoped to their assigned `business_id`.
+4. **No Raw SQL**: Arbitrary database queries are impossible; the AI can only call defined business tools.
+
+---
+
+## Available AI Tools Reference
 
 | Tool Name | Description | Required Permission Code(s) | Notes |
 |---|---|---|---|
