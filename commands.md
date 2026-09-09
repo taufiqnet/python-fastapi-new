@@ -38,6 +38,10 @@ docker-compose exec api pytest
 docker-compose exec api pytest tests/test_products.py -v
 
 
+docker compose exec db psql -U postgres -l
+netstat -ano | findstr :5432
+
+
 **Find all the commands in the terminal executed:**
 notepad (Get-PSReadLineOption).HistorySavePath
 
