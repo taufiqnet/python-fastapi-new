@@ -33,7 +33,7 @@ async def mcp_hub_page(
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
 ):
-    current_user = await get_current_user_optional(request, None, async_db)
+    current_user = getattr(request.state, "user", None) or await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
     periods = period_service.get_periods(db, skip=0, limit=500)
@@ -58,7 +58,7 @@ async def run_mcp_tool(
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
 ):
-    current_user = await get_current_user_optional(request, None, async_db)
+    current_user = getattr(request.state, "user", None) or await get_current_user_optional(request, None, async_db)
     if not current_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -70,9 +70,9 @@ async def run_mcp_tool(
 
     try:
         res = dispatch_tool_call(db, current_user, tool_name, args)
-        if not res.get("success"):
-            return JSONResponse(status_code=400, content={"error": res.get("error")})
-        return {"tool_name": tool_name, "arguments": args, "result": res.get("data"), "summary": res.get("summary")}
+        if res.get("type") == "error":
+            return JSONResponse(status_code=400, content={"error": res.get("message", "Tool execution failed")})
+        return {"tool_name": tool_name, "arguments": args, "result": res}
     except Exception as e:
         return JSONResponse(
             status_code=500, content={"error": f"Tool execution failed: {str(e)}"}

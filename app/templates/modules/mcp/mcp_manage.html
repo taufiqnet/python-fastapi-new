@@ -192,13 +192,17 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Select MCP Tool</label>
                     <select id="tool-select" name="tool_name" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        <option value="search_employees">search_employees (hrm:employees:view)</option>
                         <option value="list_employees">list_employees (hrm:employees:view)</option>
                         <option value="get_employee">get_employee (hrm:employees:view)</option>
+                        <option value="get_employee_count">get_employee_count (hrm:employees:view)</option>
+                        <option value="get_department_employee_count">get_department_employee_count (hrm:employees:view & hrm:departments:view)</option>
                         <option value="list_leave_applications">list_leave_applications (hrm:leave_applications:view)</option>
                         <option value="get_employee_leave_balance">get_employee_leave_balance (hrm:leave_allocations:view)</option>
                         <option value="get_leave_summary_report" selected>get_leave_summary_report (hrm:leave_applications:view)</option>
                         <option value="get_employee_payslip">get_employee_payslip (hrm:payroll_records:view & hrm:compensation:view)</option>
                         <option value="get_payroll_summary_report">get_payroll_summary_report (hrm:payroll_records:view)</option>
+                        <option value="get_payroll_status">get_payroll_status (hrm:payroll_periods:view)</option>
                         <option value="get_attendance_summary">get_attendance_summary (hrm:attendance:view)</option>
                     </select>
                 </div>
@@ -395,21 +399,25 @@
         const selectedTool = toolSelect.value;
         let html = '';
 
-        if (selectedTool === 'get_leave_summary_report' || selectedTool === 'list_leave_applications') {
+        const empOptions = employeesList.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+        const periodOptions = periodsList.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+        if (selectedTool === 'search_employees') {
             html += `
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period Start</label>
-                    <input type="date" id="param-period-start" value="2025-01-01" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Search Query</label>
+                    <input type="text" id="param-search" placeholder="Name, code, or email..." class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period End</label>
-                    <input type="date" id="param-period-end" value="2025-12-31" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Status</label>
+                    <select id="param-status" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        <option value="">All</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
                 </div>
             `;
-        }
-
-        if (selectedTool === 'get_employee' || selectedTool === 'get_employee_leave_balance' || selectedTool === 'get_attendance_summary' || selectedTool === 'get_employee_payslip') {
-            let empOptions = employeesList.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+        } else if (selectedTool === 'get_employee' || selectedTool === 'get_employee_leave_balance') {
             html += `
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Employee</label>
@@ -418,21 +426,7 @@
                     </select>
                 </div>
             `;
-        }
-
-        if (selectedTool === 'get_payroll_summary_report' || selectedTool === 'get_employee_payslip') {
-            let periodOptions = periodsList.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
-            html += `
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Payroll Period</label>
-                    <select id="param-payroll-period-id" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
-                        ${periodOptions || '<option value="">No payroll periods available</option>'}
-                    </select>
-                </div>
-            `;
-        }
-
-        if (selectedTool === 'get_attendance_summary') {
+        } else if (selectedTool === 'get_leave_summary_report') {
             html += `
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period Start</label>
@@ -441,6 +435,79 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period End</label>
                     <input type="date" id="param-period-end" value="2025-12-31" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            `;
+        } else if (selectedTool === 'list_leave_applications') {
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Status</label>
+                    <select id="param-leave-status" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Start Date</label>
+                    <input type="date" id="param-start-date" value="2025-01-01" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">End Date</label>
+                    <input type="date" id="param-end-date" value="2025-12-31" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            `;
+        } else if (selectedTool === 'get_employee_payslip') {
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Employee</label>
+                    <select id="param-employee-id" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        ${empOptions || '<option value="">No employees available</option>'}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Payroll Period</label>
+                    <select id="param-payroll-period-id" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        ${periodOptions || '<option value="">No payroll periods available</option>'}
+                    </select>
+                </div>
+            `;
+        } else if (selectedTool === 'get_payroll_summary_report' || selectedTool === 'get_payroll_status') {
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Payroll Period</label>
+                    <select id="param-payroll-period-id" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        ${periodOptions || '<option value="">No payroll periods available</option>'}
+                    </select>
+                </div>
+            `;
+        } else if (selectedTool === 'get_attendance_summary') {
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Employee</label>
+                    <select id="param-employee-id" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        ${empOptions || '<option value="">No employees available</option>'}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period Start</label>
+                    <input type="date" id="param-period-start" value="2025-01-01" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Period End</label>
+                    <input type="date" id="param-period-end" value="2025-12-31" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            `;
+        } else if (selectedTool === 'get_employee_count') {
+            html += `
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Status</label>
+                    <select id="param-status" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors">
+                        <option value="">All</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
                 </div>
             `;
         }
@@ -451,15 +518,41 @@
     toolSelect.addEventListener('change', renderDynamicInputs);
     renderDynamicInputs();
 
+    // Attach Preset Card Click Handlers
+    document.querySelectorAll('.preset-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const toolName = card.getAttribute('data-tool');
+            if (toolName && toolSelect) {
+                toolSelect.value = toolName;
+                renderDynamicInputs();
+                const testerElem = document.getElementById('interactive-tester');
+                if (testerElem) {
+                    testerElem.scrollIntoView({ behavior: 'smooth' });
+                }
+                mcpForm.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+        });
+    });
+
     // Form Submit
     mcpForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const selectedTool = toolSelect.value;
-        const bizIdVal = document.getElementById('param-business-id').value;
+        const bizIdElem = document.getElementById('param-business-id');
+        const bizIdVal = bizIdElem ? bizIdElem.value : null;
 
         const args = {};
         if (bizIdVal) args.business_id = parseInt(bizIdVal);
+
+        const searchInput = document.getElementById('param-search');
+        if (searchInput && searchInput.value) args.search = searchInput.value;
+
+        const statusInput = document.getElementById('param-status');
+        if (statusInput && statusInput.value) args.status = statusInput.value;
+
+        const leaveStatusInput = document.getElementById('param-leave-status');
+        if (leaveStatusInput && leaveStatusInput.value) args.status = leaveStatusInput.value;
 
         const empInput = document.getElementById('param-employee-id');
         if (empInput && empInput.value) args.employee_id = empInput.value;
@@ -469,6 +562,12 @@
 
         const endInput = document.getElementById('param-period-end');
         if (endInput && endInput.value) args.period_end = endInput.value;
+
+        const startDateInput = document.getElementById('param-start-date');
+        if (startDateInput && startDateInput.value) args.start_date = startDateInput.value;
+
+        const endDateInput = document.getElementById('param-end-date');
+        if (endDateInput && endDateInput.value) args.end_date = endDateInput.value;
 
         const periodInput = document.getElementById('param-payroll-period-id');
         if (periodInput && periodInput.value) args.payroll_period_id = periodInput.value;
