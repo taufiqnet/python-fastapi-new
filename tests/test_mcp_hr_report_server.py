@@ -195,22 +195,19 @@ def test_leave_and_payroll_summary_reports_happy_path(setup_mcp_db, monkeypatch)
     # Test get_leave_summary_report
     leave_rep = hr_report_server.get_leave_summary_report(business_id=1, period_start="2025-01-01", period_end="2025-01-31")
     assert isinstance(leave_rep, dict)
-    assert leave_rep["business_id"] == 1
-    assert leave_rep["total_applications"] == 1
-    assert "by_leave_type" in leave_rep
-    assert "Annual Leave" in leave_rep["by_leave_type"]
+    assert leave_rep["type"] == "summary"
+    assert leave_rep["metrics"]["total_applications"] == 1
 
     # Test get_payroll_summary_report
     payroll_rep = hr_report_server.get_payroll_summary_report(business_id=1, payroll_period_id=data["period1_id"])
     assert isinstance(payroll_rep, dict)
-    assert payroll_rep["business_id"] == 1
-    assert payroll_rep["headcount"] == 1
-    assert payroll_rep["total_gross_salary"] == 5000.0
-    assert payroll_rep["total_net_salary"] == 4500.0
-    assert payroll_rep["total_deductions"] == 500.0
+    assert payroll_rep["type"] == "summary"
+    assert payroll_rep["metrics"]["headcount"] == 1
+    assert payroll_rep["metrics"]["total_gross_salary"] == 5000.0
+    assert payroll_rep["metrics"]["total_net_salary"] == 4500.0
+    assert payroll_rep["metrics"]["total_deductions"] == 500.0
     # Confirm NO individual per-employee breakdown / records key exists
-    assert "records" not in payroll_rep
-    assert "employees" not in payroll_rep
+    assert "records" not in payroll_rep["metrics"]
 
 
 def test_other_mcp_tools(setup_mcp_db, monkeypatch):
@@ -221,33 +218,37 @@ def test_other_mcp_tools(setup_mcp_db, monkeypatch):
     # 1. list_employees
     emp_list = hr_report_server.list_employees(business_id=1)
     assert isinstance(emp_list, dict)
-    assert emp_list["count"] == 1
-    assert emp_list["employees"][0]["employee_id"] == "EMP101"
+    assert emp_list["type"] == "table"
+    assert emp_list["total"] == 1
+    assert emp_list["rows"][0]["employee_id"] == "EMP101"
 
     # 2. get_employee
     emp = hr_report_server.get_employee(data["emp1_id"])
     assert isinstance(emp, dict)
-    assert emp["full_name"] == "John Doe"
+    assert emp["type"] == "employee_card"
+    assert emp["employee"]["full_name"] == "John Doe"
 
     # 3. list_leave_applications
     apps = hr_report_server.list_leave_applications(business_id=1)
     assert isinstance(apps, dict)
-    assert apps["count"] == 1
+    assert apps["type"] == "list"
+    assert apps["total"] == 1
 
     # 4. get_employee_leave_balance
     bal = hr_report_server.get_employee_leave_balance(data["emp1_id"])
     assert isinstance(bal, dict)
-    assert len(bal["allocations"]) == 1
-    assert bal["allocations"][0]["remaining_days"] == 15.0
+    assert bal["type"] == "summary"
+    assert bal["metrics"]["Annual Leave (Remaining)"] == 15.0
 
     # 5. get_employee_payslip (User 2 has compensation:view)
     payslip = hr_report_server.get_employee_payslip(data["emp1_id"], data["period1_id"])
     assert isinstance(payslip, dict)
-    assert payslip["gross_salary"] == 5000.0
-    assert payslip["net_salary"] == 4500.0
+    assert payslip["type"] == "employee_card"
+    assert payslip["employee"]["gross_salary"] == 5000.0
+    assert payslip["employee"]["net_salary"] == 4500.0
 
     # 6. get_attendance_summary
     att_sum = hr_report_server.get_attendance_summary(data["emp1_id"], "2025-01-01", "2025-01-31")
     assert isinstance(att_sum, dict)
-    assert att_sum["total_records"] == 1
-    assert att_sum["total_overtime_hours"] == 2.0
+    assert att_sum["type"] == "summary"
+    assert att_sum["metrics"]["total_overtime_hours"] == 2.0

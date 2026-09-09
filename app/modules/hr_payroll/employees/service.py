@@ -54,6 +54,49 @@ class EmployeeService:
             department_id=department_id,
         )
 
+    def count_employees(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        department_id: uuid.UUID | None = None,
+        status: str | None = None,
+    ) -> int:
+        return self.repository.count_employees(
+            db,
+            business_id=business_id,
+            department_id=department_id,
+            status=status,
+        )
+
+    def count_employees_by_department(
+        self,
+        db: Session,
+        business_id: int | None = None,
+    ) -> list[tuple[str, int]]:
+        return self.repository.count_employees_by_department(
+            db, business_id=business_id
+        )
+
+    def search_employees(
+        self,
+        db: Session,
+        search: str | None = None,
+        business_id: int | None = None,
+        department_id: uuid.UUID | None = None,
+        status: str | None = None,
+        skip: int = 0,
+        limit: int = 20,
+    ) -> tuple[list[Employee], int]:
+        return self.repository.search_employees(
+            db,
+            search=search,
+            business_id=business_id,
+            department_id=department_id,
+            status=status,
+            skip=skip,
+            limit=limit,
+        )
+
     def get_employee(self, db: Session, employee_uuid: uuid.UUID) -> Employee:
         employee = self.repository.get_by_id(db, employee_uuid)
         if not employee:

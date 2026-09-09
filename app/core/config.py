@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     # OpenRouter
     openrouter_api_key: str
     openrouter_model: str = "openrouter/free"
+    openrouter_models: str = "openrouter/free"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     model_config = SettingsConfigDict(
@@ -38,6 +39,10 @@ class Settings(BaseSettings):
             "postgresql+asyncpg://",
             1,
         )
+
+    @property
+    def openrouter_model_list(self) -> list[str]:
+        return [m.strip() for m in self.openrouter_models.split(",") if m.strip()]
 
 
 @lru_cache

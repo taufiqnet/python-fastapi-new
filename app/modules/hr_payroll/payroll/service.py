@@ -232,6 +232,38 @@ class PayrollPeriodService:
             )
         self.repository.delete(db, period)
 
+    def get_payroll_status(
+        self, db: Session, period_uuid: uuid.UUID, business_id: int | None = None
+    ) -> dict:
+        period = self.get_period(db, period_uuid)
+        if business_id is not None and period.business_id != business_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Payroll period does not belong to specified business profile",
+            )
+
+        record_repo = PayrollRecordRepository()
+        records = record_repo.get_all(
+            db, business_id=period.business_id, period_id=period_uuid, limit=5000
+        )
+
+        total_records = len(records)
+        paid_records = sum(1 for r in records if r.is_paid)
+        unpaid_records = total_records - paid_records
+
+        return {
+            "period_id": str(period.id),
+            "period_name": period.name,
+            "business_id": period.business_id,
+            "start_date": period.start_date.strftime("%Y-%m-%d") if period.start_date else None,
+            "end_date": period.end_date.strftime("%Y-%m-%d") if period.end_date else None,
+            "status": period.status.value if hasattr(period.status, "value") else str(period.status),
+            "is_locked": period.is_locked,
+            "total_records": total_records,
+            "paid_records": paid_records,
+            "unpaid_records": unpaid_records,
+        }
+
     def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
         wb = openpyxl.Workbook()
         ws = wb.active
