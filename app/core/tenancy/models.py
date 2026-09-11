@@ -118,8 +118,8 @@ class BusinessProfile(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Subscription Plan
-    subscription_plan_id: Mapped[int | None] = mapped_column(
-        ForeignKey("subscription_plans.id"), nullable=True, default=None, index=True
+    subscription_plan_id: Mapped[int] = mapped_column(
+        ForeignKey("subscription_plans.id"), nullable=False, default=1, index=True
     )
     subscription_plan: Mapped["SubscriptionPlan | None"] = relationship(
         "SubscriptionPlan", back_populates="business_profiles"
@@ -128,10 +128,10 @@ class BusinessProfile(Base):
     def has_permission(self, permission_code: str) -> bool:
         """
         Check whether the business profile's subscription plan includes the given permission code.
-        If no plan is assigned, defaults to True (or False if required, but default True ensures unassigned tenants are not completely locked out unless plan gating is set).
+        If no plan is assigned, denies access (returns False) by default.
         """
-        if not self.subscription_plan:
-            return True
+        if not self.subscription_plan_id or not self.subscription_plan:
+            return False
         if not self.subscription_plan.is_active:
             return False
         plan_codes = {p.code for p in self.subscription_plan.permissions}

@@ -131,7 +131,7 @@
                     <div class="form-group md:col-span-2">
                         <label class="form-label" for="subscription_plan_id">Subscription Plan Tier</label>
                         <select id="subscription_plan_id" name="subscription_plan_id" class="form-input">
-                            <option value="">No Plan Assigned (Full Access / Default)</option>
+                            <option value="">Default (Free Plan)</option>
                             {% for p in plans %}
                             <option value="{{ p.id }}" {% if business and business.subscription_plan_id == p.id %}selected{% endif %}>
                                 {{ p.name }} Tier ({% if p.is_active %}Active{% else %}Inactive{% endif %})

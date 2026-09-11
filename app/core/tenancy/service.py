@@ -24,6 +24,11 @@ class BusinessService:
         dump["cr_number"] = cr
         dump["vat_number"] = vat
 
+        if dump.get("subscription_plan_id") is None:
+            from app.core.billing.models import SubscriptionPlan
+            free_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "Free").first()
+            dump["subscription_plan_id"] = free_plan.id if free_plan else 1
+
         business = BusinessProfile(**dump)
 
         return self.repository.create(db, business)
@@ -58,6 +63,14 @@ class BusinessService:
         dump = data.model_dump()
         dump["cr_number"] = cr
         dump["vat_number"] = vat
+
+        if dump.get("subscription_plan_id") is None:
+            if business.subscription_plan_id:
+                dump["subscription_plan_id"] = business.subscription_plan_id
+            else:
+                from app.core.billing.models import SubscriptionPlan
+                free_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "Free").first()
+                dump["subscription_plan_id"] = free_plan.id if free_plan else 1
 
         return self.repository.update(db, business, dump)
 

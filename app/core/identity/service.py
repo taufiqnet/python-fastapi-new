@@ -48,7 +48,7 @@ class UserService:
 
             new_business = BusinessProfile(
                 name_en=data.company_name.strip(),
-                subscription_plan_id=free_plan.id if free_plan else None,
+                subscription_plan_id=free_plan.id if free_plan else 1,
             )
             db.add(new_business)
             await db.flush()

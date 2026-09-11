@@ -64,6 +64,8 @@ async def get_current_user_optional(
     header_token: str | None = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_async_db),
 ) -> User | None:
+    if hasattr(request, "state") and getattr(request.state, "user", None) is not None:
+        return request.state.user
     token = extract_token_from_request(request, header_token)
     if not token:
         return None
