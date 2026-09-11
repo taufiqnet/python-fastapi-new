@@ -1,14 +1,18 @@
-from typing import Callable
-from fastapi import HTTPException
+from app.core.billing.models import PlanPermission, SubscriptionPlan
+from app.core.billing.repository import SubscriptionPlanRepository
+from app.core.billing.schemas import (
+    SubscriptionPlanCreate,
+    SubscriptionPlanOut,
+    SubscriptionPlanUpdate,
+)
+from app.core.billing.service import SubscriptionPlanService
 
-
-def require_module(module_name: str) -> Callable:
-    """
-    Dependency helper to check module entitlement for tenant subscriptions.
-    """
-
-    async def checker():
-        # Entitlement logic stub for module access gating
-        return True
-
-    return checker
+__all__ = [
+    "SubscriptionPlan",
+    "PlanPermission",
+    "SubscriptionPlanRepository",
+    "SubscriptionPlanService",
+    "SubscriptionPlanCreate",
+    "SubscriptionPlanUpdate",
+    "SubscriptionPlanOut",
+]

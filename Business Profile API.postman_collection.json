@@ -275,7 +275,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+              "raw": "{\n  \"name_en\": \"Onoda Inc\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100123\",\n  \"vat_number\": \"VAT-123123\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"\u09f3\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
             },
             "url": {
               "raw": "{{base_url}}/business/",
@@ -362,7 +362,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"৳\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
+              "raw": "{\n  \"name_en\": \"Onoda Inc (Updated)\",\n  \"short_name\": \"Onoda\",\n  \"legal_name\": \"Onoda Incorporated\",\n  \"cr_number\": \"CR-100234\",\n  \"vat_number\": \"VAT-559812\",\n  \"city\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"email\": \"info@onoda.com\",\n  \"phone\": \"+8801700000000\",\n  \"currency_code\": \"BDT\",\n  \"currency_symbol\": \"\u09f3\",\n  \"invoice_prefix\": \"INV\",\n  \"vat_rate\": 0.15,\n  \"is_active\": true\n}"
             },
             "url": {
               "raw": "{{base_url}}/business/{{business_id}}",
@@ -3724,6 +3724,35 @@
           "name": "Organization",
           "item": [
             {
+              "name": "Export Departments to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/departments/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "departments",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
               "name": "Download Departments Excel Template",
               "request": {
                 "method": "GET",
@@ -4027,6 +4056,39 @@
               "response": []
             },
             {
+              "name": "Export Job Titles to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/job-titles/export-excel?business_id={{business_id}}&department_id={{department_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "job-titles",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "department_id",
+                      "value": "{{department_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
               "name": "List Job Titles",
               "request": {
                 "method": "GET",
@@ -4202,6 +4264,35 @@
         {
           "name": "Employees",
           "item": [
+            {
+              "name": "Export Employees to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/employees/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "employees",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
             {
               "name": "Download Employees Excel Template",
               "request": {
@@ -4447,6 +4538,36 @@
           "name": "Leave Management",
           "item": [
             {
+              "name": "Export Leave Types to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave/types/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave",
+                    "types",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
               "name": "Download Leave Types Excel Template",
               "request": {
                 "method": "GET",
@@ -4684,6 +4805,36 @@
               "response": []
             },
             {
+              "name": "Export Leave Allocations to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave/allocations/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave",
+                    "allocations",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
               "name": "List Leave Allocations",
               "request": {
                 "method": "GET",
@@ -4847,6 +4998,36 @@
                   "path": [
                     "leave-allocations",
                     "{{leave_allocation_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Export Leave Applications to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/leave/applications/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "leave",
+                    "applications",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
                   ]
                 },
                 "header": [
@@ -5113,6 +5294,51 @@
           "name": "Attendance",
           "item": [
             {
+              "name": "Export Attendance Records to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/attendance/export-excel?business_id={{business_id}}&employee_id={{employee_id}}&start_date=2025-01-01&end_date=2025-01-31&status=present",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "attendance",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "employee_id",
+                      "value": "{{employee_id}}"
+                    },
+                    {
+                      "key": "start_date",
+                      "value": "2025-01-01"
+                    },
+                    {
+                      "key": "end_date",
+                      "value": "2025-01-31"
+                    },
+                    {
+                      "key": "status",
+                      "value": "present"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
               "name": "Download Attendance Excel Template",
               "request": {
                 "method": "GET",
@@ -5372,6 +5598,35 @@
         {
           "name": "Compensation",
           "item": [
+            {
+              "name": "Export Compensation to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/compensation/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "compensation",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
             {
               "name": "Download Compensation Excel Template",
               "request": {
@@ -5647,6 +5902,36 @@
           "name": "Payroll",
           "item": [
             {
+              "name": "Export Payroll Settings to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/settings/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "settings",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
               "name": "Get Payroll Settings",
               "request": {
                 "method": "GET",
@@ -5714,6 +5999,36 @@
                     }
                   }
                 }
+              },
+              "response": []
+            },
+            {
+              "name": "Export Holidays to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/holidays/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "holidays",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
               },
               "response": []
             },
@@ -5882,6 +6197,36 @@
                     "payroll",
                     "holidays",
                     "{{holiday_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Export Payroll Periods to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/periods/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "periods",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
                   ]
                 },
                 "header": [
@@ -6087,6 +6432,36 @@
                     "payroll",
                     "periods",
                     "{{period_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Export Payroll Records to Excel",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/payroll/records/export-excel?business_id={{business_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "payroll",
+                    "records",
+                    "export-excel"
+                  ],
+                  "query": [
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    }
                   ]
                 },
                 "header": [
@@ -6357,6 +6732,88 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Get Salary Certificate",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/salary-certificates/{{certificate_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "salary-certificates",
+                    "{{certificate_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Salary Certificate",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/salary-certificates/{{certificate_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "salary-certificates",
+                    "{{certificate_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"issue_date\": \"2025-01-20\",\n  \"purpose\": \"bank_loan\",\n  \"addressed_to\": \"Bank of America\",\n  \"include_breakdown\": true,\n  \"status\": \"issued\",\n  \"basic_salary\": 5000.0,\n  \"gross_salary\": 7100.0,\n  \"net_salary\": 6200.0,\n  \"notes\": \"Updated salary certificate notes\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Salary Certificate",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/salary-certificates/{{certificate_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "salary-certificates",
+                    "{{certificate_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
             }
           ]
         },
@@ -6457,6 +6914,88 @@
                 ]
               },
               "response": []
+            },
+            {
+              "name": "Get Appointment Letter",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/appointment-letters/{{appointment_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointment-letters",
+                    "{{appointment_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Appointment Letter",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/appointment-letters/{{appointment_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointment-letters",
+                    "{{appointment_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"candidate_name\": \"John Smith\",\n  \"candidate_email\": \"john.smith@example.com\",\n  \"candidate_phone\": \"+1234567890\",\n  \"offered_joining_date\": \"2025-02-01\",\n  \"probation_period_months\": 3,\n  \"employment_type\": \"full_time\",\n  \"offered_basic_salary\": 6000.0,\n  \"offered_gross_salary\": 8500.0,\n  \"status\": \"issued\",\n  \"issue_date\": \"2025-01-15\",\n  \"valid_until\": \"2025-01-30\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Appointment Letter",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/appointment-letters/{{appointment_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "appointment-letters",
+                    "{{appointment_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
             }
           ]
         },
@@ -6535,6 +7074,118 @@
                     }
                   }
                 }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Notice",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/notices/{{notice_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notices",
+                    "{{notice_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Notice",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/notices/{{notice_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notices",
+                    "{{notice_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Company Annual Meeting (Updated)\",\n  \"content\": \"Updated venue and agenda details for AGM.\",\n  \"category\": \"event\",\n  \"target_audience\": \"all\",\n  \"is_pinned\": true,\n  \"is_active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Notice",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/notices/{{notice_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notices",
+                    "{{notice_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Mark Notice as Read",
+              "request": {
+                "method": "POST",
+                "url": {
+                  "raw": "{{base_url}}/notices/{{notice_id}}/read-receipts?employee_id={{employee_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "notices",
+                    "{{notice_id}}",
+                    "read-receipts"
+                  ],
+                  "query": [
+                    {
+                      "key": "employee_id",
+                      "value": "{{employee_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
               },
               "response": []
             }
@@ -6617,6 +7268,47 @@
               "response": []
             },
             {
+              "name": "List Interviews",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/interviews?skip=0&limit=100&business_id={{business_id}}&candidate_id={{candidate_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "interviews"
+                  ],
+                  "query": [
+                    {
+                      "key": "skip",
+                      "value": "0"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    },
+                    {
+                      "key": "business_id",
+                      "value": "{{business_id}}"
+                    },
+                    {
+                      "key": "candidate_id",
+                      "value": "{{candidate_id}}"
+                    }
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
               "name": "Schedule Interview",
               "request": {
                 "method": "POST",
@@ -6685,6 +7377,201 @@
                     }
                   }
                 }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Candidate",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/candidates/{{candidate_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "candidates",
+                    "{{candidate_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Candidate",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/candidates/{{candidate_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "candidates",
+                    "{{candidate_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"first_name\": \"Alice\",\n  \"last_name\": \"Wonder\",\n  \"email\": \"alice@example.com\",\n  \"phone\": \"+1234567890\",\n  \"status\": \"shortlisted\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Candidate",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/candidates/{{candidate_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "candidates",
+                    "{{candidate_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Get Interview",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/interviews/{{interview_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "interviews",
+                    "{{interview_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "Update Interview",
+              "request": {
+                "method": "PUT",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/interviews/{{interview_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "interviews",
+                    "{{interview_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"interviewer_id\": \"{{employee_id}}\",\n  \"stage\": \"technical\",\n  \"scheduled_at\": \"2025-01-22T10:00:00Z\",\n  \"duration_minutes\": 60,\n  \"status\": \"completed\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Interview",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/interviews/{{interview_id}}",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "interviews",
+                    "{{interview_id}}"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
+              },
+              "response": []
+            },
+            {
+              "name": "List Interview Evaluations",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{base_url}}/recruitment/interviews/{{interview_id}}/evaluations",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "recruitment",
+                    "interviews",
+                    "{{interview_id}}",
+                    "evaluations"
+                  ]
+                },
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}"
+                  }
+                ]
               },
               "response": []
             }

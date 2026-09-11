@@ -1,8 +1,8 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import DECIMAL, Boolean, Date, DateTime, Integer, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import DECIMAL, Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -116,6 +116,26 @@ class BusinessProfile(Base):
 
     # Status
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+    # Subscription Plan
+    subscription_plan_id: Mapped[int | None] = mapped_column(
+        ForeignKey("subscription_plans.id"), nullable=True, default=None, index=True
+    )
+    subscription_plan: Mapped["SubscriptionPlan | None"] = relationship(
+        "SubscriptionPlan", back_populates="business_profiles"
+    )
+
+    def has_permission(self, permission_code: str) -> bool:
+        """
+        Check whether the business profile's subscription plan includes the given permission code.
+        If no plan is assigned, defaults to True (or False if required, but default True ensures unassigned tenants are not completely locked out unless plan gating is set).
+        """
+        if not self.subscription_plan:
+            return True
+        if not self.subscription_plan.is_active:
+            return False
+        plan_codes = {p.code for p in self.subscription_plan.permissions}
+        return permission_code in plan_codes or "*" in plan_codes
 
     @property
     def full_address(self) -> str:

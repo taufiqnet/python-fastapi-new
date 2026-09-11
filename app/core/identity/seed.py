@@ -181,6 +181,41 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
         if admin_role and admin_role.id not in user_role_ids:
             demo_user.roles.append(admin_role)
 
+    # 5. Seed Default Subscription Plans
+    from app.core.billing.models import SubscriptionPlan
+    res_plan = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.name == "Enterprise"))
+    ent_plan = res_plan.scalar_one_or_none()
+    if not ent_plan:
+        ent_plan = SubscriptionPlan(
+            name="Enterprise",
+            description="Unlimited access to all modules and feature sets",
+            is_active=True,
+        )
+        ent_plan.permissions = list(db_all_perms)
+        db.add(ent_plan)
+
+    res_plan_pro = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.name == "Pro"))
+    pro_plan = res_plan_pro.scalar_one_or_none()
+    if not pro_plan:
+        pro_plan = SubscriptionPlan(
+            name="Pro",
+            description="Professional plan with HRM and Ecommerce capabilities",
+            is_active=True,
+        )
+        pro_plan.permissions = list(db_all_perms)
+        db.add(pro_plan)
+
+    res_plan_free = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.name == "Free"))
+    free_plan = res_plan_free.scalar_one_or_none()
+    if not free_plan:
+        free_plan = SubscriptionPlan(
+            name="Free",
+            description="Free tier with basic view permissions",
+            is_active=True,
+        )
+        free_plan.permissions = [p for p in db_all_perms if p.action == "view"]
+        db.add(free_plan)
+
     await db.commit()
 
 
@@ -253,5 +288,37 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         user_role_ids = {r.id for r in demo_user.roles}
         if admin_role and admin_role.id not in user_role_ids:
             demo_user.roles.append(admin_role)
+
+    # Seed Default Subscription Plans
+    from app.core.billing.models import SubscriptionPlan
+    ent_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "Enterprise").first()
+    if not ent_plan:
+        ent_plan = SubscriptionPlan(
+            name="Enterprise",
+            description="Unlimited access to all modules and feature sets",
+            is_active=True,
+        )
+        ent_plan.permissions = list(db_all_perms)
+        db.add(ent_plan)
+
+    pro_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "Pro").first()
+    if not pro_plan:
+        pro_plan = SubscriptionPlan(
+            name="Pro",
+            description="Professional plan with HRM and Ecommerce capabilities",
+            is_active=True,
+        )
+        pro_plan.permissions = list(db_all_perms)
+        db.add(pro_plan)
+
+    free_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "Free").first()
+    if not free_plan:
+        free_plan = SubscriptionPlan(
+            name="Free",
+            description="Free tier with basic view permissions",
+            is_active=True,
+        )
+        free_plan.permissions = [p for p in db_all_perms if p.action == "view"]
+        db.add(free_plan)
 
     db.commit()

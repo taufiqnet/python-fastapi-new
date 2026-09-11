@@ -119,6 +119,16 @@ def require_permission(module: str, feature: str, action: str):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Permission denied. Required permission: {code}",
             )
+        if current_user.business_profile and not current_user.business_profile.has_permission(code):
+            plan_name = (
+                current_user.business_profile.subscription_plan.name
+                if current_user.business_profile.subscription_plan
+                else "Current"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription.",
+            )
         return current_user
 
     return permission_checker

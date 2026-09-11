@@ -88,6 +88,7 @@ from app.routers import (
     product_views,
     recruitment_views,
     role_views,
+    subscription_plan_views,
     user_views,
     mcp_views,
     tasks,
@@ -205,6 +206,7 @@ app.include_router(appointment_views.router)
 app.include_router(notice_views.router)
 app.include_router(recruitment_router)
 app.include_router(role_views.router)
+app.include_router(subscription_plan_views.router)
 app.include_router(user_views.router)
 app.include_router(mcp_views.router)
 app.include_router(business.router)

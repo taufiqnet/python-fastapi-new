@@ -41,12 +41,24 @@ from app.services.ai.response_types import (
 
 def check_permissions(user: User, required_permissions: list[str]) -> None:
     """
-    Ensures user has all required permission code(s).
+    Ensures user has all required permission code(s) and their business plan includes them (unless superuser).
     """
+    if user.is_superuser:
+        return
+
     for code in required_permissions:
         if not user.has_permission(code):
             raise PermissionError(
                 f"Permission denied: user lacks required permission '{code}'"
+            )
+        if user.business_profile and not user.business_profile.has_permission(code):
+            plan_name = (
+                user.business_profile.subscription_plan.name
+                if user.business_profile.subscription_plan
+                else "Current"
+            )
+            raise PermissionError(
+                f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription."
             )
 
 

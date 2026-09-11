@@ -59,14 +59,29 @@ def resolve_acting_user() -> User:
     db = SessionLocal()
     try:
         from sqlalchemy.orm import selectinload
+        from app.core.billing.models import SubscriptionPlan
         from app.core.identity.models import Role
-        user = db.query(User).options(
-            selectinload(User.roles).selectinload(Role.permissions),
-            selectinload(User.direct_permissions),
-        ).filter(User.id == user_id).first()
+        from app.core.tenancy.models import BusinessProfile
+
+        user = (
+            db.query(User)
+            .options(
+                selectinload(User.roles).selectinload(Role.permissions),
+                selectinload(User.direct_permissions),
+                selectinload(User.business_profile)
+                .selectinload(BusinessProfile.subscription_plan)
+                .selectinload(SubscriptionPlan.permissions),
+            )
+            .filter(User.id == user_id)
+            .first()
+        )
         if not user:
             raise RuntimeError(f"Acting user with ID {user_id} not found in database")
         _ = user.get_all_permission_codes()
+        if user.business_profile:
+            _ = user.business_profile.id
+            if user.business_profile.subscription_plan:
+                _ = user.business_profile.subscription_plan.permissions
         return user
     finally:
         db.close()

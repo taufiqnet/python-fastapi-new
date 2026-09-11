@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
+from app.core.billing.models import SubscriptionPlan
 from app.core.deps import get_current_user_optional
 from app.core.identity.models import Role, User
 from app.core.tenancy.models import BusinessProfile
@@ -296,13 +297,15 @@ def business_manage_page(
 
 
 @router.get("/businesses/create", response_class=HTMLResponse)
-def business_create_page(request: Request):
+def business_create_page(request: Request, db: Session = Depends(get_db)):
+    plans = db.query(SubscriptionPlan).order_by(SubscriptionPlan.id.asc()).all()
     return templates.TemplateResponse(
         request=request,
         name="modules/tenancy/business_form.html",
         context={
             "business": None,
             "is_edit": False,
+            "plans": plans,
         },
     )
 
@@ -326,11 +329,13 @@ def business_edit_page(
     business_id: int, request: Request, db: Session = Depends(get_db)
 ):
     business = service.get_business(db, business_id)
+    plans = db.query(SubscriptionPlan).order_by(SubscriptionPlan.id.asc()).all()
     return templates.TemplateResponse(
         request=request,
         name="modules/tenancy/business_form.html",
         context={
             "business": business,
             "is_edit": True,
+            "plans": plans,
         },
     )

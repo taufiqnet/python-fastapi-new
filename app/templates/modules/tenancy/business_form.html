@@ -128,6 +128,17 @@
                         <label class="form-label" for="description">Description</label>
                         <textarea id="description" name="description" rows="3" class="form-input" placeholder="Brief description of the business...">{{ business.description if business else '' }}</textarea>
                     </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="subscription_plan_id">Subscription Plan Tier</label>
+                        <select id="subscription_plan_id" name="subscription_plan_id" class="form-input">
+                            <option value="">No Plan Assigned (Full Access / Default)</option>
+                            {% for p in plans %}
+                            <option value="{{ p.id }}" {% if business and business.subscription_plan_id == p.id %}selected{% endif %}>
+                                {{ p.name }} Tier ({% if p.is_active %}Active{% else %}Inactive{% endif %})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -437,6 +448,8 @@ document.getElementById('businessForm').addEventListener('submit', function(e) {
         }
     });
 
+    const planVal = document.getElementById('subscription_plan_id').value;
+    payload.subscription_plan_id = planVal ? parseInt(planVal) : null;
     payload.is_active = document.getElementById('is_active').checked;
     payload.e_invoice_enabled = document.getElementById('e_invoice_enabled').checked;
     payload.zatca_enabled = document.getElementById('zatca_enabled').checked;

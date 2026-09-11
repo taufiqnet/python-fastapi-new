@@ -21,6 +21,7 @@ from app.core.identity.models import (  # noqa: F401
     UserRole,
     VendorProfile,
 )
+from app.core.billing.models import PlanPermission, SubscriptionPlan  # noqa: F401
 from app.core.tenancy.models import BusinessProfile  # noqa: F401
 from app.modules.ecommerce.brands.models import Brand, ProductModel  # noqa: F401
 from app.modules.ecommerce.cart.models import Cart, CartItem  # noqa: F401

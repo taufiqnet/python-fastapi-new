@@ -77,6 +77,7 @@ class BusinessProfileCreate(BaseModel):
     language: str = "en"
 
     is_active: bool = True
+    subscription_plan_id: int | None = None
 
     @field_validator(
         "email", "support_email", "sales_email", "invoice_email", "cr_number", "vat_number", mode="before"

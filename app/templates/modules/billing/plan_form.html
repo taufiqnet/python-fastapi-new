@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Subscription Plan{% else %}Create Subscription Plan{% endif %} | SaaS Platform{% endblock %}
+
+{% block head %}
+<style>
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    .permission-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+    }
+
+    .permission-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        background: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .permission-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #111827;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .btn-perm-action {
+        padding: 5px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+    }
+
+    .btn-perm-check-all {
+        color: #4f46e5;
+        background: #eef2ff;
+        border-color: #c7d2fe;
+    }
+
+    .btn-perm-check-all:hover {
+        background: #e0e7ff;
+    }
+
+    .btn-perm-clear-all {
+        color: #6b7280;
+        background: #f3f4f6;
+    }
+
+    .btn-perm-clear-all:hover {
+        background: #e5e7eb;
+    }
+
+    .btn-toggle-row {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #4f46e5;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        cursor: pointer;
+    }
+
+    .btn-toggle-row:hover {
+        background: #e0e7ff;
+    }
+
+    .perm-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .perm-table th {
+        background: #ffffff;
+        padding: 12px 16px;
+        font-size: 11px;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .perm-table td {
+        padding: 12px 16px;
+        font-size: 13px;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+    }
+
+    .perm-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .col-header-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #4f46e5;
+        cursor: pointer;
+        font-weight: 700;
+        user-select: none;
+    }
+
+    .col-header-btn:hover {
+        color: #3730a3;
+    }
+
+    .perm-checkbox {
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        border: 1px solid #d1d5db;
+        accent-color: #4f46e5;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Subscription Plan: {{ plan.name }}{% else %}Create New Subscription Plan{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Define plan title, status, and feature entitlements via permission matrix</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        <a href="/subscription-plans/manage" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-2">
+            <i class="fas fa-arrow-left"></i> Back to Plans
+        </a>
+    </div>
+</div>
+
+<form id="planForm" method="POST">
+    <!-- Plan Details Card -->
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-6 shadow-sm">
+        <h2 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <i class="fas fa-box text-indigo-600"></i> Plan Details
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="plan_name" class="block text-xs font-semibold text-gray-700 mb-1.5">Plan Name *</label>
+                <input type="text" id="plan_name" name="name" class="w-full h-11 px-3.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600" placeholder="e.g. Pro" value="{{ plan.name if plan else '' }}" required>
+            </div>
+
+            <div>
+                <label for="is_active" class="block text-xs font-semibold text-gray-700 mb-1.5">Status</label>
+                <select id="is_active" name="is_active" class="w-full h-11 px-3.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600">
+                    <option value="true" {% if not plan or plan.is_active %}selected{% endif %}>Active</option>
+                    <option value="false" {% if plan and not plan.is_active %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+
+            <div class="md:col-span-2">
+                <label for="plan_description" class="block text-xs font-semibold text-gray-700 mb-1.5">Description</label>
+                <textarea id="plan_description" name="description" rows="2" class="w-full p-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-indigo-600" placeholder="Brief explanation of feature limits and target tenant segment">{{ plan.description if plan else '' }}</textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permission Matrix Cards -->
+    {% for module_key, module_info in system_modules.items() %}
+    <div class="permission-card" id="card-{{ module_key }}">
+        <div class="permission-header">
+            <div class="permission-title">
+                <i class="{{ module_info.icon }} text-indigo-600 text-base"></i>
+                <span>{{ module_info.title }}</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="button" class="btn-perm-action btn-perm-check-all" onclick="checkAllModule('{{ module_key }}')">Check All</button>
+                <button type="button" class="btn-perm-action btn-perm-clear-all" onclick="clearAllModule('{{ module_key }}')">Clear All</button>
+            </div>
+        </div>
+
+        <table class="perm-table">
+            <thead>
+                <tr>
+                    <th style="width: 35%;">FEATURE NAME</th>
+                    <th style="width: 15%; text-align: left;">ROW TOGGLE</th>
+                    <th style="width: 12.5%; text-align: center;">
+                        <span class="col-header-btn" onclick="toggleColumn('{{ module_key }}', 'view')">VIEW <i class="fas fa-caret-down text-xs"></i></span>
+                    </th>
+                    <th style="width: 12.5%; text-align: center;">
+                        <span class="col-header-btn" onclick="toggleColumn('{{ module_key }}', 'create')">CREATE <i class="fas fa-caret-down text-xs"></i></span>
+                    </th>
+                    <th style="width: 12.5%; text-align: center;">
+                        <span class="col-header-btn" onclick="toggleColumn('{{ module_key }}', 'update')">UPDATE <i class="fas fa-caret-down text-xs"></i></span>
+                    </th>
+                    <th style="width: 12.5%; text-align: center;">
+                        <span class="col-header-btn" onclick="toggleColumn('{{ module_key }}', 'delete')">DELETE <i class="fas fa-caret-down text-xs"></i></span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for feature_key, feature_name in module_info.features %}
+                <tr id="row-{{ module_key }}-{{ feature_key }}">
+                    <td class="font-semibold text-gray-900">{{ feature_name }}</td>
+                    <td>
+                        <button type="button" class="btn-toggle-row" onclick="toggleRow('{{ module_key }}', '{{ feature_key }}')">Toggle Row</button>
+                    </td>
+
+                    {% for act in ['view', 'create', 'update', 'delete'] %}
+                    {% set code = module_key ~ ':' ~ feature_key ~ ':' ~ act %}
+                    {% set match_perm = (permissions | selectattr('code', 'equalto', code) | list | first) %}
+                    <td style="text-align: center;">
+                        {% if match_perm %}
+                        <input type="checkbox" name="permission_ids" value="{{ match_perm.id }}" 
+                               class="perm-checkbox perm-mod-{{ module_key }} perm-act-{{ module_key }}-{{ act }} perm-row-{{ module_key }}-{{ feature_key }}"
+                               {% if is_edit and match_perm.id in assigned_perm_ids %}checked{% endif %}>
+                        {% else %}
+                        <span class="text-gray-300">—</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+    <!-- Submit bar -->
+    <div class="flex items-center justify-end gap-3 pt-4">
+        <a href="/subscription-plans/manage" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition-colors">Cancel</a>
+        <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm">
+            <i class="fas fa-save mr-1.5"></i> Save Plan Entitlements
+        </button>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function checkAllModule(moduleKey) {
+    document.querySelectorAll('.perm-mod-' + moduleKey).forEach(cb => cb.checked = true);
+}
+
+function clearAllModule(moduleKey) {
+    document.querySelectorAll('.perm-mod-' + moduleKey).forEach(cb => cb.checked = false);
+}
+
+function toggleColumn(moduleKey, action) {
+    const cbs = document.querySelectorAll('.perm-act-' + moduleKey + '-' + action);
+    const anyUnchecked = Array.from(cbs).some(cb => !cb.checked);
+    cbs.forEach(cb => cb.checked = anyUnchecked);
+}
+
+function toggleRow(moduleKey, featureKey) {
+    const cbs = document.querySelectorAll('.perm-row-' + moduleKey + '-' + featureKey);
+    const anyUnchecked = Array.from(cbs).some(cb => !cb.checked);
+    cbs.forEach(cb => cb.checked = anyUnchecked);
+}
+
+document.getElementById('planForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const name = document.getElementById('plan_name').value.trim();
+    const isActive = document.getElementById('is_active').value === 'true';
+    const description = document.getElementById('plan_description').value.trim();
+
+    const checkedPerms = Array.from(document.querySelectorAll('input[name="permission_ids"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+    const payload = {
+        name: name,
+        description: description || null,
+        is_active: isActive,
+        permission_ids: checkedPerms
+    };
+
+    const isEdit = {{ 'true' if is_edit else 'false' }};
+    const planId = {{ plan.id if plan else 0 }};
+    const url = isEdit ? '/subscription-plans/api/' + planId : '/subscription-plans/api';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            showSuccessToast('Plan saved successfully').then(() => {
+                window.location.href = '/subscription-plans/manage';
+            });
+        } else {
+            const err = await response.json();
+            showErrorAlert('Error', err.detail || 'Failed to save plan');
+        }
+    } catch (err) {
+        showErrorAlert('Error', err.message);
+    }
+});
+</script>
+{% endblock %}
