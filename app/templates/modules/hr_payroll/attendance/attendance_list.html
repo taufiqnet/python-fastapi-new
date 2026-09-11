@@ -24,6 +24,19 @@
         border-radius: 0.5rem !important;
         font-size: 0.75rem !important;
     }
+
+    .action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 6px;
+        border: 1px solid #e5e7eb; background: #fff;
+        cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none;
+    }
+    .action-btn.view   { color: #10b981; }
+    .action-btn.view:hover   { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+    .action-btn.edit   { color: #4f46e5; }
+    .action-btn.edit:hover   { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
+    .action-btn.delete { color: #ef4444; }
+    .action-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
 </style>
 {% endblock %}
 
@@ -35,14 +48,17 @@
         <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Attendance Records</h1>
         <p class="text-xs text-gray-500 font-medium">Track employee daily attendance, check-in/out times, and work hours</p>
     </div>
-    <div class="flex items-center gap-2">
-        <button type="button" onclick="openImportModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+    <div class="flex items-center gap-3">
+        <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
+            <i class="fas fa-sliders-h text-sm"></i>
+        </button>
+        <button type="button" onclick="openImportModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
             <i class="fas fa-file-excel"></i> Import Excel
         </button>
         <button type="button" onclick="openExportModal()" class="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
             <i class="fas fa-file-download"></i> Export Excel
         </button>
-        <a href="/attendance/create" class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition-colors">
+        <a href="/attendance/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
             <i class="fas fa-plus"></i> Log Attendance
         </a>
     </div>
@@ -102,7 +118,7 @@
 </div>
 
 <!-- Filters Bar -->
-<div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
+<div id="filter-section" class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6">
     <form id="attendance-filter-form" method="GET" action="/attendance/manage" class="grid grid-cols-1 md:grid-cols-6 gap-3">
         <div>
             <label class="block text-[11px] font-semibold text-gray-500 uppercase mb-1">Business</label>
@@ -152,8 +168,8 @@
             <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-5 rounded-lg transition-colors flex items-center justify-center gap-1.5">
                 <i class="fas fa-filter text-[10px]"></i> Apply Filter
             </button>
-            <a href="/attendance/manage" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold py-2 px-4 rounded-lg transition-colors">
-                Clear Filters
+            <a href="/attendance/manage" id="btnClearFilters" class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+                <i class="fas fa-times-circle text-xs"></i> Clear Filters
             </a>
             <button type="button" id="btnExportSearch" disabled
                     class="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer">
@@ -168,7 +184,7 @@
     <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse" id="attendance-table">
             <thead>
-                <tr class="bg-gray-50/50 border-b border-gray-200 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                <tr class="bg-gray-50/50 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                     <th class="px-5 py-3">Employee ID</th>
                     <th class="px-5 py-3">Employee Name</th>
                     <th class="px-5 py-3">Date</th>
@@ -177,7 +193,7 @@
                     <th class="px-5 py-3">Work / OT Hours</th>
                     <th class="px-5 py-3">Source</th>
                     <th class="px-5 py-3">Business</th>
-                    <th class="px-5 py-3 text-right">Actions</th>
+                    <th class="px-5 py-3 text-right" style="width:110px">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100 text-xs" id="attendance-tbody">
@@ -228,15 +244,15 @@
                             {{ biz_map.get(r.business_id, 'Global') }}
                         </td>
                         <td class="px-5 py-3.5 text-right">
-                            <div class="flex items-center justify-end gap-2">
-                                <a href="/attendance/detail/{{ r.id }}" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded hover:bg-gray-100 transition-colors" title="View Details">
-                                    <i class="fas fa-eye text-xs"></i>
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="/attendance/detail/{{ r.id }}" class="action-btn view" title="View Details">
+                                    <i class="fas fa-eye"></i>
                                 </a>
-                                <a href="/attendance/edit/{{ r.id }}" class="p-1.5 text-gray-400 hover:text-amber-600 rounded hover:bg-gray-100 transition-colors" title="Edit">
-                                    <i class="fas fa-edit text-xs"></i>
+                                <a href="/attendance/edit/{{ r.id }}" class="action-btn edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
                                 </a>
-                                <button type="button" onclick="deleteAttendance('{{ r.id }}')" class="p-1.5 text-gray-400 hover:text-rose-600 rounded hover:bg-gray-100 transition-colors" title="Delete">
-                                    <i class="fas fa-trash-alt text-xs"></i>
+                                <button type="button" onclick="deleteAttendance('{{ r.id }}')" class="action-btn delete" title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
                         </td>
@@ -358,6 +374,10 @@
 
 <script>
 $(document).ready(function () {
+    $('#btnToggleFilters').on('click', function() {
+        $('#filter-section').slideToggle(200);
+    });
+
     // 1. Initialize Select2 on Business and Employee dropdowns
     $('#filter_business_id').select2({
         placeholder: "All Businesses",
