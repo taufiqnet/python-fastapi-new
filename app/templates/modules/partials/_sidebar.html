@@ -1,6 +1,6 @@
 <!-- HR & PAYROLL MODULE -->
-<div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation'] %}expanded{% endif %}" data-module="hr_payroll">
-    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation'] %}active{% endif %}">
+<div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings', 'salary_certificates', 'appointment_letters', 'notice_board', 'recruitment_candidates', 'recruitment_interviews'] %}expanded{% endif %}" data-module="hr_payroll">
+    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings', 'salary_certificates', 'appointment_letters', 'notice_board', 'recruitment_candidates', 'recruitment_interviews'] %}active{% endif %}">
         <span class="flex items-center">
             <i class="fas fa-users-cog w-4 text-sm shrink-0"></i>
             <span class="ml-3 text-[13px] font-medium sidebar-text">HR & Payroll</span>
@@ -93,6 +93,30 @@
                 Holidays
             </span>
         </a>
+        <a href="/payroll-periods/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_periods' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <i class="fas fa-clock w-4 text-sm shrink-0"></i>
+            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                Payroll Periods
+            </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:payroll_periods:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
+            <span class="sidebar-tooltip">
+                Payroll Periods
+            </span>
+        </a>
+        <a href="/payroll-records/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_records' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <i class="fas fa-file-invoice-dollar w-4 text-sm shrink-0"></i>
+            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                Payslips
+            </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:payroll_records:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
+            <span class="sidebar-tooltip">
+                Payslips
+            </span>
+        </a>
         <a href="/compensation/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'compensation' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
             <i class="fas fa-money-bill-wave w-4 text-sm shrink-0"></i>
             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
@@ -103,6 +127,42 @@
             {% endif %}
             <span class="sidebar-tooltip">
                 Compensation
+            </span>
+        </a>
+        <a href="/payroll-settings/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'payroll_settings' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <i class="fas fa-sliders-h w-4 text-sm shrink-0"></i>
+            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                Payroll Settings
+            </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:payroll_settings:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
+            <span class="sidebar-tooltip">
+                Payroll Settings
+            </span>
+        </a>
+        <a href="/appointment-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'appointment_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <i class="fas fa-envelope-open-text w-4 text-sm shrink-0"></i>
+            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                Appointment Letters
+            </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:appointment_letters:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
+            <span class="sidebar-tooltip">
+                Appointment Letters
+            </span>
+        </a>
+        <a href="/salary-certificates/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'salary_certificates' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <i class="fas fa-file-invoice w-4 text-sm shrink-0"></i>
+            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                Salary Certificates
+            </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:salary_certificates:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
+            <span class="sidebar-tooltip">
+                Salary Certificates
             </span>
         </a>
     </div>

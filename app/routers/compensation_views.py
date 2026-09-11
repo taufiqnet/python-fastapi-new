@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.compensation.service import EmployeeSalaryService
@@ -28,6 +28,7 @@ async def compensation_list_page(
     employee_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
     async_db = Depends(get_async_db),
+    _perm = Depends(require_permission("hrm", "compensation", "view")),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
     salaries = compensation_service.get_salaries(
@@ -64,7 +65,11 @@ async def compensation_list_page(
 
 
 @router.get("/compensation/create", response_class=HTMLResponse)
-def compensation_create_page(request: Request, db: Session = Depends(get_db)):
+def compensation_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "compensation", "create")),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
 
@@ -83,7 +88,10 @@ def compensation_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/compensation/edit/{salary_id}", response_class=HTMLResponse)
 def compensation_edit_page(
-    salary_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    salary_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "compensation", "update")),
 ):
     salary = compensation_service.get_salary(db, salary_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -104,7 +112,10 @@ def compensation_edit_page(
 
 @router.get("/compensation/detail/{salary_id}", response_class=HTMLResponse)
 def compensation_detail_page(
-    salary_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    salary_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "compensation", "view")),
 ):
     salary = compensation_service.get_salary(db, salary_id)
     business = None

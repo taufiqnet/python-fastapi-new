@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.hr_payroll.appointments.service import AppointmentLetterService
@@ -26,6 +27,7 @@ def appointment_list_page(
     limit: int = 500,
     business_id: int | None = None,
     db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "appointment_letters", "view")),
 ):
     appointments = appointment_service.get_appointments(
         db, skip=skip, limit=limit, business_id=business_id
@@ -56,7 +58,11 @@ def appointment_list_page(
 
 
 @router.get("/create", response_class=HTMLResponse)
-def appointment_create_page(request: Request, db: Session = Depends(get_db)):
+def appointment_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "appointment_letters", "create")),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     departments = department_service.get_departments(db, skip=0, limit=500)
     job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
@@ -77,7 +83,10 @@ def appointment_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/detail/{appointment_id}", response_class=HTMLResponse)
 def appointment_detail_page(
-    appointment_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    appointment_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "appointment_letters", "view")),
 ):
     appointment = appointment_service.get_appointment(db, appointment_id)
     business = (
@@ -99,7 +108,10 @@ def appointment_detail_page(
 
 @router.get("/edit/{appointment_id}", response_class=HTMLResponse)
 def appointment_edit_page(
-    appointment_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    appointment_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "appointment_letters", "update")),
 ):
     appointment = appointment_service.get_appointment(db, appointment_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)

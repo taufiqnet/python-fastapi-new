@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.hr_payroll.certificates.service import SalaryCertificateService
@@ -26,6 +27,7 @@ def certificate_list_page(
     business_id: int | None = None,
     employee_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "salary_certificates", "view")),
 ):
     certificates = certificate_service.get_certificates(
         db, skip=skip, limit=limit, business_id=business_id, employee_id=employee_id
@@ -60,7 +62,11 @@ def certificate_list_page(
 
 
 @router.get("/create", response_class=HTMLResponse)
-def certificate_create_page(request: Request, db: Session = Depends(get_db)):
+def certificate_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "salary_certificates", "create")),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
 
@@ -79,7 +85,10 @@ def certificate_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/detail/{cert_id}", response_class=HTMLResponse)
 def certificate_detail_page(
-    cert_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    cert_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "salary_certificates", "view")),
 ):
     certificate = certificate_service.get_certificate(db, cert_id)
     business = (
@@ -101,7 +110,10 @@ def certificate_detail_page(
 
 @router.get("/edit/{cert_id}", response_class=HTMLResponse)
 def certificate_edit_page(
-    cert_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    cert_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm = Depends(require_permission("hrm", "salary_certificates", "update")),
 ):
     certificate = certificate_service.get_certificate(db, cert_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
