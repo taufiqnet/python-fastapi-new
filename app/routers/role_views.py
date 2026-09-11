@@ -3,12 +3,14 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user_optional
 from app.core.identity.schemas import RoleCreate, RoleResponse
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
 from app.core.tenancy.models import BusinessProfile
+from app.core.billing.models import SubscriptionPlan
 from app.database import get_async_db
 
 router = APIRouter(prefix="", tags=["Roles & Permissions Views"])
@@ -56,9 +58,23 @@ async def role_create_page(
     current_user = await get_current_user_optional(request, None, db)
     permissions = await user_service.get_all_permissions(db)
     result = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.is_active)
+        select(BusinessProfile)
+        .where(BusinessProfile.is_active)
+        .options(
+            selectinload(BusinessProfile.subscription_plan).selectinload(
+                SubscriptionPlan.permissions
+            )
+        )
     )
     businesses = list(result.scalars().all())
+
+    result_plans = await db.execute(
+        select(SubscriptionPlan)
+        .where(SubscriptionPlan.is_active)
+        .order_by(SubscriptionPlan.id.asc())
+        .options(selectinload(SubscriptionPlan.permissions))
+    )
+    plans = list(result_plans.scalars().all())
 
     return templates.TemplateResponse(
         request=request,
@@ -70,6 +86,7 @@ async def role_create_page(
             "permissions": permissions,
             "system_modules": SYSTEM_MODULES,
             "businesses": businesses,
+            "plans": plans,
             "active_page": "roles",
         },
     )
@@ -85,9 +102,23 @@ async def role_edit_page(
     role = await user_service.get_role_by_id(db, role_id)
     permissions = await user_service.get_all_permissions(db)
     result = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.is_active)
+        select(BusinessProfile)
+        .where(BusinessProfile.is_active)
+        .options(
+            selectinload(BusinessProfile.subscription_plan).selectinload(
+                SubscriptionPlan.permissions
+            )
+        )
     )
     businesses = list(result.scalars().all())
+
+    result_plans = await db.execute(
+        select(SubscriptionPlan)
+        .where(SubscriptionPlan.is_active)
+        .order_by(SubscriptionPlan.id.asc())
+        .options(selectinload(SubscriptionPlan.permissions))
+    )
+    plans = list(result_plans.scalars().all())
 
     # If editing system admin role (ID 1 or name 'admin' with global scope) or if role permissions are empty, ensure all permissions are assigned
     if role.id == 1 or (role.name == "admin" and role.business_id is None):
@@ -109,6 +140,7 @@ async def role_edit_page(
             "permissions": permissions,
             "system_modules": SYSTEM_MODULES,
             "businesses": businesses,
+            "plans": plans,
             "active_page": "roles",
         },
     )

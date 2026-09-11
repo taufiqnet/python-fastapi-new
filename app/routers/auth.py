@@ -58,14 +58,9 @@ async def register_page(
     request: Request,
     db: AsyncSession = Depends(get_async_db),
 ):
-    result = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.is_active)
-    )
-    businesses = list(result.scalars().all())
     response = templates.TemplateResponse(
         request=request,
         name="register.html",
-        context={"businesses": businesses},
     )
     return add_no_cache_headers(response)
 

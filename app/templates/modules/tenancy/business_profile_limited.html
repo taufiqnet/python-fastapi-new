@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}My Business Profile | SaaS Platform{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Dashboard
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            My Business Profile
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            Manage company basic details, contact information, and view subscription plan feature entitlements
+        </p>
+    </div>
+
+    <div>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <i class="fas fa-box text-indigo-600"></i>
+            Current Plan: {{ business.subscription_plan.name if business.subscription_plan else 'Free' }}
+        </span>
+    </div>
+</div>
+
+<form id="limitedBusinessForm" class="space-y-6">
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active" onclick="switchTab('identity')">
+                <i class="fas fa-building text-xs"></i> Basic Info
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('contact')">
+                <i class="fas fa-address-book text-xs"></i> Contact Details
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('address')">
+                <i class="fas fa-map-marker-alt text-xs"></i> Address
+            </button>
+            <button type="button" class="tab-btn" onclick="switchTab('plans')">
+                <i class="fas fa-crown text-xs"></i> Plans & Features
+            </button>
+        </div>
+
+        <div class="p-6">
+            <!-- TAB 1: BASIC INFO -->
+            <div id="tab-identity" class="tab-content space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="name_en">Company Name (English) <span class="text-red-500">*</span></label>
+                        <input type="text" id="name_en" name="name_en" class="form-input" required value="{{ business.name_en if business else '' }}" placeholder="e.g. Acme Corporation">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="short_name">Short Name</label>
+                        <input type="text" id="short_name" name="short_name" class="form-input" value="{{ business.short_name if business else '' }}" placeholder="e.g. Acme">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="legal_name">Legal Name</label>
+                        <input type="text" id="legal_name" name="legal_name" class="form-input" value="{{ business.legal_name if business else '' }}" placeholder="e.g. Acme Corporation Ltd.">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="company_tagline">Company Tagline</label>
+                        <input type="text" id="company_tagline" name="company_tagline" class="form-input" value="{{ business.company_tagline if business else '' }}" placeholder="e.g. Innovations for tomorrow">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="description">Company Description</label>
+                        <textarea id="description" name="description" rows="3" class="form-input" placeholder="Brief description of your business...">{{ business.description if business else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: CONTACT -->
+            <div id="tab-contact" class="tab-content hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="phone">Phone</label>
+                        <input type="text" id="phone" name="phone" class="form-input" value="{{ business.phone if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="mobile">Mobile</label>
+                        <input type="text" id="mobile" name="mobile" class="form-input" value="{{ business.mobile if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="whatsapp">WhatsApp</label>
+                        <input type="text" id="whatsapp" name="whatsapp" class="form-input" value="{{ business.whatsapp if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="email">Primary Email</label>
+                        <input type="email" id="email" name="email" class="form-input" value="{{ business.email if business and business.email else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="support_email">Support Email</label>
+                        <input type="email" id="support_email" name="support_email" class="form-input" value="{{ business.support_email if business and business.support_email else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="sales_email">Sales Email</label>
+                        <input type="email" id="sales_email" name="sales_email" class="form-input" value="{{ business.sales_email if business and business.sales_email else '' }}">
+                    </div>
+                    <div class="form-group md:col-span-3">
+                        <label class="form-label" for="website">Website URL</label>
+                        <input type="text" id="website" name="website" class="form-input" value="{{ business.website if business else '' }}" placeholder="https://">
+                    </div>
+                </div>
+
+                <hr class="my-4 border-gray-100">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Contact Person</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="contact_person">Contact Person Name</label>
+                        <input type="text" id="contact_person" name="contact_person" class="form-input" value="{{ business.contact_person if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="contact_designation">Designation</label>
+                        <input type="text" id="contact_designation" name="contact_designation" class="form-input" value="{{ business.contact_designation if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="contact_mobile">Contact Mobile</label>
+                        <input type="text" id="contact_mobile" name="contact_mobile" class="form-input" value="{{ business.contact_mobile if business else '' }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ADDRESS -->
+            <div id="tab-address" class="tab-content hidden space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="building_no">Building No</label>
+                        <input type="text" id="building_no" name="building_no" class="form-input" value="{{ business.building_no if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="street">Street</label>
+                        <input type="text" id="street" name="street" class="form-input" value="{{ business.street if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="district">District</label>
+                        <input type="text" id="district" name="district" class="form-input" value="{{ business.district if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="city">City</label>
+                        <input type="text" id="city" name="city" class="form-input" value="{{ business.city if business else 'Dhaka' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="state">State / Region</label>
+                        <input type="text" id="state" name="state" class="form-input" value="{{ business.state if business else '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="country">Country</label>
+                        <input type="text" id="country" name="country" class="form-input" value="{{ business.country if business else 'Bangladesh' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="zip_code">ZIP / Postal Code</label>
+                        <input type="text" id="zip_code" name="zip_code" class="form-input" value="{{ business.zip_code if business else '' }}">
+                    </div>
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="address_en">Full Address (English)</label>
+                        <textarea id="address_en" name="address_en" rows="2" class="form-input">{{ business.address_en if business else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: PLANS & FEATURES -->
+            <div id="tab-plans" class="tab-content hidden space-y-6">
+                <!-- Current Tier Header -->
+                <div class="p-4 rounded-xl bg-indigo-50/70 border border-indigo-100 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-indigo-900 uppercase tracking-wider">Active Subscription Tier</div>
+                            <div class="text-base font-extrabold text-indigo-950">{{ business.subscription_plan.name if business.subscription_plan else 'Free' }} Plan</div>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 text-xs font-bold bg-green-100 text-green-800 rounded-full flex items-center gap-1">
+                        <i class="fas fa-check-circle text-[11px]"></i> Active
+                    </span>
+                </div>
+
+                <!-- Features Entitlement Grid -->
+                <div>
+                    <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <i class="fas fa-list-check text-indigo-600"></i> Subscription Feature Capabilities
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <!-- Included Free Features -->
+                        <div class="p-3.5 bg-white border border-gray-200 rounded-xl flex items-start gap-3 shadow-2xs">
+                            <i class="fas fa-check-circle text-green-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-900">Basic Business Profile</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Manage company details, address and contact information</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-green-50 text-green-700 rounded border border-green-200">Included</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-white border border-gray-200 rounded-xl flex items-start gap-3 shadow-2xs">
+                            <i class="fas fa-check-circle text-green-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-900">Role-Based Access Control</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Assign user accounts and roles within your tenant</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-green-50 text-green-700 rounded border border-green-200">Included</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-white border border-gray-200 rounded-xl flex items-start gap-3 shadow-2xs">
+                            <i class="fas fa-check-circle text-green-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-900">Standard View Access</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">View basic organizational records and control center</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-green-50 text-green-700 rounded border border-green-200">Included</span>
+                            </div>
+                        </div>
+
+                        <!-- Pro Plan Locked Features -->
+                        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3 opacity-75">
+                            <i class="fas fa-lock text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">Advanced HRM & Workforce Directory</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Full employee profiles, job titles, and department management</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded border border-amber-300">Pro plan required</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3 opacity-75">
+                            <i class="fas fa-lock text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">Automated Payroll & Payslip Generation</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Batch payroll period calculations, tax & holiday deductions</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded border border-amber-300">Pro plan required</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3 opacity-75">
+                            <i class="fas fa-lock text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">Attendance & Leave Tracking</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Leave allocations, leave requests, approval flows, and holidays</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded border border-amber-300">Pro plan required</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3 opacity-75">
+                            <i class="fas fa-lock text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">Compensation & Salary Certificates</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Employee salaries, appointment letters, and official documents</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded border border-amber-300">Pro plan required</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3 opacity-75">
+                            <i class="fas fa-lock text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">E-Commerce Product Catalog & Orders</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Categories, brands, products, variant pricing, and order creation</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded border border-amber-300">Pro plan required</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3 opacity-75">
+                            <i class="fas fa-lock text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">Inventory Warehouses & Movements</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Warehouse tracking, stock deductions, and automated reservations</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded border border-amber-300">Pro plan required</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3 opacity-75">
+                            <i class="fas fa-lock text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">AI Chat Assistant & Natural Querying</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Interactive natural language reports and MCP data tools</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded border border-amber-300">Pro plan required</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-start gap-3 opacity-75">
+                            <i class="fas fa-lock text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">Bulk Excel Data Import / Export</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">Template downloads and bulk spreadsheet imports/exports</div>
+                                <span class="inline-block mt-2 px-2 py-0.5 text-[10px] font-semibold bg-amber-100 text-amber-800 rounded border border-amber-300">Pro plan required</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Admin Upgrade Notice Banner -->
+                <div class="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold shrink-0">
+                        <i class="fas fa-info-circle text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-blue-950">How to Upgrade Your Subscription</div>
+                        <div class="text-blue-800 mt-0.5">Subscription plan tier updates are managed by system administrators. Please contact support or your platform system administrator to upgrade your subscription plan.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> Save Profile
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+    event.currentTarget.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+}
+
+document.getElementById('limitedBusinessForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const businessId = {{ business.id }};
+    const formData = new FormData(this);
+    const payload = {
+        name_en: formData.get('name_en') || '',
+        short_name: formData.get('short_name') || '',
+        legal_name: formData.get('legal_name') || '',
+        company_tagline: formData.get('company_tagline') || '',
+        description: formData.get('description') || '',
+        phone: formData.get('phone') || '',
+        mobile: formData.get('mobile') || '',
+        whatsapp: formData.get('whatsapp') || '',
+        email: formData.get('email') || null,
+        support_email: formData.get('support_email') || null,
+        sales_email: formData.get('sales_email') || null,
+        website: formData.get('website') || '',
+        contact_person: formData.get('contact_person') || '',
+        contact_designation: formData.get('contact_designation') || '',
+        contact_mobile: formData.get('contact_mobile') || '',
+        building_no: formData.get('building_no') || '',
+        street: formData.get('street') || '',
+        district: formData.get('district') || '',
+        city: formData.get('city') || 'Dhaka',
+        state: formData.get('state') || '',
+        country: formData.get('country') || 'Bangladesh',
+        zip_code: formData.get('zip_code') || '',
+        address_en: formData.get('address_en') || '',
+        // Preserve existing system and plan values
+        cr_number: "{{ business.cr_number if business and business.cr_number else '' }}",
+        vat_number: "{{ business.vat_number if business and business.vat_number else '' }}",
+        tax_number: "{{ business.tax_number if business else '' }}",
+        license_number: "{{ business.license_number if business else '' }}",
+        chamber_of_commerce_no: "{{ business.chamber_of_commerce_no if business else '' }}",
+        national_address: "{{ business.national_address if business else '' }}",
+        po_box: "{{ business.po_box if business else '' }}",
+        address_no: "{{ business.address_no if business else '' }}",
+        currency_code: "{{ business.currency_code if business else 'BDT' }}",
+        currency_symbol: "{{ business.currency_symbol if business else '৳' }}",
+        invoice_prefix: "{{ business.invoice_prefix if business else 'INV' }}",
+        quotation_prefix: "{{ business.quotation_prefix if business else 'QT' }}",
+        credit_note_prefix: "{{ business.credit_note_prefix if business else 'CN' }}",
+        purchase_order_prefix: "{{ business.purchase_order_prefix if business else 'PO' }}",
+        invoice_sequence_start: {{ business.invoice_sequence_start if business else 1 }},
+        vat_rate: {{ business.vat_rate if business else 0.1500 }},
+        payment_terms: "{{ business.payment_terms if business else '' }}",
+        invoice_terms: "{{ business.invoice_terms if business else '' }}",
+        invoice_footer: "{{ business.invoice_footer if business else '' }}",
+        is_active: {{ 'true' if business and business.is_active else 'true' }},
+        zatca_enabled: {{ 'true' if business and business.zatca_enabled else 'true' }},
+        e_invoice_enabled: {{ 'true' if business and business.e_invoice_enabled else 'true' }},
+        timezone: "{{ business.timezone if business else 'Asia/Dhaka' }}",
+        language: "{{ business.language if business else 'en' }}",
+        subscription_plan_id: {{ business.subscription_plan_id if business and business.subscription_plan_id else 'null' }}
+    };
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch('/business/' + businessId, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'An error occurred while updating profile.';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        Swal.fire({
+            title: 'Success!',
+            text: 'Business profile updated successfully.',
+            icon: 'success',
+            timer: 1500,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.reload();
+        });
+    })
+    .catch(err => {
+        Swal.fire('Error', err.message, 'error');
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> Save Profile';
+    });
+});
+</script>
+{% endblock %}

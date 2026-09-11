@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from fastapi import HTTPException, status
 from app.core.deps import get_current_user_optional, require_permission
@@ -10,6 +11,7 @@ from app.core.identity.schemas import UserCreate, UserResponse, UserUpdate
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
 from app.core.tenancy.models import BusinessProfile
+from app.core.billing.models import SubscriptionPlan
 from app.database import get_async_db
 
 router = APIRouter(prefix="", tags=["User Views & Management"])
@@ -56,9 +58,23 @@ async def user_create_page(
     roles = await user_service.get_roles(db)
     permissions = await user_service.get_all_permissions(db)
     result = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.is_active)
+        select(BusinessProfile)
+        .where(BusinessProfile.is_active)
+        .options(
+            selectinload(BusinessProfile.subscription_plan).selectinload(
+                SubscriptionPlan.permissions
+            )
+        )
     )
     businesses = list(result.scalars().all())
+
+    result_plans = await db.execute(
+        select(SubscriptionPlan)
+        .where(SubscriptionPlan.is_active)
+        .order_by(SubscriptionPlan.id.asc())
+        .options(selectinload(SubscriptionPlan.permissions))
+    )
+    plans = list(result_plans.scalars().all())
 
     return templates.TemplateResponse(
         request=request,
@@ -71,6 +87,7 @@ async def user_create_page(
             "permissions": permissions,
             "system_modules": SYSTEM_MODULES,
             "businesses": businesses,
+            "plans": plans,
             "active_page": "users",
         },
     )
@@ -88,9 +105,23 @@ async def user_edit_page(
     roles = await user_service.get_roles(db, business_id=user.business_id)
     permissions = await user_service.get_all_permissions(db)
     result = await db.execute(
-        select(BusinessProfile).where(BusinessProfile.is_active)
+        select(BusinessProfile)
+        .where(BusinessProfile.is_active)
+        .options(
+            selectinload(BusinessProfile.subscription_plan).selectinload(
+                SubscriptionPlan.permissions
+            )
+        )
     )
     businesses = list(result.scalars().all())
+
+    result_plans = await db.execute(
+        select(SubscriptionPlan)
+        .where(SubscriptionPlan.is_active)
+        .order_by(SubscriptionPlan.id.asc())
+        .options(selectinload(SubscriptionPlan.permissions))
+    )
+    plans = list(result_plans.scalars().all())
 
     assigned_role_ids = {r.id for r in user.roles}
     assigned_perm_ids = {p.id for p in user.direct_permissions}
@@ -108,6 +139,7 @@ async def user_edit_page(
             "permissions": permissions,
             "system_modules": SYSTEM_MODULES,
             "businesses": businesses,
+            "plans": plans,
             "active_page": "users",
         },
     )

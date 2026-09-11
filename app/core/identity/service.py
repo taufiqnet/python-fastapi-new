@@ -21,6 +21,9 @@ class UserService:
 
     async def create_user(self, db: AsyncSession, data: UserCreate) -> User:
         from app.core.security import hash_password
+        from app.core.tenancy.models import BusinessProfile
+        from app.core.billing.models import SubscriptionPlan
+        from sqlalchemy import select
 
         if await self.repository.get_by_username(db, data.username):
             raise HTTPException(
@@ -34,23 +37,48 @@ class UserService:
                 detail="Email already exists",
             )
 
+        business_id = data.business_id
+        is_company_owner = False
+
+        if not business_id and data.company_name and data.company_name.strip():
+            res_plan = await db.execute(
+                select(SubscriptionPlan).where(SubscriptionPlan.name.in_(["Free", "Basic"]))
+            )
+            free_plan = res_plan.scalars().first()
+
+            new_business = BusinessProfile(
+                name_en=data.company_name.strip(),
+                subscription_plan_id=free_plan.id if free_plan else None,
+            )
+            db.add(new_business)
+            await db.flush()
+            business_id = new_business.id
+            is_company_owner = True
+
         user = User(
             username=data.username,
             email=data.email,
             password_hash=hash_password(data.password),
             phone=data.phone,
-            business_id=data.business_id,
+            business_id=business_id,
         )
 
         user = await self.repository.create(db, user)
 
-        # Default role: customer
-        customer_role = await self.repository.get_role_by_name(db, "customer")
-        if not customer_role:
-            customer_role = await self.repository.create_role(
-                db, name="customer", description="Default customer role"
-            )
-        user = await self.repository.assign_role(db, user, customer_role)
+        if is_company_owner:
+            admin_role = await self.repository.get_role_by_name(db, "admin")
+            if not admin_role:
+                admin_role = await self.repository.create_role(
+                    db, name="admin", description="Admin role"
+                )
+            user = await self.repository.assign_role(db, user, admin_role)
+        else:
+            customer_role = await self.repository.get_role_by_name(db, "customer")
+            if not customer_role:
+                customer_role = await self.repository.create_role(
+                    db, name="customer", description="Default customer role"
+                )
+            user = await self.repository.assign_role(db, user, customer_role)
 
         if not user.customer_profile:
             await self.repository.create_customer_profile(db, user_id=user.id)

@@ -1,11 +1,11 @@
 import datetime
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.core.billing.models import SubscriptionPlan
 from app.core.deps import get_current_user_optional
@@ -196,11 +196,14 @@ async def root_or_business_list_page(
             stats["hrm"].get("total_employees", 0) > 0
         )
 
-        edit_url = (
-            f"/businesses/{current_business.id}/edit"
-            if current_business
-            else "/businesses/create"
-        )
+        if is_superuser:
+            edit_url = (
+                f"/businesses/{current_business.id}/edit"
+                if current_business
+                else "/businesses/create"
+            )
+        else:
+            edit_url = "/businesses/profile"
 
         checklist = [
             {
@@ -310,6 +313,42 @@ def business_create_page(request: Request, db: Session = Depends(get_db)):
     )
 
 
+@router.get("/businesses/profile", response_class=HTMLResponse)
+async def my_business_profile_page(
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
+):
+    current_user = await get_current_user_optional(request, None, db)
+    if not current_user or not current_user.is_active:
+        res = RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+        return add_no_cache_headers(res)
+
+    if not current_user.business_id:
+        res = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
+        return add_no_cache_headers(res)
+
+    res = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.id == current_user.business_id)
+        .options(selectinload(BusinessProfile.subscription_plan))
+    )
+    business = res.scalar_one_or_none()
+
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+
+    response = templates.TemplateResponse(
+        request=request,
+        name="modules/tenancy/business_profile_limited.html",
+        context={
+            "current_user": current_user,
+            "business": business,
+            "active_page": "tenancy",
+        },
+    )
+    return add_no_cache_headers(response)
+
+
 @router.get("/businesses/{business_id}", response_class=HTMLResponse)
 def business_detail_page(
     business_id: int, request: Request, db: Session = Depends(get_db)
@@ -325,17 +364,50 @@ def business_detail_page(
 
 
 @router.get("/businesses/{business_id}/edit", response_class=HTMLResponse)
-def business_edit_page(
-    business_id: int, request: Request, db: Session = Depends(get_db)
+async def business_edit_page(
+    business_id: int, request: Request, db: AsyncSession = Depends(get_async_db)
 ):
-    business = service.get_business(db, business_id)
-    plans = db.query(SubscriptionPlan).order_by(SubscriptionPlan.id.asc()).all()
-    return templates.TemplateResponse(
+    current_user = await get_current_user_optional(request, None, db)
+    if not current_user or not current_user.is_active:
+        res = RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+        return add_no_cache_headers(res)
+
+    res = await db.execute(
+        select(BusinessProfile)
+        .where(BusinessProfile.id == business_id)
+        .options(selectinload(BusinessProfile.subscription_plan))
+    )
+    business = res.scalar_one_or_none()
+
+    if not business:
+        raise HTTPException(status_code=404, detail="Business profile not found")
+
+    if not current_user.is_superuser:
+        response = templates.TemplateResponse(
+            request=request,
+            name="modules/tenancy/business_profile_limited.html",
+            context={
+                "current_user": current_user,
+                "business": business,
+                "active_page": "tenancy",
+            },
+        )
+        return add_no_cache_headers(response)
+
+    plans_res = await db.execute(
+        select(SubscriptionPlan).where(SubscriptionPlan.is_active).order_by(SubscriptionPlan.id.asc())
+    )
+    plans = list(plans_res.scalars().all())
+
+    response = templates.TemplateResponse(
         request=request,
         name="modules/tenancy/business_form.html",
         context={
+            "current_user": current_user,
             "business": business,
             "is_edit": True,
             "plans": plans,
+            "active_page": "tenancy",
         },
     )
+    return add_no_cache_headers(response)

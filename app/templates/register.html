@@ -236,15 +236,10 @@
             </div>
 
             <div class="field">
-                <label for="id_business" class="field-label">Business Organization</label>
+                <label for="id_company_name" class="field-label">Company Name</label>
                 <div class="input-wrapper">
                     <i class="fas fa-building input-icon"></i>
-                    <select name="business_id" id="id_business" class="form-select">
-                        <option value="">-- Select Business (Optional) --</option>
-                        {% for bus in businesses %}
-                            <option value="{{ bus.id }}">{{ bus.name_en }}</option>
-                        {% endfor %}
-                    </select>
+                    <input type="text" name="company_name" id="id_company_name" class="form-input" placeholder="e.g. Acme Corp" required>
                 </div>
             </div>
 
@@ -295,14 +290,14 @@
                     const username = document.getElementById("id_username").value;
                     const email = document.getElementById("id_email").value;
                     const phone = document.getElementById("id_phone").value;
-                    const businessIdVal = document.getElementById("id_business").value;
+                    const companyName = document.getElementById("id_company_name").value;
                     const password = passwordInput.value;
 
                     const payload = {
                         username: username,
                         email: email,
                         phone: phone || null,
-                        business_id: businessIdVal ? parseInt(businessIdVal) : null,
+                        company_name: companyName || null,
                         password: password
                     };
 
