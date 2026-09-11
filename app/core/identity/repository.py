@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.billing.models import SubscriptionPlan
 from app.core.identity.models import (
     Address,
     CustomerProfile,
@@ -11,6 +12,7 @@ from app.core.identity.models import (
     VendorProfile,
     VendorStatus,
 )
+from app.core.tenancy.models import BusinessProfile
 
 
 class UserRepository:
@@ -30,7 +32,9 @@ class UserRepository:
                 selectinload(User.customer_profile),
                 selectinload(User.vendor_profile),
                 selectinload(User.addresses),
-                selectinload(User.business_profile),
+                selectinload(User.business_profile)
+                .selectinload(BusinessProfile.subscription_plan)
+                .selectinload(SubscriptionPlan.permissions),
             )
             .execution_options(populate_existing=True)
             .filter(User.username == username)
@@ -46,7 +50,9 @@ class UserRepository:
                 selectinload(User.customer_profile),
                 selectinload(User.vendor_profile),
                 selectinload(User.addresses),
-                selectinload(User.business_profile),
+                selectinload(User.business_profile)
+                .selectinload(BusinessProfile.subscription_plan)
+                .selectinload(SubscriptionPlan.permissions),
             )
             .execution_options(populate_existing=True)
             .filter(User.email == email)
@@ -64,7 +70,9 @@ class UserRepository:
                 selectinload(User.customer_profile),
                 selectinload(User.vendor_profile),
                 selectinload(User.addresses),
-                selectinload(User.business_profile),
+                selectinload(User.business_profile)
+                .selectinload(BusinessProfile.subscription_plan)
+                .selectinload(SubscriptionPlan.permissions),
             )
             .execution_options(populate_existing=True)
             .filter((User.username == identifier) | (User.email == identifier))
@@ -80,7 +88,9 @@ class UserRepository:
                 selectinload(User.customer_profile),
                 selectinload(User.vendor_profile),
                 selectinload(User.addresses),
-                selectinload(User.business_profile),
+                selectinload(User.business_profile)
+                .selectinload(BusinessProfile.subscription_plan)
+                .selectinload(SubscriptionPlan.permissions),
             )
             .execution_options(populate_existing=True)
             .filter(User.id == user_id)
@@ -102,7 +112,9 @@ class UserRepository:
                 selectinload(User.customer_profile),
                 selectinload(User.vendor_profile),
                 selectinload(User.addresses),
-                selectinload(User.business_profile),
+                selectinload(User.business_profile)
+                .selectinload(BusinessProfile.subscription_plan)
+                .selectinload(SubscriptionPlan.permissions),
             )
             .execution_options(populate_existing=True)
         )

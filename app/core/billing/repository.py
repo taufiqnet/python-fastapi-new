@@ -59,6 +59,7 @@ class SubscriptionPlanRepository:
                 db.add(PlanPermission(plan_id=plan.id, permission_id=pid))
             await db.flush()
 
+        await db.commit()
         return await self.get_by_id(db, plan.id)  # type: ignore
 
     async def update(
@@ -87,6 +88,7 @@ class SubscriptionPlanRepository:
                 plan.permissions = list(res.scalars().all())
 
         await db.flush()
+        await db.commit()
         return await self.get_by_id(db, plan.id)  # type: ignore
 
     async def delete(self, db: AsyncSession, plan_id: int) -> bool:

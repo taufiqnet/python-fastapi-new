@@ -81,7 +81,8 @@ def resolve_acting_user() -> User:
         if user.business_profile:
             _ = user.business_profile.id
             if user.business_profile.subscription_plan:
-                _ = user.business_profile.subscription_plan.permissions
+                _ = list(user.business_profile.subscription_plan.permissions)
+        db.expunge_all()
         return user
     finally:
         db.close()
