@@ -121,16 +121,24 @@ def require_permission(module: str, feature: str, action: str):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Permission denied. Required permission: {code}",
             )
-        if current_user.business_profile and not current_user.business_profile.has_permission(code):
-            plan_name = (
-                current_user.business_profile.subscription_plan.name
-                if current_user.business_profile.subscription_plan
-                else "Current"
-            )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription.",
-            )
+        if current_user.business_id:
+            from app.core.tenancy.models import BusinessProfile
+            from app.core.billing.models import SubscriptionPlan
+            from sqlalchemy import select
+            db = getattr(current_user, "_sa_instance_state", None)
+            # Re-fetch business profile with subscription_plan permissions if needed
+            biz_profile = current_user.business_profile
+            if biz_profile:
+                if not biz_profile.has_permission(code):
+                    plan_name = (
+                        biz_profile.subscription_plan.name
+                        if biz_profile.subscription_plan
+                        else "Current"
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription.",
+                    )
         return current_user
 
     return permission_checker

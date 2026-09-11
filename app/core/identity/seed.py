@@ -95,7 +95,7 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
     res_perms = await db.execute(select(Permission))
     db_all_perms = list(res_perms.scalars().all())
 
-    # 2. Seed Default Admin Role
+    # 2. Seed Default System Roles (admin, hr_payroll, ecommerce)
     result = await db.execute(
         select(Role)
         .options(selectinload(Role.permissions))
@@ -121,6 +121,58 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
     admin_role.permissions.clear()
     for p in db_all_perms:
         admin_role.permissions.append(p)
+
+    # Seed hr_payroll role
+    res_hr_role = await db.execute(
+        select(Role)
+        .options(selectinload(Role.permissions))
+        .where(Role.name == "hr_payroll", Role.business_id.is_(None))
+    )
+    hr_payroll_role = res_hr_role.scalar_one_or_none()
+    if not hr_payroll_role:
+        hr_payroll_role = Role(
+            name="hr_payroll",
+            description="HR & Payroll Module Access with full CRUD",
+            business_id=None,
+        )
+        db.add(hr_payroll_role)
+        await db.flush()
+        res_hr_role = await db.execute(
+            select(Role)
+            .options(selectinload(Role.permissions))
+            .where(Role.id == hr_payroll_role.id)
+        )
+        hr_payroll_role = res_hr_role.scalar_one()
+    hr_payroll_role.permissions.clear()
+    for p in db_all_perms:
+        if p.module == "hrm":
+            hr_payroll_role.permissions.append(p)
+
+    # Seed ecommerce role
+    res_ecom_role = await db.execute(
+        select(Role)
+        .options(selectinload(Role.permissions))
+        .where(Role.name == "ecommerce", Role.business_id.is_(None))
+    )
+    ecommerce_role = res_ecom_role.scalar_one_or_none()
+    if not ecommerce_role:
+        ecommerce_role = Role(
+            name="ecommerce",
+            description="Ecommerce Module Access with full CRUD",
+            business_id=None,
+        )
+        db.add(ecommerce_role)
+        await db.flush()
+        res_ecom_role = await db.execute(
+            select(Role)
+            .options(selectinload(Role.permissions))
+            .where(Role.id == ecommerce_role.id)
+        )
+        ecommerce_role = res_ecom_role.scalar_one()
+    ecommerce_role.permissions.clear()
+    for p in db_all_perms:
+        if p.module == "ecommerce":
+            ecommerce_role.permissions.append(p)
 
     # 3. Seed System Admin User
     admin_email = "admin@example.com"
@@ -194,6 +246,32 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
         free_plan.permissions = [p for p in db_all_perms if p.action == "view"]
         db.add(free_plan)
 
+    res_plan_hr = await db.execute(
+        select(SubscriptionPlan).where(SubscriptionPlan.name == "hr payroll module (free tier)")
+    )
+    hr_plan = res_plan_hr.scalar_one_or_none()
+    if not hr_plan:
+        hr_plan = SubscriptionPlan(
+            name="hr payroll module (free tier)",
+            description="Free tier with all HR & Payroll permissions",
+            is_active=True,
+        )
+        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm"]
+        db.add(hr_plan)
+
+    res_plan_ecom = await db.execute(
+        select(SubscriptionPlan).where(SubscriptionPlan.name == "ecommerce module (free tire)")
+    )
+    ecom_plan = res_plan_ecom.scalar_one_or_none()
+    if not ecom_plan:
+        ecom_plan = SubscriptionPlan(
+            name="ecommerce module (free tire)",
+            description="Free tier with all Ecommerce permissions",
+            is_active=True,
+        )
+        ecom_plan.permissions = [p for p in db_all_perms if p.module == "ecommerce"]
+        db.add(ecom_plan)
+
     res_plan_pro = await db.execute(select(SubscriptionPlan).where(SubscriptionPlan.name == "Pro"))
     pro_plan = res_plan_pro.scalar_one_or_none()
     if not pro_plan:
@@ -241,6 +319,28 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         db.flush()
 
     admin_role.permissions = list(db_all_perms)
+
+    hr_payroll_role = db.query(Role).filter(Role.name == "hr_payroll", Role.business_id.is_(None)).first()
+    if not hr_payroll_role:
+        hr_payroll_role = Role(
+            name="hr_payroll",
+            description="HR & Payroll Module Access with full CRUD",
+            business_id=None,
+        )
+        db.add(hr_payroll_role)
+        db.flush()
+    hr_payroll_role.permissions = [p for p in db_all_perms if p.module == "hrm"]
+
+    ecommerce_role = db.query(Role).filter(Role.name == "ecommerce", Role.business_id.is_(None)).first()
+    if not ecommerce_role:
+        ecommerce_role = Role(
+            name="ecommerce",
+            description="Ecommerce Module Access with full CRUD",
+            business_id=None,
+        )
+        db.add(ecommerce_role)
+        db.flush()
+    ecommerce_role.permissions = [p for p in db_all_perms if p.module == "ecommerce"]
 
     admin_email = "admin@example.com"
     admin_user = db.query(User).filter((User.email == admin_email) | (User.username == "admin")).first()
@@ -300,6 +400,26 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         )
         free_plan.permissions = [p for p in db_all_perms if p.action == "view"]
         db.add(free_plan)
+
+    hr_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "hr payroll module (free tier)").first()
+    if not hr_plan:
+        hr_plan = SubscriptionPlan(
+            name="hr payroll module (free tier)",
+            description="Free tier with all HR & Payroll permissions",
+            is_active=True,
+        )
+        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm"]
+        db.add(hr_plan)
+
+    ecom_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "ecommerce module (free tire)").first()
+    if not ecom_plan:
+        ecom_plan = SubscriptionPlan(
+            name="ecommerce module (free tire)",
+            description="Free tier with all Ecommerce permissions",
+            is_active=True,
+        )
+        ecom_plan.permissions = [p for p in db_all_perms if p.module == "ecommerce"]
+        db.add(ecom_plan)
 
     pro_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "Pro").first()
     if not pro_plan:

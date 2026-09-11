@@ -14,6 +14,9 @@
             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                 Department
             </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:departments:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
             <span class="sidebar-tooltip">
                 Department
             </span>
@@ -23,6 +26,9 @@
             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                 Job Title
             </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:job_titles:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
             <span class="sidebar-tooltip">
                 Job Title
             </span>
@@ -32,6 +38,9 @@
             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                 Leave Types
             </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:leave_types:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
             <span class="sidebar-tooltip">
                 Leave Types
             </span>
@@ -41,8 +50,23 @@
             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                 Leave Allocations
             </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:leave_allocations:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
             <span class="sidebar-tooltip">
                 Leave Allocations
+            </span>
+        </a>
+        <a href="/attendance/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'attendance' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <i class="fas fa-clock w-4 text-sm shrink-0"></i>
+            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                Attendance
+            </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:attendance:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
+            <span class="sidebar-tooltip">
+                Attendance
             </span>
         </a>
         <a href="/leave/applications/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'leave_applications' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
@@ -50,8 +74,23 @@
             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                 Leave Requests
             </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:leave_applications:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
             <span class="sidebar-tooltip">
                 Leave Requests
+            </span>
+        </a>
+        <a href="/holidays/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'holidays' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+            <i class="fas fa-calendar-alt w-4 text-sm shrink-0"></i>
+            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                Holidays
+            </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:holidays:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
+            <span class="sidebar-tooltip">
+                Holidays
             </span>
         </a>
         <a href="/compensation/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'compensation' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
@@ -59,6 +98,9 @@
             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                 Compensation
             </span>
+            {% if current_user and not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:compensation:view') %}
+            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+            {% endif %}
             <span class="sidebar-tooltip">
                 Compensation
             </span>

@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.identity.schemas import RoleCreate, RoleResponse
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
@@ -150,6 +150,7 @@ async def role_edit_page(
 async def list_roles_api(
     business_id: int | None = None,
     db: AsyncSession = Depends(get_async_db),
+    _perm_check=Depends(require_permission("general", "users_permissions", "view")),
 ):
     return await user_service.get_roles(db, business_id=business_id)
 

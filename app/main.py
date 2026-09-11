@@ -1,7 +1,7 @@
 import logging
 import os
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -112,6 +112,29 @@ app = FastAPI(
     title="E-Commerce API",
     version="1.0.0",
 )
+
+templates = Jinja2Templates(directory="app/templates")
+
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    # Check if request accepts HTML and is 403 Forbidden
+    accept = request.headers.get("accept", "")
+    is_html = "text/html" in accept and not (request.url.path.startswith("/api") or request.url.path.endswith("/api"))
+
+    if exc.status_code == 403 and is_html:
+        return templates.TemplateResponse(
+            request=request,
+            name="errors/403.html",
+            context={
+                "detail": exc.detail,
+                "current_user": getattr(request.state, "user", None),
+            },
+            status_code=403,
+        )
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 
 @app.on_event("startup")

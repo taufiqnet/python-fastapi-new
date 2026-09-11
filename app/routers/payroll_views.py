@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.service import EmployeeService
@@ -40,6 +40,7 @@ async def holiday_list_page(
     limit: int = 500,
     business_id: int | None = None,
     holiday_type: str | None = None,
+    _perm=Depends(require_permission("hrm", "holidays", "view")),
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
 ):
@@ -72,7 +73,11 @@ async def holiday_list_page(
 
 
 @router.get("/holidays/create", response_class=HTMLResponse)
-def holiday_create_page(request: Request, db: Session = Depends(get_db)):
+def holiday_create_page(
+    request: Request,
+    _perm=Depends(require_permission("hrm", "holidays", "create")),
+    db: Session = Depends(get_db),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
@@ -90,7 +95,10 @@ def holiday_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/holidays/edit/{holiday_id}", response_class=HTMLResponse)
 def holiday_edit_page(
-    holiday_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    holiday_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "holidays", "update")),
+    db: Session = Depends(get_db),
 ):
     holiday = holiday_service.get_holiday(db, holiday_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -116,6 +124,7 @@ async def period_list_page(
     limit: int = 500,
     business_id: int | None = None,
     status_filter: str | None = None,
+    _perm=Depends(require_permission("hrm", "payroll_periods", "view")),
     db: Session = Depends(get_db),
     async_db = Depends(get_async_db),
 ):
@@ -160,7 +169,11 @@ async def period_list_page(
 
 
 @router.get("/payroll-periods/create", response_class=HTMLResponse)
-def period_create_page(request: Request, db: Session = Depends(get_db)):
+def period_create_page(
+    request: Request,
+    _perm=Depends(require_permission("hrm", "payroll_periods", "create")),
+    db: Session = Depends(get_db),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
@@ -178,7 +191,10 @@ def period_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/payroll-periods/edit/{period_id}", response_class=HTMLResponse)
 def period_edit_page(
-    period_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    period_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "payroll_periods", "update")),
+    db: Session = Depends(get_db),
 ):
     period = period_service.get_period(db, period_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -206,6 +222,7 @@ async def record_list_page(
     period_id: uuid.UUID | None = None,
     employee_id: uuid.UUID | None = None,
     is_paid: bool | None = None,
+    _perm=Depends(require_permission("hrm", "payroll_records", "view")),
     db: Session = Depends(get_db),
     async_db = Depends(get_async_db),
 ):
@@ -262,6 +279,7 @@ async def record_list_page(
 async def settings_manage_page(
     request: Request,
     business_id: int | None = None,
+    _perm=Depends(require_permission("hrm", "payroll_settings", "view")),
     db: Session = Depends(get_db),
     async_db = Depends(get_async_db),
 ):
@@ -285,7 +303,11 @@ async def settings_manage_page(
 
 
 @router.get("/payroll-records/create", response_class=HTMLResponse)
-def record_create_page(request: Request, db: Session = Depends(get_db)):
+def record_create_page(
+    request: Request,
+    _perm=Depends(require_permission("hrm", "payroll_records", "create")),
+    db: Session = Depends(get_db),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     periods = period_service.get_periods(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
@@ -307,7 +329,10 @@ def record_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/payroll-records/edit/{record_id}", response_class=HTMLResponse)
 def record_edit_page(
-    record_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    record_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "payroll_records", "update")),
+    db: Session = Depends(get_db),
 ):
     record = record_service.get_record(db, record_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -331,7 +356,10 @@ def record_edit_page(
 
 @router.get("/payroll-records/detail/{record_id}", response_class=HTMLResponse)
 def record_detail_page(
-    record_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    record_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "payroll_records", "view")),
+    db: Session = Depends(get_db),
 ):
     record = record_service.get_record(db, record_id)
     business = None

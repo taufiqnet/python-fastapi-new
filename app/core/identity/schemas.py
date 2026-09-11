@@ -21,6 +21,7 @@ class UserCreate(BaseModel):
     phone: str | None = None
     business_id: int | None = None
     company_name: str | None = None
+    modules: list[str] = []
 
 
 class ChangePasswordRequest(BaseModel):

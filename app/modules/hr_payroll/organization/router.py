@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
 from app.database import get_db
 from app.modules.hr_payroll.organization.schemas import (
     DepartmentCreate,
@@ -28,6 +29,7 @@ job_title_service = JobTitleService()
 def export_departments_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "view")),
 ):
     excel_data = department_service.generate_export_excel(db, business_id=business_id)
     filename = "departments_export.xlsx" if not business_id else f"departments_export_business_{business_id}.xlsx"
@@ -42,6 +44,7 @@ def export_departments_excel(
 def download_departments_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "create")),
 ):
     excel_data = department_service.generate_excel_template(db, business_id=business_id)
     filename = f"department_template_business_{business_id}.xlsx"
@@ -57,6 +60,7 @@ async def import_departments_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "create")),
 ):
     contents = await file.read()
     return department_service.import_departments_excel(
@@ -70,6 +74,7 @@ def get_departments(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "view")),
 ):
     return department_service.get_departments(
         db, skip=skip, limit=limit, business_id=business_id
@@ -77,7 +82,11 @@ def get_departments(
 
 
 @router.get("/departments/{department_id}", response_model=DepartmentOut)
-def get_department(department_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_department(
+    department_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "view")),
+):
     return department_service.get_department(db, department_id)
 
 
@@ -87,7 +96,9 @@ def get_department(department_id: uuid.UUID, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_department(
-    department_data: DepartmentCreate, db: Session = Depends(get_db)
+    department_data: DepartmentCreate,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "create")),
 ):
     return department_service.create_department(db, department_data)
 
@@ -97,12 +108,17 @@ def update_department(
     department_id: uuid.UUID,
     department_data: DepartmentUpdate,
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "update")),
 ):
     return department_service.update_department(db, department_id, department_data)
 
 
 @router.delete("/departments/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_department(department_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_department(
+    department_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "delete")),
+):
     department_service.delete_department(db, department_id)
     return None
 
@@ -113,6 +129,7 @@ def export_job_titles_excel(
     business_id: int | None = Query(None),
     department_id: uuid.UUID | None = Query(None),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "view")),
 ):
     excel_data = job_title_service.generate_export_excel(
         db, business_id=business_id, department_id=department_id
@@ -129,6 +146,7 @@ def export_job_titles_excel(
 def download_job_titles_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "create")),
 ):
     excel_data = job_title_service.generate_excel_template(db, business_id=business_id)
     filename = f"job_title_template_business_{business_id}.xlsx"
@@ -144,6 +162,7 @@ async def import_job_titles_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "create")),
 ):
     contents = await file.read()
     return job_title_service.import_job_titles_excel(
@@ -158,6 +177,7 @@ def get_job_titles(
     business_id: int | None = Query(None),
     department_id: uuid.UUID | None = Query(None),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "view")),
 ):
     return job_title_service.get_job_titles(
         db,
@@ -169,7 +189,11 @@ def get_job_titles(
 
 
 @router.get("/job-titles/{job_title_id}", response_model=JobTitleOut)
-def get_job_title(job_title_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_job_title(
+    job_title_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "view")),
+):
     return job_title_service.get_job_title(db, job_title_id)
 
 
@@ -179,7 +203,9 @@ def get_job_title(job_title_id: uuid.UUID, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_job_title(
-    job_title_data: JobTitleCreate, db: Session = Depends(get_db)
+    job_title_data: JobTitleCreate,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "create")),
 ):
     return job_title_service.create_job_title(db, job_title_data)
 
@@ -189,11 +215,16 @@ def update_job_title(
     job_title_id: uuid.UUID,
     job_title_data: JobTitleUpdate,
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "update")),
 ):
     return job_title_service.update_job_title(db, job_title_id, job_title_data)
 
 
 @router.delete("/job-titles/{job_title_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_job_title(job_title_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_job_title(
+    job_title_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "delete")),
+):
     job_title_service.delete_job_title(db, job_title_id)
     return None

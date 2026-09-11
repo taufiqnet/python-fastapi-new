@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.attendance.models import (
@@ -36,6 +36,7 @@ async def attendance_list_page(
     start_date: str | None = Query(None),
     end_date: str | None = Query(None),
     status_filter: str | None = Query(None, alias="status_filter"),
+    _perm=Depends(require_permission("hrm", "attendance", "view")),
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
 ):
@@ -149,7 +150,11 @@ async def attendance_list_page(
 
 
 @router.get("/attendance/create", response_class=HTMLResponse)
-def attendance_create_page(request: Request, db: Session = Depends(get_db)):
+def attendance_create_page(
+    request: Request,
+    _perm=Depends(require_permission("hrm", "attendance", "create")),
+    db: Session = Depends(get_db),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
 
@@ -170,7 +175,10 @@ def attendance_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/attendance/edit/{attendance_id}", response_class=HTMLResponse)
 def attendance_edit_page(
-    attendance_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    attendance_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "attendance", "update")),
+    db: Session = Depends(get_db),
 ):
     record = attendance_service.get_record(db, attendance_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -193,7 +201,10 @@ def attendance_edit_page(
 
 @router.get("/attendance/detail/{attendance_id}", response_class=HTMLResponse)
 def attendance_detail_page(
-    attendance_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    attendance_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "attendance", "view")),
+    db: Session = Depends(get_db),
 ):
     record = attendance_service.get_record(db, attendance_id)
     business = None

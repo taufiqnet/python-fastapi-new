@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
 from app.database import get_db
 from app.modules.hr_payroll.employees.schemas import (
     EmployeeCreate,
@@ -20,6 +21,7 @@ employee_service = EmployeeService()
 def export_employees_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "employees", "view")),
 ):
     excel_data = employee_service.generate_export_excel(db, business_id=business_id)
     filename = "employees_export.xlsx" if not business_id else f"employees_export_business_{business_id}.xlsx"
@@ -34,6 +36,7 @@ def export_employees_excel(
 def download_employees_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "employees", "create")),
 ):
     excel_data = employee_service.generate_excel_template(db, business_id=business_id)
     filename = f"employee_template_business_{business_id}.xlsx"
@@ -49,6 +52,7 @@ async def import_employees_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "employees", "create")),
 ):
     contents = await file.read()
     return employee_service.import_employees_excel(
@@ -63,6 +67,7 @@ def get_employees(
     business_id: int | None = Query(None),
     department_id: uuid.UUID | None = Query(None),
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "employees", "view")),
 ):
     return employee_service.get_employees(
         db,
@@ -74,7 +79,11 @@ def get_employees(
 
 
 @router.get("/employees/{employee_id}", response_model=EmployeeOut)
-def get_employee(employee_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_employee(
+    employee_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "employees", "view")),
+):
     return employee_service.get_employee(db, employee_id)
 
 
@@ -84,7 +93,9 @@ def get_employee(employee_id: uuid.UUID, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_employee(
-    employee_data: EmployeeCreate, db: Session = Depends(get_db)
+    employee_data: EmployeeCreate,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "employees", "create")),
 ):
     return employee_service.create_employee(db, employee_data)
 
@@ -94,11 +105,16 @@ def update_employee(
     employee_id: uuid.UUID,
     employee_data: EmployeeUpdate,
     db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "employees", "update")),
 ):
     return employee_service.update_employee(db, employee_id, employee_data)
 
 
 @router.delete("/employees/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_employee(employee_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_employee(
+    employee_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "employees", "delete")),
+):
     employee_service.delete_employee(db, employee_id)
     return None

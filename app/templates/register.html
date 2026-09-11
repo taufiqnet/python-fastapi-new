@@ -244,6 +244,20 @@
             </div>
 
             <div class="field">
+                <label class="field-label mb-2">Choose Free Tier Modules</label>
+                <div class="grid grid-cols-2 gap-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-700">
+                        <input type="checkbox" name="modules" value="hrm" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" checked>
+                        <span><i class="fas fa-users-cog text-indigo-600 mr-1"></i> HR & Payroll</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-700">
+                        <input type="checkbox" name="modules" value="ecommerce" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                        <span><i class="fas fa-shopping-cart text-indigo-600 mr-1"></i> Ecommerce</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="field">
                 <label for="id_password" class="field-label">Password</label>
                 <div class="input-wrapper">
                     <i class="fas fa-lock input-icon"></i>
@@ -293,11 +307,14 @@
                     const companyName = document.getElementById("id_company_name").value;
                     const password = passwordInput.value;
 
+                    const checkedModules = Array.from(document.querySelectorAll('input[name="modules"]:checked')).map(cb => cb.value);
+
                     const payload = {
                         username: username,
                         email: email,
                         phone: phone || null,
                         company_name: companyName || null,
+                        modules: checkedModules,
                         password: password
                     };
 

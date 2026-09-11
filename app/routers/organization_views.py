@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.organization.service import (
@@ -30,6 +30,7 @@ async def department_list_page(
     business_id: int | None = None,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
+    _perm=Depends(require_permission("hrm", "departments", "view")),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
     departments = department_service.get_departments(
@@ -63,7 +64,11 @@ async def department_list_page(
 
 
 @router.get("/departments/create", response_class=HTMLResponse)
-def department_create_page(request: Request, db: Session = Depends(get_db)):
+def department_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "create")),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
@@ -80,7 +85,10 @@ def department_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/departments/detail/{department_id}", response_class=HTMLResponse)
 def department_detail_page(
-    department_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    department_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "view")),
 ):
     department = department_service.get_department(db, department_id)
     business = None
@@ -100,7 +108,10 @@ def department_detail_page(
 
 @router.get("/departments/edit/{department_id}", response_class=HTMLResponse)
 def department_edit_page(
-    department_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    department_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "departments", "update")),
 ):
     department = department_service.get_department(db, department_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -127,6 +138,7 @@ async def job_title_list_page(
     department_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "view")),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
     job_titles = job_title_service.get_job_titles(
@@ -169,7 +181,11 @@ async def job_title_list_page(
 
 
 @router.get("/job-titles/create", response_class=HTMLResponse)
-def job_title_create_page(request: Request, db: Session = Depends(get_db)):
+def job_title_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "create")),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     departments = department_service.get_departments(db, skip=0, limit=500)
 
@@ -188,7 +204,10 @@ def job_title_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/job-titles/detail/{job_title_id}", response_class=HTMLResponse)
 def job_title_detail_page(
-    job_title_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    job_title_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "view")),
 ):
     job_title = job_title_service.get_job_title(db, job_title_id)
     business = None
@@ -213,7 +232,10 @@ def job_title_detail_page(
 
 @router.get("/job-titles/edit/{job_title_id}", response_class=HTMLResponse)
 def job_title_edit_page(
-    job_title_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    job_title_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    _perm=Depends(require_permission("hrm", "job_titles", "update")),
 ):
     job_title = job_title_service.get_job_title(db, job_title_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)

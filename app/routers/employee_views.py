@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.models import (
@@ -38,6 +38,7 @@ async def employee_list_page(
     department_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
+    _perm=Depends(require_permission("hrm", "employees", "view")),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
     employees = employee_service.get_employees(
@@ -84,7 +85,12 @@ async def employee_list_page(
 
 
 @router.get("/employees/create2", response_class=HTMLResponse)
-async def employee_create2_page(request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)):
+async def employee_create2_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
+    _perm=Depends(require_permission("hrm", "employees", "create")),
+):
     current_user = await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     departments = department_service.get_departments(db, skip=0, limit=500)
@@ -115,7 +121,12 @@ async def employee_create2_page(request: Request, db: Session = Depends(get_db),
 
 
 @router.get("/employees/create", response_class=HTMLResponse)
-async def employee_create_page(request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)):
+async def employee_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
+    _perm=Depends(require_permission("hrm", "employees", "create")),
+):
     current_user = await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     departments = department_service.get_departments(db, skip=0, limit=500)
@@ -147,7 +158,11 @@ async def employee_create_page(request: Request, db: Session = Depends(get_db), 
 
 @router.get("/employees/detail/{employee_id}", response_class=HTMLResponse)
 async def employee_detail_page(
-    employee_id: uuid.UUID, request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)
+    employee_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
+    _perm=Depends(require_permission("hrm", "employees", "view")),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
     employee = employee_service.get_employee(db, employee_id)
@@ -172,7 +187,11 @@ async def employee_detail_page(
 
 @router.get("/employees/edit/{employee_id}", response_class=HTMLResponse)
 async def employee_edit_page(
-    employee_id: uuid.UUID, request: Request, db: Session = Depends(get_db), async_db=Depends(get_async_db)
+    employee_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
+    _perm=Depends(require_permission("hrm", "employees", "update")),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
     employee = employee_service.get_employee(db, employee_id)

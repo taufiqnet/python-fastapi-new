@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.service import EmployeeService
@@ -33,6 +33,7 @@ async def leave_type_list_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
+    _perm=Depends(require_permission("hrm", "leave_types", "view")),
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
 ):
@@ -66,7 +67,11 @@ async def leave_type_list_page(
 
 
 @router.get("/leave/types/create", response_class=HTMLResponse)
-def leave_type_create_page(request: Request, db: Session = Depends(get_db)):
+def leave_type_create_page(
+    request: Request,
+    _perm=Depends(require_permission("hrm", "leave_types", "create")),
+    db: Session = Depends(get_db),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
@@ -84,7 +89,10 @@ def leave_type_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/leave/types/edit/{leave_type_id}", response_class=HTMLResponse)
 def leave_type_edit_page(
-    leave_type_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    leave_type_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "leave_types", "update")),
+    db: Session = Depends(get_db),
 ):
     leave_type = leave_type_service.get_leave_type(db, leave_type_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -111,6 +119,7 @@ async def leave_allocation_list_page(
     business_id: int | None = None,
     employee_id: uuid.UUID | None = None,
     year: int | None = None,
+    _perm=Depends(require_permission("hrm", "leave_allocations", "view")),
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
 ):
@@ -158,7 +167,11 @@ async def leave_allocation_list_page(
 
 
 @router.get("/leave/allocations/create", response_class=HTMLResponse)
-def leave_allocation_create_page(request: Request, db: Session = Depends(get_db)):
+def leave_allocation_create_page(
+    request: Request,
+    _perm=Depends(require_permission("hrm", "leave_allocations", "create")),
+    db: Session = Depends(get_db),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
@@ -179,7 +192,10 @@ def leave_allocation_create_page(request: Request, db: Session = Depends(get_db)
 
 @router.get("/leave/allocations/edit/{allocation_id}", response_class=HTMLResponse)
 def leave_allocation_edit_page(
-    allocation_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    allocation_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "leave_allocations", "update")),
+    db: Session = Depends(get_db),
 ):
     allocation = leave_allocation_service.get_allocation(db, allocation_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -209,6 +225,7 @@ async def leave_application_list_page(
     business_id: int | None = None,
     employee_id: uuid.UUID | None = None,
     status_filter: str | None = None,
+    _perm=Depends(require_permission("hrm", "leave_applications", "view")),
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
 ):
@@ -268,7 +285,11 @@ async def leave_application_list_page(
 
 
 @router.get("/leave/applications/create", response_class=HTMLResponse)
-def leave_application_create_page(request: Request, db: Session = Depends(get_db)):
+def leave_application_create_page(
+    request: Request,
+    _perm=Depends(require_permission("hrm", "leave_applications", "create")),
+    db: Session = Depends(get_db),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
     employees = employee_service.get_employees(db, skip=0, limit=500)
@@ -289,7 +310,10 @@ def leave_application_create_page(request: Request, db: Session = Depends(get_db
 
 @router.get("/leave/applications/edit/{application_id}", response_class=HTMLResponse)
 def leave_application_edit_page(
-    application_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    application_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "leave_applications", "update")),
+    db: Session = Depends(get_db),
 ):
     application = leave_application_service.get_application(db, application_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -312,7 +336,10 @@ def leave_application_edit_page(
 
 @router.get("/leave/applications/detail/{application_id}", response_class=HTMLResponse)
 def leave_application_detail_page(
-    application_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    application_id: uuid.UUID,
+    request: Request,
+    _perm=Depends(require_permission("hrm", "leave_applications", "view")),
+    db: Session = Depends(get_db),
 ):
     application = leave_application_service.get_application(db, application_id)
     employees = employee_service.get_employees(db, skip=0, limit=500)

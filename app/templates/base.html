@@ -549,6 +549,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Department
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:departments:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Department
                             </span>
@@ -560,6 +563,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Job Title
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:job_titles:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Job Title
                             </span>
@@ -571,6 +577,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Employees
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:employees:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Employees
                             </span>
@@ -583,6 +592,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Attendance
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:attendance:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Attendance
                             </span>
@@ -594,6 +606,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Leave Types
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:leave_types:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Leave Types
                             </span>
@@ -605,6 +620,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Leave Allocations
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:leave_allocations:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Leave Allocations
                             </span>
@@ -616,6 +634,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Leave Requests
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:leave_applications:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Leave Requests
                             </span>
@@ -627,6 +648,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Holidays
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:holidays:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Holidays
                             </span>
@@ -639,6 +663,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Payroll Periods
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:payroll_periods:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Payroll Periods
                             </span>
@@ -650,6 +677,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Payslips
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:payroll_records:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Payslips
                             </span>
@@ -661,6 +691,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Compensation
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:compensation:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Compensation
                             </span>
@@ -672,6 +705,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Payroll Settings
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:payroll_settings:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Payroll Settings
                             </span>
@@ -684,6 +720,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Candidates
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:recruitment:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Candidates
                             </span>
@@ -693,6 +732,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Interviews
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:recruitment:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Interviews
                             </span>
@@ -705,6 +747,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Appointment Letters
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:appointment_letters:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Appointment Letters
                             </span>
@@ -716,6 +761,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Salary Certificates
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:salary_certificates:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Salary Certificates
                             </span>
@@ -728,6 +776,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Notice Board
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:notice_board:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Notice Board
                             </span>
@@ -764,6 +815,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Category
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('ecommerce:categories:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Category
                             </span>
@@ -775,6 +829,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Customers
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('ecommerce:customers:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Customers
                             </span>
@@ -786,6 +843,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Brand
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('ecommerce:brands:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Brand
                             </span>
@@ -797,6 +857,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Model
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('ecommerce:models:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Model
                             </span>
@@ -808,6 +871,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Product
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('ecommerce:products:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Product
                             </span>
@@ -819,6 +885,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Orders
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('ecommerce:orders:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Orders
                             </span>
@@ -830,6 +899,9 @@
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
                                 Inventory
                             </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('ecommerce:inventory:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
                             <span class="sidebar-tooltip">
                                 Inventory
                             </span>

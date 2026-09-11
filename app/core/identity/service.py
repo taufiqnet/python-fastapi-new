@@ -40,15 +40,38 @@ class UserService:
         business_id = data.business_id
         is_company_owner = False
 
+        # Module normalization
+        req_modules = [m.lower().strip() for m in (data.modules or [])]
+        has_hr = "hrm" in req_modules or "hr_payroll" in req_modules or "hr" in req_modules
+        has_ecom = "ecommerce" in req_modules or "ecom" in req_modules
+
         if not business_id and data.company_name and data.company_name.strip():
-            res_plan = await db.execute(
-                select(SubscriptionPlan).where(SubscriptionPlan.name.in_(["Free", "Basic"]))
-            )
-            free_plan = res_plan.scalars().first()
+            # Determine subscription plan based on chosen free tier module(s)
+            selected_plan = None
+            if has_hr and not has_ecom:
+                res = await db.execute(
+                    select(SubscriptionPlan).where(
+                        SubscriptionPlan.name == "hr payroll module (free tier)"
+                    )
+                )
+                selected_plan = res.scalars().first()
+            elif has_ecom and not has_hr:
+                res = await db.execute(
+                    select(SubscriptionPlan).where(
+                        SubscriptionPlan.name == "ecommerce module (free tire)"
+                    )
+                )
+                selected_plan = res.scalars().first()
+
+            if not selected_plan:
+                res = await db.execute(
+                    select(SubscriptionPlan).where(SubscriptionPlan.name.in_(["Free", "Basic"]))
+                )
+                selected_plan = res.scalars().first()
 
             new_business = BusinessProfile(
                 name_en=data.company_name.strip(),
-                subscription_plan_id=free_plan.id if free_plan else 1,
+                subscription_plan_id=selected_plan.id if selected_plan else 1,
             )
             db.add(new_business)
             await db.flush()
@@ -61,17 +84,30 @@ class UserService:
             password_hash=hash_password(data.password),
             phone=data.phone,
             business_id=business_id,
+            is_superuser=False,  # Registering users are NEVER superusers
         )
 
         user = await self.repository.create(db, user)
 
         if is_company_owner:
-            admin_role = await self.repository.get_role_by_name(db, "admin")
-            if not admin_role:
-                admin_role = await self.repository.create_role(
-                    db, name="admin", description="Admin role"
-                )
-            user = await self.repository.assign_role(db, user, admin_role)
+            # Assign specific module free tier roles (hr_payroll / ecommerce), NEVER admin role
+            assigned_any_role = False
+            if has_hr:
+                hr_role = await self.repository.get_role_by_name(db, "hr_payroll")
+                if hr_role:
+                    user = await self.repository.assign_role(db, user, hr_role)
+                    assigned_any_role = True
+            if has_ecom:
+                ecom_role = await self.repository.get_role_by_name(db, "ecommerce")
+                if ecom_role:
+                    user = await self.repository.assign_role(db, user, ecom_role)
+                    assigned_any_role = True
+
+            if not assigned_any_role:
+                # Default to hr_payroll role if no explicit module was checked during company registration
+                hr_role = await self.repository.get_role_by_name(db, "hr_payroll")
+                if hr_role:
+                    user = await self.repository.assign_role(db, user, hr_role)
         else:
             customer_role = await self.repository.get_role_by_name(db, "customer")
             if not customer_role:
