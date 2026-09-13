@@ -1,0 +1,278 @@
+{% if current_user and settings.ai_assistant_enabled and current_user.has_permission('general:ai_assistant:view') %}
+<!-- HRMS AI Assistant Floating Chat Widget -->
+<div id="hrms-ai-widget-container" class="fixed bottom-5 right-5 z-50 flex flex-col items-end">
+    
+    <!-- Chat Panel -->
+    <div id="hrms-ai-panel" class="hidden mb-3 w-[360px] sm:w-[400px] max-w-[calc(100vw-2.5rem)] h-[520px] max-h-[calc(100vh-6rem)] bg-white rounded-2xl shadow-2xl border border-emerald-100 flex flex-col overflow-hidden transition-all duration-300 transform scale-95 opacity-0 origin-bottom-right">
+        
+        <!-- Panel Header -->
+        <div class="px-4 py-3 bg-emerald-600 text-white flex items-center justify-between shrink-0 shadow-sm">
+            <div class="flex items-center space-x-2.5 overflow-hidden">
+                <div class="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white shrink-0">
+                    <i class="fas fa-robot text-sm"></i>
+                </div>
+                <div class="min-w-0">
+                    <h3 class="text-sm font-semibold leading-tight truncate">HRMS Assistant</h3>
+                    <p class="text-[11px] text-emerald-100 truncate">Ask about your leave, payroll or HR policy.</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-1.5 shrink-0 text-white/80">
+                <button type="button" id="ai-reset-btn" title="Reset Conversation" class="p-1.5 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                    <i class="fas fa-redo-alt text-xs"></i>
+                </button>
+                <button type="button" id="ai-close-panel-btn" title="Close Assistant" class="p-1.5 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Body (Scrollable) -->
+        <div id="ai-chat-body" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50 custom-scrollbar text-xs">
+            
+            <!-- Welcome Card -->
+            <div id="ai-welcome-card" class="bg-emerald-50/70 border border-emerald-100 rounded-xl p-3.5 space-y-3">
+                <div class="flex items-center space-x-2 text-emerald-900 font-semibold text-xs">
+                    <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">
+                        <i class="fas fa-sparkles"></i>
+                    </div>
+                    <span>Hi {{ (current_user.username or 'Employee').split('@')[0].split('.')[0].capitalize() }}! What can we help you with?</span>
+                </div>
+                
+                <!-- Quick Reply Suggestion Pills -->
+                <div class="flex flex-wrap gap-1.5 pt-1" id="ai-quick-pills">
+                    <button type="button" class="ai-pill-btn px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-600 hover:text-white rounded-full transition-all shadow-sm" data-prompt="Apply for leave">
+                        Apply for leave
+                    </button>
+                    <button type="button" class="ai-pill-btn px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-600 hover:text-white rounded-full transition-all shadow-sm" data-prompt="How many leave days do I have left?">
+                        How many leave days do I have left?
+                    </button>
+                    <button type="button" class="ai-pill-btn px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-600 hover:text-white rounded-full transition-all shadow-sm" data-prompt="What is the status of my leave request?">
+                        What is the status of my leave request?
+                    </button>
+                    <button type="button" class="ai-pill-btn px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-600 hover:text-white rounded-full transition-all shadow-sm" data-prompt="How do I renew my Iqama?">
+                        How do I renew my Iqama?
+                    </button>
+                    <button type="button" class="ai-pill-btn px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-600 hover:text-white rounded-full transition-all shadow-sm" data-prompt="What training have I done?">
+                        What training have I done?
+                    </button>
+                    <button type="button" class="ai-pill-btn px-2.5 py-1 text-[11px] font-medium text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-600 hover:text-white rounded-full transition-all shadow-sm" data-prompt="Show me everything you can answer">
+                        Show me everything you can answer
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dynamic Messages Container -->
+            <div id="ai-messages-list" class="space-y-3"></div>
+
+            <!-- Loading Indicator -->
+            <div id="ai-typing-indicator" class="hidden flex items-center space-x-2 text-gray-400 text-xs py-1">
+                <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] shrink-0">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-3 py-2 flex items-center space-x-1 shadow-sm">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce"></span>
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Panel Footer / Input Area -->
+        <div class="p-3 bg-white border-t border-gray-100 shrink-0">
+            <form id="ai-chat-form" class="flex items-center space-x-2">
+                <input type="text" id="ai-user-input" placeholder="Type your question..." autocomplete="off"
+                    class="flex-1 px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:bg-white focus:border-emerald-500 transition-colors" />
+                <button type="submit" id="ai-send-btn" title="Send Message"
+                    class="w-8 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center shadow-md transition-all shrink-0">
+                    <i class="fas fa-arrow-up text-xs"></i>
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Floating Toggle Button -->
+    <button type="button" id="hrms-ai-toggle-btn" title="Open HRMS Assistant"
+        class="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none ring-4 ring-emerald-500/20">
+        <i id="ai-toggle-icon" class="fas fa-comments text-lg"></i>
+    </button>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const toggleBtn = document.getElementById('hrms-ai-toggle-btn');
+    const toggleIcon = document.getElementById('ai-toggle-icon');
+    const panel = document.getElementById('hrms-ai-panel');
+    const closeBtn = document.getElementById('ai-close-panel-btn');
+    const resetBtn = document.getElementById('ai-reset-btn');
+    const form = document.getElementById('ai-chat-form');
+    const input = document.getElementById('ai-user-input');
+    const messagesList = document.getElementById('ai-messages-list');
+    const chatBody = document.getElementById('ai-chat-body');
+    const typingIndicator = document.getElementById('ai-typing-indicator');
+
+    let conversationId = sessionStorage.getItem('hrms_ai_conversation_id') || null;
+    let storedMessages = JSON.parse(sessionStorage.getItem('hrms_ai_messages') || '[]');
+
+    function saveSession() {
+        if (conversationId) sessionStorage.setItem('hrms_ai_conversation_id', conversationId);
+        sessionStorage.setItem('hrms_ai_messages', JSON.stringify(storedMessages));
+    }
+
+    function renderMessage(role, text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = role === 'user' ? 'flex justify-end' : 'flex items-start space-x-2';
+
+        if (role === 'user') {
+            msgDiv.innerHTML = `
+                <div class="max-w-[85%] bg-emerald-600 text-white rounded-2xl rounded-tr-sm px-3.5 py-2 shadow-sm text-xs break-words">
+                    ${escapeHtml(text)}
+                </div>
+            `;
+        } else {
+            const formattedText = formatMarkdown(text);
+            msgDiv.innerHTML = `
+                <div class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="max-w-[85%] bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-sm px-3.5 py-2 shadow-sm text-xs leading-relaxed break-words">
+                    ${formattedText}
+                </div>
+            `;
+        }
+
+        messagesList.appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function formatMarkdown(text) {
+        if (!text) return '';
+        let html = escapeHtml(text);
+        // Bold: **text**
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Italics: *text*
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Newlines
+        html = html.replace(/\n/g, '<br>');
+        return html;
+    }
+
+    function scrollToBottom() {
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    function togglePanel(open) {
+        const isOpen = open !== undefined ? open : panel.classList.contains('hidden');
+        if (isOpen) {
+            panel.classList.remove('hidden');
+            setTimeout(() => {
+                panel.classList.remove('scale-95', 'opacity-0');
+                panel.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            toggleIcon.className = 'fas fa-times text-lg';
+            input.focus();
+            scrollToBottom();
+        } else {
+            panel.classList.remove('scale-100', 'opacity-100');
+            panel.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                panel.classList.add('hidden');
+            }, 300);
+            toggleIcon.className = 'fas fa-comments text-lg';
+        }
+    }
+
+    // Restore existing session messages
+    if (storedMessages.length > 0) {
+        storedMessages.forEach(m => renderMessage(m.role, m.content));
+    }
+
+    toggleBtn?.addEventListener('click', () => togglePanel());
+    closeBtn?.addEventListener('click', () => togglePanel(false));
+
+    resetBtn?.addEventListener('click', () => {
+        messagesList.innerHTML = '';
+        conversationId = null;
+        storedMessages = [];
+        sessionStorage.removeItem('hrms_ai_conversation_id');
+        sessionStorage.removeItem('hrms_ai_messages');
+    });
+
+    // Handle pill clicks
+    document.querySelectorAll('.ai-pill-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const prompt = btn.getAttribute('data-prompt');
+            if (prompt) sendMessage(prompt);
+        });
+    });
+
+    // Form submit
+    form?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (text) {
+            sendMessage(text);
+            input.value = '';
+        }
+    });
+
+    async function sendMessage(msgText) {
+        renderMessage('user', msgText);
+        storedMessages.push({ role: 'user', content: msgText });
+        saveSession();
+
+        typingIndicator.classList.remove('hidden');
+        scrollToBottom();
+
+        try {
+            const response = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: msgText,
+                    conversation_id: conversationId
+                })
+            });
+
+            typingIndicator.classList.add('hidden');
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const errMsg = errData.detail || 'Sorry, I am currently unable to process your request.';
+                renderMessage('assistant', errMsg);
+                storedMessages.push({ role: 'assistant', content: errMsg });
+                saveSession();
+                return;
+            }
+
+            const data = await response.json();
+            if (data.conversation_id) conversationId = data.conversation_id;
+            const reply = data.message || 'No response received.';
+
+            renderMessage('assistant', reply);
+            storedMessages.push({ role: 'assistant', content: reply });
+            saveSession();
+
+        } catch (err) {
+            console.error('AI chat error:', err);
+            typingIndicator.classList.add('hidden');
+            const errMsg = 'Connection error. Please try again later.';
+            renderMessage('assistant', errMsg);
+            storedMessages.push({ role: 'assistant', content: errMsg });
+            saveSession();
+        }
+    }
+});
+</script>
+{% endif %}

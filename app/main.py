@@ -25,10 +25,13 @@ def _custom_template_response(self, *args, **kwargs):
     if not context and len(args) >= 3:
         context = args[2]
 
-    if request and isinstance(context, dict) and "current_user" not in context:
-        user = getattr(request.state, "user", None)
-        if user:
-            context["current_user"] = user
+    if request and isinstance(context, dict):
+        if "current_user" not in context:
+            user = getattr(request.state, "user", None)
+            if user:
+                context["current_user"] = user
+        if "settings" not in context:
+            context["settings"] = settings
 
     return _original_template_response(self, *args, **kwargs)
 

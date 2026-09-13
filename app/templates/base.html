@@ -559,34 +559,6 @@
                             </span>
                         </a>
                         {% endif %}
-{% if current_user.has_permission('hrm:offer_letters:view') %}
-                        <a href="/offer-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'offer_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-file-signature w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Offer Letters
-                            </span>
-                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:offer_letters:view') %}
-                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
-                            {% endif %}
-                            <span class="sidebar-tooltip">
-                                Offer Letters
-                            </span>
-                        </a>
-                        {% endif %}
-{% if current_user.has_permission('hrm:experience_letters:view') %}
-                        <a href="/experience-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'experience_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
-                            <i class="fas fa-award w-4 text-sm shrink-0"></i>
-                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                Experience Letters
-                            </span>
-                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:experience_letters:view') %}
-                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
-                            {% endif %}
-                            <span class="sidebar-tooltip">
-                                Experience Letters
-                            </span>
-                        </a>
-                        {% endif %}
 {% if current_user.has_permission('hrm:job_titles:view') %}
                         <a href="/job-titles/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'job_titles' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                             <i class="fas fa-user-tie w-4 text-sm shrink-0"></i>
@@ -796,6 +768,34 @@
                             {% endif %}
                             <span class="sidebar-tooltip">
                                 Salary Certificates
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:offer_letters:view') %}
+                        <a href="/offer-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'offer_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-file-signature w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Offer Letters
+                            </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:offer_letters:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
+                            <span class="sidebar-tooltip">
+                                Offer Letters
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:experience_letters:view') %}
+                        <a href="/experience-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'experience_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-award w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Experience Letters
+                            </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:experience_letters:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
+                            <span class="sidebar-tooltip">
+                                Experience Letters
                             </span>
                         </a>
                         {% endif %}
@@ -1353,6 +1353,8 @@
     </script>
 
     {% block extra_js %}{% endblock %}
+
+    {% include "modules/partials/_ai_widget.html" %}
 
 </body>
 

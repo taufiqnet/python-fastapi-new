@@ -16,6 +16,7 @@ SYSTEM_MODULES = {
         "features": [
             ("business_profile", "Business Profile"),
             ("users_permissions", "Users & Permissions"),
+            ("ai_assistant", "AI Assistant"),
             ("maintenance_mode", "Maintenance Mode"),
         ],
     },
