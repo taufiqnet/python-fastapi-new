@@ -17,11 +17,15 @@ from app.core.identity.models import User
 from app.core.tenancy.models import BusinessProfile
 from app.modules.hr_payroll.payroll.models import PayrollPeriod
 from app.modules.hr_payroll.attendance.service import AttendanceService
+from app.modules.hr_payroll.employees.models import Employee
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 from app.modules.hr_payroll.employees.service import EmployeeService
+from app.modules.hr_payroll.leave.models import LeaveStatusEnum
+from app.modules.hr_payroll.leave.schemas import LeaveApplicationCreate
 from app.modules.hr_payroll.leave.service import (
     LeaveAllocationService,
     LeaveApplicationService,
+    LeaveTypeService,
 )
 from app.modules.hr_payroll.payroll.service import (
     PayrollPeriodService,
@@ -84,6 +88,40 @@ def parse_uuid(val: str, field_name: str = "ID") -> uuid.UUID:
         return uuid.UUID(str(val))
     except (ValueError, TypeError):
         raise ValueError(f"Invalid UUID format for {field_name}: '{val}'")
+
+
+def resolve_employee_for_user(
+    db: Session,
+    user: User,
+    employee_id: str | None = None,
+) -> Employee | None:
+    repo = EmployeeRepository()
+    eff_biz_id = user.business_id or 1
+
+    if employee_id:
+        try:
+            emp_uuid = parse_uuid(employee_id, "employee_id")
+            emp = repo.get_by_id(db, emp_uuid)
+            if emp:
+                return emp
+        except ValueError:
+            pass
+        emp = repo.get_by_employee_id(db, employee_id, business_id=eff_biz_id)
+        if emp:
+            return emp
+
+    if user.email:
+        emp = repo.get_by_work_email(db, user.email, business_id=eff_biz_id)
+        if emp:
+            return emp
+
+    if user.username:
+        emp = repo.get_by_work_email(db, user.username, business_id=eff_biz_id)
+        if emp:
+            return emp
+
+    # Fallback to first active employee in business
+    return db.query(Employee).filter(Employee.business_id == eff_biz_id, Employee.is_active.is_(True)).first()
 
 
 # ---------------------------------------------------------------------------
@@ -462,6 +500,272 @@ def execute_list_leave_applications(
         return ErrorResponse(message=f"Unexpected error: {str(e)}")
 
 
+def execute_get_leave_types(
+    db: Session,
+    user: User,
+    business_id: int | None = None,
+) -> AIResponseEnvelope:
+    """
+    Requires permission: hrm:leave_types:view
+    Fetches configured leave types for the business.
+    """
+    try:
+        check_permissions(user, ["hrm:leave_types:view"])
+        eff_biz_id = validate_and_get_business_id(user, business_id) or (user.business_id or 1)
+
+        service = LeaveTypeService()
+        leave_types = service.get_leave_types(db, business_id=eff_biz_id)
+
+        columns = [
+            "id",
+            "name",
+            "code",
+            "description",
+            "max_days_per_year",
+            "is_paid",
+            "requires_document",
+            "applicable_gender",
+            "carry_forward",
+            "is_active",
+        ]
+
+        rows = []
+        for lt in leave_types:
+            if lt.is_active:
+                rows.append({
+                    "id": str(lt.id),
+                    "name": lt.name,
+                    "code": lt.code,
+                    "description": lt.description or "",
+                    "max_days_per_year": lt.max_days_per_year,
+                    "is_paid": lt.is_paid,
+                    "requires_document": lt.requires_document,
+                    "applicable_gender": lt.applicable_gender.value if hasattr(lt.applicable_gender, "value") else str(lt.applicable_gender),
+                    "carry_forward": lt.carry_forward,
+                    "is_active": lt.is_active,
+                })
+
+        return ListResponse(
+            title="Available Leave Types",
+            total=len(rows),
+            page=1,
+            page_size=max(1, len(rows)),
+            columns=columns,
+            rows=rows,
+        )
+    except PermissionError as e:
+        return ErrorResponse(message=str(e))
+    except ValueError as e:
+        return ErrorResponse(message=str(e))
+    except HTTPException as e:
+        return ErrorResponse(message=str(e.detail))
+    except Exception as e:
+        return ErrorResponse(message=f"Unexpected error: {str(e)}")
+
+
+def execute_create_leave_application(
+    db: Session,
+    user: User,
+    leave_type_id: str,
+    start_date: str,
+    end_date: str,
+    reason: str | None = None,
+    document_url: str | None = None,
+    employee_id: str | None = None,
+    business_id: int | None = None,
+) -> AIResponseEnvelope:
+    """
+    Requires permission: hrm:leave_applications:create
+    Creates a leave application for the employee and routes to approval chain.
+    """
+    try:
+        check_permissions(user, ["hrm:leave_applications:create"])
+        eff_biz_id = validate_and_get_business_id(user, business_id) or (user.business_id or 1)
+
+        emp = resolve_employee_for_user(db, user, employee_id)
+        if not emp:
+            return ErrorResponse(message="Employee profile not found for user. Please contact administrator.")
+
+        # Resolve leave type by UUID, code, or name
+        lt_service = LeaveTypeService()
+        all_lts = lt_service.get_leave_types(db, business_id=eff_biz_id)
+        matched_lt = None
+        clean_lt = leave_type_id.strip().lower()
+
+        for lt in all_lts:
+            if str(lt.id).lower() == clean_lt or lt.code.lower() == clean_lt or lt.name.lower() == clean_lt:
+                matched_lt = lt
+                break
+
+        if not matched_lt:
+            for lt in all_lts:
+                if clean_lt in lt.name.lower() or clean_lt in lt.code.lower():
+                    matched_lt = lt
+                    break
+
+        if not matched_lt:
+            return ErrorResponse(message=f"Leave type '{leave_type_id}' not found.")
+
+        # Parse dates
+        try:
+            s_dt = datetime.strptime(start_date.strip(), "%Y-%m-%d").date()
+            e_dt = datetime.strptime(end_date.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            return ErrorResponse(message="Invalid date format. Please provide dates in YYYY-MM-DD format.")
+
+        total_days = (e_dt - s_dt).days + 1
+        if total_days <= 0:
+            return ErrorResponse(message="Start date cannot be after end date.")
+
+        app_create = LeaveApplicationCreate(
+            business_id=eff_biz_id,
+            employee_id=emp.id,
+            leave_type_id=matched_lt.id,
+            start_date=s_dt,
+            end_date=e_dt,
+            total_days=total_days,
+            reason=reason or "Applied via AI Assistant",
+            document_url=document_url,
+        )
+
+        app_service = LeaveApplicationService()
+        app_rec = app_service.create_application(db, app_create)
+
+        # Get balance remaining
+        alloc_service = LeaveAllocationService()
+        alloc = alloc_service.repository.get_by_emp_type_year(
+            db, employee_id=emp.id, leave_type_id=matched_lt.id, year=s_dt.year, business_id=eff_biz_id
+        )
+        remaining = None
+        if alloc:
+            allocated = float(alloc.allocated_days or 0.0)
+            carried = float(alloc.carried_forward or 0.0)
+            used = float(alloc.used_days or 0.0)
+            remaining = allocated + carried - used
+
+        # Resolve approver names
+        approvers = []
+        if emp.direct_manager:
+            approvers.append(f"{emp.direct_manager.full_name} (Direct Manager)")
+        if emp.department and emp.department.department_head:
+            dept_head = emp.department.department_head
+            if dept_head.id != emp.id and (not emp.direct_manager or dept_head.id != emp.direct_manager.id):
+                approvers.append(f"{dept_head.full_name} (Department Head)")
+
+        if not approvers:
+            approvers.append("HR Administrator")
+
+        metrics: dict[str, int | float | str] = {
+            "application_id": str(app_rec.id),
+            "employee_name": emp.full_name,
+            "leave_type": matched_lt.name,
+            "start_date": str(s_dt),
+            "end_date": str(e_dt),
+            "total_days": total_days,
+            "status": app_rec.status.value if hasattr(app_rec.status, "value") else str(app_rec.status),
+            "approvers": ", ".join(approvers),
+        }
+        if remaining is not None:
+            metrics["remaining_balance_days"] = remaining
+
+        return SummaryResponse(
+            title=f"Leave Application Created ({matched_lt.name})",
+            metrics=metrics,
+        )
+    except PermissionError as e:
+        return ErrorResponse(message=str(e))
+    except ValueError as e:
+        return ErrorResponse(message=str(e))
+    except HTTPException as e:
+        return ErrorResponse(message=str(e.detail))
+    except Exception as e:
+        return ErrorResponse(message=f"Unexpected error: {str(e)}")
+
+
+def execute_get_my_leave_applications(
+    db: Session,
+    user: User,
+    employee_id: str | None = None,
+    business_id: int | None = None,
+    status: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> AIResponseEnvelope:
+    """
+    Requires permission: hrm:leave_applications:view
+    Retrieves leave applications specifically for the logged-in employee.
+    """
+    try:
+        check_permissions(user, ["hrm:leave_applications:view"])
+        eff_biz_id = validate_and_get_business_id(user, business_id) or (user.business_id or 1)
+
+        emp = resolve_employee_for_user(db, user, employee_id)
+        if not emp:
+            return ErrorResponse(message="Employee profile not found for user.")
+
+        eff_page = max(1, page)
+        eff_page_size = min(max(1, page_size), 50)
+
+        app_service = LeaveApplicationService()
+        apps = app_service.get_applications(
+            db, business_id=eff_biz_id, employee_id=emp.id, status_filter=status
+        )
+
+        total = len(apps)
+        skip = (eff_page - 1) * eff_page_size
+        paged_apps = apps[skip : skip + eff_page_size]
+
+        columns = [
+            "id",
+            "leave_type",
+            "start_date",
+            "end_date",
+            "total_days",
+            "status",
+            "reason",
+            "pending_with",
+        ]
+
+        rows = []
+        for a in paged_apps:
+            pending_with = "N/A"
+            if a.status == LeaveStatusEnum.PENDING:
+                if emp.direct_manager:
+                    pending_with = f"{emp.direct_manager.full_name} (Manager)"
+                elif emp.department and emp.department.department_head:
+                    pending_with = f"{emp.department.department_head.full_name} (Dept Head)"
+                else:
+                    pending_with = "HR Admin"
+
+            rows.append({
+                "id": str(a.id),
+                "leave_type": a.leave_type.name if a.leave_type else "Unknown",
+                "start_date": str(a.start_date),
+                "end_date": str(a.end_date),
+                "total_days": a.total_days,
+                "status": a.status.value if hasattr(a.status, "value") else str(a.status),
+                "reason": a.reason or "",
+                "pending_with": pending_with,
+            })
+
+        return ListResponse(
+            title=f"Leave Applications for {emp.full_name}",
+            total=total,
+            page=eff_page,
+            page_size=eff_page_size,
+            columns=columns,
+            rows=rows,
+        )
+    except PermissionError as e:
+        return ErrorResponse(message=str(e))
+    except ValueError as e:
+        return ErrorResponse(message=str(e))
+    except HTTPException as e:
+        return ErrorResponse(message=str(e.detail))
+    except Exception as e:
+        return ErrorResponse(message=f"Unexpected error: {str(e)}")
+
+
 def execute_get_employee_leave_balance(
     db: Session,
     user: User,
@@ -818,6 +1122,56 @@ AI_TOOLS_DEFINITIONS = [
     {
         "type": "function",
         "function": {
+            "name": "get_leave_types",
+            "description": "Fetch configured active leave types for the business. Requires permission: hrm:leave_types:view",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "business_id": {"type": "integer", "description": "Optional target business ID"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_leave_application",
+            "description": "Create a new leave application for an employee after confirming details. Requires permission: hrm:leave_applications:create",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "leave_type_id": {"type": "string", "description": "Leave Type UUID, code (e.g. 'AL'), or name"},
+                    "start_date": {"type": "string", "description": "Start date in YYYY-MM-DD format"},
+                    "end_date": {"type": "string", "description": "End date in YYYY-MM-DD format"},
+                    "reason": {"type": "string", "description": "Reason for leave"},
+                    "document_url": {"type": "string", "description": "Optional supporting document URL"},
+                    "employee_id": {"type": "string", "description": "Optional employee UUID or ID"},
+                    "business_id": {"type": "integer", "description": "Optional business ID"},
+                },
+                "required": ["leave_type_id", "start_date", "end_date"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_my_leave_applications",
+            "description": "Check leave applications and current status for the logged-in employee. Requires permission: hrm:leave_applications:view",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "employee_id": {"type": "string", "description": "Optional employee UUID"},
+                    "business_id": {"type": "integer"},
+                    "status": {"type": "string", "enum": ["pending", "approved", "rejected", "cancelled"]},
+                    "page": {"type": "integer", "default": 1},
+                    "page_size": {"type": "integer", "default": 20},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "search_employees",
             "description": "Search and list employees with search term, pagination, department, and status filters. Requires permission: hrm:employees:view",
             "parameters": {
@@ -1032,6 +1386,12 @@ def dispatch_tool_call(
         res = execute_list_employees(db, user, **args)
     elif name == "get_employee":
         res = execute_get_employee(db, user, **args)
+    elif name == "get_leave_types":
+        res = execute_get_leave_types(db, user, **args)
+    elif name == "create_leave_application":
+        res = execute_create_leave_application(db, user, **args)
+    elif name == "get_my_leave_applications":
+        res = execute_get_my_leave_applications(db, user, **args)
     elif name == "list_leave_applications":
         res = execute_list_leave_applications(db, user, **args)
     elif name == "get_employee_leave_balance":

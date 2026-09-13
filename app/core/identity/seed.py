@@ -16,7 +16,8 @@ SYSTEM_MODULES = {
         "features": [
             ("business_profile", "Business Profile"),
             ("users_permissions", "Users & Permissions"),
-            ("ai_assistant", "AI Assistant"),
+            ("ai_assistant", "AI Chat Assistant"),
+            ("mcp_hub", "MCP Report Hub"),
             ("maintenance_mode", "Maintenance Mode"),
         ],
     },
@@ -148,7 +149,7 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
         hr_payroll_role = res_hr_role.scalar_one()
     hr_payroll_role.permissions.clear()
     for p in db_all_perms:
-        if p.module == "hrm":
+        if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view"):
             hr_payroll_role.permissions.append(p)
 
     # Seed ecommerce role
@@ -259,7 +260,7 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
             description="Free tier with all HR & Payroll permissions",
             is_active=True,
         )
-        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm"]
+        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
         db.add(hr_plan)
 
     res_plan_ecom = await db.execute(
@@ -332,7 +333,7 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         )
         db.add(hr_payroll_role)
         db.flush()
-    hr_payroll_role.permissions = [p for p in db_all_perms if p.module == "hrm"]
+    hr_payroll_role.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
 
     ecommerce_role = db.query(Role).filter(Role.name == "ecommerce", Role.business_id.is_(None)).first()
     if not ecommerce_role:
@@ -411,7 +412,7 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
             description="Free tier with all HR & Payroll permissions",
             is_active=True,
         )
-        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm"]
+        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
         db.add(hr_plan)
 
     ecom_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "ecommerce module (free tire)").first()

@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
-    # OpenRouter
+    # AI Assistant Feature Flag & OpenRouter Config
+    ai_assistant_enabled: bool = True
     openrouter_api_key: str
     openrouter_model: str = "openrouter/free"
     openrouter_models: str = "openrouter/free"

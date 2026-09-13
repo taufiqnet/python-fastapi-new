@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import get_current_user_optional, require_permission
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.service import EmployeeService
@@ -32,6 +32,7 @@ async def mcp_hub_page(
     request: Request,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
+    _user=Depends(require_permission("general", "mcp_hub", "view")),
 ):
     current_user = getattr(request.state, "user", None) or await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -57,6 +58,7 @@ async def run_mcp_tool(
     request: Request,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
+    _user=Depends(require_permission("general", "mcp_hub", "view")),
 ):
     current_user = getattr(request.state, "user", None) or await get_current_user_optional(request, None, async_db)
     if not current_user:

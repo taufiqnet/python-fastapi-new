@@ -28,6 +28,7 @@ import app.models_registry  # Ensure all SQLAlchemy models are registered
 from app.database import SessionLocal
 from app.core.identity.models import User
 from app.services.ai.tools import (
+    execute_create_leave_application,
     execute_get_attendance_summary,
     execute_get_department_employee_count,
     execute_get_employee,
@@ -35,6 +36,8 @@ from app.services.ai.tools import (
     execute_get_employee_leave_balance,
     execute_get_employee_payslip,
     execute_get_leave_summary_report,
+    execute_get_leave_types,
+    execute_get_my_leave_applications,
     execute_get_payroll_status,
     execute_get_payroll_summary_report,
     execute_list_employees,
@@ -146,6 +149,71 @@ def get_employee(employee_id: str) -> dict[str, Any] | str:
     db = SessionLocal()
     try:
         res = execute_get_employee(db, user, employee_id=employee_id)
+        return _format_res(res)
+    finally:
+        db.close()
+
+
+@mcp.tool()
+def get_leave_types(business_id: int | None = None) -> dict[str, Any] | str:
+    user = resolve_acting_user()
+    db = SessionLocal()
+    try:
+        res = execute_get_leave_types(db, user, business_id=business_id)
+        return _format_res(res)
+    finally:
+        db.close()
+
+
+@mcp.tool()
+def create_leave_application(
+    leave_type_id: str,
+    start_date: str,
+    end_date: str,
+    reason: str | None = None,
+    document_url: str | None = None,
+    employee_id: str | None = None,
+    business_id: int | None = None,
+) -> dict[str, Any] | str:
+    user = resolve_acting_user()
+    db = SessionLocal()
+    try:
+        res = execute_create_leave_application(
+            db,
+            user,
+            leave_type_id=leave_type_id,
+            start_date=start_date,
+            end_date=end_date,
+            reason=reason,
+            document_url=document_url,
+            employee_id=employee_id,
+            business_id=business_id,
+        )
+        return _format_res(res)
+    finally:
+        db.close()
+
+
+@mcp.tool()
+def get_my_leave_applications(
+    employee_id: str | None = None,
+    business_id: int | None = None,
+    status: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> dict[str, Any] | str:
+    user = resolve_acting_user()
+    db = SessionLocal()
+    try:
+        res = execute_get_my_leave_applications(
+            db,
+            user,
+            employee_id=employee_id,
+            business_id=business_id,
+            status=status,
+            page=page,
+            page_size=page_size,
+        )
         return _format_res(res)
     finally:
         db.close()

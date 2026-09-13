@@ -500,15 +500,17 @@
                                 Subscription Plans
                             </span>
                         </a>
+                        {% if current_user.has_permission('general:mcp_hub:view') %}
                         <a href="/mcp/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'mcp' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                             <i class="fas fa-robot w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
-                                AI Assistant & Reports
+                                MCP Report Hub
                             </span>
                             <span class="sidebar-tooltip">
-                                AI Assistant & Reports
+                                MCP Report Hub
                             </span>
                         </a>
+                        {% endif %}
                     </div>
                 </div>
                 {% endif %}

@@ -36,12 +36,6 @@ def setup_mcp_db():
 
     db = SyncTestingSessionLocal()
 
-    # Seed Businesses
-    biz1 = BusinessProfile(id=1, name_en="Business One")
-    biz2 = BusinessProfile(id=2, name_en="Business Two")
-    db.add_all([biz1, biz2])
-    db.commit()
-
     # Seed Permissions
     perm_emp_view = Permission(module="hrm", feature="employees", action="view", code="hrm:employees:view")
     perm_leave_apps = Permission(module="hrm", feature="leave_applications", action="view", code="hrm:leave_applications:view")
@@ -50,6 +44,18 @@ def setup_mcp_db():
     perm_comp_view = Permission(module="hrm", feature="compensation", action="view", code="hrm:compensation:view")
     perm_att_view = Permission(module="hrm", feature="attendance", action="view", code="hrm:attendance:view")
     db.add_all([perm_emp_view, perm_leave_apps, perm_leave_alloc, perm_pay_rec, perm_comp_view, perm_att_view])
+    db.commit()
+
+    from app.core.billing.models import SubscriptionPlan
+    plan = SubscriptionPlan(id=1, name="Pro", is_active=True)
+    plan.permissions.extend([perm_emp_view, perm_leave_apps, perm_leave_alloc, perm_pay_rec, perm_comp_view, perm_att_view])
+    db.add(plan)
+    db.commit()
+
+    # Seed Businesses
+    biz1 = BusinessProfile(id=1, name_en="Business One", subscription_plan_id=1)
+    biz2 = BusinessProfile(id=2, name_en="Business Two", subscription_plan_id=1)
+    db.add_all([biz1, biz2])
     db.commit()
 
     # Seed Users
@@ -119,12 +125,20 @@ def setup_mcp_db():
         user_id = int(user_id_str)
         s = hr_report_server.SessionLocal()
         try:
+            from app.core.billing.models import SubscriptionPlan
             u = s.query(User).options(
                 selectinload(User.roles).selectinload(Role.permissions),
                 selectinload(User.direct_permissions),
+                selectinload(User.business_profile)
+                .selectinload(BusinessProfile.subscription_plan)
+                .selectinload(SubscriptionPlan.permissions),
             ).filter(User.id == user_id).first()
             if u:
                 _ = u.get_all_permission_codes()
+                if u.business_profile:
+                    _ = u.business_profile.id
+                    if u.business_profile.subscription_plan:
+                        _ = list(u.business_profile.subscription_plan.permissions)
             return u
         finally:
             s.close()
