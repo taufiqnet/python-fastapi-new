@@ -152,32 +152,6 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
         ],
     },
     {
-        "category": "Performance & Growth",
-        "module_group": "hr_payroll",
-        "items": [
-            {
-                "key": "learning_development",
-                "title": "Learning & Development",
-                "icon": "fas fa-graduation-cap",
-                "url": "/subscription-plans/manage",
-                "permission_code": "hrm:learning:view",
-                "plans": ["Pro", "Enterprise"],
-                "description": "Upskill your team with automated training programs and skill tracking.",
-                "active_page": "learning_development",
-            },
-            {
-                "key": "performance_management",
-                "title": "Performance Management",
-                "icon": "fas fa-chart-line",
-                "url": "/subscription-plans/manage",
-                "permission_code": "hrm:performance:view",
-                "plans": ["Enterprise"],
-                "description": "Drive team excellence with 360-degree performance reviews and KPI tracking.",
-                "active_page": "performance_management",
-            },
-        ],
-    },
-    {
         "category": "Recruitment",
         "module_group": "hr_payroll",
         "items": [
