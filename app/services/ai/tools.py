@@ -56,14 +56,17 @@ def check_permissions(user: User, required_permissions: list[str]) -> None:
                 f"Permission denied: user lacks required permission '{code}'"
             )
         if user.business_profile and not user.business_profile.has_permission(code):
-            plan_name = (
-                user.business_profile.subscription_plan.name
-                if user.business_profile.subscription_plan
-                else "Current"
-            )
-            raise PermissionError(
-                f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription."
-            )
+            if user.has_role("admin"):
+                plan_name = (
+                    user.business_profile.subscription_plan.name
+                    if user.business_profile.subscription_plan
+                    else "Current"
+                )
+                raise PermissionError(
+                    f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription."
+                )
+            else:
+                raise PermissionError("This feature isn't included in your current plan. Upgrade to unlock it.")
 
 
 def validate_and_get_business_id(
@@ -95,33 +98,42 @@ def resolve_employee_for_user(
     user: User,
     employee_id: str | None = None,
 ) -> Employee | None:
+    """
+    Resolves and verifies an Employee record for the acting user.
+    Requires employee_id and verifies that the employee record's work_email matches
+    the logged-in user's email/username under their business_id.
+    Superusers bypass email matching if employee_id is provided.
+    """
     repo = EmployeeRepository()
     eff_biz_id = user.business_id or 1
 
-    if employee_id:
-        try:
-            emp_uuid = parse_uuid(employee_id, "employee_id")
-            emp = repo.get_by_id(db, emp_uuid)
-            if emp:
-                return emp
-        except ValueError:
-            pass
+    if not employee_id:
+        return None
+
+    emp = None
+    try:
+        emp_uuid = parse_uuid(employee_id, "employee_id")
+        emp = repo.get_by_id(db, emp_uuid)
+    except ValueError:
+        pass
+
+    if not emp:
         emp = repo.get_by_employee_id(db, employee_id, business_id=eff_biz_id)
-        if emp:
-            return emp
 
-    if user.email:
-        emp = repo.get_by_work_email(db, user.email, business_id=eff_biz_id)
-        if emp:
-            return emp
+    if not emp:
+        return None
 
-    if user.username:
-        emp = repo.get_by_work_email(db, user.username, business_id=eff_biz_id)
-        if emp:
-            return emp
+    if user.is_superuser:
+        return emp
 
-    # Fallback to first active employee in business
-    return db.query(Employee).filter(Employee.business_id == eff_biz_id, Employee.is_active.is_(True)).first()
+    # Verify that the employee's work_email matches logged-in user email or username
+    user_emails = {e.lower().strip() for e in [user.email, user.username] if e}
+    emp_email = (emp.work_email or "").lower().strip()
+
+    if emp_email and emp_email in user_emails and emp.business_id == eff_biz_id:
+        return emp
+
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -511,7 +523,13 @@ def execute_get_leave_types(
     """
     try:
         check_permissions(user, ["hrm:leave_types:view"])
-        eff_biz_id = validate_and_get_business_id(user, business_id) or (user.business_id or 1)
+
+        if not user.is_superuser and user.business_id is None:
+            return ErrorResponse(
+                message="You have not been assigned to any business yet. Please contact your administrator for assistance."
+            )
+
+        eff_biz_id = validate_and_get_business_id(user, business_id) or user.business_id
 
         service = LeaveTypeService()
         leave_types = service.get_leave_types(db, business_id=eff_biz_id)
@@ -584,7 +602,7 @@ def execute_create_leave_application(
 
         emp = resolve_employee_for_user(db, user, employee_id)
         if not emp:
-            return ErrorResponse(message="Employee profile not found for user. Please contact administrator.")
+            return ErrorResponse(message="Employee ID verification failed. Please provide your valid Employee ID associated with your registered email.")
 
         # Resolve leave type by UUID, code, or name
         lt_service = LeaveTypeService()
@@ -690,10 +708,12 @@ def execute_get_my_leave_applications(
     status: str | None = None,
     page: int = 1,
     page_size: int = 20,
+    history_requested: bool = False,
 ) -> AIResponseEnvelope:
     """
     Requires permission: hrm:leave_applications:view
     Retrieves leave applications specifically for the logged-in employee.
+    If history_requested is False (default), returns only the most recently applied request.
     """
     try:
         check_permissions(user, ["hrm:leave_applications:view"])
@@ -701,15 +721,67 @@ def execute_get_my_leave_applications(
 
         emp = resolve_employee_for_user(db, user, employee_id)
         if not emp:
-            return ErrorResponse(message="Employee profile not found for user.")
-
-        eff_page = max(1, page)
-        eff_page_size = min(max(1, page_size), 50)
+            return ErrorResponse(message="Employee ID verification failed. Please provide your valid Employee ID associated with your registered email.")
 
         app_service = LeaveApplicationService()
         apps = app_service.get_applications(
             db, business_id=eff_biz_id, employee_id=emp.id, status_filter=status
         )
+
+        # Sort applications by start_date desc (or created_at desc) to get most recent
+        apps = sorted(apps, key=lambda x: (getattr(x, "start_date", None) or date.min, getattr(x, "created_at", None) or datetime.min), reverse=True)
+
+        if not history_requested:
+            if not apps:
+                return ListResponse(
+                    title=f"Leave Applications for {emp.full_name}",
+                    total=0,
+                    page=1,
+                    page_size=1,
+                    columns=["id", "leave_type", "start_date", "end_date", "total_days", "status", "reason", "pending_with"],
+                    rows=[],
+                )
+            a = apps[0]
+            pending_with = "N/A"
+            if a.status == LeaveStatusEnum.PENDING:
+                if emp.direct_manager:
+                    pending_with = f"{emp.direct_manager.full_name} (Manager)"
+                elif emp.department and emp.department.department_head:
+                    pending_with = f"{emp.department.department_head.full_name} (Dept Head)"
+                else:
+                    pending_with = "HR Admin"
+
+            row = {
+                "id": str(a.id),
+                "leave_type": a.leave_type.name if a.leave_type else "Unknown",
+                "start_date": str(a.start_date),
+                "end_date": str(a.end_date),
+                "total_days": a.total_days,
+                "status": a.status.value if hasattr(a.status, "value") else str(a.status),
+                "reason": a.reason or "",
+                "pending_with": pending_with,
+            }
+
+            return ListResponse(
+                title=f"Most Recent Leave Application for {emp.full_name}",
+                total=1,
+                page=1,
+                page_size=1,
+                columns=[
+                    "id",
+                    "leave_type",
+                    "start_date",
+                    "end_date",
+                    "total_days",
+                    "status",
+                    "reason",
+                    "pending_with",
+                ],
+                rows=[row],
+            )
+
+        eff_page = max(1, page)
+        eff_page_size = min(max(1, page_size), 50)
 
         total = len(apps)
         skip = (eff_page - 1) * eff_page_size
@@ -769,32 +841,46 @@ def execute_get_my_leave_applications(
 def execute_get_employee_leave_balance(
     db: Session,
     user: User,
-    employee_id: str,
+    employee_id: str | None = None,
+    leave_type: str | None = None,
 ) -> AIResponseEnvelope:
     """
     Requires permission: hrm:leave_allocations:view
+    Retrieves leave allocations and remaining balances for an employee.
+    Requires verified employee_id matching logged-in user email.
+    If leave_type is supplied, filters metrics to that leave type.
     """
     try:
         check_permissions(user, ["hrm:leave_allocations:view"])
 
-        emp_service = EmployeeService()
-        emp_uuid = parse_uuid(employee_id, "employee_id")
-        employee = emp_service.get_employee(db, emp_uuid)
+        employee = resolve_employee_for_user(db, user, employee_id)
+        if not employee:
+            return ErrorResponse(message="Employee ID verification failed. Please provide your valid Employee ID associated with your registered email.")
+
         validate_and_get_business_id(user, employee.business_id)
 
         alloc_service = LeaveAllocationService()
-        allocations = alloc_service.get_allocations(db, employee_id=emp_uuid)
+        allocations = alloc_service.get_allocations(db, employee_id=employee.id)
+
+        clean_lt = leave_type.strip().lower() if leave_type and str(leave_type).strip() else None
 
         metrics: dict[str, int | float | str] = {
             "employee_name": employee.full_name,
             "employee_id": employee.employee_id,
         }
         for a in allocations:
+            lt_name = a.leave_type.name if a.leave_type else "Unknown"
+            lt_code = a.leave_type.code if a.leave_type else ""
+
+            if clean_lt:
+                if clean_lt not in lt_name.lower() and clean_lt not in lt_code.lower():
+                    continue
+
             allocated = float(a.allocated_days or 0.0)
             used = float(a.used_days or 0.0)
             carried = float(a.carried_forward or 0.0)
             remaining = allocated + carried - used
-            lt_name = a.leave_type.name if a.leave_type else "Unknown"
+
             metrics[f"{lt_name} (Allocated)"] = allocated
             metrics[f"{lt_name} (Used)"] = used
             metrics[f"{lt_name} (Remaining)"] = remaining
@@ -1156,7 +1242,7 @@ AI_TOOLS_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "get_my_leave_applications",
-            "description": "Check leave applications and current status for the logged-in employee. Requires permission: hrm:leave_applications:view",
+            "description": "Check leave applications and current status for the logged-in employee. By default returns only the most recent request. Requires permission: hrm:leave_applications:view",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -1165,6 +1251,7 @@ AI_TOOLS_DEFINITIONS = [
                     "status": {"type": "string", "enum": ["pending", "approved", "rejected", "cancelled"]},
                     "page": {"type": "integer", "default": 1},
                     "page_size": {"type": "integer", "default": 20},
+                    "history_requested": {"type": "boolean", "default": False, "description": "Set to true if user explicitly asks for past/full leave history"},
                 },
             },
         },
@@ -1224,13 +1311,13 @@ AI_TOOLS_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "get_employee_leave_balance",
-            "description": "Get leave balances and allocations for a specific employee. Requires permission: hrm:leave_allocations:view",
+            "description": "Get leave balances and allocations for the logged-in employee or a specified employee. Call directly when asked about leave balance or remaining leave days. Requires permission: hrm:leave_allocations:view",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "employee_id": {"type": "string", "description": "Employee UUID"},
+                    "employee_id": {"type": "string", "description": "Optional employee UUID or ID. Omit to query logged-in user."},
+                    "leave_type": {"type": "string", "description": "Optional leave type name or code to filter (e.g. 'Casual', 'Sick', 'AL')"},
                 },
-                "required": ["employee_id"],
             },
         },
     },

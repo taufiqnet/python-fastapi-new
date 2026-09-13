@@ -44,6 +44,55 @@ separate/parallel AI integration:
   model selection are currently handled, and follow that same pattern for 
   this widget so both features share one consistent AI layer instead of two.
 
+## Security & access-control logic (applies to all topics, not just leave)
+
+- **Strict data isolation — no cross-employee access, ever.** The assistant 
+  must only ever query, return, or reason about data belonging to the 
+  currently logged-in employee (their own leave, attendance, payroll, etc.). 
+  Under no circumstance may it return another employee's records, balances, 
+  statuses, or personal data — even if the employee names a colleague, 
+  provides an employee code, or phrases the request indirectly (e.g. "how 
+  many leave days does [colleague] have left"). Any such request must be 
+  refused with a clear message (e.g. "I can only share your own information.") 
+  and logged as a denied/blocked attempt.
+- **Role/permission-bound answers.** Every response and every tool call the 
+  assistant makes must be scoped to the logged-in user's actual role and 
+  access permissions in the system (the same permission checks the rest of 
+  the app already enforces) — the assistant is not a way to bypass existing 
+  role-based access control. If a user's role doesn't permit access to a 
+  piece of data or an action, the assistant must decline it the same way the 
+  regular UI would.
+- **Read/create only — never update or delete, for any topic.** The 
+  assistant may only create new records (e.g. a new leave application) or 
+  read existing data. It must never expose update or delete actions as 
+  callable tools, and must always decline any user request to modify or 
+  remove existing data (leave, attendance, payroll, or otherwise), directing 
+  them to the appropriate existing screen or their administrator instead. 
+  This applies system-wide, not just to leave.
+
+## Conversation logging & admin oversight
+
+- **Every interaction must be logged** in a dedicated conversation/audit log 
+  table, separate from the operational HR & Payroll tables — every message 
+  sent by the employee, every response from the assistant, every tool/action 
+  invoked (including denied or blocked attempts, e.g. cross-employee access 
+  attempts or delete/update requests), with employee ID, timestamp, and 
+  session/conversation ID.
+- **Admin visibility**: administrators (with appropriate role/permission) 
+  must be able to view the full conversation history for any employee 
+  through an admin screen — this is an internal audit capability, not 
+  something exposed to regular employees.
+- **Admin deletion capability**: administrators must be able to delete 
+  conversation records from the log table (e.g. for data retention/privacy 
+  compliance) via the admin screen. This delete capability belongs to the 
+  **admin UI only** — it must never be triggerable through the chat 
+  interface itself, by any user, including admins chatting with the 
+  assistant.
+- Logging must not degrade the chat experience (write asynchronously/
+  non-blocking where possible) and must not log sensitive credentials or 
+  tokens — only the conversational content, actions taken, and metadata 
+  needed for audit purposes.
+
 ## Widget shell
 
 - Floating chat icon, fixed bottom-right, visible on every authenticated page. 

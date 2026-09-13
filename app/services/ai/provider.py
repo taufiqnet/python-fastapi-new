@@ -115,4 +115,4 @@ class OpenRouterProvider(AIProvider):
                 except Exception as e:
                     return f"AI service is temporarily unavailable. Please try again."
 
-            return "Exceeded maximum internal tool iterations without a final response."
+            return "I apologize, but I couldn't finalize a response for your request. Please try rephrasing your question or let me know if you would like me to check something else."

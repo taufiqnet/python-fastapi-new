@@ -201,6 +201,7 @@ def get_my_leave_applications(
     status: str | None = None,
     page: int = 1,
     page_size: int = 20,
+    history_requested: bool = False,
 ) -> dict[str, Any] | str:
     user = resolve_acting_user()
     db = SessionLocal()
@@ -213,6 +214,7 @@ def get_my_leave_applications(
             status=status,
             page=page,
             page_size=page_size,
+            history_requested=history_requested,
         )
         return _format_res(res)
     finally:
@@ -249,11 +251,16 @@ def list_leave_applications(
 
 
 @mcp.tool()
-def get_employee_leave_balance(employee_id: str) -> dict[str, Any] | str:
+def get_employee_leave_balance(
+    employee_id: str | None = None,
+    leave_type: str | None = None,
+) -> dict[str, Any] | str:
     user = resolve_acting_user()
     db = SessionLocal()
     try:
-        res = execute_get_employee_leave_balance(db, user, employee_id=employee_id)
+        res = execute_get_employee_leave_balance(
+            db, user, employee_id=employee_id, leave_type=leave_type
+        )
         return _format_res(res)
     finally:
         db.close()

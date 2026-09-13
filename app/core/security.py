@@ -130,15 +130,21 @@ def require_permission(module: str, feature: str, action: str):
             biz_profile = current_user.business_profile
             if biz_profile:
                 if not biz_profile.has_permission(code):
-                    plan_name = (
-                        biz_profile.subscription_plan.name
-                        if biz_profile.subscription_plan
-                        else "Current"
-                    )
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription.",
-                    )
+                    if current_user.has_role("admin"):
+                        plan_name = (
+                            biz_profile.subscription_plan.name
+                            if biz_profile.subscription_plan
+                            else "Current"
+                        )
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription.",
+                        )
+                    else:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="This feature isn't included in your current plan. Upgrade to unlock it.",
+                        )
         return current_user
 
     return permission_checker
