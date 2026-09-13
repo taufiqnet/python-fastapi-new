@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Offer Letter | {{ letter.letter_no }}{% endblock %}
+
+{% block head %}
+<style>
+@media print {
+    body * { visibility: hidden; }
+    #printableArea, #printableArea * { visibility: visible; }
+    #printableArea { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; }
+    .no-print { display: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto mb-6 no-print flex items-center justify-between">
+    <a href="/offer-letters/manage" class="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition-colors">
+        <i class="fas fa-arrow-left mr-1"></i> Back to List
+    </a>
+    <button onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-2">
+        <i class="fas fa-print"></i> Print Offer Letter
+    </button>
+</div>
+
+<div id="printableArea" class="max-w-3xl mx-auto bg-white border border-gray-300 rounded-2xl p-10 shadow-sm text-gray-800 space-y-6">
+    <!-- Header -->
+    <div class="flex items-start justify-between border-b border-gray-200 pb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ business.name_en if business else 'Company Name' }}</h1>
+            <p class="text-xs text-gray-500 mt-1 max-w-sm">{{ business.full_address if business else '' }}</p>
+            <p class="text-xs text-gray-500">Phone: {{ business.phone if business else 'N/A' }} | Email: {{ business.email if business else 'N/A' }}</p>
+        </div>
+        <div class="text-right">
+            <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-100">JOB OFFER LETTER</span>
+            <div class="text-xs font-mono text-gray-500 mt-2">Ref: {{ letter.letter_no }}</div>
+            <div class="text-xs text-gray-500">Date: {{ letter.issue_date }}</div>
+        </div>
+    </div>
+
+    <!-- Candidate Info -->
+    <div class="text-xs text-gray-700 space-y-1">
+        <div class="font-semibold text-gray-900">To:</div>
+        <div class="font-bold text-gray-900">{{ letter.candidate_name }}</div>
+        <div>Email: {{ letter.candidate_email }}</div>
+        {% if letter.candidate_phone %}<div>Phone: {{ letter.candidate_phone }}</div>{% endif %}
+    </div>
+
+    <!-- Subject -->
+    <div class="text-center py-2">
+        <h2 class="text-base font-bold text-gray-900 underline uppercase tracking-wide">OFFER OF EMPLOYMENT — {{ letter.job_title }}</h2>
+    </div>
+
+    <!-- Body -->
+    <div class="text-xs leading-relaxed text-gray-700 space-y-3">
+        <p>Dear <strong>{{ letter.candidate_name }}</strong>,</p>
+        <p>
+            We are pleased to offer you employment at <strong>{{ business.name_en if business else 'our company' }}</strong> for the position of <strong>{{ letter.job_title }}</strong>{% if letter.department %} in the <strong>{{ letter.department }}</strong> department{% endif %}.
+        </p>
+        <p>
+            Your scheduled starting date of employment will be <strong>{{ letter.joining_date }}</strong>.
+        </p>
+    </div>
+
+    <!-- Offer Terms Table -->
+    <div class="border border-gray-200 rounded-lg overflow-hidden">
+        <table class="w-full text-xs text-left">
+            <thead class="bg-gray-50 border-b border-gray-200 text-gray-600 font-bold uppercase text-[10px]">
+                <tr>
+                    <th class="p-3">Item</th>
+                    <th class="p-3">Details</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <tr>
+                    <td class="p-3 font-semibold">Position Title</td>
+                    <td class="p-3 font-medium">{{ letter.job_title }}</td>
+                </tr>
+                {% if letter.department %}
+                <tr>
+                    <td class="p-3 font-semibold">Department</td>
+                    <td class="p-3 font-medium">{{ letter.department }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <td class="p-3 font-semibold">Offered Gross Salary</td>
+                    <td class="p-3 text-indigo-700 font-bold">৳{{ "%.2f"|format(letter.offered_salary) }} / month</td>
+                </tr>
+                <tr>
+                    <td class="p-3 font-semibold">Target Joining Date</td>
+                    <td class="p-3 font-medium">{{ letter.joining_date }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {% if letter.terms %}
+    <div class="text-xs text-gray-700 space-y-1">
+        <div class="font-bold text-gray-900">Terms & Conditions:</div>
+        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 whitespace-pre-line text-gray-700">{{ letter.terms }}</div>
+    </div>
+    {% endif %}
+
+    <div class="text-xs text-gray-700 leading-relaxed">
+        <p>
+            {% if letter.valid_until %}This offer is valid until <strong>{{ letter.valid_until }}</strong>. {% endif %}Please sign and return a copy of this letter to confirm your acceptance of our offer.
+        </p>
+    </div>
+
+    <!-- Signatures -->
+    <div class="pt-12 grid grid-cols-2 gap-8 text-xs">
+        <div>
+            <div class="border-t border-gray-300 pt-2 font-semibold text-gray-800">Authorized Management</div>
+            <div class="text-gray-400 text-[11px]">{{ business.name_en if business else '' }}</div>
+        </div>
+        <div class="text-right">
+            <div class="border-t border-gray-300 pt-2 font-semibold text-gray-800">Candidate Acceptance & Signature</div>
+            <div class="text-gray-400 text-[11px]">{{ letter.candidate_name }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -517,6 +517,8 @@
                 {% if current_user and (
                     current_user.has_permission('hrm:notice_board:view') or
                     current_user.has_permission('hrm:recruitment:view') or
+                    current_user.has_permission('hrm:offer_letters:view') or
+                    current_user.has_permission('hrm:experience_letters:view') or
                     current_user.has_permission('hrm:appointment_letters:view') or
                     current_user.has_permission('hrm:salary_certificates:view') or
                     current_user.has_permission('hrm:departments:view') or
@@ -532,8 +534,8 @@
                     current_user.has_permission('hrm:payroll_records:view') or
                     current_user.has_permission('hrm:payroll_settings:view')
                 ) %}
-                <div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings', 'salary_certificates', 'appointment_letters', 'notice_board', 'recruitment_candidates', 'recruitment_interviews'] %}expanded{% endif %}" data-module="hr_payroll">
-                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings', 'salary_certificates', 'appointment_letters', 'notice_board', 'recruitment_candidates', 'recruitment_interviews'] %}active{% endif %}">
+                <div class="sidebar-dropdown {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings', 'salary_certificates', 'offer_letters', 'experience_letters', 'appointment_letters', 'notice_board', 'recruitment_candidates', 'recruitment_interviews'] %}expanded{% endif %}" data-module="hr_payroll">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['departments', 'job_titles', 'employees', 'employees2', 'leave_types', 'leave_allocations', 'leave_applications', 'attendance', 'compensation', 'holidays', 'payroll_periods', 'payroll_records', 'payroll_settings', 'salary_certificates', 'offer_letters', 'experience_letters', 'appointment_letters', 'notice_board', 'recruitment_candidates', 'recruitment_interviews'] %}active{% endif %}">
                         <span class="flex items-center">
                             <i class="fas fa-users-cog w-4 text-sm shrink-0"></i>
                             <span class="ml-3 text-[13px] font-medium sidebar-text">HR & Payroll</span>
@@ -554,6 +556,34 @@
                             {% endif %}
                             <span class="sidebar-tooltip">
                                 Department
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:offer_letters:view') %}
+                        <a href="/offer-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'offer_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-file-signature w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Offer Letters
+                            </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:offer_letters:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
+                            <span class="sidebar-tooltip">
+                                Offer Letters
+                            </span>
+                        </a>
+                        {% endif %}
+{% if current_user.has_permission('hrm:experience_letters:view') %}
+                        <a href="/experience-letters/manage" class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if active_page == 'experience_letters' %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
+                            <i class="fas fa-award w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                Experience Letters
+                            </span>
+                            {% if not current_user.is_superuser and current_user.business_profile and not current_user.business_profile.has_permission('hrm:experience_letters:view') %}
+                            <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires plan upgrade"></i>
+                            {% endif %}
+                            <span class="sidebar-tooltip">
+                                Experience Letters
                             </span>
                         </a>
                         {% endif %}

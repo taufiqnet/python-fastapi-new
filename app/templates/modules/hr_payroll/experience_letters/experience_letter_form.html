@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Experience Letter{% else %}Generate Experience Letter{% endif %} | HR & Payroll{% endblock %}
+
+{% block head %}
+<style>
+    .tab-btn {
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+    .tab-btn:hover {
+        color: #111827;
+        border-color: #d1d5db;
+    }
+    .tab-btn.active {
+        color: #4f46e5;
+        border-color: #4f46e5;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/experience-letters/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Experience Letters
+            </a>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Experience Letter{% else %}Generate Experience Letter{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            Create official employee experience certificate documentation
+        </p>
+    </div>
+</div>
+
+<form id="expForm" class="space-y-6" onsubmit="handleExpSubmit(event)">
+    <input type="hidden" id="letterId" value="{% if is_edit %}{{ letter.id }}{% endif %}">
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-4 flex overflow-x-auto custom-scrollbar">
+            <button type="button" class="tab-btn active">
+                <i class="fas fa-award text-xs"></i> Experience Letter Information
+            </button>
+        </div>
+
+        <div class="p-6">
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        <select id="business_id" name="business_id" required class="form-input">
+                            <option value="">— Select Business —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if letter and letter.business_id == b.id %}selected{% endif %}>
+                                {{ b.name_en }} (ID: {{ b.id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="employee_id">Employee <span class="text-red-500">*</span></label>
+                        <select id="employee_id" name="employee_id" required class="form-input">
+                            <option value="">— Select Employee —</option>
+                            {% for e in employees %}
+                            <option value="{{ e.id }}" {% if letter and letter.employee_id == e.id %}selected{% endif %}>
+                                {{ e.full_name }} ({{ e.employee_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="issue_date">Issue Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="issue_date" name="issue_date" class="form-input" required
+                               value="{% if letter %}{{ letter.issue_date }}{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="relieving_date">Relieving / End Date <span class="text-red-500">*</span></label>
+                        <input type="date" id="relieving_date" name="relieving_date" class="form-input" required
+                               value="{% if letter %}{{ letter.relieving_date }}{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="joining_date">Joining Date (Optional - auto-fetches from employee)</label>
+                        <input type="date" id="joining_date" name="joining_date" class="form-input"
+                               value="{% if letter %}{{ letter.joining_date }}{% endif %}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="designation">Designation (Optional - auto-fetches from employee)</label>
+                        <input type="text" id="designation" name="designation" class="form-input"
+                               value="{% if letter and letter.designation %}{{ letter.designation }}{% endif %}" placeholder="e.g. Lead Developer">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="department">Department (Optional)</label>
+                        <input type="text" id="department" name="department" class="form-input"
+                               value="{% if letter and letter.department %}{{ letter.department }}{% endif %}" placeholder="e.g. Technology">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="conduct_and_character">Conduct & Character</label>
+                        <input type="text" id="conduct_and_character" name="conduct_and_character" class="form-input"
+                               value="{% if letter and letter.conduct_and_character %}{{ letter.conduct_and_character }}{% else %}Good{% endif %}" placeholder="e.g. Excellent / Good">
+                    </div>
+
+                    <div class="form-group {% if not is_edit %}md:col-span-2{% endif %}">
+                        <label class="form-label" for="addressed_to">Addressed To</label>
+                        <input type="text" id="addressed_to" name="addressed_to" class="form-input" max="255"
+                               value="{% if letter and letter.addressed_to %}{{ letter.addressed_to }}{% endif %}"
+                               placeholder="e.g. To Whom It May Concern">
+                    </div>
+
+                    {% if is_edit %}
+                    <div class="form-group">
+                        <label class="form-label" for="status">Letter Status</label>
+                        <select id="status" name="status" class="form-input">
+                            <option value="draft" {% if letter.status.value == 'draft' %}selected{% endif %}>Draft</option>
+                            <option value="issued" {% if letter.status.value == 'issued' %}selected{% endif %}>Issued</option>
+                            <option value="revoked" {% if letter.status.value == 'revoked' %}selected{% endif %}>Revoked</option>
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="notes">Notes / Remarks</label>
+                        <textarea id="notes" name="notes" rows="3" class="form-input"
+                                  placeholder="Additional notes or remarks...">{% if letter and letter.notes %}{{ letter.notes }}{% endif %}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/experience-letters/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Experience Letter{% else %}Generate Experience Letter{% endif %}
+            </button>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function handleExpSubmit(event) {
+    event.preventDefault();
+    const isEdit = "{{ is_edit }}" === "True";
+    const letterId = document.getElementById('letterId').value;
+
+    const payload = {
+        business_id: parseInt(document.getElementById('business_id').value),
+        employee_id: document.getElementById('employee_id').value,
+        issue_date: document.getElementById('issue_date').value,
+        relieving_date: document.getElementById('relieving_date').value,
+        joining_date: document.getElementById('joining_date').value || null,
+        designation: document.getElementById('designation').value || null,
+        department: document.getElementById('department').value || null,
+        addressed_to: document.getElementById('addressed_to').value || null,
+        conduct_and_character: document.getElementById('conduct_and_character').value || "Good",
+        notes: document.getElementById('notes').value || null
+    };
+
+    if (isEdit) {
+        payload.status = document.getElementById('status').value;
+    }
+
+    const url = isEdit ? '/experience-letters/' + letterId : '/experience-letters';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'Failed to save experience letter';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
+        }
+        return data;
+    })
+    .then(data => {
+        showSuccessToast(
+            isEdit ? 'Experience Letter Updated' : 'Experience Letter Generated',
+            isEdit ? 'Experience letter details updated successfully.' : 'New experience letter generated successfully.'
+        );
+        setTimeout(() => { window.location.href = '/experience-letters/manage'; }, 1200);
+    })
+    .catch(err => {
+        showErrorAlert('Save Failed', err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Experience Letter' : 'Generate Experience Letter');
+    });
+}
+</script>
+{% endblock %}

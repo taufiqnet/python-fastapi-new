@@ -36,6 +36,8 @@ SYSTEM_MODULES = {
             ("payroll_records", "Payslips"),
             ("payroll_settings", "Payroll Settings"),
             ("salary_certificates", "Salary Certificates"),
+            ("offer_letters", "Offer Letters"),
+            ("experience_letters", "Experience Letters"),
             ("appointment_letters", "Appointment Letters"),
             ("notice_board", "Notice Board"),
             ("recruitment", "Recruitment"),

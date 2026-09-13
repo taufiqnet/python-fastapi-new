@@ -66,6 +66,8 @@ from app.modules.ecommerce.shipping.models import (  # noqa: F401
 from app.modules.hr_payroll.appointments.models import AppointmentLetter  # noqa: F401
 from app.modules.hr_payroll.attendance.models import Attendance  # noqa: F401
 from app.modules.hr_payroll.certificates.models import SalaryCertificate  # noqa: F401
+from app.modules.hr_payroll.offer_letters.models import OfferLetter  # noqa: F401
+from app.modules.hr_payroll.experience_letters.models import ExperienceLetter  # noqa: F401
 from app.modules.hr_payroll.compensation.models import EmployeeSalary  # noqa: F401
 from app.modules.hr_payroll.employees.models import Employee  # noqa: F401
 from app.modules.hr_payroll.leave.models import (  # noqa: F401

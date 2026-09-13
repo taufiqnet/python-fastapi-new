@@ -61,6 +61,8 @@ from app.modules.hr_payroll.attendance.router import router as attendance_router
 from app.modules.hr_payroll.compensation.router import router as compensation_router
 from app.modules.hr_payroll.payroll.router import router as payroll_router
 from app.modules.hr_payroll.certificates.router import router as certificates_router
+from app.modules.hr_payroll.offer_letters.router import router as offer_letters_router
+from app.modules.hr_payroll.experience_letters.router import router as experience_letters_router
 from app.modules.hr_payroll.appointments.router import router as appointments_router
 from app.modules.hr_payroll.notice_board.router import router as notices_router
 from app.modules.hr_payroll.recruitment.router import router as recruitment_router
@@ -76,12 +78,14 @@ from app.routers import (
     category_views,
     certificate_views,
     compensation_views,
+    experience_letter_views,
     customer_views,
     employee_views,
     inventory_views,
     leave_views,
     model_views,
     notice_views,
+    offer_letter_views,
     order_views,
     organization_views,
     payroll_views,
@@ -225,6 +229,8 @@ app.include_router(attendance_views.router)
 app.include_router(compensation_views.router)
 app.include_router(payroll_views.router)
 app.include_router(certificate_views.router)
+app.include_router(offer_letter_views.router)
+app.include_router(experience_letter_views.router)
 app.include_router(appointment_views.router)
 app.include_router(notice_views.router)
 app.include_router(recruitment_views.router)
@@ -257,6 +263,8 @@ app.include_router(attendance_router)
 app.include_router(compensation_router)
 app.include_router(payroll_router)
 app.include_router(certificates_router)
+app.include_router(offer_letters_router)
+app.include_router(experience_letters_router)
 app.include_router(appointments_router)
 app.include_router(notices_router)
 app.include_router(recruitment_router)
