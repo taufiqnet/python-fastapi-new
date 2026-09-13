@@ -13,7 +13,9 @@ from app.core.deps import get_current_user_optional
 from app.core.identity.seed import seed_system_admin_and_permissions, seed_system_admin_and_permissions_sync
 from app.database import AsyncSessionLocal, Base, SessionLocal, async_engine, engine
 
-# Ensure template responses automatically receive request.state.user as current_user
+from app.core.billing.feature_config import resolve_menu_for_user
+
+# Ensure template responses automatically receive request.state.user as current_user & nav_menu
 _original_template_response = Jinja2Templates.TemplateResponse
 
 
@@ -26,10 +28,15 @@ def _custom_template_response(self, *args, **kwargs):
         context = args[2]
 
     if request and isinstance(context, dict):
+        user = getattr(request.state, "user", None)
         if "current_user" not in context:
-            user = getattr(request.state, "user", None)
             if user:
                 context["current_user"] = user
+
+        current_user = context.get("current_user") or user
+        if "nav_menu" not in context:
+            context["nav_menu"] = resolve_menu_for_user(current_user)
+
         if "settings" not in context:
             context["settings"] = settings
 

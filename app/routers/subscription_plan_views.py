@@ -3,6 +3,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from fastapi.responses import RedirectResponse
+
+from app.core.billing.feature_config import resolve_features_plans_for_user
 from app.core.billing.schemas import (
     SubscriptionPlanCreate,
     SubscriptionPlanOut,
@@ -18,6 +21,28 @@ router = APIRouter(prefix="", tags=["Subscription Plans Management"])
 templates = Jinja2Templates(directory="app/templates")
 plan_service = SubscriptionPlanService()
 user_service = UserService()
+
+
+@router.get("/features-plans", response_class=HTMLResponse)
+async def subscriber_features_plans_page(
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
+):
+    current_user = await get_current_user_optional(request, None, db)
+    if not current_user or not current_user.is_active:
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+
+    features_data = resolve_features_plans_for_user(current_user)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/billing/features_plans.html",
+        context={
+            "current_user": current_user,
+            "features_data": features_data,
+            "active_page": "features_plans",
+        },
+    )
 
 
 def _format_plan_out(plan) -> SubscriptionPlanOut:

@@ -5,8 +5,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.billing.models import SubscriptionPlan
 from app.core.deps import get_current_user_optional
 from app.core.identity.models import Permission, Role, User
+from app.core.tenancy.models import BusinessProfile
 from app.database import Base, get_db
 from app.main import app
 
@@ -62,13 +64,40 @@ async def test_hr_admin_sidebar_menu_visibility(sync_db, client: AsyncClient):
         code="hrm:departments:view",
         name="Departments View",
     )
-    db.add_all([hr_perm_1, hr_perm_2])
+    hr_perm_3 = Permission(
+        module="hrm",
+        feature="compensation",
+        action="view",
+        code="hrm:compensation:view",
+        name="Compensation View",
+    )
+    db.add_all([hr_perm_1, hr_perm_2, hr_perm_3])
+    db.flush()
+
+    # Create Free Plan with only basic permissions
+    free_plan = SubscriptionPlan(
+        name="Free",
+        description="Free Plan",
+        is_active=True,
+        permissions=[hr_perm_1, hr_perm_2],
+    )
+    db.add(free_plan)
+    db.flush()
+
+    biz = BusinessProfile(
+        name_en="Test Business",
+        short_name="testbiz",
+        is_active=True,
+        subscription_plan_id=free_plan.id,
+        subscription_plan=free_plan,
+    )
+    db.add(biz)
     db.flush()
 
     hr_role = Role(
         name="HR Admin",
         description="HR Admin Role",
-        permissions=[hr_perm_1, hr_perm_2],
+        permissions=[hr_perm_1, hr_perm_2, hr_perm_3],
     )
     db.add(hr_role)
     db.flush()
@@ -79,6 +108,8 @@ async def test_hr_admin_sidebar_menu_visibility(sync_db, client: AsyncClient):
         password_hash="hashed_pw",
         is_active=True,
         is_superuser=False,
+        business_id=biz.id,
+        business_profile=biz,
         roles=[hr_role],
     )
     db.add(hr_user)
@@ -100,9 +131,18 @@ async def test_hr_admin_sidebar_menu_visibility(sync_db, client: AsyncClient):
 
     # HR & Payroll module section header should be visible
     assert "HR & Payroll" in html
-    # Allowed HR links should be present
-    assert "Employees" in html
-    assert "Department" in html
+
+    # Unlocked menu items (Employees, Department)
+    assert 'href="/employees/manage"' in html
+    assert 'href="/departments/manage"' in html
+
+    # Compensation is in user RBAC role but locked by Subscription Plan
+    assert "Compensation" in html
+    assert 'data-upsell="true"' in html
+    assert "data-title=\"Compensation\"" in html
+    assert "Structure pay grades, bonuses, and compensation packages" in html
+    assert 'id="upsell-modal"' in html
+    assert "Upgrade Plan" in html
 
     # Non-permitted module sections and links should be hidden
     assert 'data-module="tenancy"' not in html
