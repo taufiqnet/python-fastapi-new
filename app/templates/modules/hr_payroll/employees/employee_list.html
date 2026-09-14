@@ -101,6 +101,14 @@
     </div>
     
     <div class="flex items-center gap-3">
+        {% if current_user and current_user.is_superuser %}
+        <button type="button" id="btnDeleteSelected" onclick="deleteSelectedEmployees()" class="hidden inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors" title="Delete Selected Employees">
+            <i class="fas fa-check-square"></i> Delete Selected (<span id="selectedCount">0</span>)
+        </button>
+        <button type="button" onclick="executeAdminFullWipe()" class="inline-flex items-center gap-2 bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors" title="System Admin: Delete ALL Employees">
+            <i class="fas fa-dumpster"></i> Delete All Employees
+        </button>
+        {% endif %}
         <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
             <i class="fas fa-sliders-h text-sm"></i>
         </button>
@@ -184,6 +192,9 @@
         <table id="employeeTable" class="w-full text-left display">
             <thead>
                 <tr>
+                    {% if current_user and current_user.is_superuser %}
+                    <th style="width:30px"><input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)" title="Select All"></th>
+                    {% endif %}
                     <th>Employee ID</th>
                     <th>Employee Name</th>
                     <th>Contact Info</th>
@@ -200,6 +211,9 @@
             <tbody>
                 {% for e in employees %}
                 <tr id="emp-row-{{ e.id }}">
+                    {% if current_user and current_user.is_superuser %}
+                    <td><input type="checkbox" class="emp-row-checkbox" value="{{ e.id }}" onclick="updateSelectedCount()"></td>
+                    {% endif %}
                     <td class="emp-id font-mono text-gray-700 font-semibold">
                         {{ e.employee_id }}
                     </td>
@@ -471,6 +485,103 @@ $(document).ready(function () {
     }
     window._dtTable = table;
 });
+
+{% if current_user and current_user.is_superuser %}
+function toggleSelectAll(master) {
+    const checkboxes = document.querySelectorAll('.emp-row-checkbox');
+    checkboxes.forEach(cb => { cb.checked = master.checked; });
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const checked = document.querySelectorAll('.emp-row-checkbox:checked');
+    const count = checked.length;
+    const countSpan = document.getElementById('selectedCount');
+    const btn = document.getElementById('btnDeleteSelected');
+    if (countSpan) countSpan.textContent = count;
+    if (btn) {
+        if (count > 0) btn.classList.remove('hidden');
+        else btn.classList.add('hidden');
+    }
+}
+
+function deleteSelectedEmployees() {
+    const checked = document.querySelectorAll('.emp-row-checkbox:checked');
+    const ids = Array.from(checked).map(cb => cb.value);
+    if (ids.length === 0) {
+        showWarningAlert('No Selection', 'Please select at least one employee to delete.');
+        return;
+    }
+    Swal.fire({
+        title: 'Delete Selected Employees?',
+        text: 'System Admin Action: Are you sure you want to delete ' + ids.length + ' selected employee(s)? This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Delete Selected',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/employees/bulk-delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ employee_ids: ids })
+            }).then(res => res.json()).then(data => {
+                showSuccessToast('Bulk Delete Completed', data.message || 'Employees deleted.');
+                setTimeout(() => window.location.reload(), 1200);
+            }).catch(err => showErrorAlert('Bulk Delete Failed', err.message));
+        }
+    });
+}
+
+function executeAdminFullWipe() {
+    const selectedBizName = $('#filterBusiness').val();
+    let promptText = 'SYSTEM ADMIN DANGER ZONE: Are you sure you want to delete ALL employees across ALL business profiles? THIS WILL ERASE ALL EMPLOYEE DATA SYSTEM-WIDE!';
+    let url = '/employees/bulk-delete?delete_all=true';
+
+    if (selectedBizName) {
+        promptText = 'System Admin Action: Are you sure you want to select all and delete ALL employees belonging to business "' + selectedBizName + '"?';
+        const bizOption = Array.from(document.getElementById('filterBusiness').options).find(o => o.text === selectedBizName);
+        if (bizOption && bizOption.value) {
+            // Find business id if possible
+            const bizObjs = [
+                {% for b in businesses %}
+                { id: "{{ b.id }}", name: "{{ b.name_en }}" },
+                {% endfor %}
+            ];
+            const found = bizObjs.find(b => b.name === selectedBizName);
+            if (found) {
+                url = '/employees/bulk-delete?business_id=' + found.id;
+            }
+        }
+    }
+
+    Swal.fire({
+        title: 'DELETE EMPLOYEES?',
+        text: promptText,
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#9f1239',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'YES, DELETE ALL MATCHING EMPLOYEES',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(url, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            }).then(res => res.json()).then(data => {
+                showSuccessToast('System Wipe Completed', data.message || 'All employees deleted.');
+                setTimeout(() => window.location.reload(), 1200);
+            }).catch(err => showErrorAlert('Wipe Failed', err.message));
+        }
+    });
+}
+{% endif %}
 
 function movePage(p) { window._dtTable.page(p).draw('page'); }
 

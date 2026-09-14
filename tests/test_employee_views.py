@@ -91,3 +91,27 @@ async def test_employee_views_renders(client: AsyncClient):
     res_edit = await client.get(f"/employees/edit/{emp_id}")
     assert res_edit.status_code == 200
     assert "Edit Employee" in res_edit.text
+
+
+@pytest.mark.asyncio
+async def test_employee_views_manage_over_500_employees(client: AsyncClient, sync_db):
+    # Create 505 employee records to ensure all 500+ employees are listed
+    from app.modules.hr_payroll.employees.models import Employee
+    employees = [
+        Employee(
+            first_name=f"First{i}",
+            last_name=f"Last{i}",
+            employee_id=f"EMP-BULK-{i}",
+            work_email=f"emp_bulk_{i}@example.com",
+            business_id=1,
+            is_active=True,
+        )
+        for i in range(505)
+    ]
+    sync_db.bulk_save_objects(employees)
+    sync_db.commit()
+
+    res = await client.get("/employees/manage")
+    assert res.status_code == 200
+    assert "EMP-BULK-0" in res.text
+    assert "EMP-BULK-504" in res.text

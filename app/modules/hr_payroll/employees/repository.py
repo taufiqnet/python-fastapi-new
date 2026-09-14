@@ -183,6 +183,29 @@ class EmployeeRepository:
         db.delete(employee)
         db.commit()
 
+    def bulk_delete(
+        self,
+        db: Session,
+        employee_ids: list[uuid.UUID] | None = None,
+        business_id: int | None = None,
+        delete_all: bool = False,
+    ) -> int:
+        query = db.query(Employee)
+        if not delete_all:
+            if employee_ids:
+                query = query.filter(Employee.id.in_(employee_ids))
+            elif business_id is not None:
+                query = query.filter(Employee.business_id == business_id)
+            else:
+                return 0
+
+        employees = query.all()
+        count = len(employees)
+        for emp in employees:
+            db.delete(emp)
+        db.commit()
+        return count
+
     # ImportJob methods
     def create_import_job(self, db: Session, job: "ImportJob") -> "ImportJob":
         from app.modules.hr_payroll.employees.models import ImportJob

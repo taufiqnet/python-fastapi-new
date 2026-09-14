@@ -107,3 +107,9 @@ class EmployeeOut(EmployeeBase):
     full_name: str
     created_at: datetime
     updated_at: datetime
+
+
+class BulkDeleteEmployeesRequest(BaseModel):
+    employee_ids: list[uuid.UUID] | None = None
+    business_id: int | None = None
+    delete_all: bool = False

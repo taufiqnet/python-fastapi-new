@@ -58,6 +58,35 @@
     </div>
 </div>
 
+{% if current_user and current_user.is_superuser %}
+<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-6 shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h3 class="text-xs font-bold text-rose-800 flex items-center gap-1.5 uppercase tracking-wider">
+                <i class="fas fa-user-shield text-rose-600"></i> System Admin: Employee Bulk Management & Deletion
+            </h3>
+            <p class="text-[11px] text-rose-600 mt-0.5 font-medium">
+                Only System Admin access. Select all employees by business ID filter to delete, or perform full employee deletion.
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <select id="admin_delete_business_id" class="text-xs border border-rose-300 rounded-lg p-2 bg-white text-gray-800 outline-none">
+                <option value="">— Select Business to Filter —</option>
+                {% for b in businesses %}
+                <option value="{{ b.id }}">{{ b.name_en }} (ID: {{ b.id }})</option>
+                {% endfor %}
+            </select>
+            <button type="button" onclick="executeAdminBulkDeleteForBusiness()" class="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                <i class="fas fa-trash-alt text-[10px]"></i> Select All & Delete Filtered
+            </button>
+            <button type="button" onclick="executeAdminFullWipe()" class="px-3 py-2 bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                <i class="fas fa-dumpster text-[10px]"></i> Delete ALL Employees
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <form id="employeeForm2" class="space-y-6" onsubmit="handleEmployee2Submit(event)">
     <input type="hidden" id="empId" value="{% if is_edit %}{{ employee.id }}{% endif %}">
 
@@ -442,6 +471,61 @@ document.addEventListener('DOMContentLoaded', function() {
     // Trigger initial filter on load
     filterDeptAndJobTitles();
 });
+
+{% if current_user and current_user.is_superuser %}
+function executeAdminBulkDeleteForBusiness() {
+    const selectElem = document.getElementById('admin_delete_business_id');
+    const bizId = selectElem ? selectElem.value : '';
+    if (!bizId) {
+        showWarningAlert('Business Required', 'Please select a business profile to filter and delete employees.');
+        return;
+    }
+    const bizName = selectElem.options[selectElem.selectedIndex].text;
+    Swal.fire({
+        title: 'Delete Employees for Business?',
+        text: 'System Admin Action: Are you sure you want to select all and delete ALL employees belonging to "' + bizName + '"? This action cannot be undone!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Delete All in Business',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/employees/bulk-delete?business_id=' + bizId, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            }).then(res => res.json()).then(data => {
+                showSuccessToast('Bulk Delete Completed', data.message || 'Employees deleted.');
+                setTimeout(() => window.location.href = '/employees/manage', 1200);
+            }).catch(err => showErrorAlert('Bulk Delete Failed', err.message));
+        }
+    });
+}
+
+function executeAdminFullWipe() {
+    Swal.fire({
+        title: 'DELETE ALL EMPLOYEES?',
+        text: 'SYSTEM ADMIN DANGER ZONE: Are you sure you want to delete ALL employees across ALL business profiles? THIS WILL ERASE ALL EMPLOYEE DATA SYSTEM-WIDE!',
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#9f1239',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'YES, DELETE ALL EMPLOYEES',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/employees/bulk-delete?delete_all=true', {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            }).then(res => res.json()).then(data => {
+                showSuccessToast('Full System Wipe Completed', data.message || 'All employees deleted.');
+                setTimeout(() => window.location.href = '/employees/manage', 1200);
+            }).catch(err => showErrorAlert('Wipe Failed', err.message));
+        }
+    });
+}
+{% endif %}
 
 function handleEmployee2Submit(event) {
     event.preventDefault();

@@ -377,6 +377,20 @@ class EmployeeService:
         employee = self.get_employee(db, employee_uuid)
         self.repository.delete(db, employee)
 
+    def bulk_delete_employees(
+        self,
+        db: Session,
+        employee_ids: list[uuid.UUID] | None = None,
+        business_id: int | None = None,
+        delete_all: bool = False,
+    ) -> int:
+        return self.repository.bulk_delete(
+            db,
+            employee_ids=employee_ids,
+            business_id=business_id,
+            delete_all=delete_all,
+        )
+
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
         wb = openpyxl.Workbook()
         ws = wb.active

@@ -1,13 +1,14 @@
 import uuid
 import json
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
 from app.database import get_db
 from app.modules.hr_payroll.employees.models import ImportJob
 from app.modules.hr_payroll.employees.schemas import (
+    BulkDeleteEmployeesRequest,
     EmployeeCreate,
     EmployeeOut,
     EmployeeUpdate,
@@ -163,6 +164,49 @@ def get_employees(
         business_id=business_id,
         department_id=department_id,
     )
+
+
+@router.post("/employees/bulk-delete", status_code=status.HTTP_200_OK)
+@router.delete("/employees/bulk-delete", status_code=status.HTTP_200_OK)
+async def bulk_delete_employees(
+    request: Request,
+    business_id: int | None = Query(None),
+    delete_all: bool = Query(False),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
+):
+    if not current_user or not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Only system admin user can delete all employees.",
+        )
+
+    req_employee_ids = None
+    req_business_id = business_id
+    req_delete_all = delete_all
+
+    try:
+        body = await request.json()
+        if isinstance(body, dict):
+            if "employee_ids" in body and body["employee_ids"]:
+                req_employee_ids = [uuid.UUID(str(i)) for i in body["employee_ids"]]
+            if "business_id" in body and body["business_id"] is not None:
+                req_business_id = int(body["business_id"])
+            if "delete_all" in body and body["delete_all"]:
+                req_delete_all = bool(body["delete_all"])
+    except Exception:
+        pass
+
+    count = employee_service.bulk_delete_employees(
+        db,
+        employee_ids=req_employee_ids,
+        business_id=req_business_id,
+        delete_all=req_delete_all,
+    )
+    return {
+        "deleted_count": count,
+        "message": f"Successfully deleted {count} employees.",
+    }
 
 
 @router.get("/employees/{employee_id}", response_model=EmployeeOut)

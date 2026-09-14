@@ -33,7 +33,7 @@ business_service = BusinessService()
 async def employee_list_page(
     request: Request,
     skip: int = 0,
-    limit: int = 500,
+    limit: int = 10000,
     business_id: int | None = None,
     department_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
