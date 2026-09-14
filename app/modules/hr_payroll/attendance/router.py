@@ -1,10 +1,13 @@
+import json
 import uuid
 from datetime import date
 
-from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user_optional, require_permission
 from app.database import get_db
+from app.modules.hr_payroll.employees.models import ImportJob
 from app.modules.hr_payroll.attendance.schemas import (
     AttendanceCreate,
     AttendanceOut,
@@ -14,6 +17,16 @@ from app.modules.hr_payroll.attendance.service import AttendanceService
 
 router = APIRouter(tags=["Attendance Management"])
 attendance_service = AttendanceService()
+
+
+def _verify_job_ownership(job: ImportJob, current_user):
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    if not current_user.is_superuser and job.business_id != current_user.business_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have permission to access import jobs for another business profile.",
+        )
 
 
 @router.get("/attendance", response_model=list[AttendanceOut])
@@ -80,15 +93,91 @@ def download_attendance_excel_template(
     )
 
 
-@router.post("/attendance/import-excel")
+@router.post("/attendance/import-excel", status_code=status.HTTP_202_ACCEPTED)
 async def import_attendance_excel(
+    background_tasks: BackgroundTasks,
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
+    _perm=Depends(require_permission("hrm", "attendance", "create")),
 ):
     contents = await file.read()
-    return attendance_service.import_attendance_excel(
-        db, business_id=business_id, file_bytes=contents
+    user_identifier = current_user.username if current_user else "System"
+    job, rows, start_idx = attendance_service.start_import_job(
+        db, business_id=business_id, file_bytes=contents, created_by=user_identifier
+    )
+
+    background_tasks.add_task(
+        attendance_service.process_import_job_background,
+        job_id=job.id,
+        business_id=business_id,
+        file_bytes=contents,
+        start_idx=start_idx,
+    )
+
+    return {
+        "job_id": str(job.id),
+        "status": job.status,
+        "total_rows": job.total_rows,
+        "message": "Attendance import background job started successfully",
+    }
+
+
+@router.get("/attendance/import/{job_id}/status")
+def get_import_job_status(
+    job_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
+    _perm=Depends(require_permission("hrm", "attendance", "create")),
+):
+    job = attendance_service.get_import_job_status(db, job_id)
+    _verify_job_ownership(job, current_user)
+    return {
+        "job_id": str(job.id),
+        "status": job.status,
+        "total_rows": job.total_rows,
+        "processed": job.processed,
+        "success_count": job.success_count,
+        "error_count": job.error_count,
+        "errors": json.loads(job.errors) if job.errors else [],
+        "cancelled": job.cancelled,
+        "created_by": job.created_by,
+    }
+
+
+@router.post("/attendance/import/{job_id}/cancel")
+def cancel_import_job(
+    job_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
+    _perm=Depends(require_permission("hrm", "attendance", "create")),
+):
+    job = attendance_service.get_import_job_status(db, job_id)
+    _verify_job_ownership(job, current_user)
+    canceled_job = attendance_service.cancel_import_job(db, job_id)
+    return {
+        "job_id": str(canceled_job.id),
+        "status": canceled_job.status,
+        "cancelled": canceled_job.cancelled,
+        "message": "Import job cancellation requested",
+    }
+
+
+@router.get("/attendance/import/{job_id}/errors-csv")
+def download_import_errors_csv(
+    job_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
+    _perm=Depends(require_permission("hrm", "attendance", "create")),
+):
+    job = attendance_service.get_import_job_status(db, job_id)
+    _verify_job_ownership(job, current_user)
+    csv_data = attendance_service.generate_errors_csv(db, job_id)
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=attendance_import_errors_{job_id}.csv"},
     )
 
 

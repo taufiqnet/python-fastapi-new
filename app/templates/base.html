@@ -1171,7 +1171,9 @@
     <script>
         // Global Import Job Progress Widget Logic
         (function() {
-            let activeJobId = localStorage.getItem('active_employee_import_job_id');
+            let activeJobId = localStorage.getItem('active_import_job_id') || localStorage.getItem('active_employee_import_job_id');
+            let activeJobModule = localStorage.getItem('active_import_job_module') || 'employees';
+            let activeJobTitle = localStorage.getItem('active_import_job_title') || (activeJobModule === 'attendance' ? 'Importing Attendance...' : 'Importing Employees...');
             let pollTimer = null;
 
             const widget = document.getElementById('import-progress-widget');
@@ -1217,9 +1219,16 @@
                 });
             }
 
+            function clearJobStorage() {
+                localStorage.removeItem('active_import_job_id');
+                localStorage.removeItem('active_employee_import_job_id');
+                localStorage.removeItem('active_import_job_module');
+                localStorage.removeItem('active_import_job_title');
+            }
+
             if (closeBtn) {
                 closeBtn.addEventListener('click', () => {
-                    localStorage.removeItem('active_employee_import_job_id');
+                    clearJobStorage();
                     if (pollTimer) clearInterval(pollTimer);
                     if (widget) widget.classList.add('hidden');
                 });
@@ -1227,21 +1236,31 @@
 
             if (cancelBtn) {
                 cancelBtn.addEventListener('click', async () => {
-                    const jobId = localStorage.getItem('active_employee_import_job_id');
+                    const jobId = localStorage.getItem('active_import_job_id') || localStorage.getItem('active_employee_import_job_id');
+                    const moduleName = localStorage.getItem('active_import_job_module') || 'employees';
                     if (!jobId) return;
                     try {
                         cancelBtn.disabled = true;
                         cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i><span>Cancelling...</span>';
-                        await fetch(`/employees/import/${jobId}/cancel`, { method: 'POST' });
+                        await fetch(`/${moduleName}/import/${jobId}/cancel`, { method: 'POST' });
                     } catch (err) {
                         console.error('Failed to cancel import job:', err);
                     }
                 });
             }
 
-            window.startImportJobPolling = function(jobId) {
+            window.startImportJobPolling = function(jobId, moduleName = 'employees', defaultTitle = null) {
+                localStorage.setItem('active_import_job_id', jobId);
                 localStorage.setItem('active_employee_import_job_id', jobId);
+                localStorage.setItem('active_import_job_module', moduleName);
+                
+                const titleStr = defaultTitle || (moduleName === 'attendance' ? 'Importing Attendance...' : 'Importing Employees...');
+                localStorage.setItem('active_import_job_title', titleStr);
+
                 activeJobId = jobId;
+                activeJobModule = moduleName;
+                activeJobTitle = titleStr;
+
                 if (widget) widget.classList.remove('hidden');
                 if (closeBtn) closeBtn.classList.add('hidden');
                 if (cancelBtn) {
@@ -1257,7 +1276,8 @@
             };
 
             async function pollStatus() {
-                const jobId = localStorage.getItem('active_employee_import_job_id');
+                const jobId = localStorage.getItem('active_import_job_id') || localStorage.getItem('active_employee_import_job_id');
+                const moduleName = localStorage.getItem('active_import_job_module') || 'employees';
                 if (!jobId) {
                     if (pollTimer) clearInterval(pollTimer);
                     if (widget) widget.classList.add('hidden');
@@ -1265,15 +1285,15 @@
                 }
 
                 try {
-                    const res = await fetch(`/employees/import/${jobId}/status`);
+                    const res = await fetch(`/${moduleName}/import/${jobId}/status`);
                     if (!res.ok) {
                         if (pollTimer) clearInterval(pollTimer);
-                        localStorage.removeItem('active_employee_import_job_id');
+                        clearJobStorage();
                         if (widget) widget.classList.add('hidden');
                         return;
                     }
                     const data = await res.json();
-                    updateWidgetUI(data);
+                    updateWidgetUI(data, moduleName);
 
                     if (data.status === 'completed' || data.status === 'cancelled' || data.status === 'failed') {
                         if (pollTimer) clearInterval(pollTimer);
@@ -1283,13 +1303,14 @@
                 }
             }
 
-            function updateWidgetUI(data) {
+            function updateWidgetUI(data, moduleName) {
                 if (widget) widget.classList.remove('hidden');
 
                 const total = data.total_rows || 0;
                 const processed = data.processed || 0;
                 const success = data.success_count || 0;
                 const errors = data.error_count || 0;
+                const titlePrefix = localStorage.getItem('active_import_job_title') || (moduleName === 'attendance' ? 'Importing Attendance...' : 'Importing Employees...');
 
                 const percent = total > 0 ? Math.round((processed / total) * 100) : (data.status === 'completed' ? 100 : 0);
 
@@ -1301,7 +1322,7 @@
                 if (progressBar) progressBar.style.width = `${percent}%`;
 
                 if (data.status === 'processing') {
-                    if (widgetTitle) widgetTitle.textContent = 'Importing Employees...';
+                    if (widgetTitle) widgetTitle.textContent = titlePrefix;
                     if (statusText) statusText.textContent = `Processed ${processed} of ${total} rows`;
                     if (widgetIcon) widgetIcon.className = 'fas fa-file-import text-sm animate-pulse';
                     if (cancelBtn) cancelBtn.classList.remove('hidden');
@@ -1316,7 +1337,7 @@
 
                     if (errors > 0 && downloadErrorsBtn) {
                         downloadErrorsBtn.classList.remove('hidden');
-                        downloadErrorsBtn.href = `/employees/import/${data.job_id}/errors-csv`;
+                        downloadErrorsBtn.href = `/${moduleName}/import/${data.job_id}/errors-csv`;
                     }
                 } else if (data.status === 'cancelled') {
                     if (widgetTitle) widgetTitle.textContent = 'Import Cancelled';
@@ -1327,7 +1348,7 @@
 
                     if (errors > 0 && downloadErrorsBtn) {
                         downloadErrorsBtn.classList.remove('hidden');
-                        downloadErrorsBtn.href = `/employees/import/${data.job_id}/errors-csv`;
+                        downloadErrorsBtn.href = `/${moduleName}/import/${data.job_id}/errors-csv`;
                     }
                 } else if (data.status === 'failed') {
                     if (widgetTitle) widgetTitle.textContent = 'Import Failed';
@@ -1340,7 +1361,7 @@
 
             // On load, resume polling if active job exists
             if (activeJobId) {
-                window.startImportJobPolling(activeJobId);
+                window.startImportJobPolling(activeJobId, activeJobModule, activeJobTitle);
             }
         })();
     </script>

@@ -91,3 +91,13 @@ class AttendanceRepository:
     def delete(self, db: Session, attendance: Attendance) -> None:
         db.delete(attendance)
         db.commit()
+
+    def create_import_job(self, db: Session, job: "ImportJob") -> "ImportJob":
+        db.add(job)
+        db.commit()
+        db.refresh(job)
+        return job
+
+    def get_import_job(self, db: Session, job_id: uuid.UUID) -> "ImportJob | None":
+        from app.modules.hr_payroll.employees.models import ImportJob
+        return db.query(ImportJob).filter(ImportJob.id == job_id).first()

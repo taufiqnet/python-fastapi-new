@@ -554,18 +554,12 @@ document.getElementById('import-excel-form').addEventListener('submit', function
     })
     .then(data => {
         closeImportModal();
-        let msg = `Successfully imported/updated ${data.imported_count} attendance records.`;
-        if (data.errors && data.errors.length > 0) {
-            msg += `<br><br><small class="text-rose-600 font-semibold">Note: ${data.errors.length} row(s) had warnings or skipped.</small>`;
+        if (data.job_id) {
+            if (window.startImportJobPolling) {
+                window.startImportJobPolling(data.job_id, 'attendance', 'Importing Attendance...');
+            }
+            showSuccessToast('Import Started', 'Attendance import job has been queued and is processing in the background.');
         }
-        Swal.fire({
-            icon: 'success',
-            title: 'Attendance Import Complete',
-            html: msg,
-            confirmButtonColor: '#10b981'
-        }).then(() => {
-            window.location.reload();
-        });
     })
     .catch(err => {
         document.getElementById('import-loading').classList.add('hidden');

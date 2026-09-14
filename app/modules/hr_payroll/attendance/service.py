@@ -14,11 +14,15 @@ from app.modules.hr_payroll.attendance.schemas import (
     AttendanceCreate,
     AttendanceUpdate,
 )
-from io import BytesIO
+from io import BytesIO, StringIO
+import csv
+import json
 import openpyxl
 
 from app.core.tenancy.repository import BusinessRepository
+from app.modules.hr_payroll.employees.models import ImportJob
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
+from app.database import SessionLocal
 
 
 class AttendanceService:
@@ -447,9 +451,9 @@ class AttendanceService:
             "total_overtime_hours": round(total_overtime_hours, 2),
         }
 
-    def import_attendance_excel(
-        self, db: Session, business_id: int, file_bytes: bytes
-    ) -> dict[str, int | list[str]]:
+    def start_import_job(
+        self, db: Session, business_id: int, file_bytes: bytes, created_by: str | None = None
+    ) -> tuple[ImportJob, list, int]:
         try:
             wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
             ws = wb.active
@@ -459,12 +463,6 @@ class AttendanceService:
                 detail=f"Invalid Excel file format: {str(e)}",
             )
 
-        employees = self.employee_repository.get_all(db, business_id=business_id, limit=2000)
-        emp_map = {str(e.employee_id).strip().lower(): e for e in employees}
-
-        success_count = 0
-        error_messages: list[str] = []
-
         rows = list(ws.iter_rows(values_only=True))
         if not rows:
             raise HTTPException(
@@ -472,50 +470,59 @@ class AttendanceService:
                 detail="Excel file is empty.",
             )
 
-        # Header detection
         header = [str(cell or "").strip().lower() for cell in rows[0]]
         start_idx = 1 if "employee id" in header or "employee_id" in header or "date" in header else 0
 
-        for row_idx, row in enumerate(rows[start_idx:], start=start_idx + 1):
-            if not row or not any(row):
-                continue
+        valid_rows = [r for r in rows[start_idx:] if r and any(r)]
+        total_rows = len(valid_rows)
 
-            emp_code_raw = str(row[0] or "").strip()
-            date_raw = row[2] if len(row) > 2 else None
-            status_raw = str(row[3] or "present").strip().lower() if len(row) > 3 and row[3] else "present"
-            check_in_raw = row[4] if len(row) > 4 else None
-            check_out_raw = row[5] if len(row) > 5 else None
-            work_hours_raw = row[6] if len(row) > 6 else None
-            overtime_hours_raw = row[7] if len(row) > 7 else None
-            note_raw = str(row[8] or "").strip() if len(row) > 8 and row[8] else "Imported via Excel"
+        MAX_IMPORT_ROWS = 5000
+        if total_rows > MAX_IMPORT_ROWS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Excel file exceeds maximum allowed limit of {MAX_IMPORT_ROWS:,} rows (found {total_rows:,} rows).",
+            )
 
-            if not emp_code_raw:
-                error_messages.append(f"Row {row_idx}: Missing Employee ID.")
-                continue
+        job = ImportJob(
+            business_id=business_id,
+            status="processing",
+            total_rows=total_rows,
+            processed=0,
+            success_count=0,
+            error_count=0,
+            errors=json.dumps([]),
+            cancelled=False,
+            job_type="attendance",
+            created_by=created_by,
+        )
+        job = self.repository.create_import_job(db, job)
+        return job, rows, start_idx
 
-            emp = emp_map.get(emp_code_raw.lower())
-            if not emp:
-                error_messages.append(f"Row {row_idx}: Employee with ID '{emp_code_raw}' not found.")
-                continue
+    def process_import_job_background(
+        self, job_id: uuid.UUID, business_id: int, file_bytes: bytes, start_idx: int, session_factory=None
+    ) -> None:
+        db = session_factory() if session_factory else SessionLocal()
+        try:
+            job = self.repository.get_import_job(db, job_id)
+            if not job:
+                return
 
-            # Parse date
-            att_date: date | None = None
-            if isinstance(date_raw, (datetime, date)):
-                att_date = date_raw.date() if isinstance(date_raw, datetime) else date_raw
-            elif isinstance(date_raw, str) and date_raw.strip():
-                try:
-                    att_date = datetime.strptime(date_raw.strip(), "%Y-%m-%d").date()
-                except ValueError:
-                    try:
-                        att_date = datetime.strptime(date_raw.strip(), "%m/%d/%Y").date()
-                    except ValueError:
-                        pass
+            try:
+                wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
+                ws = wb.active
+                rows = list(ws.iter_rows(values_only=True))
+            except Exception as e:
+                job.status = "failed"
+                job.errors = json.dumps([{"row": 0, "error": f"Failed to open file: {str(e)}"}])
+                db.commit()
+                return
 
-            if not att_date:
-                error_messages.append(f"Row {row_idx}: Invalid date format '{date_raw}'. Expected YYYY-MM-DD.")
-                continue
+            employees = self.employee_repository.get_all(db, business_id=business_id, limit=5000)
+            emp_map = {str(e.employee_id).strip().lower(): e for e in employees if e.employee_id}
 
-            # Parse check-in / check-out times
+            errors_list = []
+            seen_in_file: set[tuple[uuid.UUID, date]] = set()
+
             def parse_time_val(val) -> time | None:
                 if isinstance(val, time):
                     return val
@@ -529,43 +536,107 @@ class AttendanceService:
                             pass
                 return None
 
-            check_in_time = parse_time_val(check_in_raw)
-            check_out_time = parse_time_val(check_out_raw)
+            for row_idx, row in enumerate(rows[start_idx:], start=start_idx + 1):
+                if not row or not any(row):
+                    continue
 
-            # Map status
-            try:
-                status_enum = AttendanceStatusEnum(status_raw)
-            except ValueError:
-                status_enum = AttendanceStatusEnum.PRESENT
+                db.refresh(job)
+                if job.cancelled:
+                    job.status = "cancelled"
+                    db.commit()
+                    return
 
-            # Work / Overtime hours
-            try:
-                work_hrs = float(work_hours_raw) if work_hours_raw is not None and str(work_hours_raw).strip() != "" else None
-            except (ValueError, TypeError):
-                work_hrs = None
+                emp_code_raw = str(row[0] or "").strip()
+                date_raw = row[2] if len(row) > 2 else None
+                status_raw = str(row[3] or "present").strip().lower() if len(row) > 3 and row[3] else "present"
+                check_in_raw = row[4] if len(row) > 4 else None
+                check_out_raw = row[5] if len(row) > 5 else None
+                work_hours_raw = row[6] if len(row) > 6 else None
+                overtime_hours_raw = row[7] if len(row) > 7 else None
+                note_raw = str(row[8] or "").strip() if len(row) > 8 and row[8] else "Imported via Excel"
 
-            try:
-                ot_hrs = float(overtime_hours_raw) if overtime_hours_raw is not None and str(overtime_hours_raw).strip() != "" else None
-            except (ValueError, TypeError):
-                ot_hrs = None
+                date_str = str(date_raw or "")
 
-            existing = self.repository.get_by_emp_date(
-                db, employee_id=emp.id, att_date=att_date, business_id=business_id
-            )
+                if not emp_code_raw:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "date": date_str, "error": "Missing Employee ID."})
+                    job.error_count += 1
+                    job.processed += 1
+                    job.errors = json.dumps(errors_list)
+                    db.commit()
+                    continue
 
-            if existing:
-                upd = AttendanceUpdate(
-                    status=status_enum,
-                    check_in=check_in_time,
-                    check_out=check_out_time,
-                    work_hours=work_hrs,
-                    overtime_hours=ot_hrs,
-                    note=note_raw,
+                emp = emp_map.get(emp_code_raw.lower())
+                if not emp or emp.business_id != business_id:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "date": date_str, "error": f"Employee with ID '{emp_code_raw}' not found."})
+                    job.error_count += 1
+                    job.processed += 1
+                    job.errors = json.dumps(errors_list)
+                    db.commit()
+                    continue
+
+                att_date: date | None = None
+                if isinstance(date_raw, (datetime, date)):
+                    att_date = date_raw.date() if isinstance(date_raw, datetime) else date_raw
+                elif isinstance(date_raw, str) and date_raw.strip():
+                    try:
+                        att_date = datetime.strptime(date_raw.strip(), "%Y-%m-%d").date()
+                    except ValueError:
+                        try:
+                            att_date = datetime.strptime(date_raw.strip(), "%m/%d/%Y").date()
+                        except ValueError:
+                            pass
+
+                if not att_date:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "date": date_str, "error": f"Invalid date format '{date_raw}'. Expected YYYY-MM-DD."})
+                    job.error_count += 1
+                    job.processed += 1
+                    job.errors = json.dumps(errors_list)
+                    db.commit()
+                    continue
+
+                pair_key = (emp.id, att_date)
+
+                # Check in-file duplicate or DB duplicate
+                if pair_key in seen_in_file:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "date": str(att_date), "error": "duplicate record"})
+                    job.error_count += 1
+                    job.processed += 1
+                    job.errors = json.dumps(errors_list)
+                    db.commit()
+                    continue
+
+                existing_in_db = self.repository.get_by_emp_date(
+                    db, employee_id=emp.id, att_date=att_date, business_id=business_id
                 )
-                self.update_record(db, existing.id, upd)
-                success_count += 1
-            else:
-                crt = AttendanceCreate(
+                if existing_in_db:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "date": str(att_date), "error": "duplicate record"})
+                    job.error_count += 1
+                    job.processed += 1
+                    job.errors = json.dumps(errors_list)
+                    db.commit()
+                    continue
+
+                seen_in_file.add(pair_key)
+
+                check_in_time = parse_time_val(check_in_raw)
+                check_out_time = parse_time_val(check_out_raw)
+
+                try:
+                    status_enum = AttendanceStatusEnum(status_raw)
+                except ValueError:
+                    status_enum = AttendanceStatusEnum.PRESENT
+
+                try:
+                    work_hrs = float(work_hours_raw) if work_hours_raw is not None and str(work_hours_raw).strip() != "" else None
+                except (ValueError, TypeError):
+                    work_hrs = None
+
+                try:
+                    ot_hrs = float(overtime_hours_raw) if overtime_hours_raw is not None and str(overtime_hours_raw).strip() != "" else None
+                except (ValueError, TypeError):
+                    ot_hrs = None
+
+                create_data = AttendanceCreate(
                     business_id=business_id,
                     employee_id=emp.id,
                     date=att_date,
@@ -577,10 +648,61 @@ class AttendanceService:
                     source=AttendanceSourceEnum.MANUAL,
                     note=note_raw,
                 )
-                self.create_record(db, crt)
-                success_count += 1
 
-        return {
-            "imported_count": success_count,
-            "errors": error_messages,
-        }
+                try:
+                    self.create_record(db, create_data)
+                    job.success_count += 1
+                except HTTPException as hexp:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "date": str(att_date), "error": hexp.detail})
+                    job.error_count += 1
+                except Exception as ex:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "date": str(att_date), "error": f"Failed to record attendance - {str(ex)}"})
+                    job.error_count += 1
+
+                job.processed += 1
+                job.errors = json.dumps(errors_list)
+                db.commit()
+
+            job.status = "completed"
+            db.commit()
+        finally:
+            db.close()
+
+    def get_import_job_status(self, db: Session, job_id: uuid.UUID) -> ImportJob:
+        job = self.repository.get_import_job(db, job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Import job not found",
+            )
+        return job
+
+    def cancel_import_job(self, db: Session, job_id: uuid.UUID) -> ImportJob:
+        job = self.repository.get_import_job(db, job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Import job not found",
+            )
+        job.cancelled = True
+        if job.status == "processing":
+            job.status = "cancelled"
+        db.commit()
+        db.refresh(job)
+        return job
+
+    def generate_errors_csv(self, db: Session, job_id: uuid.UUID) -> str:
+        job = self.get_import_job_status(db, job_id)
+        errors = json.loads(job.errors) if job.errors else []
+
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Row Number", "Employee ID", "Date", "Error Reason"])
+
+        for err in errors:
+            if isinstance(err, dict):
+                writer.writerow([err.get("row", ""), err.get("employee_id", ""), err.get("date", ""), err.get("error", "")])
+            else:
+                writer.writerow(["", "", "", str(err)])
+
+        return output.getvalue()

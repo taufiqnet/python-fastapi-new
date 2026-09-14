@@ -7,6 +7,8 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
+from app.core.deps import get_current_user_optional
+from app.core.identity.models import User
 
 sync_engine = create_engine(
     "sqlite:///:memory:",
@@ -34,7 +36,28 @@ async def client(sync_db):
     def _override_get_db():
         yield sync_db
 
+    from app.modules.hr_payroll.attendance.router import attendance_service
+    orig_bg_func = attendance_service.process_import_job_background
+
+    def _sync_bg_wrapper(*args, **kwargs):
+        kwargs["session_factory"] = lambda: sync_db
+        orig_bg_func(*args, **kwargs)
+
+    attendance_service.process_import_job_background = _sync_bg_wrapper
+
+    dummy_user = User(
+        id=1,
+        username="admin",
+        email="admin@example.com",
+        is_active=True,
+        is_superuser=True,
+        business_id=1,
+    )
+    def _override_get_current_user(request=None):
+        return dummy_user
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user_optional] = _override_get_current_user
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -150,12 +173,59 @@ async def test_excel_template_and_import(client: AsyncClient):
 
     files = {"file": ("monthly_attendance.xlsx", excel_bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
     import_res = await client.post("/attendance/import-excel?business_id=1", files=files)
-    assert import_res.status_code == 200, import_res.text
+    assert import_res.status_code == 202, import_res.text
     imp_data = import_res.json()
-    assert imp_data["imported_count"] == 2
+    assert "job_id" in imp_data
+    job_id = imp_data["job_id"]
 
-    # 4. Verify imported records via GET
+    # 4. Check status
+    status_res = await client.get(f"/attendance/import/{job_id}/status")
+    assert status_res.status_code == 200
+    status_data = status_res.json()
+    assert status_data["job_id"] == job_id
+    assert status_data["success_count"] == 2
+    assert status_data["error_count"] == 0
+
+    # 5. Verify imported records via GET
     records_res = await client.get("/attendance?business_id=1")
     assert records_res.status_code == 200
     records = records_res.json()
     assert len(records) == 2
+
+    # 6. Test duplicate import rejection (both DB duplicate and in-file duplicate)
+    wb_dup = openpyxl.Workbook()
+    ws_dup = wb_dup.active
+    ws_dup.append(["Employee ID", "Employee Name", "Date", "Status", "Check In", "Check Out", "Work Hours", "OT Hours", "Note"])
+    # "2025-01-20" already exists in DB for EMP-200 -> should be rejected as duplicate record
+    ws_dup.append(["EMP-200", "Bob Marley", "2025-01-20", "present", "09:00", "18:00", 8.0, 1.0, "Duplicate DB"])
+    # New date "2025-01-22" repeated twice in file -> first succeeds, second rejected as duplicate record
+    ws_dup.append(["EMP-200", "Bob Marley", "2025-01-22", "present", "09:00", "18:00", 8.0, 1.0, "New Row 1"])
+    ws_dup.append(["EMP-200", "Bob Marley", "2025-01-22", "present", "09:00", "18:00", 8.0, 1.0, "New Row 2 In-file Duplicate"])
+    # Non-existent employee -> rejected
+    ws_dup.append(["NON-EXISTENT", "Unknown", "2025-01-22", "present", "09:00", "18:00", 8.0, 1.0, "Bad Emp"])
+
+    out_dup = BytesIO()
+    wb_dup.save(out_dup)
+
+    files_dup = {"file": ("dup_attendance.xlsx", out_dup.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+    dup_import_res = await client.post("/attendance/import-excel?business_id=1", files=files_dup)
+    assert dup_import_res.status_code == 202
+    dup_job_id = dup_import_res.json()["job_id"]
+
+    dup_status_res = await client.get(f"/attendance/import/{dup_job_id}/status")
+    assert dup_status_res.status_code == 200
+    dup_status = dup_status_res.json()
+    assert dup_status["success_count"] == 1
+    assert dup_status["error_count"] == 3
+
+    # Check errors CSV
+    csv_res = await client.get(f"/attendance/import/{dup_job_id}/errors-csv")
+    assert csv_res.status_code == 200
+    csv_text = csv_res.text
+    assert "duplicate record" in csv_text
+    assert "Employee with ID 'NON-EXISTENT' not found" in csv_text
+
+    # Test cancel endpoint
+    cancel_res = await client.post(f"/attendance/import/{dup_job_id}/cancel")
+    assert cancel_res.status_code == 200
+    assert cancel_res.json()["cancelled"] is True

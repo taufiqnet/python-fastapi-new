@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.tenancy.models import BusinessProfile
+from app.core.deps import get_current_user_optional
+from app.core.identity.models import User
 from app.database import Base, get_db
 from app.main import app
 
@@ -44,7 +46,19 @@ async def client(sync_db):
     def _override_get_db():
         yield sync_db
 
+    dummy_user = User(
+        id=1,
+        username="admin",
+        email="admin@example.com",
+        is_active=True,
+        is_superuser=True,
+        business_id=1,
+    )
+    def _override_get_current_user(request=None):
+        return dummy_user
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user_optional] = _override_get_current_user
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
