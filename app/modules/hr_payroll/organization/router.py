@@ -1,9 +1,9 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import require_permission
+from app.core.deps import get_current_user_optional, require_permission
 from app.database import get_db
 from app.modules.hr_payroll.organization.schemas import (
     DepartmentCreate,
@@ -44,8 +44,16 @@ def export_departments_excel(
 def download_departments_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
     _perm=Depends(require_permission("hrm", "departments", "create")),
 ):
+    if current_user and not current_user.is_superuser:
+        business_id = current_user.business_id
+    if not business_id or business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
     excel_data = department_service.generate_excel_template(db, business_id=business_id)
     filename = f"department_template_business_{business_id}.xlsx"
     return Response(
@@ -60,8 +68,16 @@ async def import_departments_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
     _perm=Depends(require_permission("hrm", "departments", "create")),
 ):
+    if current_user and not current_user.is_superuser:
+        business_id = current_user.business_id
+    if not business_id or business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
     contents = await file.read()
     return department_service.import_departments_excel(
         db, business_id=business_id, file_bytes=contents

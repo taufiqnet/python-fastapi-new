@@ -392,6 +392,11 @@ class EmployeeService:
         )
 
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
+        if not business_id or business_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business profile ID is mandatory.",
+            )
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Employee Template"
@@ -506,6 +511,11 @@ class EmployeeService:
     def start_import_job(
         self, db: Session, business_id: int, file_bytes: bytes, created_by: str | None = None
     ) -> ImportJob:
+        if not business_id or business_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business profile ID is mandatory.",
+            )
         try:
             wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
             ws = wb.active
@@ -576,6 +586,37 @@ class EmployeeService:
 
             errors_list = []
 
+            header = [str(cell or "").strip().lower() for cell in rows[0]] if rows else []
+            has_header = any(h in header for h in ["employee id", "employee_id", "first name", "work email", "email"])
+
+            col_map = {}
+            if has_header:
+                for idx, h in enumerate(header):
+                    if h in ["employee id", "employee_id", "code"]:
+                        col_map["emp_code"] = idx
+                    elif h in ["first name", "first_name"]:
+                        col_map["first_name"] = idx
+                    elif h in ["middle name", "middle_name"]:
+                        col_map["middle_name"] = idx
+                    elif h in ["last name", "last_name"]:
+                        col_map["last_name"] = idx
+                    elif h in ["work email", "work_email", "email"]:
+                        col_map["work_email"] = idx
+                    elif h in ["phone", "phone_number"]:
+                        col_map["phone"] = idx
+                    elif h in ["department", "department_id", "department name"]:
+                        col_map["department"] = idx
+                    elif h in ["job title", "job_title", "job title name"]:
+                        col_map["job_title"] = idx
+                    elif "employment type" in h or h in ["employment_type"]:
+                        col_map["emp_type"] = idx
+                    elif "work arrangement" in h or h in ["work_arrangement"]:
+                        col_map["arrangement"] = idx
+                    elif "start date" in h or h in ["start_date"]:
+                        col_map["start_date"] = idx
+                    elif "gender" in h:
+                        col_map["gender"] = idx
+
             for row_idx, row in enumerate(rows[start_idx:], start=start_idx + 1):
                 if not row or not any(row):
                     continue
@@ -587,18 +628,24 @@ class EmployeeService:
                     db.commit()
                     return
 
-                emp_code_raw = str(row[0] or "").strip()
-                first_name_raw = str(row[1] or "").strip() if len(row) > 1 and row[1] else ""
-                middle_name_raw = str(row[2] or "").strip() if len(row) > 2 and row[2] else None
-                last_name_raw = str(row[3] or "").strip() if len(row) > 3 and row[3] else None
-                work_email_raw = str(row[4] or "").strip() if len(row) > 4 and row[4] else ""
-                phone_raw = str(row[5] or "").strip() if len(row) > 5 and row[5] else None
-                dept_raw = str(row[6] or "").strip() if len(row) > 6 and row[6] else None
-                jt_raw = str(row[7] or "").strip() if len(row) > 7 and row[7] else None
-                emp_type_raw = str(row[8] or "").strip().lower() if len(row) > 8 and row[8] else None
-                arrangement_raw = str(row[9] or "").strip().lower() if len(row) > 9 and row[9] else None
-                start_date_raw = row[10] if len(row) > 10 else None
-                gender_raw = str(row[11] or "").strip().lower() if len(row) > 11 and row[11] else None
+                def get_val(key, default_idx):
+                    idx = col_map.get(key, default_idx)
+                    if idx is not None and idx < len(row) and row[idx] is not None:
+                        return row[idx]
+                    return None
+
+                emp_code_raw = str(get_val("emp_code", 0) or "").strip()
+                first_name_raw = str(get_val("first_name", 1) or "").strip()
+                middle_name_raw = str(get_val("middle_name", 2) or "").strip() if get_val("middle_name", 2) else None
+                last_name_raw = str(get_val("last_name", 3) or "").strip() if get_val("last_name", 3) else None
+                work_email_raw = str(get_val("work_email", 4) or "").strip()
+                phone_raw = str(get_val("phone", 5) or "").strip() if get_val("phone", 5) else None
+                dept_raw = str(get_val("department", 6) or "").strip() if get_val("department", 6) else None
+                jt_raw = str(get_val("job_title", 7) or "").strip() if get_val("job_title", 7) else None
+                emp_type_raw = str(get_val("emp_type", 8) or "").strip().lower() if get_val("emp_type", 8) else None
+                arrangement_raw = str(get_val("arrangement", 9) or "").strip().lower() if get_val("arrangement", 9) else None
+                start_date_raw = get_val("start_date", 10)
+                gender_raw = str(get_val("gender", 11) or "").strip().lower() if get_val("gender", 11) else None
 
                 row_error = None
                 if not emp_code_raw:

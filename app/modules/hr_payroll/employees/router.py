@@ -39,8 +39,16 @@ def export_employees_excel(
 def download_employees_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user=Depends(get_current_user_optional),
     _perm=Depends(require_permission("hrm", "employees", "create")),
 ):
+    if current_user and not current_user.is_superuser:
+        business_id = current_user.business_id
+    if not business_id or business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
     excel_data = employee_service.generate_excel_template(db, business_id=business_id)
     filename = f"employee_template_business_{business_id}.xlsx"
     return Response(
@@ -59,6 +67,13 @@ async def import_employees_excel(
     current_user=Depends(get_current_user_optional),
     _perm=Depends(require_permission("hrm", "employees", "create")),
 ):
+    if current_user and not current_user.is_superuser:
+        business_id = current_user.business_id
+    if not business_id or business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
     contents = await file.read()
     user_identifier = current_user.username if current_user else "System"
     job, rows, start_idx = employee_service.start_import_job(

@@ -139,6 +139,11 @@ class DepartmentService:
         return output.getvalue()
 
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
+        if not business_id or business_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business profile ID is mandatory.",
+            )
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Department Template"
@@ -176,6 +181,11 @@ class DepartmentService:
     def import_departments_excel(
         self, db: Session, business_id: int, file_bytes: bytes
     ) -> dict[str, int | list[str]]:
+        if not business_id or business_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business profile ID is mandatory.",
+            )
         try:
             wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
             ws = wb.active
@@ -195,17 +205,36 @@ class DepartmentService:
         success_count = 0
         error_messages: list[str] = []
 
-        header = [str(cell or "").strip().lower() for cell in rows[0]]
-        start_idx = 1 if "department name" in header or "name" in header or "slug" in header else 0
+        header = [str(cell or "").strip().lower() for cell in rows[0]] if rows else []
+        has_header = any(h in header for h in ["department name", "name", "slug", "description"])
+        start_idx = 1 if has_header else 0
+
+        col_map = {}
+        if has_header:
+            for idx, h in enumerate(header):
+                if h in ["department name", "name"]:
+                    col_map["name"] = idx
+                elif h in ["slug"]:
+                    col_map["slug"] = idx
+                elif h in ["description"]:
+                    col_map["description"] = idx
+                elif "multiple heads" in h or h in ["multiple heads allowed", "multiple_heads_allowed"]:
+                    col_map["multi_head"] = idx
 
         for row_idx, row in enumerate(rows[start_idx:], start=start_idx + 1):
             if not row or not any(row):
                 continue
 
-            name_raw = str(row[0] or "").strip()
-            slug_raw = str(row[1] or "").strip().lower() if len(row) > 1 and row[1] else ""
-            desc_raw = str(row[2] or "").strip() if len(row) > 2 and row[2] else None
-            multi_head_raw = str(row[3] or "no").strip().lower() if len(row) > 3 and row[3] is not None else "no"
+            def get_val(key, default_idx):
+                idx = col_map.get(key, default_idx)
+                if idx is not None and idx < len(row) and row[idx] is not None:
+                    return row[idx]
+                return None
+
+            name_raw = str(get_val("name", 0) or "").strip()
+            slug_raw = str(get_val("slug", 1) or "").strip().lower() if get_val("slug", 1) else ""
+            desc_raw = str(get_val("description", 2) or "").strip() if get_val("description", 2) else None
+            multi_head_raw = str(get_val("multi_head", 3) or "no").strip().lower()
 
             if not name_raw:
                 error_messages.append(f"Row {row_idx}: Missing Department Name.")

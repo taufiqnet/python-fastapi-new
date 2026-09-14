@@ -332,3 +332,61 @@ async def test_employee_import_tenant_scoping_superuser_and_non_superuser(client
     assert emp_res2_biz2.status_code == 200
     biz2_nonsup_emps = [e for e in emp_res2_biz2.json() if e["employee_id"] == "NONSUP01"]
     assert len(biz2_nonsup_emps) == 0
+
+
+@pytest.mark.asyncio
+async def test_employee_import_mandatory_business_and_header_mapping(client: AsyncClient, sync_db):
+    import openpyxl
+    from io import BytesIO
+
+    # 1. Test template download without business_id or with invalid business_id=0
+    res_bad_tpl = await client.get("/employees/template-excel?business_id=0")
+    assert res_bad_tpl.status_code == 400
+    assert "Business profile ID is mandatory" in res_bad_tpl.json()["detail"]
+
+    # 2. Test import without business_id or with invalid business_id=0
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["Employee ID", "First Name", "Last Name", "Work Email"])
+    ws.append(["VAL01", "Val", "User", "val@example.com"])
+    output = BytesIO()
+    wb.save(output)
+    files = {"file": ("test.xlsx", output.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+
+    res_bad_imp = await client.post("/employees/import-excel?business_id=0", files=files)
+    assert res_bad_imp.status_code == 400
+    assert "Business profile ID is mandatory" in res_bad_imp.json()["detail"]
+
+    # 3. Test import with extra columns (such as Business Profile ID and Business Profile Name from exported files)
+    wb_hdr = openpyxl.Workbook()
+    ws_hdr = wb_hdr.active
+    ws_hdr.append([
+        "Employee ID", "First Name", "Middle Name", "Last Name", "Full Name",
+        "Work Email", "Personal Email", "Phone", "Department", "Job Title",
+        "Business Profile ID", "Business Profile Name", "Employment Type",
+        "Work Arrangement", "Start Date", "Status"
+    ])
+    ws_hdr.append([
+        "HDR001", "Header", "M", "Mapped", "Header Mapped",
+        "hdr.mapped@example.com", "hdr.personal@example.com", "+123456789",
+        "Engineering", "Software Engineer", "1", "Main Biz", "full_time",
+        "remote", "2025-02-01", "Active"
+    ])
+    out_hdr = BytesIO()
+    wb_hdr.save(out_hdr)
+    files_hdr = {"file": ("exported_style.xlsx", out_hdr.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+
+    res_imp = await client.post("/employees/import-excel?business_id=1", files=files_hdr)
+    assert res_imp.status_code == 202
+    job_id = res_imp.json()["job_id"]
+
+    status_res = await client.get(f"/employees/import/{job_id}/status")
+    assert status_res.status_code == 200
+    assert status_res.json()["success_count"] == 1
+
+    emp_res = await client.get("/employees?business_id=1")
+    assert emp_res.status_code == 200
+    hdr_emp = [e for e in emp_res.json() if e["employee_id"] == "HDR001"]
+    assert len(hdr_emp) == 1
+    assert hdr_emp[0]["work_email"] == "hdr.mapped@example.com"
+    assert hdr_emp[0]["start_date"] == "2025-02-01"
