@@ -58,7 +58,7 @@
     </div>
 </div>
 
-{% if current_user and current_user.is_superuser %}
+{% if is_edit and current_user and current_user.is_superuser %}
 <div class="bg-rose-50 border border-rose-200 rounded-xl p-4 mb-6 shadow-sm">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>

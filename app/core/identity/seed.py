@@ -223,19 +223,17 @@ async def seed_system_admin_and_permissions(db: AsyncSession) -> None:
             password_hash=hash_password("12345678"),
             is_active=True,
             is_verified=True,
-            is_superuser=True,
+            is_superuser=False,
             business_id=None,
         )
-        if admin_role and admin_role not in demo_user.roles:
-            demo_user.roles.append(admin_role)
+        if hr_payroll_role and hr_payroll_role not in demo_user.roles:
+            demo_user.roles.append(hr_payroll_role)
         db.add(demo_user)
     else:
-        demo_user.is_superuser = True
         demo_user.is_active = True
         demo_user.password_hash = hash_password("12345678")
-        user_role_ids = {r.id for r in demo_user.roles}
-        if admin_role and admin_role.id not in user_role_ids:
-            demo_user.roles.append(admin_role)
+        if not demo_user.roles and hr_payroll_role:
+            demo_user.roles.append(hr_payroll_role)
 
     # 5. Seed Default Subscription Plans (Free first so ID is 1 in fresh DB)
     from app.core.billing.models import SubscriptionPlan
@@ -379,19 +377,17 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
             password_hash=hash_password("12345678"),
             is_active=True,
             is_verified=True,
-            is_superuser=True,
+            is_superuser=False,
             business_id=None,
         )
-        if admin_role and admin_role not in demo_user.roles:
-            demo_user.roles.append(admin_role)
+        if hr_payroll_role and hr_payroll_role not in demo_user.roles:
+            demo_user.roles.append(hr_payroll_role)
         db.add(demo_user)
     else:
-        demo_user.is_superuser = True
         demo_user.is_active = True
         demo_user.password_hash = hash_password("12345678")
-        user_role_ids = {r.id for r in demo_user.roles}
-        if admin_role and admin_role.id not in user_role_ids:
-            demo_user.roles.append(admin_role)
+        if not demo_user.roles and hr_payroll_role:
+            demo_user.roles.append(hr_payroll_role)
 
     # Seed Default Subscription Plans (Free first so ID is 1 in fresh DB)
     from app.core.billing.models import SubscriptionPlan

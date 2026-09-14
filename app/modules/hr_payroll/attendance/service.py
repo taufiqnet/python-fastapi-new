@@ -268,6 +268,20 @@ class AttendanceService:
         record = self.get_record(db, attendance_uuid)
         self.repository.delete(db, record)
 
+    def bulk_delete_records(
+        self,
+        db: Session,
+        attendance_ids: list[uuid.UUID] | None = None,
+        business_id: int | None = None,
+        delete_all: bool = False,
+    ) -> int:
+        return self.repository.bulk_delete(
+            db,
+            attendance_ids=attendance_ids,
+            business_id=business_id,
+            delete_all=delete_all,
+        )
+
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
         wb = openpyxl.Workbook()
         ws = wb.active

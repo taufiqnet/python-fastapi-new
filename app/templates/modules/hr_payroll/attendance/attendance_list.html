@@ -49,6 +49,14 @@
         <p class="text-xs text-gray-500 font-medium">Track employee daily attendance, check-in/out times, and work hours</p>
     </div>
     <div class="flex items-center gap-3">
+        {% if current_user and current_user.is_superuser %}
+        <button type="button" id="btnDeleteSelected" onclick="deleteSelectedAttendance()" class="hidden inline-flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors" title="Delete Selected Attendance Logs">
+            <i class="fas fa-check-square"></i> Delete Selected (<span id="selectedCount">0</span>)
+        </button>
+        <button type="button" onclick="executeAdminFullWipe()" class="inline-flex items-center gap-2 bg-rose-800 hover:bg-rose-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors" title="System Admin: Delete ALL Attendance Records">
+            <i class="fas fa-dumpster"></i> Delete All Attendance
+        </button>
+        {% endif %}
         <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
             <i class="fas fa-sliders-h text-sm"></i>
         </button>
@@ -185,6 +193,11 @@
         <table class="w-full text-left border-collapse" id="attendance-table">
             <thead>
                 <tr class="bg-gray-50/50 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                    {% if current_user and current_user.is_superuser %}
+                    <th class="px-5 py-3 text-center" style="width:40px">
+                        <input type="checkbox" id="selectAllAttendance" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    </th>
+                    {% endif %}
                     <th class="px-5 py-3">Employee ID</th>
                     <th class="px-5 py-3">Employee Name</th>
                     <th class="px-5 py-3">Date</th>
@@ -202,6 +215,11 @@
                     {% set st = r.status.value if r.status.value else r.status|string %}
                     {% set emp = emp_map.get(r.employee_id) %}
                     <tr class="hover:bg-gray-50/80 transition-colors att-row" data-emp-id="{{ r.employee_id }}" data-status="{{ st }}">
+                        {% if current_user and current_user.is_superuser %}
+                        <td class="px-5 py-3.5 text-center">
+                            <input type="checkbox" class="att-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" value="{{ r.id }}">
+                        </td>
+                        {% endif %}
                         <td class="px-5 py-3.5 font-mono text-gray-600">
                             {% if emp %}{{ emp.employee_id }}{% else %}—{% endif %}
                         </td>
@@ -260,7 +278,7 @@
                     {% endfor %}
                 {% else %}
                     <tr id="no-records-row">
-                        <td colspan="9" class="px-5 py-8 text-center text-gray-400 font-medium">
+                        <td colspan="{% if current_user and current_user.is_superuser %}10{% else %}9{% endif %}" class="px-5 py-8 text-center text-gray-400 font-medium">
                             <i class="fas fa-inbox text-2xl mb-2 block text-gray-300"></i>
                             No attendance records found matching criteria.
                         </td>
@@ -566,6 +584,108 @@ document.getElementById('import-excel-form').addEventListener('submit', function
         showErrorAlert('Import Failed', err.message);
     });
 });
+
+{% if current_user and current_user.is_superuser %}
+function updateSelectedCount() {
+    const checked = document.querySelectorAll('.att-checkbox:checked');
+    const btn = document.getElementById('btnDeleteSelected');
+    const countSpan = document.getElementById('selectedCount');
+    if (checked.length > 0) {
+        btn.classList.remove('hidden');
+        countSpan.textContent = checked.length;
+    } else {
+        btn.classList.add('hidden');
+        countSpan.textContent = '0';
+    }
+}
+
+const selectAll = document.getElementById('selectAllAttendance');
+if (selectAll) {
+    selectAll.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.att-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        updateSelectedCount();
+    });
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('att-checkbox')) {
+        updateSelectedCount();
+    }
+});
+
+function deleteSelectedAttendance() {
+    const checked = document.querySelectorAll('.att-checkbox:checked');
+    const ids = Array.from(checked).map(cb => cb.value);
+    if (ids.length === 0) {
+        showWarningAlert('No Selection', 'Please select at least one attendance record to delete.');
+        return;
+    }
+
+    Swal.fire({
+        title: 'Delete Selected Attendance?',
+        text: 'System Admin Action: Are you sure you want to delete ' + ids.length + ' selected attendance log(s)? This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Delete Selected',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/attendance/bulk-delete', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ attendance_ids: ids })
+            }).then(res => res.json()).then(data => {
+                showSuccessToast('Bulk Delete Completed', data.message || 'Attendance records deleted.');
+                setTimeout(() => window.location.reload(), 1000);
+            }).catch(err => showErrorAlert('Bulk Delete Failed', err.message));
+        }
+    });
+}
+
+function executeAdminFullWipe() {
+    const selectedBizElem = document.getElementById('filter_business_id');
+    const selectedBiz = selectedBizElem ? selectedBizElem.value : '';
+    let selectedBizName = '';
+    if (selectedBizElem && selectedBizElem.options[selectedBizElem.selectedIndex]) {
+        selectedBizName = selectedBizElem.options[selectedBizElem.selectedIndex].text;
+    }
+
+    let promptText = 'SYSTEM ADMIN DANGER ZONE: Are you sure you want to delete ALL attendance records across ALL business profiles? THIS WILL ERASE ALL ATTENDANCE LOGS SYSTEM-WIDE!';
+    let url = '/attendance/bulk-delete?delete_all=true';
+
+    if (selectedBiz) {
+        promptText = 'System Admin Action: Are you sure you want to select all and delete ALL attendance records belonging to business "' + selectedBizName + '"?';
+        url = '/attendance/bulk-delete?business_id=' + selectedBiz;
+    }
+
+    Swal.fire({
+        title: 'DELETE ATTENDANCE RECORDS?',
+        text: promptText,
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#9f1239',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'YES, DELETE ALL MATCHING RECORDS',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(url, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            }).then(res => res.json()).then(data => {
+                showSuccessToast('Bulk Delete Completed', data.message || 'Attendance records wiped.');
+                setTimeout(() => window.location.reload(), 1000);
+            }).catch(err => showErrorAlert('Wipe Failed', err.message));
+        }
+    });
+}
+{% endif %}
 
 function deleteAttendance(attId) {
     Swal.fire({

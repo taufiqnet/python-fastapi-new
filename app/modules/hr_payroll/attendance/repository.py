@@ -92,6 +92,27 @@ class AttendanceRepository:
         db.delete(attendance)
         db.commit()
 
+    def bulk_delete(
+        self,
+        db: Session,
+        attendance_ids: list[uuid.UUID] | None = None,
+        business_id: int | None = None,
+        delete_all: bool = False,
+    ) -> int:
+        query = db.query(Attendance)
+        if not delete_all:
+            if attendance_ids:
+                query = query.filter(Attendance.id.in_(attendance_ids))
+            elif business_id is not None:
+                query = query.filter(Attendance.business_id == business_id)
+            else:
+                return 0
+
+        count = query.count()
+        query.delete(synchronize_session=False)
+        db.commit()
+        return count
+
     def create_import_job(self, db: Session, job: "ImportJob") -> "ImportJob":
         db.add(job)
         db.commit()
