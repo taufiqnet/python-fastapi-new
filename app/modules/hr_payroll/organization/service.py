@@ -3,7 +3,9 @@ import uuid
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from typing import Any
 from app.core.tenancy.repository import BusinessRepository
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.organization.models import Department, JobTitle
 from app.modules.hr_payroll.organization.repository import (
     DepartmentRepository,
@@ -31,13 +33,18 @@ class DepartmentService:
         skip: int = 0,
         limit: int = 100,
         business_id: int | None = None,
+        search: str | None = None,
     ) -> list[Department]:
         return self.repository.get_all(
-            db, skip=skip, limit=limit, business_id=business_id
+            db, skip=skip, limit=limit, business_id=business_id, search=search
         )
 
-    def get_department(self, db: Session, department_id: uuid.UUID) -> Department:
+    def get_department(
+        self, db: Session, department_id: uuid.UUID, current_user: Any | None = None
+    ) -> Department:
         department = self.repository.get_by_id(db, department_id)
+        if current_user is not None:
+            return verify_record_ownership(department, current_user, detail="Department not found")
         if not department:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -60,9 +67,13 @@ class DepartmentService:
         return self.repository.create(db, data)
 
     def update_department(
-        self, db: Session, department_id: uuid.UUID, data: DepartmentUpdate
+        self,
+        db: Session,
+        department_id: uuid.UUID,
+        data: DepartmentUpdate,
+        current_user: Any | None = None,
     ) -> Department:
-        department = self.get_department(db, department_id)
+        department = self.get_department(db, department_id, current_user=current_user)
 
         target_business_id = (
             data.business_id
@@ -92,8 +103,10 @@ class DepartmentService:
 
         return self.repository.update(db, department, data)
 
-    def delete_department(self, db: Session, department_id: uuid.UUID) -> None:
-        department = self.get_department(db, department_id)
+    def delete_department(
+        self, db: Session, department_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        department = self.get_department(db, department_id, current_user=current_user)
         self.repository.delete(db, department)
 
     def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:

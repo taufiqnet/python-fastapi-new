@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, Up
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
 from app.modules.hr_payroll.organization.schemas import (
     DepartmentCreate,
@@ -29,10 +31,11 @@ job_title_service = JobTitleService()
 def export_departments_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "departments", "view")),
+    current_user: User = Depends(require_permission("hrm", "departments", "view")),
 ):
-    excel_data = department_service.generate_export_excel(db, business_id=business_id)
-    filename = "departments_export.xlsx" if not business_id else f"departments_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = department_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "departments_export.xlsx" if not resolved_business_id else f"departments_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -44,18 +47,16 @@ def export_departments_excel(
 def download_departments_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user_optional),
-    _perm=Depends(require_permission("hrm", "departments", "create")),
+    current_user: User = Depends(require_permission("hrm", "departments", "create")),
 ):
-    if current_user and not current_user.is_superuser:
-        business_id = current_user.business_id
-    if not business_id or business_id <= 0:
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Business profile ID is mandatory.",
         )
-    excel_data = department_service.generate_excel_template(db, business_id=business_id)
-    filename = f"department_template_business_{business_id}.xlsx"
+    excel_data = department_service.generate_excel_template(db, business_id=resolved_business_id)
+    filename = f"department_template_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -68,19 +69,17 @@ async def import_departments_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user_optional),
-    _perm=Depends(require_permission("hrm", "departments", "create")),
+    current_user: User = Depends(require_permission("hrm", "departments", "create")),
 ):
-    if current_user and not current_user.is_superuser:
-        business_id = current_user.business_id
-    if not business_id or business_id <= 0:
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Business profile ID is mandatory.",
         )
     contents = await file.read()
     return department_service.import_departments_excel(
-        db, business_id=business_id, file_bytes=contents
+        db, business_id=resolved_business_id, file_bytes=contents
     )
 
 
@@ -89,11 +88,13 @@ def get_departments(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
+    search: str | None = Query(None),
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "departments", "view")),
+    current_user: User = Depends(require_permission("hrm", "departments", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return department_service.get_departments(
-        db, skip=skip, limit=limit, business_id=business_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id, search=search
     )
 
 
@@ -101,9 +102,9 @@ def get_departments(
 def get_department(
     department_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "departments", "view")),
+    current_user: User = Depends(require_permission("hrm", "departments", "view")),
 ):
-    return department_service.get_department(db, department_id)
+    return department_service.get_department(db, department_id, current_user=current_user)
 
 
 @router.post(
@@ -114,8 +115,13 @@ def get_department(
 def create_department(
     department_data: DepartmentCreate,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "departments", "create")),
+    current_user: User = Depends(require_permission("hrm", "departments", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, department_data.business_id)
+    if not current_user.is_superuser:
+        department_data.business_id = current_user.business_id
+    elif department_data.business_id is None:
+        department_data.business_id = resolved_business_id
     return department_service.create_department(db, department_data)
 
 
@@ -124,18 +130,22 @@ def update_department(
     department_id: uuid.UUID,
     department_data: DepartmentUpdate,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "departments", "update")),
+    current_user: User = Depends(require_permission("hrm", "departments", "update")),
 ):
-    return department_service.update_department(db, department_id, department_data)
+    if not current_user.is_superuser:
+        department_data.business_id = current_user.business_id
+    return department_service.update_department(
+        db, department_id, department_data, current_user=current_user
+    )
 
 
 @router.delete("/departments/{department_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_department(
     department_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "departments", "delete")),
+    current_user: User = Depends(require_permission("hrm", "departments", "delete")),
 ):
-    department_service.delete_department(db, department_id)
+    department_service.delete_department(db, department_id, current_user=current_user)
     return None
 
 

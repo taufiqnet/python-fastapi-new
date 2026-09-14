@@ -38,10 +38,16 @@ class DepartmentRepository:
         skip: int = 0,
         limit: int = 100,
         business_id: int | None = None,
+        search: str | None = None,
     ) -> list[Department]:
         query = db.query(Department)
         if business_id is not None:
             query = query.filter(Department.business_id == business_id)
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (Department.name.ilike(search_pattern)) | (Department.slug.ilike(search_pattern))
+            )
         return query.offset(skip).limit(limit).all()
 
     def create(self, db: Session, data: DepartmentCreate) -> Department:
