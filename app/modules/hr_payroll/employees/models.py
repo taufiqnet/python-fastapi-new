@@ -180,6 +180,7 @@ class ImportJob(Base, UUIDMixin, TimestampMixin):
     error_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     errors: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON-encoded array of errors
     cancelled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    job_type: Mapped[str] = mapped_column(String(50), default="employee", nullable=False)
     created_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     file_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
 

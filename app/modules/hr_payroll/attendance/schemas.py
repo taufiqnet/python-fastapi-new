@@ -22,7 +22,7 @@ class AttendanceBase(BaseModel):
     overtime_hours: float | None = Field(None, ge=0.0)
     source: AttendanceSourceEnum = AttendanceSourceEnum.MANUAL
     note: str | None = Field(None, max_length=255)
-    recorded_by_id: uuid.UUID | None = None
+    recorded_by_id: int | None = None
 
 
 class AttendanceCreate(AttendanceBase):
