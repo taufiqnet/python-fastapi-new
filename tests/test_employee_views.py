@@ -67,6 +67,8 @@ async def test_employee_views_renders(client: AsyncClient):
     res_create = await client.get("/employees/create")
     assert res_create.status_code == 200
     assert "Create Employee" in res_create.text
+    assert 'data-department-id' in res_create.text
+    assert 'filterJobTitles()' in res_create.text
 
     # 3. Create Employee via API
     emp_payload = {

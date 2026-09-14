@@ -237,7 +237,7 @@
                         <select id="job_title_id" name="job_title_id" class="form-input">
                             <option value="">— Unassigned —</option>
                             {% for j in job_titles %}
-                            <option value="{{ j.id }}" data-business-id="{{ j.business_id }}" {% if employee and employee.job_title_id == j.id %}selected{% endif %}>{{ j.name }}</option>
+                            <option value="{{ j.id }}" data-business-id="{{ j.business_id }}" data-department-id="{{ j.department_id or '' }}" {% if employee and employee.job_title_id == j.id %}selected{% endif %}>{{ j.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -370,16 +370,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    const deptSelect = document.getElementById('department_id');
+    const jtSelect = document.getElementById('job_title_id');
+
     function filterDeptAndJobTitles() {
         const selectedBizId = bizSelect ? bizSelect.value : '';
-        const deptSelect = document.getElementById('department_id');
-        const jtSelect = document.getElementById('job_title_id');
+        const selectedDeptId = deptSelect ? deptSelect.value : '';
 
         if (deptSelect) {
             Array.from(deptSelect.options).forEach(opt => {
                 if (!opt.value) return; // Keep "Unassigned"
                 const optBizId = opt.getAttribute('data-business-id');
-                if (!selectedBizId || optBizId === selectedBizId) {
+                if (selectedBizId && optBizId === selectedBizId) {
                     opt.style.display = '';
                     opt.disabled = false;
                 } else {
@@ -388,16 +390,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             const selDeptOpt = deptSelect.options[deptSelect.selectedIndex];
-            if (selDeptOpt && selDeptOpt.disabled) {
+            if (!selectedBizId || (selDeptOpt && selDeptOpt.disabled)) {
                 deptSelect.value = '';
             }
         }
+
+        filterJobTitles();
+    }
+
+    function filterJobTitles() {
+        const selectedBizId = bizSelect ? bizSelect.value : '';
+        const selectedDeptId = deptSelect ? deptSelect.value : '';
 
         if (jtSelect) {
             Array.from(jtSelect.options).forEach(opt => {
                 if (!opt.value) return; // Keep "Unassigned"
                 const optBizId = opt.getAttribute('data-business-id');
-                if (!selectedBizId || optBizId === selectedBizId) {
+                const optDeptId = opt.getAttribute('data-department-id');
+
+                const matchesBiz = selectedBizId && optBizId === selectedBizId;
+                const matchesDept = selectedDeptId && optDeptId === selectedDeptId;
+
+                if (matchesBiz && matchesDept) {
                     opt.style.display = '';
                     opt.disabled = false;
                 } else {
@@ -406,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             const selJtOpt = jtSelect.options[jtSelect.selectedIndex];
-            if (selJtOpt && selJtOpt.disabled) {
+            if (!selectedBizId || !selectedDeptId || (selJtOpt && selJtOpt.disabled)) {
                 jtSelect.value = '';
             }
         }
@@ -417,6 +431,11 @@ document.addEventListener('DOMContentLoaded', function() {
         bizSelect.addEventListener('change', function() {
             checkDuplicateEmpId();
             filterDeptAndJobTitles();
+        });
+    }
+    if (deptSelect) {
+        deptSelect.addEventListener('change', function() {
+            filterJobTitles();
         });
     }
 
