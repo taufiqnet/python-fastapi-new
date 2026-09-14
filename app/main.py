@@ -158,6 +158,21 @@ async def on_startup():
             await conn.run_sync(Base.metadata.create_all)
         async with AsyncSessionLocal() as db:
             await seed_system_admin_and_permissions(db)
+
+        # Mark any interrupted import jobs from previous server restarts
+        try:
+            db_sync = SessionLocal()
+            try:
+                from app.modules.hr_payroll.employees.models import ImportJob
+                interrupted_jobs = db_sync.query(ImportJob).filter(ImportJob.status == "processing").all()
+                for ij in interrupted_jobs:
+                    ij.status = "interrupted"
+                if interrupted_jobs:
+                    db_sync.commit()
+            finally:
+                db_sync.close()
+        except Exception:
+            logger.exception("Failed to mark interrupted import jobs")
     except Exception:
         logger.exception("Failed async startup table creation or seeding")
 

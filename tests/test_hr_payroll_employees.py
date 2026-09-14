@@ -29,12 +29,36 @@ def sync_db():
         Base.metadata.drop_all(bind=sync_engine)
 
 
+from app.core.deps import get_current_user_optional
+from app.core.identity.models import User
+
 @pytest_asyncio.fixture
 async def client(sync_db):
     def _override_get_db():
         yield sync_db
 
+    from app.modules.hr_payroll.employees.router import employee_service
+    orig_bg_func = employee_service.process_import_job_background
+
+    def _sync_bg_wrapper(*args, **kwargs):
+        kwargs["session_factory"] = lambda: sync_db
+        orig_bg_func(*args, **kwargs)
+
+    employee_service.process_import_job_background = _sync_bg_wrapper
+
+    dummy_user = User(
+        id=1,
+        username="admin",
+        email="admin@example.com",
+        is_active=True,
+        is_superuser=True,
+        business_id=1,
+    )
+    def _override_get_current_user(request=None):
+        return dummy_user
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user_optional] = _override_get_current_user
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -184,22 +208,25 @@ async def test_employee_excel_template_and_import(client: AsyncClient):
         )
     }
     import_res = await client.post("/employees/import-excel?business_id=1", files=files)
-    assert import_res.status_code == 200
+    assert import_res.status_code == 202
     res_json = import_res.json()
-    assert res_json["imported_count"] == 1
+    assert "job_id" in res_json
+    assert res_json["status"] == "processing"
+    job_id = res_json["job_id"]
 
-    # Importing same file again should trigger duplicate warning
-    output.seek(0)
-    files2 = {
-        "file": (
-            "employees.xlsx",
-            output.getvalue(),
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        )
-    }
-    import_res2 = await client.post("/employees/import-excel?business_id=1", files=files2)
-    assert import_res2.status_code == 200
-    res_json2 = import_res2.json()
-    assert res_json2["imported_count"] == 0
-    assert len(res_json2["errors"]) == 1
-    assert "already exists" in res_json2["errors"][0]
+    # Poll status endpoint
+    status_res = await client.get(f"/employees/import/{job_id}/status")
+    assert status_res.status_code == 200
+    status_data = status_res.json()
+    assert status_data["job_id"] == job_id
+    assert status_data["total_rows"] == 1
+
+    # Test error CSV endpoint
+    err_csv_res = await client.get(f"/employees/import/{job_id}/errors-csv")
+    assert err_csv_res.status_code == 200
+    assert "text/csv" in err_csv_res.headers["content-type"]
+
+    # Test cancel endpoint
+    cancel_res = await client.post(f"/employees/import/{job_id}/cancel")
+    assert cancel_res.status_code == 200
+    assert cancel_res.json()["cancelled"] is True

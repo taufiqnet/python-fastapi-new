@@ -125,7 +125,7 @@
                         <select id="department_id" name="department_id" class="form-input">
                             <option value="">— Unassigned —</option>
                             {% for d in departments %}
-                            <option value="{{ d.id }}" {% if is_edit and job_title.department_id == d.id %}selected{% endif %}>
+                            <option value="{{ d.id }}" data-business-id="{{ d.business_id }}" {% if is_edit and job_title.department_id == d.id %}selected{% endif %}>
                                 {{ d.name }}
                             </option>
                             {% endfor %}
@@ -164,6 +164,37 @@
 
 {% block extra_js %}
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bizSelect = document.getElementById('business_id');
+    const deptSelect = document.getElementById('department_id');
+
+    function filterDepartmentsByBusiness() {
+        const selectedBizId = bizSelect ? bizSelect.value : '';
+        if (deptSelect) {
+            Array.from(deptSelect.options).forEach(opt => {
+                if (!opt.value) return; // Keep "Unassigned"
+                const optBizId = opt.getAttribute('data-business-id');
+                if (!selectedBizId || optBizId === selectedBizId) {
+                    opt.style.display = '';
+                    opt.disabled = false;
+                } else {
+                    opt.style.display = 'none';
+                    opt.disabled = true;
+                }
+            });
+            const selOpt = deptSelect.options[deptSelect.selectedIndex];
+            if (selOpt && selOpt.disabled) {
+                deptSelect.value = '';
+            }
+        }
+    }
+
+    if (bizSelect) {
+        bizSelect.addEventListener('change', filterDepartmentsByBusiness);
+    }
+    filterDepartmentsByBusiness();
+});
+
 function handleJobTitleSubmit(event) {
     event.preventDefault();
     const isEdit = "{{ is_edit }}" === "True";

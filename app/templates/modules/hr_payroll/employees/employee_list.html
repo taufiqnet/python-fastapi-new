@@ -539,7 +539,7 @@ document.getElementById('import-excel-form').addEventListener('submit', function
     })
     .then(async res => {
         document.getElementById('import-loading').classList.add('hidden');
-        if (!res.ok) {
+        if (!res.ok && res.status !== 202) {
             const err = await res.json().catch(() => ({}));
             throw new Error(err.detail || 'Failed to import employee file.');
         }
@@ -547,18 +547,12 @@ document.getElementById('import-excel-form').addEventListener('submit', function
     })
     .then(data => {
         closeImportModal();
-        let msg = `Successfully imported ${data.imported_count} employee record(s).`;
-        if (data.errors && data.errors.length > 0) {
-            msg += `<br><br><small class="text-rose-600 font-semibold">Note: ${data.errors.length} row(s) had warnings or skipped:<br>${data.errors.join('<br>')}</small>`;
+        if (data.job_id) {
+            if (window.startImportJobPolling) {
+                window.startImportJobPolling(data.job_id);
+            }
+            showSuccessToast('Import Started', 'Employee import job queued. Track progress in the floating widget.');
         }
-        Swal.fire({
-            icon: 'success',
-            title: 'Employee Import Complete',
-            html: msg,
-            confirmButtonColor: '#10b981'
-        }).then(() => {
-            window.location.reload();
-        });
     })
     .catch(err => {
         document.getElementById('import-loading').classList.add('hidden');

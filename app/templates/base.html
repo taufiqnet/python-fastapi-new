@@ -1107,6 +1107,244 @@
         }
     </script>
 
+    <!-- Global Employee Import Progress Widget -->
+    <div id="import-progress-widget" class="fixed bottom-6 right-6 z-50 w-80 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden hidden transition-all duration-300">
+        <!-- Widget Header -->
+        <div class="bg-indigo-600 text-white px-4 py-3 flex items-center justify-between cursor-pointer" id="import-widget-header">
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-file-import text-sm animate-pulse" id="import-widget-icon"></i>
+                <span class="text-xs font-bold tracking-wide uppercase" id="import-widget-title">Importing Employees...</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button type="button" id="toggle-import-widget-btn" title="Minimize/Expand" class="text-white/80 hover:text-white transition-colors">
+                    <i class="fas fa-minus text-xs" id="import-widget-toggle-icon"></i>
+                </button>
+                <button type="button" id="close-import-widget-btn" title="Dismiss" class="text-white/80 hover:text-white transition-colors hidden">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Widget Body -->
+        <div class="p-4 space-y-3 bg-white" id="import-widget-body">
+            <!-- Progress Bar -->
+            <div>
+                <div class="flex items-center justify-between text-xs font-semibold text-gray-700 mb-1">
+                    <span id="import-widget-status-text">Processing rows</span>
+                    <span id="import-widget-percent">0%</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                    <div id="import-widget-bar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300 w-0"></div>
+                </div>
+            </div>
+
+            <!-- Counts Breakdown -->
+            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="bg-indigo-50 p-2 rounded-xl">
+                    <p class="text-[10px] text-gray-500 uppercase font-semibold">Total</p>
+                    <p class="font-bold text-indigo-700 text-sm" id="import-widget-total">0</p>
+                </div>
+                <div class="bg-emerald-50 p-2 rounded-xl">
+                    <p class="text-[10px] text-gray-500 uppercase font-semibold">Success</p>
+                    <p class="font-bold text-emerald-600 text-sm" id="import-widget-success">0</p>
+                </div>
+                <div class="bg-rose-50 p-2 rounded-xl">
+                    <p class="text-[10px] text-gray-500 uppercase font-semibold">Errors</p>
+                    <p class="font-bold text-rose-600 text-sm" id="import-widget-errors">0</p>
+                </div>
+            </div>
+
+            <!-- Action Controls & Error Summary -->
+            <div class="pt-1 flex items-center justify-between" id="import-widget-controls">
+                <button type="button" id="cancel-import-job-btn" class="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors flex items-center space-x-1">
+                    <i class="fas fa-ban text-xs"></i>
+                    <span>Cancel Job</span>
+                </button>
+                <a href="javascript:void(0);" id="download-import-errors-btn" class="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors hidden flex items-center space-x-1">
+                    <i class="fas fa-download text-xs"></i>
+                    <span>Failed Rows CSV</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Global Import Job Progress Widget Logic
+        (function() {
+            let activeJobId = localStorage.getItem('active_employee_import_job_id');
+            let pollTimer = null;
+
+            const widget = document.getElementById('import-progress-widget');
+            const widgetHeader = document.getElementById('import-widget-header');
+            const widgetBody = document.getElementById('import-widget-body');
+            const widgetTitle = document.getElementById('import-widget-title');
+            const widgetIcon = document.getElementById('import-widget-icon');
+            const toggleBtn = document.getElementById('toggle-import-widget-btn');
+            const toggleIcon = document.getElementById('import-widget-toggle-icon');
+            const closeBtn = document.getElementById('close-import-widget-btn');
+
+            const statusText = document.getElementById('import-widget-status-text');
+            const percentText = document.getElementById('import-widget-percent');
+            const progressBar = document.getElementById('import-widget-bar');
+            const totalCount = document.getElementById('import-widget-total');
+            const successCount = document.getElementById('import-widget-success');
+            const errorCount = document.getElementById('import-widget-errors');
+
+            const cancelBtn = document.getElementById('cancel-import-job-btn');
+            const downloadErrorsBtn = document.getElementById('download-import-errors-btn');
+
+            let isMinimized = false;
+
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    isMinimized = !isMinimized;
+                    if (isMinimized) {
+                        widgetBody.classList.add('hidden');
+                        toggleIcon.classList.remove('fa-minus');
+                        toggleIcon.classList.add('fa-plus');
+                    } else {
+                        widgetBody.classList.remove('hidden');
+                        toggleIcon.classList.remove('fa-plus');
+                        toggleIcon.classList.add('fa-minus');
+                    }
+                });
+            }
+
+            if (widgetHeader) {
+                widgetHeader.addEventListener('click', () => {
+                    if (toggleBtn) toggleBtn.click();
+                });
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    localStorage.removeItem('active_employee_import_job_id');
+                    if (pollTimer) clearInterval(pollTimer);
+                    if (widget) widget.classList.add('hidden');
+                });
+            }
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', async () => {
+                    const jobId = localStorage.getItem('active_employee_import_job_id');
+                    if (!jobId) return;
+                    try {
+                        cancelBtn.disabled = true;
+                        cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i><span>Cancelling...</span>';
+                        await fetch(`/employees/import/${jobId}/cancel`, { method: 'POST' });
+                    } catch (err) {
+                        console.error('Failed to cancel import job:', err);
+                    }
+                });
+            }
+
+            window.startImportJobPolling = function(jobId) {
+                localStorage.setItem('active_employee_import_job_id', jobId);
+                activeJobId = jobId;
+                if (widget) widget.classList.remove('hidden');
+                if (closeBtn) closeBtn.classList.add('hidden');
+                if (cancelBtn) {
+                    cancelBtn.classList.remove('hidden');
+                    cancelBtn.disabled = false;
+                    cancelBtn.innerHTML = '<i class="fas fa-ban text-xs"></i><span>Cancel Job</span>';
+                }
+                if (downloadErrorsBtn) downloadErrorsBtn.classList.add('hidden');
+
+                if (pollTimer) clearInterval(pollTimer);
+                pollStatus();
+                pollTimer = setInterval(pollStatus, 1500);
+            };
+
+            async function pollStatus() {
+                const jobId = localStorage.getItem('active_employee_import_job_id');
+                if (!jobId) {
+                    if (pollTimer) clearInterval(pollTimer);
+                    if (widget) widget.classList.add('hidden');
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/employees/import/${jobId}/status`);
+                    if (!res.ok) {
+                        if (pollTimer) clearInterval(pollTimer);
+                        localStorage.removeItem('active_employee_import_job_id');
+                        if (widget) widget.classList.add('hidden');
+                        return;
+                    }
+                    const data = await res.json();
+                    updateWidgetUI(data);
+
+                    if (data.status === 'completed' || data.status === 'cancelled' || data.status === 'failed') {
+                        if (pollTimer) clearInterval(pollTimer);
+                    }
+                } catch (err) {
+                    console.error('Error polling import status:', err);
+                }
+            }
+
+            function updateWidgetUI(data) {
+                if (widget) widget.classList.remove('hidden');
+
+                const total = data.total_rows || 0;
+                const processed = data.processed || 0;
+                const success = data.success_count || 0;
+                const errors = data.error_count || 0;
+
+                const percent = total > 0 ? Math.round((processed / total) * 100) : (data.status === 'completed' ? 100 : 0);
+
+                if (totalCount) totalCount.textContent = total;
+                if (successCount) successCount.textContent = success;
+                if (errorCount) errorCount.textContent = errors;
+
+                if (percentText) percentText.textContent = `${percent}%`;
+                if (progressBar) progressBar.style.width = `${percent}%`;
+
+                if (data.status === 'processing') {
+                    if (widgetTitle) widgetTitle.textContent = 'Importing Employees...';
+                    if (statusText) statusText.textContent = `Processed ${processed} of ${total} rows`;
+                    if (widgetIcon) widgetIcon.className = 'fas fa-file-import text-sm animate-pulse';
+                    if (cancelBtn) cancelBtn.classList.remove('hidden');
+                    if (downloadErrorsBtn) downloadErrorsBtn.classList.add('hidden');
+                    if (closeBtn) closeBtn.classList.add('hidden');
+                } else if (data.status === 'completed') {
+                    if (widgetTitle) widgetTitle.textContent = 'Import Completed';
+                    if (statusText) statusText.textContent = `Done (${success} added, ${errors} errors)`;
+                    if (widgetIcon) widgetIcon.className = 'fas fa-check-circle text-sm text-emerald-300';
+                    if (cancelBtn) cancelBtn.classList.add('hidden');
+                    if (closeBtn) closeBtn.classList.remove('hidden');
+
+                    if (errors > 0 && downloadErrorsBtn) {
+                        downloadErrorsBtn.classList.remove('hidden');
+                        downloadErrorsBtn.href = `/employees/import/${data.job_id}/errors-csv`;
+                    }
+                } else if (data.status === 'cancelled') {
+                    if (widgetTitle) widgetTitle.textContent = 'Import Cancelled';
+                    if (statusText) statusText.textContent = `Stopped at ${processed} of ${total} rows`;
+                    if (widgetIcon) widgetIcon.className = 'fas fa-ban text-sm text-amber-300';
+                    if (cancelBtn) cancelBtn.classList.add('hidden');
+                    if (closeBtn) closeBtn.classList.remove('hidden');
+
+                    if (errors > 0 && downloadErrorsBtn) {
+                        downloadErrorsBtn.classList.remove('hidden');
+                        downloadErrorsBtn.href = `/employees/import/${data.job_id}/errors-csv`;
+                    }
+                } else if (data.status === 'failed') {
+                    if (widgetTitle) widgetTitle.textContent = 'Import Failed';
+                    if (statusText) statusText.textContent = 'Job failed to complete';
+                    if (widgetIcon) widgetIcon.className = 'fas fa-exclamation-triangle text-sm text-rose-300';
+                    if (cancelBtn) cancelBtn.classList.add('hidden');
+                    if (closeBtn) closeBtn.classList.remove('hidden');
+                }
+            }
+
+            // On load, resume polling if active job exists
+            if (activeJobId) {
+                window.startImportJobPolling(activeJobId);
+            }
+        })();
+    </script>
+
     {% block extra_js %}{% endblock %}
 
     {% include "modules/partials/_ai_widget.html" %}

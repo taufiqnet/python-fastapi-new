@@ -1,4 +1,4 @@
-# Prompt for Jules AI
+# Prompt
 
 Copy everything below into Jules as a single task.
 

@@ -227,7 +227,7 @@
                         <select id="department_id" name="department_id" class="form-input">
                             <option value="">— Unassigned —</option>
                             {% for d in departments %}
-                            <option value="{{ d.id }}" {% if employee and employee.department_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                            <option value="{{ d.id }}" data-business-id="{{ d.business_id }}" {% if employee and employee.department_id == d.id %}selected{% endif %}>{{ d.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -237,7 +237,7 @@
                         <select id="job_title_id" name="job_title_id" class="form-input">
                             <option value="">— Unassigned —</option>
                             {% for j in job_titles %}
-                            <option value="{{ j.id }}" {% if employee and employee.job_title_id == j.id %}selected{% endif %}>{{ j.name }}</option>
+                            <option value="{{ j.id }}" data-business-id="{{ j.business_id }}" {% if employee and employee.job_title_id == j.id %}selected{% endif %}>{{ j.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -336,7 +336,7 @@
 <script>
 const existingEmployeesList = [
     {% for emp in all_employees %}
-    { id: "{{ emp.id }}", employee_id: "{{ emp.employee_id }}".trim().toLowerCase(), name: "{{ emp.full_name }}" },
+    { id: "{{ emp.id }}", employee_id: "{{ emp.employee_id }}".trim().toLowerCase(), name: "{{ emp.full_name }}", business_id: parseInt("{{ emp.business_id }}") },
     {% endfor %}
 ];
 
@@ -349,25 +349,79 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const empIdInput = document.getElementById('employee_id');
+    const bizSelect = document.getElementById('business_id');
     const empIdWarning = document.getElementById('empIdWarning');
     const currentEmpId = "{% if is_edit and employee %}{{ employee.id }}{% endif %}";
 
-    if (empIdInput) {
-        empIdInput.addEventListener('input', function() {
-            const val = this.value.trim().toLowerCase();
-            if (!val) {
-                empIdWarning.classList.add('hidden');
-                return;
+    function checkDuplicateEmpId() {
+        if (!empIdInput || !empIdWarning) return;
+        const val = empIdInput.value.trim().toLowerCase();
+        const selectedBizId = bizSelect ? parseInt(bizSelect.value) : NaN;
+        if (!val || isNaN(selectedBizId)) {
+            empIdWarning.classList.add('hidden');
+            return;
+        }
+        const duplicate = existingEmployeesList.find(e => e.employee_id === val && e.business_id === selectedBizId && e.id !== currentEmpId);
+        if (duplicate) {
+            empIdWarning.classList.remove('hidden');
+            empIdWarning.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Warning: Employee ID "${empIdInput.value.trim()}" is already assigned to ${duplicate.name}!`;
+        } else {
+            empIdWarning.classList.add('hidden');
+        }
+    }
+
+    function filterDeptAndJobTitles() {
+        const selectedBizId = bizSelect ? bizSelect.value : '';
+        const deptSelect = document.getElementById('department_id');
+        const jtSelect = document.getElementById('job_title_id');
+
+        if (deptSelect) {
+            Array.from(deptSelect.options).forEach(opt => {
+                if (!opt.value) return; // Keep "Unassigned"
+                const optBizId = opt.getAttribute('data-business-id');
+                if (!selectedBizId || optBizId === selectedBizId) {
+                    opt.style.display = '';
+                    opt.disabled = false;
+                } else {
+                    opt.style.display = 'none';
+                    opt.disabled = true;
+                }
+            });
+            const selDeptOpt = deptSelect.options[deptSelect.selectedIndex];
+            if (selDeptOpt && selDeptOpt.disabled) {
+                deptSelect.value = '';
             }
-            const duplicate = existingEmployeesList.find(e => e.employee_id === val && e.id !== currentEmpId);
-            if (duplicate) {
-                empIdWarning.classList.remove('hidden');
-                empIdWarning.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Warning: Employee ID "${this.value.trim()}" is already assigned to ${duplicate.name}!`;
-            } else {
-                empIdWarning.classList.add('hidden');
+        }
+
+        if (jtSelect) {
+            Array.from(jtSelect.options).forEach(opt => {
+                if (!opt.value) return; // Keep "Unassigned"
+                const optBizId = opt.getAttribute('data-business-id');
+                if (!selectedBizId || optBizId === selectedBizId) {
+                    opt.style.display = '';
+                    opt.disabled = false;
+                } else {
+                    opt.style.display = 'none';
+                    opt.disabled = true;
+                }
+            });
+            const selJtOpt = jtSelect.options[jtSelect.selectedIndex];
+            if (selJtOpt && selJtOpt.disabled) {
+                jtSelect.value = '';
             }
+        }
+    }
+
+    if (empIdInput) empIdInput.addEventListener('input', checkDuplicateEmpId);
+    if (bizSelect) {
+        bizSelect.addEventListener('change', function() {
+            checkDuplicateEmpId();
+            filterDeptAndJobTitles();
         });
     }
+
+    // Trigger initial filter on load
+    filterDeptAndJobTitles();
 });
 
 function handleEmployee2Submit(event) {

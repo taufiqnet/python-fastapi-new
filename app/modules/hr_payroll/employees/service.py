@@ -15,13 +15,17 @@ from app.modules.hr_payroll.organization.repository import (
     JobTitleRepository,
 )
 from datetime import date, datetime
-from io import BytesIO
+from io import BytesIO, StringIO
+import json
+import csv
 import openpyxl
 from app.modules.hr_payroll.employees.models import (
     GenderEnum,
     EmploymentTypeEnum,
     WorkArrangementEnum,
+    ImportJob,
 )
+from app.database import SessionLocal
 
 
 class EmployeeService:
@@ -485,9 +489,9 @@ class EmployeeService:
         wb.save(output)
         return output.getvalue()
 
-    def import_employees_excel(
-        self, db: Session, business_id: int, file_bytes: bytes
-    ) -> dict[str, int | list[str]]:
+    def start_import_job(
+        self, db: Session, business_id: int, file_bytes: bytes, created_by: str | None = None
+    ) -> ImportJob:
         try:
             wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
             ws = wb.active
@@ -504,129 +508,227 @@ class EmployeeService:
                 detail="Excel file is empty.",
             )
 
-        departments = self.department_repository.get_all(db, business_id=business_id, limit=500)
-        dept_map = {d.name.strip().lower(): d for d in departments if d.name}
-
-        job_titles = self.job_title_repository.get_all(db, business_id=business_id, limit=500)
-        jt_map = {j.name.strip().lower(): j for j in job_titles if j.name}
-
-        success_count = 0
-        error_messages: list[str] = []
-
         header = [str(cell or "").strip().lower() for cell in rows[0]]
         start_idx = 1 if "employee id" in header or "employee_id" in header or "first name" in header else 0
 
-        for row_idx, row in enumerate(rows[start_idx:], start=start_idx + 1):
-            if not row or not any(row):
-                continue
+        valid_rows = [r for r in rows[start_idx:] if r and any(r)]
+        total_rows = len(valid_rows)
 
-            emp_code_raw = str(row[0] or "").strip()
-            first_name_raw = str(row[1] or "").strip() if len(row) > 1 and row[1] else ""
-            middle_name_raw = str(row[2] or "").strip() if len(row) > 2 and row[2] else None
-            last_name_raw = str(row[3] or "").strip() if len(row) > 3 and row[3] else None
-            work_email_raw = str(row[4] or "").strip() if len(row) > 4 and row[4] else ""
-            phone_raw = str(row[5] or "").strip() if len(row) > 5 and row[5] else None
-            dept_raw = str(row[6] or "").strip() if len(row) > 6 and row[6] else None
-            jt_raw = str(row[7] or "").strip() if len(row) > 7 and row[7] else None
-            emp_type_raw = str(row[8] or "").strip().lower() if len(row) > 8 and row[8] else None
-            arrangement_raw = str(row[9] or "").strip().lower() if len(row) > 9 and row[9] else None
-            start_date_raw = row[10] if len(row) > 10 else None
-            gender_raw = str(row[11] or "").strip().lower() if len(row) > 11 and row[11] else None
+        MAX_IMPORT_ROWS = 5000
+        if total_rows > MAX_IMPORT_ROWS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Excel file exceeds maximum allowed limit of {MAX_IMPORT_ROWS:,} rows (found {total_rows:,} rows).",
+            )
 
-            if not emp_code_raw:
-                error_messages.append(f"Row {row_idx}: Missing Employee ID.")
-                continue
+        job = ImportJob(
+            business_id=business_id,
+            status="processing",
+            total_rows=total_rows,
+            processed=0,
+            success_count=0,
+            error_count=0,
+            errors=json.dumps([]),
+            cancelled=False,
+            created_by=created_by,
+        )
+        job = self.repository.create_import_job(db, job)
+        return job, rows, start_idx
 
-            if not first_name_raw:
-                error_messages.append(f"Row {row_idx}: Missing First Name.")
-                continue
+    def process_import_job_background(
+        self, job_id: uuid.UUID, business_id: int, file_bytes: bytes, start_idx: int, session_factory=None
+    ) -> None:
+        db = session_factory() if session_factory else SessionLocal()
+        try:
+            job = self.repository.get_import_job(db, job_id)
+            if not job:
+                return
 
-            if not work_email_raw:
-                error_messages.append(f"Row {row_idx}: Missing Work Email.")
-                continue
+            try:
+                wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
+                ws = wb.active
+                rows = list(ws.iter_rows(values_only=True))
+            except Exception as e:
+                job.status = "failed"
+                job.errors = json.dumps([{"row": 0, "error": f"Failed to open file: {str(e)}"}])
+                db.commit()
+                return
 
-            # Check if exists -> warning message
-            existing_by_id = self.repository.get_by_employee_id(db, emp_code_raw, business_id)
-            existing_by_email = self.repository.get_by_work_email(db, work_email_raw, business_id)
+            departments = self.department_repository.get_all(db, business_id=business_id, limit=500)
+            dept_map = {d.name.strip().lower(): d for d in departments if d.name}
 
-            if existing_by_id or existing_by_email:
-                warning_reason = []
-                if existing_by_id:
-                    warning_reason.append(f"Employee ID '{emp_code_raw}' already exists")
-                if existing_by_email:
-                    warning_reason.append(f"Work Email '{work_email_raw}' already exists")
-                error_messages.append(f"Row {row_idx}: Skipped - {', '.join(warning_reason)}.")
-                continue
+            job_titles = self.job_title_repository.get_all(db, business_id=business_id, limit=500)
+            jt_map = {j.name.strip().lower(): j for j in job_titles if j.name}
 
-            # Department lookup
-            dept_obj = dept_map.get(dept_raw.lower()) if dept_raw else None
-            dept_id = dept_obj.id if dept_obj else None
+            errors_list = []
 
-            # Job title lookup
-            jt_obj = jt_map.get(jt_raw.lower()) if jt_raw else None
-            jt_id = jt_obj.id if jt_obj else None
+            for row_idx, row in enumerate(rows[start_idx:], start=start_idx + 1):
+                if not row or not any(row):
+                    continue
 
-            # Parse start date
-            parsed_start_date: date | None = None
-            if isinstance(start_date_raw, (datetime, date)):
-                parsed_start_date = start_date_raw.date() if isinstance(start_date_raw, datetime) else start_date_raw
-            elif isinstance(start_date_raw, str) and start_date_raw.strip():
-                try:
-                    parsed_start_date = datetime.strptime(start_date_raw.strip(), "%Y-%m-%d").date()
-                except ValueError:
+                # Check if cancelled before processing row
+                db.refresh(job)
+                if job.cancelled:
+                    job.status = "cancelled"
+                    db.commit()
+                    return
+
+                emp_code_raw = str(row[0] or "").strip()
+                first_name_raw = str(row[1] or "").strip() if len(row) > 1 and row[1] else ""
+                middle_name_raw = str(row[2] or "").strip() if len(row) > 2 and row[2] else None
+                last_name_raw = str(row[3] or "").strip() if len(row) > 3 and row[3] else None
+                work_email_raw = str(row[4] or "").strip() if len(row) > 4 and row[4] else ""
+                phone_raw = str(row[5] or "").strip() if len(row) > 5 and row[5] else None
+                dept_raw = str(row[6] or "").strip() if len(row) > 6 and row[6] else None
+                jt_raw = str(row[7] or "").strip() if len(row) > 7 and row[7] else None
+                emp_type_raw = str(row[8] or "").strip().lower() if len(row) > 8 and row[8] else None
+                arrangement_raw = str(row[9] or "").strip().lower() if len(row) > 9 and row[9] else None
+                start_date_raw = row[10] if len(row) > 10 else None
+                gender_raw = str(row[11] or "").strip().lower() if len(row) > 11 and row[11] else None
+
+                row_error = None
+                if not emp_code_raw:
+                    row_error = "Missing Employee ID."
+                elif not first_name_raw:
+                    row_error = "Missing First Name."
+                elif not work_email_raw:
+                    row_error = "Missing Work Email."
+
+                if row_error:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "email": work_email_raw, "error": row_error})
+                    job.error_count += 1
+                    job.processed += 1
+                    job.errors = json.dumps(errors_list)
+                    db.commit()
+                    continue
+
+                existing_by_id = self.repository.get_by_employee_id(db, emp_code_raw, business_id)
+                existing_by_email = self.repository.get_by_work_email(db, work_email_raw, business_id)
+
+                if existing_by_id or existing_by_email:
+                    warning_reason = []
+                    if existing_by_id:
+                        warning_reason.append(f"Employee ID '{emp_code_raw}' already exists")
+                    if existing_by_email:
+                        warning_reason.append(f"Work Email '{work_email_raw}' already exists")
+                    row_error = f"Skipped - {', '.join(warning_reason)}."
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "email": work_email_raw, "error": row_error})
+                    job.error_count += 1
+                    job.processed += 1
+                    job.errors = json.dumps(errors_list)
+                    db.commit()
+                    continue
+
+                dept_obj = dept_map.get(dept_raw.lower()) if dept_raw else None
+                dept_id = dept_obj.id if dept_obj else None
+
+                jt_obj = jt_map.get(jt_raw.lower()) if jt_raw else None
+                jt_id = jt_obj.id if jt_obj else None
+
+                parsed_start_date: date | None = None
+                if isinstance(start_date_raw, (datetime, date)):
+                    parsed_start_date = start_date_raw.date() if isinstance(start_date_raw, datetime) else start_date_raw
+                elif isinstance(start_date_raw, str) and start_date_raw.strip():
                     try:
-                        parsed_start_date = datetime.strptime(start_date_raw.strip(), "%m/%d/%Y").date()
+                        parsed_start_date = datetime.strptime(start_date_raw.strip(), "%Y-%m-%d").date()
+                    except ValueError:
+                        try:
+                            parsed_start_date = datetime.strptime(start_date_raw.strip(), "%m/%d/%Y").date()
+                        except ValueError:
+                            pass
+
+                emp_type_enum = None
+                if emp_type_raw:
+                    try:
+                        emp_type_enum = EmploymentTypeEnum(emp_type_raw)
                     except ValueError:
                         pass
 
-            # Enum mappings
-            emp_type_enum = None
-            if emp_type_raw:
-                try:
-                    emp_type_enum = EmploymentTypeEnum(emp_type_raw)
-                except ValueError:
-                    pass
+                arrangement_enum = None
+                if arrangement_raw:
+                    try:
+                        arrangement_enum = WorkArrangementEnum(arrangement_raw)
+                    except ValueError:
+                        pass
 
-            arrangement_enum = None
-            if arrangement_raw:
-                try:
-                    arrangement_enum = WorkArrangementEnum(arrangement_raw)
-                except ValueError:
-                    pass
+                gender_enum = None
+                if gender_raw:
+                    try:
+                        gender_enum = GenderEnum(gender_raw)
+                    except ValueError:
+                        pass
 
-            gender_enum = None
-            if gender_raw:
-                try:
-                    gender_enum = GenderEnum(gender_raw)
-                except ValueError:
-                    pass
+                create_data = EmployeeCreate(
+                    business_id=business_id,
+                    employee_id=emp_code_raw,
+                    first_name=first_name_raw,
+                    middle_name=middle_name_raw,
+                    last_name=last_name_raw,
+                    work_email=work_email_raw,
+                    phone=phone_raw,
+                    department_id=dept_id,
+                    job_title_id=jt_id,
+                    employment_type=emp_type_enum,
+                    work_arrangement=arrangement_enum,
+                    start_date=parsed_start_date,
+                    gender=gender_enum,
+                    is_active=True,
+                )
 
-            create_data = EmployeeCreate(
-                business_id=business_id,
-                employee_id=emp_code_raw,
-                first_name=first_name_raw,
-                middle_name=middle_name_raw,
-                last_name=last_name_raw,
-                work_email=work_email_raw,
-                phone=phone_raw,
-                department_id=dept_id,
-                job_title_id=jt_id,
-                employment_type=emp_type_enum,
-                work_arrangement=arrangement_enum,
-                start_date=parsed_start_date,
-                gender=gender_enum,
-                is_active=True,
+                try:
+                    self.create_employee(db, create_data)
+                    job.success_count += 1
+                except HTTPException as hexp:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "email": work_email_raw, "error": hexp.detail})
+                    job.error_count += 1
+                except Exception as ex:
+                    errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "email": work_email_raw, "error": f"Failed to create employee - {str(ex)}"})
+                    job.error_count += 1
+
+                job.processed += 1
+                job.errors = json.dumps(errors_list)
+                db.commit()
+
+            job.status = "completed"
+            db.commit()
+        finally:
+            db.close()
+
+    def get_import_job_status(self, db: Session, job_id: uuid.UUID) -> ImportJob:
+        job = self.repository.get_import_job(db, job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Import job not found",
             )
+        return job
 
-            try:
-                self.create_employee(db, create_data)
-                success_count += 1
-            except HTTPException as hexp:
-                error_messages.append(f"Row {row_idx}: {hexp.detail}")
-            except Exception as ex:
-                error_messages.append(f"Row {row_idx}: Failed to create employee - {str(ex)}")
+    def cancel_import_job(self, db: Session, job_id: uuid.UUID) -> ImportJob:
+        job = self.repository.get_import_job(db, job_id)
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Import job not found",
+            )
+        job.cancelled = True
+        if job.status == "processing":
+            job.status = "cancelled"
+        db.commit()
+        db.refresh(job)
+        return job
 
-        return {
-            "imported_count": success_count,
-            "errors": error_messages,
-        }
+    def generate_errors_csv(self, db: Session, job_id: uuid.UUID) -> str:
+        job = self.get_import_job_status(db, job_id)
+        errors = json.loads(job.errors) if job.errors else []
+
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["Row Number", "Employee ID", "Work Email", "Error Reason"])
+
+        for err in errors:
+            if isinstance(err, dict):
+                writer.writerow([err.get("row", ""), err.get("employee_id", ""), err.get("email", ""), err.get("error", "")])
+            else:
+                writer.writerow(["", "", "", str(err)])
+
+        return output.getvalue()
