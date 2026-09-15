@@ -6,6 +6,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.models import (
@@ -38,23 +40,26 @@ async def employee_list_page(
     department_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
-    _perm=Depends(require_permission("hrm", "employees", "view")),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
 ):
-    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
     employees = employee_service.get_employees(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         department_id=department_id,
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
-    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
+    departments = department_service.get_departments(db, skip=0, limit=500, business_id=resolved_business_id)
+    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500, business_id=resolved_business_id)
 
     biz_map = {b.id: b.name_en for b in businesses}
     dept_map = {d.id: d.name for d in departments}
     jt_map = {j.id: j.name for j in job_titles}
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     total_count = len(employees)
     active_count = sum(1 for e in employees if getattr(e, "is_active", True))
@@ -89,13 +94,16 @@ async def employee_create2_page(
     request: Request,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
-    _perm=Depends(require_permission("hrm", "employees", "create")),
+    current_user: User = Depends(require_permission("hrm", "employees", "create")),
 ):
-    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
-    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    departments = department_service.get_departments(db, skip=0, limit=500, business_id=resolved_business_id)
+    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     active_departments = [d for d in departments if getattr(d, "is_active", True)]
     active_job_titles = [j for j in job_titles if getattr(j, "is_active", True)]
@@ -125,13 +133,16 @@ async def employee_create_page(
     request: Request,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
-    _perm=Depends(require_permission("hrm", "employees", "create")),
+    current_user: User = Depends(require_permission("hrm", "employees", "create")),
 ):
-    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
-    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    departments = department_service.get_departments(db, skip=0, limit=500, business_id=resolved_business_id)
+    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     active_departments = [d for d in departments if getattr(d, "is_active", True)]
     active_job_titles = [j for j in job_titles if getattr(j, "is_active", True)]
@@ -162,10 +173,9 @@ async def employee_detail_page(
     request: Request,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
-    _perm=Depends(require_permission("hrm", "employees", "view")),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
 ):
-    current_user = await get_current_user_optional(request, None, async_db)
-    employee = employee_service.get_employee(db, employee_id)
+    employee = employee_service.get_employee(db, employee_id, current_user=current_user)
     business = None
     if employee.business_id:
         try:
@@ -191,14 +201,17 @@ async def employee_edit_page(
     request: Request,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
-    _perm=Depends(require_permission("hrm", "employees", "update")),
+    current_user: User = Depends(require_permission("hrm", "employees", "update")),
 ):
-    current_user = await get_current_user_optional(request, None, async_db)
-    employee = employee_service.get_employee(db, employee_id)
+    employee = employee_service.get_employee(db, employee_id, current_user=current_user)
+    resolved_business_id = resolve_business_id(current_user, employee.business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
-    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    departments = department_service.get_departments(db, skip=0, limit=500, business_id=resolved_business_id)
+    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     active_departments = [
         d for d in departments if getattr(d, "is_active", True) or (employee and d.id == employee.department_id)

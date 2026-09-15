@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.modules.hr_payroll.employees.models import Employee
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
+from typing import Any
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.employees.schemas import (
     EmployeeCreate,
     EmployeeUpdate,
@@ -101,8 +103,12 @@ class EmployeeService:
             limit=limit,
         )
 
-    def get_employee(self, db: Session, employee_uuid: uuid.UUID) -> Employee:
+    def get_employee(
+        self, db: Session, employee_uuid: uuid.UUID, current_user: Any | None = None
+    ) -> Employee:
         employee = self.repository.get_by_id(db, employee_uuid)
+        if current_user is not None:
+            return verify_record_ownership(employee, current_user, detail="Employee not found")
         if not employee:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -271,9 +277,13 @@ class EmployeeService:
         return self.repository.create(db, data)
 
     def update_employee(
-        self, db: Session, employee_uuid: uuid.UUID, data: EmployeeUpdate
+        self,
+        db: Session,
+        employee_uuid: uuid.UUID,
+        data: EmployeeUpdate,
+        current_user: Any | None = None,
     ) -> Employee:
-        employee = self.get_employee(db, employee_uuid)
+        employee = self.get_employee(db, employee_uuid, current_user=current_user)
 
         target_business_id = (
             data.business_id
@@ -373,8 +383,10 @@ class EmployeeService:
 
         return self.repository.update(db, employee, data)
 
-    def delete_employee(self, db: Session, employee_uuid: uuid.UUID) -> None:
-        employee = self.get_employee(db, employee_uuid)
+    def delete_employee(
+        self, db: Session, employee_uuid: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        employee = self.get_employee(db, employee_uuid, current_user=current_user)
         self.repository.delete(db, employee)
 
     def bulk_delete_employees(

@@ -5,6 +5,8 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Qu
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
 from app.modules.hr_payroll.employees.models import ImportJob
 from app.modules.hr_payroll.employees.schemas import (
@@ -24,10 +26,11 @@ employee_service = EmployeeService()
 def export_employees_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "employees", "view")),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
 ):
-    excel_data = employee_service.generate_export_excel(db, business_id=business_id)
-    filename = "employees_export.xlsx" if not business_id else f"employees_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = employee_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "employees_export.xlsx" if not resolved_business_id else f"employees_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -39,18 +42,16 @@ def export_employees_excel(
 def download_employees_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user_optional),
-    _perm=Depends(require_permission("hrm", "employees", "create")),
+    current_user: User = Depends(require_permission("hrm", "employees", "create")),
 ):
-    if current_user and not current_user.is_superuser:
-        business_id = current_user.business_id
-    if not business_id or business_id <= 0:
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Business profile ID is mandatory.",
         )
-    excel_data = employee_service.generate_excel_template(db, business_id=business_id)
-    filename = f"employee_template_business_{business_id}.xlsx"
+    excel_data = employee_service.generate_excel_template(db, business_id=resolved_business_id)
+    filename = f"employee_template_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -64,12 +65,10 @@ async def import_employees_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user_optional),
-    _perm=Depends(require_permission("hrm", "employees", "create")),
+    current_user: User = Depends(require_permission("hrm", "employees", "create")),
 ):
-    if current_user and not current_user.is_superuser:
-        business_id = current_user.business_id
-    if not business_id or business_id <= 0:
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Business profile ID is mandatory.",
@@ -77,13 +76,13 @@ async def import_employees_excel(
     contents = await file.read()
     user_identifier = current_user.username if current_user else "System"
     job, rows, start_idx = employee_service.start_import_job(
-        db, business_id=business_id, file_bytes=contents, created_by=user_identifier
+        db, business_id=resolved_business_id, file_bytes=contents, created_by=user_identifier
     )
 
     background_tasks.add_task(
         employee_service.process_import_job_background,
         job_id=job.id,
-        business_id=business_id,
+        business_id=resolved_business_id,
         file_bytes=contents,
         start_idx=start_idx,
     )
@@ -170,13 +169,14 @@ def get_employees(
     business_id: int | None = Query(None),
     department_id: uuid.UUID | None = Query(None),
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "employees", "view")),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return employee_service.get_employees(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         department_id=department_id,
     )
 
@@ -228,9 +228,9 @@ async def bulk_delete_employees(
 def get_employee(
     employee_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "employees", "view")),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
 ):
-    return employee_service.get_employee(db, employee_id)
+    return employee_service.get_employee(db, employee_id, current_user=current_user)
 
 
 @router.post(
@@ -241,8 +241,13 @@ def get_employee(
 def create_employee(
     employee_data: EmployeeCreate,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "employees", "create")),
+    current_user: User = Depends(require_permission("hrm", "employees", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, employee_data.business_id)
+    if not current_user.is_superuser:
+        employee_data.business_id = current_user.business_id
+    elif employee_data.business_id is None:
+        employee_data.business_id = resolved_business_id
     return employee_service.create_employee(db, employee_data)
 
 
@@ -251,16 +256,20 @@ def update_employee(
     employee_id: uuid.UUID,
     employee_data: EmployeeUpdate,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "employees", "update")),
+    current_user: User = Depends(require_permission("hrm", "employees", "update")),
 ):
-    return employee_service.update_employee(db, employee_id, employee_data)
+    if not current_user.is_superuser:
+        employee_data.business_id = current_user.business_id
+    return employee_service.update_employee(
+        db, employee_id, employee_data, current_user=current_user
+    )
 
 
 @router.delete("/employees/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_employee(
     employee_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "employees", "delete")),
+    current_user: User = Depends(require_permission("hrm", "employees", "delete")),
 ):
-    employee_service.delete_employee(db, employee_id)
+    employee_service.delete_employee(db, employee_id, current_user=current_user)
     return None
