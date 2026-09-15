@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.tenancy.repository import BusinessRepository
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 from app.modules.hr_payroll.leave.models import (
     GenderApplicabilityEnum,
@@ -45,13 +46,11 @@ class LeaveTypeService:
             db, skip=skip, limit=limit, business_id=business_id
         )
 
-    def get_leave_type(self, db: Session, leave_type_uuid: uuid.UUID) -> LeaveType:
+    def get_leave_type(
+        self, db: Session, leave_type_uuid: uuid.UUID, current_user=None
+    ) -> LeaveType:
         leave_type = self.repository.get_by_id(db, leave_type_uuid)
-        if not leave_type:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Leave type not found",
-            )
+        verify_record_ownership(leave_type, current_user, detail="Leave type not found")
         return leave_type
 
     def create_leave_type(self, db: Session, data: LeaveTypeCreate) -> LeaveType:
@@ -63,9 +62,13 @@ class LeaveTypeService:
         return self.repository.create(db, data)
 
     def update_leave_type(
-        self, db: Session, leave_type_uuid: uuid.UUID, data: LeaveTypeUpdate
+        self,
+        db: Session,
+        leave_type_uuid: uuid.UUID,
+        data: LeaveTypeUpdate,
+        current_user=None,
     ) -> LeaveType:
-        leave_type = self.get_leave_type(db, leave_type_uuid)
+        leave_type = self.get_leave_type(db, leave_type_uuid, current_user=current_user)
         target_business_id = (
             data.business_id if data.business_id is not None else leave_type.business_id
         )
@@ -80,8 +83,10 @@ class LeaveTypeService:
 
         return self.repository.update(db, leave_type, data)
 
-    def delete_leave_type(self, db: Session, leave_type_uuid: uuid.UUID) -> None:
-        leave_type = self.get_leave_type(db, leave_type_uuid)
+    def delete_leave_type(
+        self, db: Session, leave_type_uuid: uuid.UUID, current_user=None
+    ) -> None:
+        leave_type = self.get_leave_type(db, leave_type_uuid, current_user=current_user)
         self.repository.delete(db, leave_type)
 
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:

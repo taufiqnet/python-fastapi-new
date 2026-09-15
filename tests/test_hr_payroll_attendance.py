@@ -229,3 +229,147 @@ async def test_excel_template_and_import(client: AsyncClient):
     cancel_res = await client.post(f"/attendance/import/{dup_job_id}/cancel")
     assert cancel_res.status_code == 200
     assert cancel_res.json()["cancelled"] is True
+
+
+@pytest.mark.asyncio
+async def test_attendance_tenant_isolation(client: AsyncClient, sync_db):
+    from app.core.tenancy.models import BusinessProfile
+
+    # 1. Setup Business B (id=2)
+    biz_b = BusinessProfile(
+        id=2,
+        legal_name="Business B Ltd",
+        name_en="Business B",
+        cr_number="7777777777",
+        vat_number="300000000000007",
+    )
+    sync_db.add(biz_b)
+    sync_db.commit()
+
+    # Create Employee in Business A (id=1)
+    emp_a_res = await client.post(
+        "/employees",
+        json={
+            "first_name": "Alice",
+            "last_name": "BizA",
+            "employee_id": "EMP-ATT-A",
+            "work_email": "alice.att@biz-a.com",
+            "business_id": 1,
+        },
+    )
+    assert emp_a_res.status_code == 201
+    emp_a_id = emp_a_res.json()["id"]
+
+    # Create Attendance in Business A
+    att_a_res = await client.post(
+        "/attendance",
+        json={
+            "business_id": 1,
+            "employee_id": emp_a_id,
+            "date": "2025-02-01",
+            "status": "present",
+        },
+    )
+    assert att_a_res.status_code == 201
+    att_a_id = att_a_res.json()["id"]
+
+    # Create Employee in Business B (id=2)
+    emp_b_res = await client.post(
+        "/employees",
+        json={
+            "first_name": "Bob",
+            "last_name": "BizB",
+            "employee_id": "EMP-ATT-B",
+            "work_email": "bob.att@biz-b.com",
+            "business_id": 2,
+        },
+    )
+    assert emp_b_res.status_code == 201
+    emp_b_id = emp_b_res.json()["id"]
+
+    # Create Attendance in Business B
+    att_b_res = await client.post(
+        "/attendance",
+        json={
+            "business_id": 2,
+            "employee_id": emp_b_id,
+            "date": "2025-02-01",
+            "status": "present",
+        },
+    )
+    assert att_b_res.status_code == 201
+    att_b_id = att_b_res.json()["id"]
+
+    # 2. Switch to regular user assigned to Business A
+    user_a = User(
+        id=20,
+        username="user_att_a",
+        email="user.att@biz-a.com",
+        is_active=True,
+        is_superuser=False,
+        business_id=1,
+    )
+    user_a.get_all_permission_codes = lambda: {
+        "hrm:attendance:view",
+        "hrm:attendance:create",
+        "hrm:attendance:update",
+        "hrm:attendance:delete",
+    }
+    user_a.has_permission = lambda code: code in {
+        "hrm:attendance:view",
+        "hrm:attendance:create",
+        "hrm:attendance:update",
+        "hrm:attendance:delete",
+    }
+    user_a.business_profile = None
+
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: user_a
+    app.dependency_overrides[get_db] = lambda: sync_db
+
+    # A) GET list attempting business_id=2 should ignore query param and return only Business A attendance
+    list_res = await client.get("/attendance?business_id=2")
+    assert list_res.status_code == 200
+    records = list_res.json()
+    record_ids = [r["id"] for r in records]
+    assert att_a_id in record_ids
+    assert att_b_id not in record_ids
+
+    # B) GET attendance in Business B by ID returns 404
+    get_res = await client.get(f"/attendance/{att_b_id}")
+    assert get_res.status_code == 404
+
+    # C) PUT attendance in Business B by ID returns 404
+    put_res = await client.put(f"/attendance/{att_b_id}", json={"note": "Hacked"})
+    assert put_res.status_code == 404
+
+    # D) DELETE attendance in Business B by ID returns 404
+    del_res = await client.delete(f"/attendance/{att_b_id}")
+    assert del_res.status_code == 404
+
+    # E) Create attendance with business_id=2 in payload overrides to 1
+    create_res = await client.post(
+        "/attendance",
+        json={
+            "business_id": 2,
+            "employee_id": emp_a_id,
+            "date": "2025-02-02",
+            "status": "present",
+        },
+    )
+    assert create_res.status_code == 201
+    assert create_res.json()["business_id"] == 1
+
+    # 3. Superuser access checks
+    superuser = User(id=1, username="admin", email="admin@example.com", is_active=True, is_superuser=True, business_id=1)
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: superuser
+
+    su_list_res = await client.get("/attendance?business_id=2")
+    assert su_list_res.status_code == 200
+    su_records = su_list_res.json()
+    su_record_ids = [r["id"] for r in su_records]
+    assert att_b_id in su_record_ids
+    assert att_a_id not in su_record_ids
+
+    su_get_res = await client.get(f"/attendance/{att_b_id}")
+    assert su_get_res.status_code == 200
+    assert su_get_res.json()["id"] == att_b_id

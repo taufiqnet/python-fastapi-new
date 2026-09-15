@@ -328,6 +328,11 @@ async def test_employee_import_tenant_scoping_superuser_and_non_superuser(client
     assert len(biz1_emps) == 1
     assert biz1_emps[0]["business_id"] == 1
 
+    # Switch back to superuser to query Business 2 directly
+    superuser = User(id=1, username="admin", email="admin@example.com", is_active=True, is_superuser=True, business_id=1)
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: superuser
+    app.dependency_overrides[get_current_user] = lambda request=None: superuser
+
     emp_res2_biz2 = await client.get("/employees?business_id=2")
     assert emp_res2_biz2.status_code == 200
     biz2_nonsup_emps = [e for e in emp_res2_biz2.json() if e["employee_id"] == "NONSUP01"]
@@ -390,3 +395,132 @@ async def test_employee_import_mandatory_business_and_header_mapping(client: Asy
     assert len(hdr_emp) == 1
     assert hdr_emp[0]["work_email"] == "hdr.mapped@example.com"
     assert hdr_emp[0]["start_date"] == "2025-02-01"
+
+
+@pytest.mark.asyncio
+async def test_employee_tenant_isolation(client: AsyncClient, sync_db):
+    from app.core.tenancy.models import BusinessProfile
+
+    # 1. Setup two businesses: Business A (id=1) and Business B (id=2)
+    biz_b = BusinessProfile(
+        id=2,
+        legal_name="Business B Ltd",
+        name_en="Business B",
+        cr_number="8888888888",
+        vat_number="300000000000008",
+    )
+    sync_db.add(biz_b)
+    sync_db.commit()
+
+    # Create Employee in Business A (via superuser)
+    res_a = await client.post(
+        "/employees",
+        json={
+            "first_name": "Alice",
+            "last_name": "BizA",
+            "employee_id": "EMP-BIZA",
+            "work_email": "alice@biz-a.com",
+            "business_id": 1,
+        },
+    )
+    assert res_a.status_code == 201
+    emp_a_id = res_a.json()["id"]
+
+    # Create Employee in Business B (via superuser)
+    res_b = await client.post(
+        "/employees",
+        json={
+            "first_name": "Bob",
+            "last_name": "BizB",
+            "employee_id": "EMP-BIZB",
+            "work_email": "bob@biz-b.com",
+            "business_id": 2,
+        },
+    )
+    assert res_b.status_code == 201
+    emp_b_id = res_b.json()["id"]
+
+    # 2. Switch to regular non-superuser assigned to Business A
+    user_a = User(
+        id=10,
+        username="user_biz_a",
+        email="user@biz-a.com",
+        is_active=True,
+        is_superuser=False,
+        business_id=1,
+    )
+    user_a.get_all_permission_codes = lambda: {
+        "hrm:employees:view",
+        "hrm:employees:create",
+        "hrm:employees:update",
+        "hrm:employees:delete",
+    }
+    user_a.has_permission = lambda code: code in {
+        "hrm:employees:view",
+        "hrm:employees:create",
+        "hrm:employees:update",
+        "hrm:employees:delete",
+    }
+    user_a.business_profile = None
+
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: user_a
+    app.dependency_overrides[get_current_user] = lambda request=None: user_a
+
+    # A) List request trying to query business_id=2 should ignore param and return Business A employees only
+    list_res = await client.get("/employees?business_id=2")
+    assert list_res.status_code == 200
+    emps = list_res.json()
+    emp_ids = [e["id"] for e in emps]
+    assert emp_a_id in emp_ids
+    assert emp_b_id not in emp_ids
+
+    # B) GET employee in Business B by ID returns 404 (not 403)
+    get_res = await client.get(f"/employees/{emp_b_id}")
+    assert get_res.status_code == 404
+
+    # C) PUT employee in Business B by ID returns 404
+    put_res = await client.put(f"/employees/{emp_b_id}", json={"first_name": "Hacked"})
+    assert put_res.status_code == 404
+
+    # D) DELETE employee in Business B by ID returns 404
+    del_res = await client.delete(f"/employees/{emp_b_id}")
+    assert del_res.status_code == 404
+
+    # E) Create employee with business_id=2 in payload overrides business_id to 1 (assigned business)
+    create_res = await client.post(
+        "/employees",
+        json={
+            "first_name": "Charlie",
+            "last_name": "BizA2",
+            "employee_id": "EMP-BIZA2",
+            "work_email": "charlie@biz-a.com",
+            "business_id": 2,
+        },
+    )
+    assert create_res.status_code == 201
+    assert create_res.json()["business_id"] == 1
+
+    # 3. Superuser access checks
+    superuser = User(
+        id=1,
+        username="admin",
+        email="admin@example.com",
+        is_active=True,
+        is_superuser=True,
+        business_id=1,
+    )
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: superuser
+    app.dependency_overrides[get_current_user] = lambda request=None: superuser
+
+    # Superuser can explicitly request Business B list
+    su_list_res = await client.get("/employees?business_id=2")
+    assert su_list_res.status_code == 200
+    su_emps = su_list_res.json()
+    su_emp_ids = [e["id"] for e in su_emps]
+    assert emp_b_id in su_emp_ids
+    assert emp_a_id not in su_emp_ids
+
+    # Superuser can access Business B employee by ID
+    su_get_res = await client.get(f"/employees/{emp_b_id}")
+    assert su_get_res.status_code == 200
+    assert su_get_res.json()["id"] == emp_b_id

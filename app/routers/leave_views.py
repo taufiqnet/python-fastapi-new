@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.service import EmployeeService
@@ -38,10 +39,15 @@ async def leave_type_list_page(
     async_db=Depends(get_async_db),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+
     leave_types = leave_type_service.get_leave_types(
-        db, skip=skip, limit=limit, business_id=business_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id
     )
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
     biz_map = {b.id: b.name_en for b in businesses}
 
     total_count = len(leave_types)
@@ -67,12 +73,17 @@ async def leave_type_list_page(
 
 
 @router.get("/leave/types/create", response_class=HTMLResponse)
-def leave_type_create_page(
+async def leave_type_create_page(
     request: Request,
     _perm=Depends(require_permission("hrm", "leave_types", "create")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
         request=request,
@@ -88,14 +99,20 @@ def leave_type_create_page(
 
 
 @router.get("/leave/types/edit/{leave_type_id}", response_class=HTMLResponse)
-def leave_type_edit_page(
+async def leave_type_edit_page(
     leave_type_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "leave_types", "update")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    leave_type = leave_type_service.get_leave_type(db, leave_type_id)
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    leave_type = leave_type_service.get_leave_type(db, leave_type_id, current_user=current_user)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
         request=request,

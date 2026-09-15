@@ -1,9 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
 from app.modules.hr_payroll.leave.schemas import (
     LeaveAllocationCreate,
@@ -41,9 +44,11 @@ class LeaveApplicationCancelRequest(BaseModel):
 def export_leave_types_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_types", "view")),
 ):
-    excel_data = leave_type_service.generate_export_excel(db, business_id=business_id)
-    filename = "leave_types_export.xlsx" if not business_id else f"leave_types_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = leave_type_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "leave_types_export.xlsx" if not resolved_business_id else f"leave_types_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -55,9 +60,16 @@ def export_leave_types_excel(
 def download_leave_types_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_types", "create")),
 ):
-    excel_data = leave_type_service.generate_excel_template(db, business_id=business_id)
-    filename = f"leave_type_template_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
+    excel_data = leave_type_service.generate_excel_template(db, business_id=resolved_business_id)
+    filename = f"leave_type_template_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -70,10 +82,17 @@ async def import_leave_types_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_types", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
     contents = await file.read()
     return leave_type_service.import_leave_types_excel(
-        db, business_id=business_id, file_bytes=contents
+        db, business_id=resolved_business_id, file_bytes=contents
     )
 
 
@@ -83,15 +102,21 @@ def get_leave_types(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_types", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return leave_type_service.get_leave_types(
-        db, skip=skip, limit=limit, business_id=business_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id
     )
 
 
 @router.get("/leave-types/{leave_type_id}", response_model=LeaveTypeOut)
-def get_leave_type(leave_type_id: uuid.UUID, db: Session = Depends(get_db)):
-    return leave_type_service.get_leave_type(db, leave_type_id)
+def get_leave_type(
+    leave_type_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_types", "view")),
+):
+    return leave_type_service.get_leave_type(db, leave_type_id, current_user=current_user)
 
 
 @router.post(
@@ -99,7 +124,17 @@ def get_leave_type(leave_type_id: uuid.UUID, db: Session = Depends(get_db)):
     response_model=LeaveTypeOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_leave_type(leave_type_data: LeaveTypeCreate, db: Session = Depends(get_db)):
+def create_leave_type(
+    leave_type_data: LeaveTypeCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_types", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, leave_type_data.business_id)
+    if not current_user.is_superuser:
+        leave_type_data.business_id = current_user.business_id
+    elif leave_type_data.business_id is None:
+        leave_type_data.business_id = resolved_business_id
+
     return leave_type_service.create_leave_type(db, leave_type_data)
 
 
@@ -108,13 +143,23 @@ def update_leave_type(
     leave_type_id: uuid.UUID,
     leave_type_data: LeaveTypeUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_types", "update")),
 ):
-    return leave_type_service.update_leave_type(db, leave_type_id, leave_type_data)
+    if not current_user.is_superuser:
+        leave_type_data.business_id = current_user.business_id
+
+    return leave_type_service.update_leave_type(
+        db, leave_type_id, leave_type_data, current_user=current_user
+    )
 
 
 @router.delete("/leave-types/{leave_type_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_leave_type(leave_type_id: uuid.UUID, db: Session = Depends(get_db)):
-    leave_type_service.delete_leave_type(db, leave_type_id)
+def delete_leave_type(
+    leave_type_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_types", "delete")),
+):
+    leave_type_service.delete_leave_type(db, leave_type_id, current_user=current_user)
     return None
 
 

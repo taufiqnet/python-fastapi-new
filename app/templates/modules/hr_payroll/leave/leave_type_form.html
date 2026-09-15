@@ -110,6 +110,7 @@
 
                     <div class="form-group">
                         <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        {% if current_user and current_user.is_superuser %}
                         <select id="business_id" name="business_id" class="form-input" required>
                             <option value="">— Select Business —</option>
                             {% for b in businesses %}
@@ -118,6 +119,11 @@
                             </option>
                             {% endfor %}
                         </select>
+                        {% else %}
+                        <input type="text" class="form-input bg-gray-100 cursor-not-allowed" 
+                               value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% else %}{{ businesses[0].name_en if businesses else 'My Business' }}{% endif %}" disabled readonly>
+                        <input type="hidden" id="business_id" name="business_id" value="{% if current_user and current_user.business_id %}{{ current_user.business_id }}{% else %}{{ businesses[0].id if businesses else 1 }}{% endif %}">
+                        {% endif %}
                     </div>
 
                     <div class="form-group">
