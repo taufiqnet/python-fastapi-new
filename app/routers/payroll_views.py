@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.employees.service import EmployeeService
@@ -146,10 +147,14 @@ async def period_list_page(
     async_db = Depends(get_async_db),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+
     periods = period_service.get_periods(
-        db, skip=skip, limit=limit, business_id=business_id, status_filter=status_filter
+        db, skip=skip, limit=limit, business_id=resolved_business_id, status_filter=status_filter
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
     biz_map = {b.id: b.name_en for b in businesses}
 
     total_count = len(periods)
@@ -186,17 +191,22 @@ async def period_list_page(
 
 
 @router.get("/payroll-periods/create", response_class=HTMLResponse)
-def period_create_page(
+async def period_create_page(
     request: Request,
     _perm=Depends(require_permission("hrm", "payroll_periods", "create")),
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/payroll/periods/period_form.html",
         context={
+            "current_user": current_user,
             "period": None,
             "is_edit": False,
             "businesses": businesses,
@@ -207,19 +217,24 @@ def period_create_page(
 
 
 @router.get("/payroll-periods/edit/{period_id}", response_class=HTMLResponse)
-def period_edit_page(
+async def period_edit_page(
     period_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "payroll_periods", "update")),
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
-    period = period_service.get_period(db, period_id)
+    current_user = await get_current_user_optional(request, None, async_db)
+    period = period_service.get_period(db, period_id, current_user=current_user)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/payroll/periods/period_form.html",
         context={
+            "current_user": current_user,
             "period": period,
             "is_edit": True,
             "businesses": businesses,
@@ -244,18 +259,23 @@ async def record_list_page(
     async_db = Depends(get_async_db),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+
     records = record_service.get_records(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         period_id=period_id,
         employee_id=employee_id,
         is_paid=is_paid,
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    periods = period_service.get_periods(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    periods = period_service.get_periods(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     biz_map = {b.id: b.name_en for b in businesses}
     period_map = {p.id: p.name for p in periods}
@@ -302,9 +322,15 @@ async def settings_manage_page(
 ):
     current_user = await get_current_user_optional(request, None, async_db)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    selected_business_id = business_id or (businesses[0].id if businesses else 1)
-    
-    settings_obj = settings_service.get_settings(db, business_id=selected_business_id)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+
+    default_biz_id = current_user.business_id if current_user and current_user.business_id else (businesses[0].id if businesses else 1)
+    target_business_id = business_id or default_biz_id
+    resolved_business_id = resolve_business_id(current_user, target_business_id)
+    selected_business_id = resolved_business_id or target_business_id
+
+    settings_obj = settings_service.get_settings(db, business_id=selected_business_id, current_user=current_user)
 
     return templates.TemplateResponse(
         request=request,
@@ -320,19 +346,26 @@ async def settings_manage_page(
 
 
 @router.get("/payroll-records/create", response_class=HTMLResponse)
-def record_create_page(
+async def record_create_page(
     request: Request,
     _perm=Depends(require_permission("hrm", "payroll_records", "create")),
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    periods = period_service.get_periods(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    periods = period_service.get_periods(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/payroll/records/record_form.html",
         context={
+            "current_user": current_user,
             "record": None,
             "is_edit": False,
             "businesses": businesses,
@@ -345,21 +378,28 @@ def record_create_page(
 
 
 @router.get("/payroll-records/edit/{record_id}", response_class=HTMLResponse)
-def record_edit_page(
+async def record_edit_page(
     record_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "payroll_records", "update")),
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
-    record = record_service.get_record(db, record_id)
+    current_user = await get_current_user_optional(request, None, async_db)
+    record = record_service.get_record(db, record_id, current_user=current_user)
+    resolved_business_id = resolve_business_id(current_user, record.business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    periods = period_service.get_periods(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    periods = period_service.get_periods(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/payroll/records/record_form.html",
         context={
+            "current_user": current_user,
             "record": record,
             "is_edit": True,
             "businesses": businesses,
@@ -372,13 +412,15 @@ def record_edit_page(
 
 
 @router.get("/payroll-records/detail/{record_id}", response_class=HTMLResponse)
-def record_detail_page(
+async def record_detail_page(
     record_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "payroll_records", "view")),
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
 ):
-    record = record_service.get_record(db, record_id)
+    current_user = await get_current_user_optional(request, None, async_db)
+    record = record_service.get_record(db, record_id, current_user=current_user)
     business = None
     if record.business_id:
         business = business_service.get_business(db, record.business_id)
@@ -387,6 +429,7 @@ def record_detail_page(
         request=request,
         name="modules/hr_payroll/payroll/records/record_detail.html",
         context={
+            "current_user": current_user,
             "record": record,
             "business": business,
             "active_page": "payroll_records",

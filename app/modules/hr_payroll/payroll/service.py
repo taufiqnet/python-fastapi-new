@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -20,7 +21,7 @@ from app.modules.hr_payroll.payroll.models import (
     PayrollRecord,
     PayrollSettings,
 )
-from app.core.tenancy.scoping import verify_record_ownership
+from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.modules.hr_payroll.payroll.repository import (
     HolidayRepository,
     PayrollPeriodRepository,
@@ -164,8 +165,14 @@ class PayrollPeriodService:
             status=status_filter,
         )
 
-    def get_period(self, db: Session, period_uuid: uuid.UUID) -> PayrollPeriod:
+    def get_period(
+        self, db: Session, period_uuid: uuid.UUID, current_user: Any | None = None
+    ) -> PayrollPeriod:
         period = self.repository.get_by_id(db, period_uuid)
+        if current_user is not None:
+            return verify_record_ownership(
+                period, current_user, detail="Payroll period not found"
+            )
         if not period:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -190,9 +197,13 @@ class PayrollPeriodService:
         return self.repository.create(db, data)
 
     def update_period(
-        self, db: Session, period_uuid: uuid.UUID, data: PayrollPeriodUpdate
+        self,
+        db: Session,
+        period_uuid: uuid.UUID,
+        data: PayrollPeriodUpdate,
+        current_user: Any | None = None,
     ) -> PayrollPeriod:
-        period = self.get_period(db, period_uuid)
+        period = self.get_period(db, period_uuid, current_user=current_user)
 
         target_business_id = (
             data.business_id if data.business_id is not None else period.business_id
@@ -228,8 +239,10 @@ class PayrollPeriodService:
 
         return self.repository.update(db, period, data)
 
-    def delete_period(self, db: Session, period_uuid: uuid.UUID) -> None:
-        period = self.get_period(db, period_uuid)
+    def delete_period(
+        self, db: Session, period_uuid: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        period = self.get_period(db, period_uuid, current_user=current_user)
         if period.is_locked:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -238,9 +251,13 @@ class PayrollPeriodService:
         self.repository.delete(db, period)
 
     def get_payroll_status(
-        self, db: Session, period_uuid: uuid.UUID, business_id: int | None = None
+        self,
+        db: Session,
+        period_uuid: uuid.UUID,
+        business_id: int | None = None,
+        current_user: Any | None = None,
     ) -> dict:
-        period = self.get_period(db, period_uuid)
+        period = self.get_period(db, period_uuid, current_user=current_user)
         if business_id is not None and period.business_id != business_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -389,8 +406,14 @@ class PayrollRecordService:
             is_paid=is_paid,
         )
 
-    def get_record(self, db: Session, record_uuid: uuid.UUID) -> PayrollRecord:
+    def get_record(
+        self, db: Session, record_uuid: uuid.UUID, current_user: Any | None = None
+    ) -> PayrollRecord:
         record = self.repository.get_by_id(db, record_uuid)
+        if current_user is not None:
+            return verify_record_ownership(
+                record, current_user, detail="Payroll record (payslip) not found"
+            )
         if not record:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -457,8 +480,9 @@ class PayrollRecordService:
         db: Session,
         record_uuid: uuid.UUID,
         data: PayrollRecordUpdate,
+        current_user: Any | None = None,
     ) -> PayrollRecord:
-        record = self.get_record(db, record_uuid)
+        record = self.get_record(db, record_uuid, current_user=current_user)
 
         if record.period and record.period.is_locked:
             raise HTTPException(
@@ -544,8 +568,10 @@ class PayrollRecordService:
             net_salary=net,
         )
 
-    def delete_record(self, db: Session, record_uuid: uuid.UUID) -> None:
-        record = self.get_record(db, record_uuid)
+    def delete_record(
+        self, db: Session, record_uuid: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        record = self.get_record(db, record_uuid, current_user=current_user)
         if record.period and record.period.is_locked:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -654,10 +680,14 @@ class PayrollRecordService:
         }
 
     def generate_period_payroll(
-        self, db: Session, period_uuid: uuid.UUID
+        self, db: Session, period_uuid: uuid.UUID, current_user: Any | None = None
     ) -> list[PayrollRecord]:
         period = self.period_repository.get_by_id(db, period_uuid)
-        if not period:
+        if current_user is not None:
+            period = verify_record_ownership(
+                period, current_user, detail="Payroll period not found"
+            )
+        elif not period:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Payroll period not found",
@@ -885,19 +915,43 @@ class PayrollSettingsService:
     def __init__(self, repository: PayrollSettingsRepository | None = None):
         self.repository = repository or PayrollSettingsRepository()
 
-    def get_settings(self, db: Session, business_id: int) -> PayrollSettings:
-        settings_obj = self.repository.get_by_business_id(db, business_id)
+    def get_settings(
+        self, db: Session, business_id: int, current_user: Any | None = None
+    ) -> PayrollSettings:
+        resolved_business_id = resolve_business_id(current_user, business_id) if current_user else business_id
+        if not resolved_business_id or resolved_business_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business profile ID is mandatory.",
+            )
+        settings_obj = self.repository.get_by_business_id(db, resolved_business_id)
         if not settings_obj:
-            settings_obj = self.repository.create(db, business_id=business_id)
+            settings_obj = self.repository.create(db, business_id=resolved_business_id)
+        if current_user is not None:
+            verify_record_ownership(settings_obj, current_user, detail="Payroll settings not found")
         return settings_obj
 
     def update_settings(
-        self, db: Session, business_id: int, data: PayrollSettingsUpdate
+        self,
+        db: Session,
+        business_id: int,
+        data: PayrollSettingsUpdate,
+        current_user: Any | None = None,
     ) -> PayrollSettings:
-        settings_obj = self.repository.get_by_business_id(db, business_id)
+        resolved_business_id = resolve_business_id(current_user, business_id) if current_user else business_id
+        if not resolved_business_id or resolved_business_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business profile ID is mandatory.",
+            )
+        settings_obj = self.repository.get_by_business_id(db, resolved_business_id)
         if not settings_obj:
-            settings_obj = self.repository.create(db, business_id=business_id, data=data)
+            settings_obj = self.repository.create(
+                db, business_id=resolved_business_id, data=data
+            )
         else:
+            if current_user is not None:
+                verify_record_ownership(settings_obj, current_user, detail="Payroll settings not found")
             settings_obj = self.repository.update(db, settings_obj, data)
         return settings_obj
 

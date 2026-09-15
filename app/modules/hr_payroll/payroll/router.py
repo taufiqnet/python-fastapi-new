@@ -129,9 +129,11 @@ def delete_holiday(
 def export_payroll_periods_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "view")),
 ):
-    excel_data = period_service.generate_export_excel(db, business_id=business_id)
-    filename = "payroll_periods_export.xlsx" if not business_id else f"payroll_periods_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = period_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "payroll_periods_export.xlsx" if not resolved_business_id else f"payroll_periods_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -146,19 +148,25 @@ def get_payroll_periods(
     business_id: int | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return period_service.get_periods(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         status_filter=status_filter,
     )
 
 
 @router.get("/periods/{period_id}", response_model=PayrollPeriodOut)
-def get_payroll_period(period_id: uuid.UUID, db: Session = Depends(get_db)):
-    return period_service.get_period(db, period_id)
+def get_payroll_period(
+    period_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "view")),
+):
+    return period_service.get_period(db, period_id, current_user=current_user)
 
 
 @router.post(
@@ -167,8 +175,15 @@ def get_payroll_period(period_id: uuid.UUID, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_payroll_period(
-    period_data: PayrollPeriodCreate, db: Session = Depends(get_db)
+    period_data: PayrollPeriodCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, period_data.business_id)
+    if not current_user.is_superuser:
+        period_data.business_id = current_user.business_id
+    elif period_data.business_id is None:
+        period_data.business_id = resolved_business_id
     return period_service.create_period(db, period_data)
 
 
@@ -179,8 +194,9 @@ def create_payroll_period(
 def generate_period_payroll(
     period_id: uuid.UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "create")),
 ):
-    return record_service.generate_period_payroll(db, period_id)
+    return record_service.generate_period_payroll(db, period_id, current_user=current_user)
 
 
 @router.put("/periods/{period_id}", response_model=PayrollPeriodOut)
@@ -188,13 +204,20 @@ def update_payroll_period(
     period_id: uuid.UUID,
     period_data: PayrollPeriodUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "update")),
 ):
-    return period_service.update_period(db, period_id, period_data)
+    if not current_user.is_superuser:
+        period_data.business_id = current_user.business_id
+    return period_service.update_period(db, period_id, period_data, current_user=current_user)
 
 
 @router.delete("/periods/{period_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_payroll_period(period_id: uuid.UUID, db: Session = Depends(get_db)):
-    period_service.delete_period(db, period_id)
+def delete_payroll_period(
+    period_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "delete")),
+):
+    period_service.delete_period(db, period_id, current_user=current_user)
     return None
 
 
@@ -203,9 +226,11 @@ def delete_payroll_period(period_id: uuid.UUID, db: Session = Depends(get_db)):
 def export_payroll_records_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "view")),
 ):
-    excel_data = record_service.generate_export_excel(db, business_id=business_id)
-    filename = "payroll_records_export.xlsx" if not business_id else f"payroll_records_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = record_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "payroll_records_export.xlsx" if not resolved_business_id else f"payroll_records_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -222,12 +247,14 @@ def get_payroll_records(
     employee_id: uuid.UUID | None = Query(None),
     is_paid: bool | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return record_service.get_records(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         period_id=period_id,
         employee_id=employee_id,
         is_paid=is_paid,
@@ -235,8 +262,12 @@ def get_payroll_records(
 
 
 @router.get("/records/{record_id}", response_model=PayrollRecordOut)
-def get_payroll_record(record_id: uuid.UUID, db: Session = Depends(get_db)):
-    return record_service.get_record(db, record_id)
+def get_payroll_record(
+    record_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "view")),
+):
+    return record_service.get_record(db, record_id, current_user=current_user)
 
 
 @router.post(
@@ -245,8 +276,15 @@ def get_payroll_record(record_id: uuid.UUID, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_payroll_record(
-    record_data: PayrollRecordCreate, db: Session = Depends(get_db)
+    record_data: PayrollRecordCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, record_data.business_id)
+    if not current_user.is_superuser:
+        record_data.business_id = current_user.business_id
+    elif record_data.business_id is None:
+        record_data.business_id = resolved_business_id
     return record_service.create_record(db, record_data)
 
 
@@ -255,13 +293,20 @@ def update_payroll_record(
     record_id: uuid.UUID,
     record_data: PayrollRecordUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "update")),
 ):
-    return record_service.update_record(db, record_id, record_data)
+    if not current_user.is_superuser:
+        record_data.business_id = current_user.business_id
+    return record_service.update_record(db, record_id, record_data, current_user=current_user)
 
 
 @router.delete("/records/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_payroll_record(record_id: uuid.UUID, db: Session = Depends(get_db)):
-    record_service.delete_record(db, record_id)
+def delete_payroll_record(
+    record_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "delete")),
+):
+    record_service.delete_record(db, record_id, current_user=current_user)
     return None
 
 
@@ -270,9 +315,11 @@ def delete_payroll_record(record_id: uuid.UUID, db: Session = Depends(get_db)):
 def export_payroll_settings_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "view")),
 ):
-    excel_data = settings_service.generate_export_excel(db, business_id=business_id)
-    filename = "payroll_settings_export.xlsx" if not business_id else f"payroll_settings_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = settings_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "payroll_settings_export.xlsx" if not resolved_business_id else f"payroll_settings_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -284,8 +331,9 @@ def export_payroll_settings_excel(
 def get_payroll_settings(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "view")),
 ):
-    return settings_service.get_settings(db, business_id=business_id)
+    return settings_service.get_settings(db, business_id=business_id, current_user=current_user)
 
 
 @router.put("/settings", response_model=PayrollSettingsOut)
@@ -293,7 +341,8 @@ def update_payroll_settings(
     data: PayrollSettingsUpdate,
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "update")),
 ):
     return settings_service.update_settings(
-        db, business_id=business_id, data=data
+        db, business_id=business_id, data=data, current_user=current_user
     )

@@ -98,10 +98,10 @@ async def import_employees_excel(
 def _verify_job_ownership(job: ImportJob, current_user):
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
-    if not current_user.is_superuser and job.business_id != current_user.business_id:
+    if not current_user.is_superuser and (job is None or job.business_id != current_user.business_id):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Access denied: You do not have permission to access import jobs for another business profile.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Import job not found",
         )
 
 

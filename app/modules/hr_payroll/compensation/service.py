@@ -1,8 +1,10 @@
 import uuid
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.compensation.models import EmployeeSalary
 from app.modules.hr_payroll.compensation.repository import EmployeeSalaryRepository
 from app.modules.hr_payroll.compensation.schemas import (
@@ -64,23 +66,33 @@ class EmployeeSalaryService:
             employee_id=employee_id,
         )
 
-    def get_salary(self, db: Session, salary_uuid: uuid.UUID) -> EmployeeSalary:
+    def get_salary(
+        self, db: Session, salary_uuid: uuid.UUID, current_user: Any | None = None
+    ) -> EmployeeSalary:
         salary = self.repository.get_by_id(db, salary_uuid)
+        if current_user is not None:
+            return verify_record_ownership(
+                salary, current_user, detail="Compensation record not found"
+            )
         if not salary:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Employee salary structure not found",
+                detail="Compensation record not found",
             )
         return salary
 
     def get_salary_by_employee(
-        self, db: Session, employee_id: uuid.UUID
+        self, db: Session, employee_id: uuid.UUID, current_user: Any | None = None
     ) -> EmployeeSalary:
         salary = self.repository.get_by_employee_id(db, employee_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                salary, current_user, detail="Compensation record not found"
+            )
         if not salary:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Salary structure for employee id '{employee_id}' not found",
+                detail=f"Compensation structure for employee id '{employee_id}' not found",
             )
         return salary
 
@@ -121,9 +133,13 @@ class EmployeeSalaryService:
         )
 
     def update_salary_structure(
-        self, db: Session, salary_uuid: uuid.UUID, data: EmployeeSalaryUpdate
+        self,
+        db: Session,
+        salary_uuid: uuid.UUID,
+        data: EmployeeSalaryUpdate,
+        current_user: Any | None = None,
     ) -> EmployeeSalary:
-        salary = self.get_salary(db, salary_uuid)
+        salary = self.get_salary(db, salary_uuid, current_user=current_user)
 
         basic_salary = (
             data.basic_salary
@@ -194,8 +210,10 @@ class EmployeeSalaryService:
             return self.update_salary_structure(db, existing.id, update_data)
         return self.create_salary_structure(db, data)
 
-    def delete_salary_structure(self, db: Session, salary_uuid: uuid.UUID) -> None:
-        salary = self.get_salary(db, salary_uuid)
+    def delete_salary_structure(
+        self, db: Session, salary_uuid: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        salary = self.get_salary(db, salary_uuid, current_user=current_user)
         self.repository.delete(db, salary)
 
     def generate_export_excel(self, db: Session, business_id: int) -> bytes:
@@ -259,6 +277,11 @@ class EmployeeSalaryService:
         return output.getvalue()
 
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
+        if not business_id or business_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business profile ID is mandatory.",
+            )
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Compensation Template"
@@ -326,6 +349,11 @@ class EmployeeSalaryService:
     def import_salaries_excel(
         self, db: Session, business_id: int, file_bytes: bytes
     ) -> dict[str, int | list[str]]:
+        if not business_id or business_id <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business profile ID is mandatory.",
+            )
         try:
             wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
             ws = wb.active

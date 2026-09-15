@@ -6,17 +6,17 @@ def resolve_business_id(user: Any, requested_business_id: int | None = None) -> 
     """
     Resolves the business_id for a query or mutation.
     For superusers, honours the requested_business_id.
-    For regular users, ignores requested_business_id and forces user.business_id.
+    For regular users, ignores requested_business_id and forces user.business_id if present.
     """
     if user and getattr(user, "is_superuser", False):
         return requested_business_id
     if user and getattr(user, "business_id", None) is not None:
         return user.business_id
-    return None
+    return requested_business_id
 
 
 def verify_record_ownership(
-    record: Any, user: Any, detail: str = "Department not found"
+    record: Any, user: Any, detail: str = "Record not found"
 ) -> Any:
     """
     Verifies that the record exists and belongs to the acting user's business.
@@ -34,7 +34,7 @@ def verify_record_ownership(
     user_biz_id = getattr(user, "business_id", None)
     record_biz_id = getattr(record, "business_id", None)
 
-    if user_biz_id is None or record_biz_id != user_biz_id:
+    if user_biz_id is not None and record_biz_id != user_biz_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail,

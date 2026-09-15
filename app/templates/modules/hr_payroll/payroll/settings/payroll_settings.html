@@ -21,11 +21,16 @@
 <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
     <form method="GET" action="/payroll-settings/manage" class="flex items-center gap-3 w-full sm:w-auto">
         <label class="text-xs font-semibold text-gray-700 whitespace-nowrap">Select Business Profile:</label>
+        {% if current_user and not current_user.is_superuser %}
+        <input type="text" class="text-xs border border-gray-200 rounded-lg p-2 bg-gray-100 text-gray-700 font-medium cursor-not-allowed min-w-[220px]" value="{% if businesses %}{{ businesses[0].name_en }}{% else %}My Business{% endif %}" readonly disabled>
+        <input type="hidden" name="business_id" value="{{ current_user.business_id }}">
+        {% else %}
         <select name="business_id" onchange="this.form.submit()" class="text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none min-w-[220px]">
             {% for b in businesses %}
             <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
             {% endfor %}
         </select>
+        {% endif %}
     </form>
 </div>
 

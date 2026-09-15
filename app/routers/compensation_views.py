@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.compensation.service import EmployeeSalaryService
@@ -31,11 +32,15 @@ async def compensation_list_page(
     _perm = Depends(require_permission("hrm", "compensation", "view")),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
     salaries = compensation_service.get_salaries(
-        db, skip=skip, limit=limit, business_id=business_id, employee_id=employee_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id, employee_id=employee_id
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     biz_map = {b.id: b.name_en for b in businesses}
     emp_map = {e.id: e.full_name for e in employees}
@@ -65,18 +70,25 @@ async def compensation_list_page(
 
 
 @router.get("/compensation/create", response_class=HTMLResponse)
-def compensation_create_page(
+async def compensation_create_page(
     request: Request,
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
     _perm = Depends(require_permission("hrm", "compensation", "create")),
 ):
+    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/compensation/salary_form.html",
         context={
+            "current_user": current_user,
             "salary": None,
             "is_edit": False,
             "businesses": businesses,
@@ -87,20 +99,27 @@ def compensation_create_page(
 
 
 @router.get("/compensation/edit/{salary_id}", response_class=HTMLResponse)
-def compensation_edit_page(
+async def compensation_edit_page(
     salary_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
     _perm = Depends(require_permission("hrm", "compensation", "update")),
 ):
-    salary = compensation_service.get_salary(db, salary_id)
+    current_user = await get_current_user_optional(request, None, async_db)
+    salary = compensation_service.get_salary(db, salary_id, current_user=current_user)
+    resolved_business_id = resolve_business_id(current_user, salary.business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/compensation/salary_form.html",
         context={
+            "current_user": current_user,
             "salary": salary,
             "is_edit": True,
             "businesses": businesses,
@@ -111,25 +130,28 @@ def compensation_edit_page(
 
 
 @router.get("/compensation/detail/{salary_id}", response_class=HTMLResponse)
-def compensation_detail_page(
+async def compensation_detail_page(
     salary_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
+    async_db = Depends(get_async_db),
     _perm = Depends(require_permission("hrm", "compensation", "view")),
 ):
-    salary = compensation_service.get_salary(db, salary_id)
+    current_user = await get_current_user_optional(request, None, async_db)
+    salary = compensation_service.get_salary(db, salary_id, current_user=current_user)
     business = None
     if salary.business_id:
         business = business_service.get_business(db, salary.business_id)
 
     employee = None
     if salary.employee_id:
-        employee = employee_service.get_employee(db, salary.employee_id)
+        employee = employee_service.get_employee(db, salary.employee_id, current_user=current_user)
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/compensation/salary_detail.html",
         context={
+            "current_user": current_user,
             "salary": salary,
             "business": business,
             "employee": employee,
