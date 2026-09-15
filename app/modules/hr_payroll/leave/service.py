@@ -310,14 +310,10 @@ class LeaveAllocationService:
         )
 
     def get_allocation(
-        self, db: Session, allocation_uuid: uuid.UUID
+        self, db: Session, allocation_uuid: uuid.UUID, current_user=None
     ) -> LeaveAllocation:
         allocation = self.repository.get_by_id(db, allocation_uuid)
-        if not allocation:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Leave allocation not found",
-            )
+        verify_record_ownership(allocation, current_user, detail="Leave allocation not found")
         return allocation
 
     def create_allocation(
@@ -356,13 +352,13 @@ class LeaveAllocationService:
         return self.repository.create(db, data)
 
     def update_allocation(
-        self, db: Session, allocation_uuid: uuid.UUID, data: LeaveAllocationUpdate
+        self, db: Session, allocation_uuid: uuid.UUID, data: LeaveAllocationUpdate, current_user=None
     ) -> LeaveAllocation:
-        allocation = self.get_allocation(db, allocation_uuid)
+        allocation = self.get_allocation(db, allocation_uuid, current_user=current_user)
         return self.repository.update(db, allocation, data)
 
-    def delete_allocation(self, db: Session, allocation_uuid: uuid.UUID) -> None:
-        allocation = self.get_allocation(db, allocation_uuid)
+    def delete_allocation(self, db: Session, allocation_uuid: uuid.UUID, current_user=None) -> None:
+        allocation = self.get_allocation(db, allocation_uuid, current_user=current_user)
         self.repository.delete(db, allocation)
 
     def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
@@ -458,14 +454,10 @@ class LeaveApplicationService:
         )
 
     def get_application(
-        self, db: Session, application_uuid: uuid.UUID
+        self, db: Session, application_uuid: uuid.UUID, current_user=None
     ) -> LeaveApplication:
         application = self.repository.get_by_id(db, application_uuid)
-        if not application:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Leave application not found",
-            )
+        verify_record_ownership(application, current_user, detail="Leave application not found")
         return application
 
     def _check_overlapping_applications(
@@ -577,9 +569,9 @@ class LeaveApplicationService:
         return self.repository.create(db, data)
 
     def update_application(
-        self, db: Session, application_uuid: uuid.UUID, data: LeaveApplicationUpdate
+        self, db: Session, application_uuid: uuid.UUID, data: LeaveApplicationUpdate, current_user=None
     ) -> LeaveApplication:
-        application = self.get_application(db, application_uuid)
+        application = self.get_application(db, application_uuid, current_user=current_user)
 
         if application.status != LeaveStatusEnum.PENDING:
             raise HTTPException(
@@ -613,8 +605,9 @@ class LeaveApplicationService:
         db: Session,
         application_uuid: uuid.UUID,
         data: LeaveApplicationReview,
+        current_user=None,
     ) -> LeaveApplication:
-        application = self.get_application(db, application_uuid)
+        application = self.get_application(db, application_uuid, current_user=current_user)
 
         if application.status != LeaveStatusEnum.PENDING:
             raise HTTPException(
@@ -700,10 +693,11 @@ class LeaveApplicationService:
         db: Session,
         application_uuid: uuid.UUID,
         actor_id: uuid.UUID,
+        current_user=None,
     ) -> LeaveApplication:
         """Cancel a PENDING or APPROVED application. If it was APPROVED,
         restores the balance that was deducted at approval time."""
-        application = self.get_application(db, application_uuid)
+        application = self.get_application(db, application_uuid, current_user=current_user)
 
         if application.status not in (
             LeaveStatusEnum.PENDING,
@@ -744,8 +738,8 @@ class LeaveApplicationService:
             review_note="Cancelled" if was_approved else None,
         )
 
-    def delete_application(self, db: Session, application_uuid: uuid.UUID) -> None:
-        application = self.get_application(db, application_uuid)
+    def delete_application(self, db: Session, application_uuid: uuid.UUID, current_user=None) -> None:
+        application = self.get_application(db, application_uuid, current_user=current_user)
         self.repository.delete(db, application)
 
     def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:

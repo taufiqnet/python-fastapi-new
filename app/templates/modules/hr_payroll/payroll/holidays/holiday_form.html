@@ -114,14 +114,20 @@
 
                     <div class="form-group">
                         <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        {% if current_user and current_user.is_superuser %}
                         <select id="business_id" name="business_id" class="form-input" required>
                             <option value="">— Select Business Profile —</option>
                             {% for b in businesses %}
-                            <option value="{{ b.id }}" {% if is_edit and holiday.business_id == b.id %}selected{% endif %}>
+                            <option value="{{ b.id }}" {% if (is_edit and holiday.business_id == b.id) or (not is_edit and loop.first) %}selected{% endif %}>
                                 {{ b.name_en }} (ID: {{ b.id }})
                             </option>
                             {% endfor %}
                         </select>
+                        {% else %}
+                        <input type="text" class="form-input bg-gray-100 text-gray-600 font-medium cursor-not-allowed" 
+                               value="{% if businesses %}{{ businesses[0].name_en }} (My Business){% else %}My Business{% endif %}" readonly disabled>
+                        <input type="hidden" id="business_id" name="business_id" value="{% if is_edit %}{{ holiday.business_id }}{% else %}{{ current_user.business_id if current_user else (businesses[0].id if businesses else '') }}{% endif %}">
+                        {% endif %}
                     </div>
 
                     <div class="form-group">

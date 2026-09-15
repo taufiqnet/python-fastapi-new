@@ -138,12 +138,14 @@
         {% endfor %}
     </select>
 
+    {% if current_user and current_user.is_superuser %}
     <select id="filterBusiness">
         <option value="">All Businesses</option>
         {% for b in businesses %}
         <option value="{{ b.name_en }}">{{ b.name_en }}</option>
         {% endfor %}
     </select>
+    {% endif %}
 
     <button type="button" id="btnClearFilters" 
             class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
@@ -164,6 +166,8 @@
                     <th>Paid</th>
                     <th>Business</th>
                     <th style="width:90px">Actions</th>
+                    <th class="hidden"></th>
+                    <th class="hidden"></th>
                 </tr>
             </thead>
             <tbody>
@@ -200,6 +204,8 @@
                             </button>
                         </div>
                     </td>
+                    <td class="hidden">{{ h.holiday_type.value|default(h.holiday_type)|capitalize }}</td>
+                    <td class="hidden">{{ biz_map.get(h.business_id, 'Global') }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -283,13 +289,14 @@ $(document).ready(function () {
         responsive: true,
         pageLength: 10,
         dom: 'rt',
+        columnDefs: [{ targets: [7, 8], visible: false, searchable: true }],
         language: { emptyTable: "No holidays found." },
         drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterType').on('change', function () { table.column(1).search(this.value).draw(); });
-    $('#filterBusiness').on('change', function () { table.column(5).search(this.value).draw(); });
+    $('#filterType').on('change', function () { table.column(7).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(8).search(this.value).draw(); });
     $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
     $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });

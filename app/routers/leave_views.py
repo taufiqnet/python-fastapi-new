@@ -141,17 +141,23 @@ async def leave_allocation_list_page(
     async_db=Depends(get_async_db),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+
     allocations = leave_allocation_service.get_allocations(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         employee_id=employee_id,
         year=year,
     )
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
 
     biz_map = {b.id: b.name_en for b in businesses}
     lt_map = {lt.id: lt.name for lt in leave_types}
@@ -184,14 +190,22 @@ async def leave_allocation_list_page(
 
 
 @router.get("/leave/allocations/create", response_class=HTMLResponse)
-def leave_allocation_create_page(
+async def leave_allocation_create_page(
     request: Request,
     _perm=Depends(require_permission("hrm", "leave_allocations", "create")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, None)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
 
     return templates.TemplateResponse(
         request=request,
@@ -208,16 +222,23 @@ def leave_allocation_create_page(
 
 
 @router.get("/leave/allocations/edit/{allocation_id}", response_class=HTMLResponse)
-def leave_allocation_edit_page(
+async def leave_allocation_edit_page(
     allocation_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "leave_allocations", "update")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    allocation = leave_allocation_service.get_allocation(db, allocation_id)
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    allocation = leave_allocation_service.get_allocation(db, allocation_id, current_user=current_user)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500, business_id=allocation.business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=allocation.business_id)
 
     return templates.TemplateResponse(
         request=request,
@@ -247,17 +268,23 @@ async def leave_application_list_page(
     async_db=Depends(get_async_db),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+
     applications = leave_application_service.get_applications(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         employee_id=employee_id,
         status_filter=status_filter,
     )
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
 
     biz_map = {b.id: b.name_en for b in businesses}
     lt_map = {lt.id: lt.name for lt in leave_types}
@@ -302,14 +329,22 @@ async def leave_application_list_page(
 
 
 @router.get("/leave/applications/create", response_class=HTMLResponse)
-def leave_application_create_page(
+async def leave_application_create_page(
     request: Request,
     _perm=Depends(require_permission("hrm", "leave_applications", "create")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, None)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
 
     return templates.TemplateResponse(
         request=request,
@@ -326,16 +361,23 @@ def leave_application_create_page(
 
 
 @router.get("/leave/applications/edit/{application_id}", response_class=HTMLResponse)
-def leave_application_edit_page(
+async def leave_application_edit_page(
     application_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "leave_applications", "update")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    application = leave_application_service.get_application(db, application_id)
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    application = leave_application_service.get_application(db, application_id, current_user=current_user)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+
+    leave_types = leave_type_service.get_leave_types(db, skip=0, limit=500, business_id=application.business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=application.business_id)
 
     return templates.TemplateResponse(
         request=request,
@@ -352,14 +394,16 @@ def leave_application_edit_page(
 
 
 @router.get("/leave/applications/detail/{application_id}", response_class=HTMLResponse)
-def leave_application_detail_page(
+async def leave_application_detail_page(
     application_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "leave_applications", "view")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    application = leave_application_service.get_application(db, application_id)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    application = leave_application_service.get_application(db, application_id, current_user=current_user)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=application.business_id)
 
     return templates.TemplateResponse(
         request=request,

@@ -3,6 +3,9 @@ import uuid
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
 from app.modules.hr_payroll.payroll.schemas import (
     HolidayCreate,
@@ -37,9 +40,11 @@ settings_service = PayrollSettingsService()
 def export_holidays_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "holidays", "view")),
 ):
-    excel_data = holiday_service.generate_export_excel(db, business_id=business_id)
-    filename = "holidays_export.xlsx" if not business_id else f"holidays_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = holiday_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "holidays_export.xlsx" if not resolved_business_id else f"holidays_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -54,19 +59,25 @@ def get_holidays(
     business_id: int | None = Query(None),
     holiday_type: str | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "holidays", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return holiday_service.get_holidays(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         holiday_type=holiday_type,
     )
 
 
 @router.get("/holidays/{holiday_id}", response_model=HolidayOut)
-def get_holiday(holiday_id: uuid.UUID, db: Session = Depends(get_db)):
-    return holiday_service.get_holiday(db, holiday_id)
+def get_holiday(
+    holiday_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "holidays", "view")),
+):
+    return holiday_service.get_holiday(db, holiday_id, current_user=current_user)
 
 
 @router.post(
@@ -74,7 +85,17 @@ def get_holiday(holiday_id: uuid.UUID, db: Session = Depends(get_db)):
     response_model=HolidayOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_holiday(holiday_data: HolidayCreate, db: Session = Depends(get_db)):
+def create_holiday(
+    holiday_data: HolidayCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "holidays", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, holiday_data.business_id)
+    if not current_user.is_superuser:
+        holiday_data.business_id = current_user.business_id
+    elif holiday_data.business_id is None:
+        holiday_data.business_id = resolved_business_id
+
     return holiday_service.create_holiday(db, holiday_data)
 
 
@@ -83,13 +104,23 @@ def update_holiday(
     holiday_id: uuid.UUID,
     holiday_data: HolidayUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "holidays", "update")),
 ):
-    return holiday_service.update_holiday(db, holiday_id, holiday_data)
+    if not current_user.is_superuser:
+        holiday_data.business_id = current_user.business_id
+
+    return holiday_service.update_holiday(
+        db, holiday_id, holiday_data, current_user=current_user
+    )
 
 
 @router.delete("/holidays/{holiday_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_holiday(holiday_id: uuid.UUID, db: Session = Depends(get_db)):
-    holiday_service.delete_holiday(db, holiday_id)
+def delete_holiday(
+    holiday_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "holidays", "delete")),
+):
+    holiday_service.delete_holiday(db, holiday_id, current_user=current_user)
     return None
 
 

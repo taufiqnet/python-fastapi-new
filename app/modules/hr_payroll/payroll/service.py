@@ -20,6 +20,7 @@ from app.modules.hr_payroll.payroll.models import (
     PayrollRecord,
     PayrollSettings,
 )
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.payroll.repository import (
     HolidayRepository,
     PayrollPeriodRepository,
@@ -60,13 +61,11 @@ class HolidayService:
             holiday_type=holiday_type,
         )
 
-    def get_holiday(self, db: Session, holiday_uuid: uuid.UUID) -> Holiday:
+    def get_holiday(
+        self, db: Session, holiday_uuid: uuid.UUID, current_user=None
+    ) -> Holiday:
         holiday = self.repository.get_by_id(db, holiday_uuid)
-        if not holiday:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Holiday not found",
-            )
+        verify_record_ownership(holiday, current_user, detail="Holiday not found")
         return holiday
 
     def create_holiday(self, db: Session, data: HolidayCreate) -> Holiday:
@@ -78,9 +77,13 @@ class HolidayService:
         return self.repository.create(db, data)
 
     def update_holiday(
-        self, db: Session, holiday_uuid: uuid.UUID, data: HolidayUpdate
+        self,
+        db: Session,
+        holiday_uuid: uuid.UUID,
+        data: HolidayUpdate,
+        current_user=None,
     ) -> Holiday:
-        holiday = self.get_holiday(db, holiday_uuid)
+        holiday = self.get_holiday(db, holiday_uuid, current_user=current_user)
         start_date = data.start_date or holiday.start_date
         end_date = data.end_date or holiday.end_date
         if start_date > end_date:
@@ -90,8 +93,10 @@ class HolidayService:
             )
         return self.repository.update(db, holiday, data)
 
-    def delete_holiday(self, db: Session, holiday_uuid: uuid.UUID) -> None:
-        holiday = self.get_holiday(db, holiday_uuid)
+    def delete_holiday(
+        self, db: Session, holiday_uuid: uuid.UUID, current_user=None
+    ) -> None:
+        holiday = self.get_holiday(db, holiday_uuid, current_user=current_user)
         self.repository.delete(db, holiday)
 
     def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:

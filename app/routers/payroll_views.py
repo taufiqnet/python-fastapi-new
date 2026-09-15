@@ -45,10 +45,16 @@ async def holiday_list_page(
     async_db=Depends(get_async_db),
 ):
     current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+
     holidays = holiday_service.get_holidays(
-        db, skip=skip, limit=limit, business_id=business_id, holiday_type=holiday_type
+        db, skip=skip, limit=limit, business_id=resolved_business_id, holiday_type=holiday_type
     )
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+
     biz_map = {b.id: b.name_en for b in businesses}
 
     total_count = len(holidays)
@@ -73,12 +79,17 @@ async def holiday_list_page(
 
 
 @router.get("/holidays/create", response_class=HTMLResponse)
-def holiday_create_page(
+async def holiday_create_page(
     request: Request,
     _perm=Depends(require_permission("hrm", "holidays", "create")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
         request=request,
@@ -94,14 +105,20 @@ def holiday_create_page(
 
 
 @router.get("/holidays/edit/{holiday_id}", response_class=HTMLResponse)
-def holiday_edit_page(
+async def holiday_edit_page(
     holiday_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "holidays", "update")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    holiday = holiday_service.get_holiday(db, holiday_id)
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    holiday = holiday_service.get_holiday(db, holiday_id, current_user=current_user)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
         request=request,

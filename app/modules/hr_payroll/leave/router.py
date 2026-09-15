@@ -168,9 +168,11 @@ def delete_leave_type(
 def export_leave_allocations_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "view")),
 ):
-    excel_data = leave_allocation_service.generate_export_excel(db, business_id=business_id)
-    filename = "leave_allocations_export.xlsx" if not business_id else f"leave_allocations_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = leave_allocation_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "leave_allocations_export.xlsx" if not resolved_business_id else f"leave_allocations_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -186,20 +188,26 @@ def get_leave_allocations(
     employee_id: uuid.UUID | None = Query(None),
     year: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return leave_allocation_service.get_allocations(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         employee_id=employee_id,
         year=year,
     )
 
 
 @router.get("/leave-allocations/{allocation_id}", response_model=LeaveAllocationOut)
-def get_leave_allocation(allocation_id: uuid.UUID, db: Session = Depends(get_db)):
-    return leave_allocation_service.get_allocation(db, allocation_id)
+def get_leave_allocation(
+    allocation_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "view")),
+):
+    return leave_allocation_service.get_allocation(db, allocation_id, current_user=current_user)
 
 
 @router.post(
@@ -208,8 +216,16 @@ def get_leave_allocation(allocation_id: uuid.UUID, db: Session = Depends(get_db)
     status_code=status.HTTP_201_CREATED,
 )
 def create_leave_allocation(
-    allocation_data: LeaveAllocationCreate, db: Session = Depends(get_db)
+    allocation_data: LeaveAllocationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, allocation_data.business_id)
+    if not current_user.is_superuser:
+        allocation_data.business_id = current_user.business_id
+    elif allocation_data.business_id is None:
+        allocation_data.business_id = resolved_business_id
+
     return leave_allocation_service.create_allocation(db, allocation_data)
 
 
@@ -218,17 +234,25 @@ def update_leave_allocation(
     allocation_id: uuid.UUID,
     allocation_data: LeaveAllocationUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "update")),
 ):
+    if hasattr(allocation_data, "business_id") and not current_user.is_superuser:
+        allocation_data.business_id = current_user.business_id
+
     return leave_allocation_service.update_allocation(
-        db, allocation_id, allocation_data
+        db, allocation_id, allocation_data, current_user=current_user
     )
 
 
 @router.delete(
     "/leave-allocations/{allocation_id}", status_code=status.HTTP_204_NO_CONTENT
 )
-def delete_leave_allocation(allocation_id: uuid.UUID, db: Session = Depends(get_db)):
-    leave_allocation_service.delete_allocation(db, allocation_id)
+def delete_leave_allocation(
+    allocation_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "delete")),
+):
+    leave_allocation_service.delete_allocation(db, allocation_id, current_user=current_user)
     return None
 
 
@@ -237,9 +261,11 @@ def delete_leave_allocation(allocation_id: uuid.UUID, db: Session = Depends(get_
 def export_leave_applications_excel(
     business_id: int | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "view")),
 ):
-    excel_data = leave_application_service.generate_export_excel(db, business_id=business_id)
-    filename = "leave_applications_export.xlsx" if not business_id else f"leave_applications_export_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = leave_application_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "leave_applications_export.xlsx" if not resolved_business_id else f"leave_applications_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -255,20 +281,26 @@ def get_leave_applications(
     employee_id: uuid.UUID | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return leave_application_service.get_applications(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         employee_id=employee_id,
         status_filter=status_filter,
     )
 
 
 @router.get("/leave-applications/{application_id}", response_model=LeaveApplicationOut)
-def get_leave_application(application_id: uuid.UUID, db: Session = Depends(get_db)):
-    return leave_application_service.get_application(db, application_id)
+def get_leave_application(
+    application_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "view")),
+):
+    return leave_application_service.get_application(db, application_id, current_user=current_user)
 
 
 @router.post(
@@ -277,8 +309,16 @@ def get_leave_application(application_id: uuid.UUID, db: Session = Depends(get_d
     status_code=status.HTTP_201_CREATED,
 )
 def create_leave_application(
-    application_data: LeaveApplicationCreate, db: Session = Depends(get_db)
+    application_data: LeaveApplicationCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, application_data.business_id)
+    if not current_user.is_superuser:
+        application_data.business_id = current_user.business_id
+    elif application_data.business_id is None:
+        application_data.business_id = resolved_business_id
+
     return leave_application_service.create_application(db, application_data)
 
 
@@ -287,11 +327,15 @@ def update_leave_application(
     application_id: uuid.UUID,
     application_data: LeaveApplicationUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "update")),
 ):
     """Edit a PENDING leave application (dates, reason, document_url, etc.).
     Rejected in the service layer once the application is no longer PENDING."""
+    if hasattr(application_data, "business_id") and not current_user.is_superuser:
+        application_data.business_id = current_user.business_id
+
     return leave_application_service.update_application(
-        db, application_id, application_data
+        db, application_id, application_data, current_user=current_user
     )
 
 
@@ -303,10 +347,13 @@ def review_leave_application(
     application_id: uuid.UUID,
     review_data: LeaveApplicationReview,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "update")),
 ):
     """Approve or reject a PENDING application. Approval validates and
     deducts from the employee's LeaveAllocation for that leave type/year."""
-    return leave_application_service.review_application(db, application_id, review_data)
+    return leave_application_service.review_application(
+        db, application_id, review_data, current_user=current_user
+    )
 
 
 @router.post(
@@ -317,17 +364,22 @@ def cancel_leave_application(
     application_id: uuid.UUID,
     cancel_data: LeaveApplicationCancelRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "update")),
 ):
     """Cancel a PENDING or APPROVED application. If it was APPROVED, restores
     the days back to the employee's LeaveAllocation."""
     return leave_application_service.cancel_application(
-        db, application_id, cancel_data.actor_id
+        db, application_id, cancel_data.actor_id, current_user=current_user
     )
 
 
 @router.delete(
     "/leave-applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT
 )
-def delete_leave_application(application_id: uuid.UUID, db: Session = Depends(get_db)):
-    leave_application_service.delete_application(db, application_id)
+def delete_leave_application(
+    application_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "delete")),
+):
+    leave_application_service.delete_application(db, application_id, current_user=current_user)
     return None
