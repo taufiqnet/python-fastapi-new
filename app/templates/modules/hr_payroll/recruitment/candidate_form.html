@@ -96,14 +96,17 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group md:col-span-2">
                         <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
-                        <select id="business_id" name="business_id" required class="form-input">
+                        <select id="business_id" name="business_id" required class="form-input" {% if not current_user.is_superuser %}disabled{% endif %}>
                             <option value="">— Select Business —</option>
                             {% for b in businesses %}
-                            <option value="{{ b.id }}" {% if candidate and candidate.business_id == b.id %}selected{% endif %}>
+                            <option value="{{ b.id }}" {% if (candidate and candidate.business_id == b.id) or (not is_edit and current_user.business_id == b.id) %}selected{% endif %}>
                                 {{ b.name_en }} (ID: {{ b.id }})
                             </option>
                             {% endfor %}
                         </select>
+                        {% if not current_user.is_superuser %}
+                        <input type="hidden" id="business_id_hidden" value="{% if candidate %}{{ candidate.business_id }}{% else %}{{ current_user.business_id }}{% endif %}">
+                        {% endif %}
                     </div>
 
                     <div class="form-group">
@@ -184,8 +187,9 @@ function handleCandidateSubmit(event) {
     const isEdit = "{{ is_edit }}" === "True";
     const candId = document.getElementById('candId').value;
 
+    const businessIdInput = document.getElementById('business_id_hidden') || document.getElementById('business_id');
     const payload = {
-        business_id: parseInt(document.getElementById('business_id').value),
+        business_id: parseInt(businessIdInput.value),
         first_name: document.getElementById('first_name').value,
         last_name: document.getElementById('last_name').value || null,
         email: document.getElementById('email').value,

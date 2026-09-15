@@ -1,8 +1,10 @@
 import uuid
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.recruitment.models import (
     Candidate,
     CandidateStatusEnum,
@@ -36,8 +38,14 @@ class RecruitmentService:
             db, skip=skip, limit=limit, business_id=business_id
         )
 
-    def get_candidate(self, db: Session, candidate_id: uuid.UUID) -> Candidate:
+    def get_candidate(
+        self, db: Session, candidate_id: uuid.UUID, current_user: Any | None = None
+    ) -> Candidate:
         cand = self.repo.get_candidate(db, candidate_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                cand, current_user, detail=f"Candidate with ID '{candidate_id}' not found."
+            )
         if not cand:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -59,14 +67,20 @@ class RecruitmentService:
         return self.repo.create_candidate(db, cand)
 
     def update_candidate(
-        self, db: Session, candidate_id: uuid.UUID, cand_in: CandidateUpdate
+        self,
+        db: Session,
+        candidate_id: uuid.UUID,
+        cand_in: CandidateUpdate,
+        current_user: Any | None = None,
     ) -> Candidate:
-        cand = self.get_candidate(db, candidate_id)
+        cand = self.get_candidate(db, candidate_id, current_user=current_user)
         update_data = cand_in.model_dump(exclude_unset=True)
         return self.repo.update_candidate(db, cand, update_data)
 
-    def delete_candidate(self, db: Session, candidate_id: uuid.UUID) -> None:
-        cand = self.get_candidate(db, candidate_id)
+    def delete_candidate(
+        self, db: Session, candidate_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        cand = self.get_candidate(db, candidate_id, current_user=current_user)
         self.repo.delete_candidate(db, cand)
 
     # Interviews
@@ -86,8 +100,14 @@ class RecruitmentService:
             candidate_id=candidate_id,
         )
 
-    def get_interview(self, db: Session, interview_id: uuid.UUID) -> Interview:
+    def get_interview(
+        self, db: Session, interview_id: uuid.UUID, current_user: Any | None = None
+    ) -> Interview:
         interview = self.repo.get_interview(db, interview_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                interview, current_user, detail=f"Interview with ID '{interview_id}' not found."
+            )
         if not interview:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -95,8 +115,10 @@ class RecruitmentService:
             )
         return interview
 
-    def create_interview(self, db: Session, interview_in: InterviewCreate) -> Interview:
-        candidate = self.get_candidate(db, interview_in.candidate_id)
+    def create_interview(
+        self, db: Session, interview_in: InterviewCreate, current_user: Any | None = None
+    ) -> Interview:
+        candidate = self.get_candidate(db, interview_in.candidate_id, current_user=current_user)
         interview = Interview(
             business_id=interview_in.business_id,
             candidate_id=interview_in.candidate_id,
@@ -120,21 +142,27 @@ class RecruitmentService:
         return created_interview
 
     def update_interview(
-        self, db: Session, interview_id: uuid.UUID, interview_in: InterviewUpdate
+        self,
+        db: Session,
+        interview_id: uuid.UUID,
+        interview_in: InterviewUpdate,
+        current_user: Any | None = None,
     ) -> Interview:
-        interview = self.get_interview(db, interview_id)
+        interview = self.get_interview(db, interview_id, current_user=current_user)
         update_data = interview_in.model_dump(exclude_unset=True)
         return self.repo.update_interview(db, interview, update_data)
 
-    def delete_interview(self, db: Session, interview_id: uuid.UUID) -> None:
-        interview = self.get_interview(db, interview_id)
+    def delete_interview(
+        self, db: Session, interview_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        interview = self.get_interview(db, interview_id, current_user=current_user)
         self.repo.delete_interview(db, interview)
 
     # Evaluations
     def create_evaluation(
-        self, db: Session, eval_in: InterviewEvaluationCreate
+        self, db: Session, eval_in: InterviewEvaluationCreate, current_user: Any | None = None
     ) -> InterviewEvaluation:
-        interview = self.get_interview(db, eval_in.interview_id)
+        interview = self.get_interview(db, eval_in.interview_id, current_user=current_user)
         evaluation = InterviewEvaluation(
             interview_id=eval_in.interview_id,
             evaluator_id=eval_in.evaluator_id,
@@ -150,7 +178,7 @@ class RecruitmentService:
         return res
 
     def get_evaluations_for_interview(
-        self, db: Session, interview_id: uuid.UUID
+        self, db: Session, interview_id: uuid.UUID, current_user: Any | None = None
     ) -> list[InterviewEvaluation]:
-        self.get_interview(db, interview_id)
+        self.get_interview(db, interview_id, current_user=current_user)
         return self.repo.get_evaluations_for_interview(db, interview_id)

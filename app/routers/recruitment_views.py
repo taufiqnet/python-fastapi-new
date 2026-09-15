@@ -5,6 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.hr_payroll.employees.service import EmployeeService
@@ -28,11 +31,15 @@ def candidate_list_page(
     limit: int = 500,
     business_id: int | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "recruitment", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     candidates = recruitment_service.get_candidates(
-        db, skip=skip, limit=limit, business_id=business_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == resolved_business_id]
     biz_map = {b.id: b.name_en for b in businesses}
 
     total_count = len(candidates)
@@ -57,9 +64,18 @@ def candidate_list_page(
 
 
 @router.get("/candidates/create", response_class=HTMLResponse)
-def candidate_create_page(request: Request, db: Session = Depends(get_db)):
+def candidate_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "recruitment", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == resolved_business_id]
+    job_titles = job_title_service.get_job_titles(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -76,11 +92,18 @@ def candidate_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/candidates/edit/{candidate_id}", response_class=HTMLResponse)
 def candidate_edit_page(
-    candidate_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    candidate_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "recruitment", "update")),
 ):
-    candidate = recruitment_service.get_candidate(db, candidate_id)
+    candidate = recruitment_service.get_candidate(db, candidate_id, current_user=current_user)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == candidate.business_id]
+    job_titles = job_title_service.get_job_titles(
+        db, skip=0, limit=500, business_id=candidate.business_id
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -104,11 +127,15 @@ def interview_list_page(
     business_id: int | None = None,
     candidate_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "recruitment", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     interviews = recruitment_service.get_interviews(
-        db, skip=skip, limit=limit, business_id=business_id, candidate_id=candidate_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id, candidate_id=candidate_id
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == resolved_business_id]
     biz_map = {b.id: b.name_en for b in businesses}
 
     total_count = len(interviews)
@@ -133,10 +160,21 @@ def interview_list_page(
 
 
 @router.get("/interviews/create", response_class=HTMLResponse)
-def interview_create_page(request: Request, db: Session = Depends(get_db)):
+def interview_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "recruitment", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    candidates = recruitment_service.get_candidates(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == resolved_business_id]
+    candidates = recruitment_service.get_candidates(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
+    employees = employee_service.get_employees(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -154,11 +192,18 @@ def interview_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/interviews/{interview_id}/evaluate", response_class=HTMLResponse)
 def interview_evaluate_page(
-    interview_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    interview_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "recruitment", "create")),
 ):
-    interview = recruitment_service.get_interview(db, interview_id)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
-    evaluations = recruitment_service.get_evaluations_for_interview(db, interview_id)
+    interview = recruitment_service.get_interview(db, interview_id, current_user=current_user)
+    employees = employee_service.get_employees(
+        db, skip=0, limit=500, business_id=interview.business_id
+    )
+    evaluations = recruitment_service.get_evaluations_for_interview(
+        db, interview_id, current_user=current_user
+    )
 
     return templates.TemplateResponse(
         request=request,
