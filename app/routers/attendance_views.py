@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.attendance.models import (
@@ -47,6 +48,11 @@ async def attendance_list_page(
             parsed_biz_id = int(business_id.strip())
         except ValueError:
             parsed_biz_id = None
+
+    if current_user and not current_user.is_superuser:
+        parsed_biz_id = current_user.business_id
+    elif parsed_biz_id is None and current_user and current_user.business_id:
+        parsed_biz_id = resolve_business_id(current_user, parsed_biz_id)
 
     parsed_emp_id: uuid.UUID | None = None
     if employee_id and employee_id.strip():
@@ -89,8 +95,12 @@ async def attendance_list_page(
         end_date=parsed_end_date,
         status_filter=clean_status,
     )
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+        employees = employee_service.get_employees(db, skip=0, limit=500, business_id=current_user.business_id)
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+        employees = employee_service.get_employees(db, skip=0, limit=500, business_id=parsed_biz_id)
 
     biz_map = {b.id: b.name_en for b in businesses}
     emp_map = {e.id: e for e in employees}
@@ -150,13 +160,19 @@ async def attendance_list_page(
 
 
 @router.get("/attendance/create", response_class=HTMLResponse)
-def attendance_create_page(
+async def attendance_create_page(
     request: Request,
     _perm=Depends(require_permission("hrm", "attendance", "create")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+        employees = employee_service.get_employees(db, skip=0, limit=500, business_id=current_user.business_id)
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+        employees = employee_service.get_employees(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
         request=request,
@@ -174,15 +190,22 @@ def attendance_create_page(
 
 
 @router.get("/attendance/edit/{attendance_id}", response_class=HTMLResponse)
-def attendance_edit_page(
+async def attendance_edit_page(
     attendance_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "attendance", "update")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    record = attendance_service.get_record(db, attendance_id)
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    current_user = await get_current_user_optional(request, None, async_db)
+    record = attendance_service.get_record(db, attendance_id, current_user=current_user)
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in business_service.list_businesses(db, skip=0, limit=500) if b.id == current_user.business_id]
+        employees = employee_service.get_employees(db, skip=0, limit=500, business_id=current_user.business_id)
+    else:
+        businesses = business_service.list_businesses(db, skip=0, limit=500)
+        employees = employee_service.get_employees(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
         request=request,
@@ -200,13 +223,15 @@ def attendance_edit_page(
 
 
 @router.get("/attendance/detail/{attendance_id}", response_class=HTMLResponse)
-def attendance_detail_page(
+async def attendance_detail_page(
     attendance_id: uuid.UUID,
     request: Request,
     _perm=Depends(require_permission("hrm", "attendance", "view")),
     db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
 ):
-    record = attendance_service.get_record(db, attendance_id)
+    current_user = await get_current_user_optional(request, None, async_db)
+    record = attendance_service.get_record(db, attendance_id, current_user=current_user)
     business = None
     if record.business_id:
         business = business_service.get_business(db, record.business_id)

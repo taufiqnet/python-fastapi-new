@@ -6,14 +6,16 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Qu
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
-from app.modules.hr_payroll.employees.models import ImportJob
 from app.modules.hr_payroll.attendance.schemas import (
     AttendanceCreate,
     AttendanceOut,
     AttendanceUpdate,
 )
 from app.modules.hr_payroll.attendance.service import AttendanceService
+from app.modules.hr_payroll.employees.models import ImportJob
 
 router = APIRouter(tags=["Attendance Management"])
 attendance_service = AttendanceService()
@@ -40,12 +42,14 @@ def get_attendance_records(
     end_date: date | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "attendance", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return attendance_service.get_records(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         employee_id=employee_id,
         att_date=att_date,
         start_date=start_date,
@@ -62,16 +66,18 @@ def export_attendance_excel(
     end_date: date | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "attendance", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     excel_data = attendance_service.generate_export_excel(
         db,
-        business_id=business_id,
+        business_id=resolved_business_id,
         employee_id=employee_id,
         start_date=start_date,
         end_date=end_date,
         status_filter=status_filter,
     )
-    filename = "attendance_export.xlsx" if not business_id else f"attendance_export_business_{business_id}.xlsx"
+    filename = "attendance_export.xlsx" if not resolved_business_id else f"attendance_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -83,9 +89,16 @@ def export_attendance_excel(
 def download_attendance_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "attendance", "create")),
 ):
-    excel_data = attendance_service.generate_excel_template(db, business_id=business_id)
-    filename = f"attendance_template_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
+    excel_data = attendance_service.generate_excel_template(db, business_id=resolved_business_id)
+    filename = f"attendance_template_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -99,19 +112,24 @@ async def import_attendance_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user=Depends(get_current_user_optional),
-    _perm=Depends(require_permission("hrm", "attendance", "create")),
+    current_user: User = Depends(require_permission("hrm", "attendance", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
     contents = await file.read()
     user_identifier = current_user.username if current_user else "System"
     job, rows, start_idx = attendance_service.start_import_job(
-        db, business_id=business_id, file_bytes=contents, created_by=user_identifier
+        db, business_id=resolved_business_id, file_bytes=contents, created_by=user_identifier
     )
 
     background_tasks.add_task(
         attendance_service.process_import_job_background,
         job_id=job.id,
-        business_id=business_id,
+        business_id=resolved_business_id,
         file_bytes=contents,
         start_idx=start_idx,
     )
@@ -228,8 +246,9 @@ async def bulk_delete_attendance(
 def get_attendance_record(
     attendance_id: uuid.UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "attendance", "view")),
 ):
-    return attendance_service.get_record(db, attendance_id)
+    return attendance_service.get_record(db, attendance_id, current_user=current_user)
 
 
 @router.post(
@@ -240,8 +259,17 @@ def get_attendance_record(
 def create_attendance_record(
     attendance_data: AttendanceCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "attendance", "create")),
 ):
-    return attendance_service.create_record(db, attendance_data)
+    resolved_business_id = resolve_business_id(current_user, attendance_data.business_id)
+    if not current_user.is_superuser:
+        attendance_data.business_id = current_user.business_id
+    elif attendance_data.business_id is None:
+        attendance_data.business_id = resolved_business_id
+
+    return attendance_service.create_record(
+        db, attendance_data, current_user=current_user
+    )
 
 
 @router.put("/attendance/{attendance_id}", response_model=AttendanceOut)
@@ -249,8 +277,14 @@ def update_attendance_record(
     attendance_id: uuid.UUID,
     attendance_data: AttendanceUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "attendance", "update")),
 ):
-    return attendance_service.update_record(db, attendance_id, attendance_data)
+    if not current_user.is_superuser:
+        attendance_data.business_id = current_user.business_id
+
+    return attendance_service.update_record(
+        db, attendance_id, attendance_data, current_user=current_user
+    )
 
 
 @router.delete(
@@ -260,6 +294,7 @@ def update_attendance_record(
 def delete_attendance_record(
     attendance_id: uuid.UUID,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "attendance", "delete")),
 ):
-    attendance_service.delete_record(db, attendance_id)
+    attendance_service.delete_record(db, attendance_id, current_user=current_user)
     return None

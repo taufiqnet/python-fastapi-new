@@ -20,6 +20,7 @@ import json
 import openpyxl
 
 from app.core.tenancy.repository import BusinessRepository
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.employees.models import ImportJob
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 from app.database import SessionLocal
@@ -100,22 +101,20 @@ class AttendanceService:
             status=status_filter,
         )
 
-    def get_record(self, db: Session, attendance_uuid: uuid.UUID) -> Attendance:
+    def get_record(
+        self, db: Session, attendance_uuid: uuid.UUID, current_user=None
+    ) -> Attendance:
         record = self.repository.get_by_id(db, attendance_uuid)
-        if not record:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Attendance record not found",
-            )
+        verify_record_ownership(record, current_user, detail="Attendance record not found")
         return record
 
-    def create_record(self, db: Session, data: AttendanceCreate) -> Attendance:
+    def create_record(
+        self, db: Session, data: AttendanceCreate, current_user=None
+    ) -> Attendance:
         employee = self.employee_repository.get_by_id(db, data.employee_id)
-        if not employee:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Employee with id '{data.employee_id}' not found",
-            )
+        verify_record_ownership(
+            employee, current_user, detail=f"Employee with id '{data.employee_id}' not found"
+        )
 
         existing = self.repository.get_by_emp_date(
             db,
@@ -140,8 +139,9 @@ class AttendanceService:
         db: Session,
         attendance_uuid: uuid.UUID,
         data: AttendanceUpdate,
+        current_user=None,
     ) -> Attendance:
-        record = self.get_record(db, attendance_uuid)
+        record = self.get_record(db, attendance_uuid, current_user=current_user)
 
         target_emp_id = data.employee_id or record.employee_id
         target_date = data.date or record.date
@@ -264,8 +264,10 @@ class AttendanceService:
         )
         return self.update_record(db, existing.id, update_data)
 
-    def delete_record(self, db: Session, attendance_uuid: uuid.UUID) -> None:
-        record = self.get_record(db, attendance_uuid)
+    def delete_record(
+        self, db: Session, attendance_uuid: uuid.UUID, current_user=None
+    ) -> None:
+        record = self.get_record(db, attendance_uuid, current_user=current_user)
         self.repository.delete(db, record)
 
     def bulk_delete_records(
@@ -664,7 +666,9 @@ class AttendanceService:
                 )
 
                 try:
-                    self.create_record(db, create_data)
+                    # Pass dummy superuser user so verify_record_ownership doesn't reject background job employee verification
+                    dummy_su = type("DummyUser", (), {"is_superuser": True, "business_id": business_id})()
+                    self.create_record(db, create_data, current_user=dummy_su)
                     job.success_count += 1
                 except HTTPException as hexp:
                     errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "date": str(att_date), "error": hexp.detail})
