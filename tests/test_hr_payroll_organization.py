@@ -338,3 +338,140 @@ async def test_department_tenant_isolation(sync_db):
         assert res_get_b.status_code == 200
 
     app.dependency_overrides.clear()
+
+
+@pytest.mark.asyncio
+async def test_job_title_tenant_isolation(sync_db):
+    def _override_get_db():
+        yield sync_db
+
+    superuser = User(
+        id=1,
+        username="superuser",
+        email="super@example.com",
+        is_active=True,
+        is_superuser=True,
+        business_id=1,
+    )
+    superuser.get_all_permission_codes = lambda: {"hrm:job_titles:view", "hrm:job_titles:create", "hrm:job_titles:update", "hrm:job_titles:delete"}
+    superuser.has_permission = lambda code: True
+
+    user_a = User(
+        id=2,
+        username="usera",
+        email="usera@example.com",
+        is_active=True,
+        is_superuser=False,
+        business_id=1,
+    )
+    user_a.get_all_permission_codes = lambda: {"hrm:job_titles:view", "hrm:job_titles:create", "hrm:job_titles:update", "hrm:job_titles:delete"}
+    user_a.has_permission = lambda code: True
+
+    user_b = User(
+        id=3,
+        username="userb",
+        email="userb@example.com",
+        is_active=True,
+        is_superuser=False,
+        business_id=2,
+    )
+    user_b.get_all_permission_codes = lambda: {"hrm:job_titles:view", "hrm:job_titles:create", "hrm:job_titles:update", "hrm:job_titles:delete"}
+    user_b.has_permission = lambda code: True
+
+    app.dependency_overrides[get_db] = _override_get_db
+
+    # 1. Superuser creates JT A in Business 1 & JT B in Business 2
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: superuser
+    app.dependency_overrides[get_current_user] = lambda request=None: superuser
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res_a = await ac.post("/job-titles", json={
+            "name": "Software Engineer",
+            "short_name": "SE",
+            "business_id": 1,
+        })
+        assert res_a.status_code == 201, res_a.text
+        jt_a_id = res_a.json()["id"]
+
+        res_b = await ac.post("/job-titles", json={
+            "name": "Financial Analyst",
+            "short_name": "FA",
+            "business_id": 2,
+        })
+        assert res_b.status_code == 201, res_b.text
+        jt_b_id = res_b.json()["id"]
+
+    # 2. Test User A (Business 1, non-superuser)
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: user_a
+    app.dependency_overrides[get_current_user] = lambda request=None: user_a
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # User A list job titles: should only see JT A
+        res_list = await ac.get("/job-titles")
+        assert res_list.status_code == 200
+        jt_ids = [j["id"] for j in res_list.json()]
+        assert jt_a_id in jt_ids
+        assert jt_b_id not in jt_ids
+
+        # User A specifies business_id=2 in query param: ignored in favor of own business_id=1
+        res_param = await ac.get("/job-titles?business_id=2")
+        assert res_param.status_code == 200
+        param_ids = [j["id"] for j in res_param.json()]
+        assert jt_a_id in param_ids
+        assert jt_b_id not in param_ids
+
+        # User A requests JT B by ID (get, update, delete): returns 404 Not Found
+        res_get = await ac.get(f"/job-titles/{jt_b_id}")
+        assert res_get.status_code == 404
+        assert res_get.json()["detail"] == "Job title not found"
+
+        res_put = await ac.put(f"/job-titles/{jt_b_id}", json={"name": "Hacked Analyst"})
+        assert res_put.status_code == 404
+        assert res_put.json()["detail"] == "Job title not found"
+
+        res_del = await ac.delete(f"/job-titles/{jt_b_id}")
+        assert res_del.status_code == 404
+        assert res_del.json()["detail"] == "Job title not found"
+
+        # User A creates job title with business_id=2 in body: forced to user_a.business_id (1)
+        res_create = await ac.post("/job-titles", json={
+            "name": "QA Specialist",
+            "short_name": "QA",
+            "business_id": 2,
+        })
+        assert res_create.status_code == 201
+        assert res_create.json()["business_id"] == 1
+
+    # 3. Test User B (Business 2, non-superuser)
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: user_b
+    app.dependency_overrides[get_current_user] = lambda request=None: user_b
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res_list = await ac.get("/job-titles")
+        assert res_list.status_code == 200
+        b_ids = [j["id"] for j in res_list.json()]
+        assert jt_b_id in b_ids
+        assert jt_a_id not in b_ids
+
+        res_get = await ac.get(f"/job-titles/{jt_a_id}")
+        assert res_get.status_code == 404
+
+    # 4. Test Superuser
+    app.dependency_overrides[get_current_user_optional] = lambda request=None: superuser
+    app.dependency_overrides[get_current_user] = lambda request=None: superuser
+
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res_super_b = await ac.get("/job-titles?business_id=2")
+        assert res_super_b.status_code == 200
+        super_b_ids = [j["id"] for j in res_super_b.json()]
+        assert jt_b_id in super_b_ids
+        assert jt_a_id not in super_b_ids
+
+        res_get_a = await ac.get(f"/job-titles/{jt_a_id}")
+        assert res_get_a.status_code == 200
+
+        res_get_b = await ac.get(f"/job-titles/{jt_b_id}")
+        assert res_get_b.status_code == 200
+
+    app.dependency_overrides.clear()

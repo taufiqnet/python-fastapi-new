@@ -322,8 +322,12 @@ class JobTitleService:
             department_id=department_id,
         )
 
-    def get_job_title(self, db: Session, job_title_id: uuid.UUID) -> JobTitle:
+    def get_job_title(
+        self, db: Session, job_title_id: uuid.UUID, current_user: Any | None = None
+    ) -> JobTitle:
         job_title = self.repository.get_by_id(db, job_title_id)
+        if current_user is not None:
+            return verify_record_ownership(job_title, current_user, detail="Job title not found")
         if not job_title:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -354,9 +358,13 @@ class JobTitleService:
         return self.repository.create(db, data)
 
     def update_job_title(
-        self, db: Session, job_title_id: uuid.UUID, data: JobTitleUpdate
+        self,
+        db: Session,
+        job_title_id: uuid.UUID,
+        data: JobTitleUpdate,
+        current_user: Any | None = None,
     ) -> JobTitle:
-        job_title = self.get_job_title(db, job_title_id)
+        job_title = self.get_job_title(db, job_title_id, current_user=current_user)
 
         target_department_id = (
             data.department_id
@@ -387,8 +395,10 @@ class JobTitleService:
 
         return self.repository.update(db, job_title, data)
 
-    def delete_job_title(self, db: Session, job_title_id: uuid.UUID) -> None:
-        job_title = self.get_job_title(db, job_title_id)
+    def delete_job_title(
+        self, db: Session, job_title_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        job_title = self.get_job_title(db, job_title_id, current_user=current_user)
         self.repository.delete(db, job_title)
 
     def generate_export_excel(

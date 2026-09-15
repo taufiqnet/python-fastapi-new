@@ -148,21 +148,24 @@ async def job_title_list_page(
     department_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
     async_db=Depends(get_async_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "view")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "view")),
 ):
-    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
     job_titles = job_title_service.get_job_titles(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         department_id=department_id,
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
+    departments = department_service.get_departments(db, skip=0, limit=500, business_id=resolved_business_id)
 
     biz_map = {b.id: b.name_en for b in businesses}
     dept_map = {d.id: d.name for d in departments}
+
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     total_count = len(job_titles)
     active_count = sum(1 for j in job_titles if getattr(j, "is_active", True))
@@ -194,15 +197,19 @@ async def job_title_list_page(
 def job_title_create_page(
     request: Request,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "create")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
+    departments = department_service.get_departments(db, skip=0, limit=500, business_id=resolved_business_id)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/organization/job_titles/job_title_form.html",
         context={
+            "current_user": current_user,
             "job_title": None,
             "is_edit": False,
             "businesses": businesses,
@@ -217,21 +224,22 @@ def job_title_detail_page(
     job_title_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "view")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "view")),
 ):
-    job_title = job_title_service.get_job_title(db, job_title_id)
+    job_title = job_title_service.get_job_title(db, job_title_id, current_user=current_user)
     business = None
     if job_title.business_id:
         business = business_service.get_business(db, job_title.business_id)
 
     department = None
     if job_title.department_id:
-        department = department_service.get_department(db, job_title.department_id)
+        department = department_service.get_department(db, job_title.department_id, current_user=current_user)
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/organization/job_titles/job_title_detail.html",
         context={
+            "current_user": current_user,
             "job_title": job_title,
             "business": business,
             "department": department,
@@ -245,16 +253,20 @@ def job_title_edit_page(
     job_title_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "update")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "update")),
 ):
-    job_title = job_title_service.get_job_title(db, job_title_id)
+    job_title = job_title_service.get_job_title(db, job_title_id, current_user=current_user)
+    resolved_business_id = resolve_business_id(current_user, job_title.business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
+    departments = department_service.get_departments(db, skip=0, limit=500, business_id=resolved_business_id)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
 
     return templates.TemplateResponse(
         request=request,
         name="modules/hr_payroll/organization/job_titles/job_title_form.html",
         context={
+            "current_user": current_user,
             "job_title": job_title,
             "is_edit": True,
             "businesses": businesses,

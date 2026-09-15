@@ -155,12 +155,13 @@ def export_job_titles_excel(
     business_id: int | None = Query(None),
     department_id: uuid.UUID | None = Query(None),
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "view")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     excel_data = job_title_service.generate_export_excel(
-        db, business_id=business_id, department_id=department_id
+        db, business_id=resolved_business_id, department_id=department_id
     )
-    filename = "job_titles_export.xlsx" if not business_id else f"job_titles_export_business_{business_id}.xlsx"
+    filename = "job_titles_export.xlsx" if not resolved_business_id else f"job_titles_export_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -172,10 +173,16 @@ def export_job_titles_excel(
 def download_job_titles_excel_template(
     business_id: int = Query(...),
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "create")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "create")),
 ):
-    excel_data = job_title_service.generate_excel_template(db, business_id=business_id)
-    filename = f"job_title_template_business_{business_id}.xlsx"
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
+    excel_data = job_title_service.generate_excel_template(db, business_id=resolved_business_id)
+    filename = f"job_title_template_business_{resolved_business_id}.xlsx"
     return Response(
         content=excel_data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -188,11 +195,17 @@ async def import_job_titles_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "create")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id or resolved_business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
     contents = await file.read()
     return job_title_service.import_job_titles_excel(
-        db, business_id=business_id, file_bytes=contents
+        db, business_id=resolved_business_id, file_bytes=contents
     )
 
 
@@ -203,13 +216,14 @@ def get_job_titles(
     business_id: int | None = Query(None),
     department_id: uuid.UUID | None = Query(None),
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "view")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return job_title_service.get_job_titles(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         department_id=department_id,
     )
 
@@ -218,9 +232,9 @@ def get_job_titles(
 def get_job_title(
     job_title_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "view")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "view")),
 ):
-    return job_title_service.get_job_title(db, job_title_id)
+    return job_title_service.get_job_title(db, job_title_id, current_user=current_user)
 
 
 @router.post(
@@ -231,8 +245,13 @@ def get_job_title(
 def create_job_title(
     job_title_data: JobTitleCreate,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "create")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, job_title_data.business_id)
+    if not current_user.is_superuser:
+        job_title_data.business_id = current_user.business_id
+    elif job_title_data.business_id is None:
+        job_title_data.business_id = resolved_business_id
     return job_title_service.create_job_title(db, job_title_data)
 
 
@@ -241,16 +260,20 @@ def update_job_title(
     job_title_id: uuid.UUID,
     job_title_data: JobTitleUpdate,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "update")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "update")),
 ):
-    return job_title_service.update_job_title(db, job_title_id, job_title_data)
+    if not current_user.is_superuser:
+        job_title_data.business_id = current_user.business_id
+    return job_title_service.update_job_title(
+        db, job_title_id, job_title_data, current_user=current_user
+    )
 
 
 @router.delete("/job-titles/{job_title_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_job_title(
     job_title_id: uuid.UUID,
     db: Session = Depends(get_db),
-    _perm=Depends(require_permission("hrm", "job_titles", "delete")),
+    current_user: User = Depends(require_permission("hrm", "job_titles", "delete")),
 ):
-    job_title_service.delete_job_title(db, job_title_id)
+    job_title_service.delete_job_title(db, job_title_id, current_user=current_user)
     return None
