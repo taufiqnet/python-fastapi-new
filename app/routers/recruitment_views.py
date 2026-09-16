@@ -59,6 +59,7 @@ def candidate_list_page(
             "interviewing_count": interviewing_count,
             "offered_count": offered_count,
             "active_page": "recruitment_candidates",
+            "current_user": current_user,
         },
     )
 
@@ -86,6 +87,7 @@ def candidate_create_page(
             "businesses": businesses,
             "job_titles": job_titles,
             "active_page": "recruitment_candidates",
+            "current_user": current_user,
         },
     )
 
@@ -114,6 +116,7 @@ def candidate_edit_page(
             "businesses": businesses,
             "job_titles": job_titles,
             "active_page": "recruitment_candidates",
+            "current_user": current_user,
         },
     )
 
@@ -155,6 +158,7 @@ def interview_list_page(
             "completed_count": completed_count,
             "cancelled_count": cancelled_count,
             "active_page": "recruitment_interviews",
+            "current_user": current_user,
         },
     )
 
@@ -186,6 +190,7 @@ def interview_create_page(
             "candidates": candidates,
             "employees": employees,
             "active_page": "recruitment_interviews",
+            "current_user": current_user,
         },
     )
 
@@ -213,5 +218,6 @@ def interview_evaluate_page(
             "employees": employees,
             "evaluations": evaluations,
             "active_page": "recruitment_interviews",
+            "current_user": current_user,
         },
     )

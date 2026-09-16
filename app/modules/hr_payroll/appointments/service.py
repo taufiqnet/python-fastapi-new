@@ -1,8 +1,10 @@
 import uuid
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.appointments.models import (
     AppointmentLetter,
     AppointmentStatusEnum,
@@ -30,9 +32,13 @@ class AppointmentLetterService:
         return self.repo.get_all(db, skip=skip, limit=limit, business_id=business_id)
 
     def get_appointment(
-        self, db: Session, appointment_id: uuid.UUID
+        self, db: Session, appointment_id: uuid.UUID, current_user: Any | None = None
     ) -> AppointmentLetter:
         appt = self.repo.get_by_id(db, appointment_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                appt, current_user, detail=f"Appointment letter with ID '{appointment_id}' not found."
+            )
         if not appt:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -64,18 +70,26 @@ class AppointmentLetterService:
         return self.repo.create(db, appt)
 
     def update_appointment(
-        self, db: Session, appointment_id: uuid.UUID, appt_in: AppointmentLetterUpdate
+        self,
+        db: Session,
+        appointment_id: uuid.UUID,
+        appt_in: AppointmentLetterUpdate,
+        current_user: Any | None = None,
     ) -> AppointmentLetter:
-        appt = self.get_appointment(db, appointment_id)
+        appt = self.get_appointment(db, appointment_id, current_user=current_user)
         update_data = appt_in.model_dump(exclude_unset=True)
         return self.repo.update(db, appt, update_data)
 
-    def delete_appointment(self, db: Session, appointment_id: uuid.UUID) -> None:
-        appt = self.get_appointment(db, appointment_id)
+    def delete_appointment(
+        self, db: Session, appointment_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        appt = self.get_appointment(db, appointment_id, current_user=current_user)
         self.repo.delete(db, appt)
 
-    def convert_to_employee(self, db: Session, appointment_id: uuid.UUID) -> Employee:
-        appt = self.get_appointment(db, appointment_id)
+    def convert_to_employee(
+        self, db: Session, appointment_id: uuid.UUID, current_user: Any | None = None
+    ) -> Employee:
+        appt = self.get_appointment(db, appointment_id, current_user=current_user)
         if appt.employee_id:
             emp = db.get(Employee, appt.employee_id)
             if emp:

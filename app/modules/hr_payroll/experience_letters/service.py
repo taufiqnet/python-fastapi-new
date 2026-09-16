@@ -1,9 +1,11 @@
 import datetime
 import uuid
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.employees.models import Employee
 from app.modules.hr_payroll.experience_letters.models import (
     ExperienceLetter,
@@ -39,8 +41,14 @@ class ExperienceLetterService:
             db, skip=skip, limit=limit, business_id=business_id, employee_id=employee_id
         )
 
-    def get_letter(self, db: Session, letter_id: uuid.UUID) -> ExperienceLetter:
+    def get_letter(
+        self, db: Session, letter_id: uuid.UUID, current_user: Any | None = None
+    ) -> ExperienceLetter:
         letter = self.repo.get_by_id(db, letter_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                letter, current_user, detail=f"Experience letter with ID '{letter_id}' not found."
+            )
         if not letter:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -90,12 +98,18 @@ class ExperienceLetterService:
         return self.repo.create(db, letter)
 
     def update_letter(
-        self, db: Session, letter_id: uuid.UUID, letter_in: ExperienceLetterUpdate
+        self,
+        db: Session,
+        letter_id: uuid.UUID,
+        letter_in: ExperienceLetterUpdate,
+        current_user: Any | None = None,
     ) -> ExperienceLetter:
-        letter = self.get_letter(db, letter_id)
+        letter = self.get_letter(db, letter_id, current_user=current_user)
         update_data = letter_in.model_dump(exclude_unset=True)
         return self.repo.update(db, letter, update_data)
 
-    def delete_letter(self, db: Session, letter_id: uuid.UUID) -> None:
-        letter = self.get_letter(db, letter_id)
+    def delete_letter(
+        self, db: Session, letter_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        letter = self.get_letter(db, letter_id, current_user=current_user)
         self.repo.delete(db, letter)

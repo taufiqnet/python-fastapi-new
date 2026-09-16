@@ -144,6 +144,15 @@
         <option value="Revoked">Revoked</option>
     </select>
 
+    {% if current_user and current_user.is_superuser %}
+    <select id="filterBusiness">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}">{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+
     <button type="button" id="btnClearFilters" 
             class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
         <i class="fas fa-times-circle text-xs"></i> Clear Filters
@@ -157,11 +166,14 @@
                 <tr>
                     <th>Letter #</th>
                     <th>Candidate</th>
+                    <th>Business Profile</th>
                     <th>Job Title</th>
                     <th>Offered Salary</th>
                     <th>Joining Date</th>
                     <th>Status</th>
                     <th style="width:110px">Actions</th>
+                    <th class="hidden"></th>
+                    <th class="hidden"></th>
                 </tr>
             </thead>
             <tbody>
@@ -171,6 +183,13 @@
                     <td>
                         <div class="font-semibold text-xs text-gray-900">{{ l.candidate_name }}</div>
                         <div class="text-[10px] text-gray-400 font-mono">{{ l.candidate_email }}</div>
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {% if l.business_id and biz_map.get(l.business_id) %}
+                        {{ biz_map.get(l.business_id) }}
+                        {% else %}
+                        <span class="text-gray-400">— Global —</span>
+                        {% endif %}
                     </td>
                     <td class="text-xs text-gray-700 font-medium">{{ l.job_title }} {% if l.department %}<span class="text-gray-400">({{ l.department }})</span>{% endif %}</td>
                     <td class="text-xs font-semibold text-gray-900">৳{{ "%.2f"|format(l.offered_salary) }}</td>
@@ -197,6 +216,8 @@
                             </button>
                         </div>
                     </td>
+                    <td class="hidden">{% if l.status.value == 'issued' %}Issued{% elif l.status.value == 'draft' %}Draft{% else %}Revoked{% endif %}</td>
+                    <td class="hidden">{% if l.business_id and biz_map.get(l.business_id) %}{{ biz_map.get(l.business_id) }}{% else %}Global{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -233,12 +254,14 @@ $(document).ready(function () {
         responsive: true,
         pageLength: 10,
         dom: 'rt',
+        columnDefs: [{ targets: [8, 9], visible: false, searchable: true }],
         language: { emptyTable: "No offer letters generated yet." },
         drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterStatus').on('change', function () { table.column(5).search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(8).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(9).search(this.value).draw(); });
     $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
     $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });
@@ -247,6 +270,7 @@ $(document).ready(function () {
         $('#customSearch').val('');
         table.search('');
         $('#filterStatus').val('');
+        $('#filterBusiness').val('');
         table.columns().search('').draw();
     });
 

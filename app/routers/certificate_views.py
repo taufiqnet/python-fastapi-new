@@ -6,6 +6,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.hr_payroll.certificates.service import SalaryCertificateService
@@ -27,13 +29,18 @@ def certificate_list_page(
     business_id: int | None = None,
     employee_id: uuid.UUID | None = None,
     db: Session = Depends(get_db),
-    _perm = Depends(require_permission("hrm", "salary_certificates", "view")),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     certificates = certificate_service.get_certificates(
-        db, skip=skip, limit=limit, business_id=business_id, employee_id=employee_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id, employee_id=employee_id
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == resolved_business_id]
+    employees = employee_service.get_employees(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
 
     biz_map = {b.id: b.name_en for b in businesses}
     emp_map = {e.id: e.full_name for e in employees}
@@ -57,6 +64,7 @@ def certificate_list_page(
             "draft_count": draft_count,
             "revoked_count": revoked_count,
             "active_page": "salary_certificates",
+            "current_user": current_user,
         },
     )
 
@@ -65,10 +73,15 @@ def certificate_list_page(
 def certificate_create_page(
     request: Request,
     db: Session = Depends(get_db),
-    _perm = Depends(require_permission("hrm", "salary_certificates", "create")),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == resolved_business_id]
+    employees = employee_service.get_employees(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -79,6 +92,7 @@ def certificate_create_page(
             "businesses": businesses,
             "employees": employees,
             "active_page": "salary_certificates",
+            "current_user": current_user,
         },
     )
 
@@ -88,9 +102,9 @@ def certificate_detail_page(
     cert_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
-    _perm = Depends(require_permission("hrm", "salary_certificates", "view")),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "view")),
 ):
-    certificate = certificate_service.get_certificate(db, cert_id)
+    certificate = certificate_service.get_certificate(db, cert_id, current_user=current_user)
     business = (
         business_service.get_business(db, certificate.business_id)
         if certificate.business_id
@@ -104,6 +118,7 @@ def certificate_detail_page(
             "certificate": certificate,
             "business": business,
             "active_page": "salary_certificates",
+            "current_user": current_user,
         },
     )
 
@@ -113,11 +128,15 @@ def certificate_edit_page(
     cert_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
-    _perm = Depends(require_permission("hrm", "salary_certificates", "update")),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "update")),
 ):
-    certificate = certificate_service.get_certificate(db, cert_id)
+    certificate = certificate_service.get_certificate(db, cert_id, current_user=current_user)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == certificate.business_id]
+    employees = employee_service.get_employees(
+        db, skip=0, limit=500, business_id=certificate.business_id
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -128,5 +147,6 @@ def certificate_edit_page(
             "businesses": businesses,
             "employees": employees,
             "active_page": "salary_certificates",
+            "current_user": current_user,
         },
     )

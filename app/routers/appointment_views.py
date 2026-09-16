@@ -6,6 +6,8 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.hr_payroll.appointments.service import AppointmentLetterService
@@ -27,12 +29,15 @@ def appointment_list_page(
     limit: int = 500,
     business_id: int | None = None,
     db: Session = Depends(get_db),
-    _perm = Depends(require_permission("hrm", "appointment_letters", "view")),
+    current_user: User = Depends(require_permission("hrm", "appointment_letters", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     appointments = appointment_service.get_appointments(
-        db, skip=skip, limit=limit, business_id=business_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == resolved_business_id]
 
     biz_map = {b.id: b.name_en for b in businesses}
 
@@ -53,6 +58,7 @@ def appointment_list_page(
             "draft_count": draft_count,
             "pending_count": pending_count,
             "active_page": "appointment_letters",
+            "current_user": current_user,
         },
     )
 
@@ -61,11 +67,18 @@ def appointment_list_page(
 def appointment_create_page(
     request: Request,
     db: Session = Depends(get_db),
-    _perm = Depends(require_permission("hrm", "appointment_letters", "create")),
+    current_user: User = Depends(require_permission("hrm", "appointment_letters", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, None)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
-    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == resolved_business_id]
+    departments = department_service.get_departments(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
+    job_titles = job_title_service.get_job_titles(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -77,6 +90,7 @@ def appointment_create_page(
             "departments": departments,
             "job_titles": job_titles,
             "active_page": "appointment_letters",
+            "current_user": current_user,
         },
     )
 
@@ -86,9 +100,9 @@ def appointment_detail_page(
     appointment_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
-    _perm = Depends(require_permission("hrm", "appointment_letters", "view")),
+    current_user: User = Depends(require_permission("hrm", "appointment_letters", "view")),
 ):
-    appointment = appointment_service.get_appointment(db, appointment_id)
+    appointment = appointment_service.get_appointment(db, appointment_id, current_user=current_user)
     business = (
         business_service.get_business(db, appointment.business_id)
         if appointment.business_id
@@ -102,6 +116,7 @@ def appointment_detail_page(
             "appointment": appointment,
             "business": business,
             "active_page": "appointment_letters",
+            "current_user": current_user,
         },
     )
 
@@ -111,12 +126,18 @@ def appointment_edit_page(
     appointment_id: uuid.UUID,
     request: Request,
     db: Session = Depends(get_db),
-    _perm = Depends(require_permission("hrm", "appointment_letters", "update")),
+    current_user: User = Depends(require_permission("hrm", "appointment_letters", "update")),
 ):
-    appointment = appointment_service.get_appointment(db, appointment_id)
+    appointment = appointment_service.get_appointment(db, appointment_id, current_user=current_user)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    departments = department_service.get_departments(db, skip=0, limit=500)
-    job_titles = job_title_service.get_job_titles(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == appointment.business_id]
+    departments = department_service.get_departments(
+        db, skip=0, limit=500, business_id=appointment.business_id
+    )
+    job_titles = job_title_service.get_job_titles(
+        db, skip=0, limit=500, business_id=appointment.business_id
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -128,5 +149,6 @@ def appointment_edit_page(
             "departments": departments,
             "job_titles": job_titles,
             "active_page": "appointment_letters",
+            "current_user": current_user,
         },
     )

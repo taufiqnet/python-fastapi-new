@@ -146,6 +146,15 @@
         <option value="Draft">Draft</option>
     </select>
 
+    {% if current_user and current_user.is_superuser %}
+    <select id="filterBusiness">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}">{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+
     <button type="button" id="btnClearFilters" 
             class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
         <i class="fas fa-times-circle text-xs"></i> Clear Filters
@@ -158,11 +167,14 @@
             <thead>
                 <tr>
                     <th>Candidate</th>
+                    <th>Business Profile</th>
                     <th>Position / Dept</th>
                     <th>Joining Date</th>
                     <th>Offered Gross</th>
                     <th>Status</th>
                     <th style="width:130px">Actions</th>
+                    <th class="hidden"></th>
+                    <th class="hidden"></th>
                 </tr>
             </thead>
             <tbody>
@@ -171,6 +183,13 @@
                     <td>
                         <div class="font-semibold text-xs text-gray-900">{{ a.candidate_name }}</div>
                         <div class="text-[10px] text-gray-400 font-mono">{{ a.candidate_email }}</div>
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {% if a.business_id and biz_map.get(a.business_id) %}
+                        {{ biz_map.get(a.business_id) }}
+                        {% else %}
+                        <span class="text-gray-400">— Global —</span>
+                        {% endif %}
                     </td>
                     <td>
                         <div class="text-xs text-gray-800 font-medium">{{ a.job_title.name if a.job_title else 'N/A' }}</div>
@@ -205,6 +224,8 @@
                             </button>
                         </div>
                     </td>
+                    <td class="hidden">{% if a.status.value == 'accepted' %}Accepted{% elif a.status.value == 'sent' %}Sent{% else %}Draft{% endif %}</td>
+                    <td class="hidden">{% if a.business_id and biz_map.get(a.business_id) %}{{ biz_map.get(a.business_id) }}{% else %}Global{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -241,12 +262,14 @@ $(document).ready(function () {
         responsive: true,
         pageLength: 10,
         dom: 'rt',
+        columnDefs: [{ targets: [7, 8], visible: false, searchable: true }],
         language: { emptyTable: "No appointment letters created yet." },
         drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterStatus').on('change', function () { table.column(4).search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(7).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(8).search(this.value).draw(); });
     $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
     $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });
@@ -255,6 +278,7 @@ $(document).ready(function () {
         $('#customSearch').val('');
         table.search('');
         $('#filterStatus').val('');
+        $('#filterBusiness').val('');
         table.columns().search('').draw();
     });
 

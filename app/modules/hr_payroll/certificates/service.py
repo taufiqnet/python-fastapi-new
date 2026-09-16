@@ -1,10 +1,12 @@
 import datetime
 import uuid
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.certificates.models import (
     CertificateStatusEnum,
     SalaryCertificate,
@@ -39,8 +41,14 @@ class SalaryCertificateService:
             db, skip=skip, limit=limit, business_id=business_id, employee_id=employee_id
         )
 
-    def get_certificate(self, db: Session, cert_id: uuid.UUID) -> SalaryCertificate:
+    def get_certificate(
+        self, db: Session, cert_id: uuid.UUID, current_user: Any | None = None
+    ) -> SalaryCertificate:
         cert = self.repo.get_by_id(db, cert_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                cert, current_user, detail=f"Salary certificate with ID '{cert_id}' not found."
+            )
         if not cert:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -92,12 +100,18 @@ class SalaryCertificateService:
         return self.repo.create(db, cert)
 
     def update_certificate(
-        self, db: Session, cert_id: uuid.UUID, cert_in: SalaryCertificateUpdate
+        self,
+        db: Session,
+        cert_id: uuid.UUID,
+        cert_in: SalaryCertificateUpdate,
+        current_user: Any | None = None,
     ) -> SalaryCertificate:
-        cert = self.get_certificate(db, cert_id)
+        cert = self.get_certificate(db, cert_id, current_user=current_user)
         update_data = cert_in.model_dump(exclude_unset=True)
         return self.repo.update(db, cert, update_data)
 
-    def delete_certificate(self, db: Session, cert_id: uuid.UUID) -> None:
-        cert = self.get_certificate(db, cert_id)
+    def delete_certificate(
+        self, db: Session, cert_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        cert = self.get_certificate(db, cert_id, current_user=current_user)
         self.repo.delete(db, cert)

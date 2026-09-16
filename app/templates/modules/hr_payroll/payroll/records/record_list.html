@@ -187,11 +187,17 @@
         <input type="text" id="customSearch" placeholder="Search by employee, ID, business, period...">
     </div>
 
-    <select id="filterBusiness">
+    <select id="filterBusiness" {% if current_user and not current_user.is_superuser %}disabled class="bg-gray-100 text-gray-500 cursor-not-allowed"{% endif %}>
+        {% if current_user and not current_user.is_superuser %}
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}" selected>{{ b.name_en }}</option>
+        {% endfor %}
+        {% else %}
         <option value="">All Businesses</option>
         {% for b in businesses %}
         <option value="{{ b.name_en }}">{{ b.name_en }}</option>
         {% endfor %}
+        {% endif %}
     </select>
 
     <select id="filterPeriod">

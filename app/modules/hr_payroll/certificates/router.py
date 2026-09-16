@@ -3,6 +3,9 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
 from app.modules.hr_payroll.certificates.schemas import (
     SalaryCertificateCreate,
@@ -22,15 +25,21 @@ def get_salary_certificates(
     business_id: int | None = Query(None),
     employee_id: uuid.UUID | None = Query(None),
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "view")),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_certificates(
-        db, skip=skip, limit=limit, business_id=business_id, employee_id=employee_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id, employee_id=employee_id
     )
 
 
 @router.get("/{cert_id}", response_model=SalaryCertificateOut)
-def get_salary_certificate(cert_id: uuid.UUID, db: Session = Depends(get_db)):
-    return service.get_certificate(db, cert_id)
+def get_salary_certificate(
+    cert_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "view")),
+):
+    return service.get_certificate(db, cert_id, current_user=current_user)
 
 
 @router.post(
@@ -39,8 +48,15 @@ def get_salary_certificate(cert_id: uuid.UUID, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_salary_certificate(
-    cert_data: SalaryCertificateCreate, db: Session = Depends(get_db)
+    cert_data: SalaryCertificateCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "create")),
 ):
+    resolved_business_id = resolve_business_id(current_user, cert_data.business_id)
+    if not current_user.is_superuser:
+        cert_data.business_id = current_user.business_id
+    elif cert_data.business_id is None:
+        cert_data.business_id = resolved_business_id
     return service.create_certificate(db, cert_data)
 
 
@@ -49,11 +65,16 @@ def update_salary_certificate(
     cert_id: uuid.UUID,
     cert_data: SalaryCertificateUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "update")),
 ):
-    return service.update_certificate(db, cert_id, cert_data)
+    return service.update_certificate(db, cert_id, cert_data, current_user=current_user)
 
 
 @router.delete("/{cert_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_salary_certificate(cert_id: uuid.UUID, db: Session = Depends(get_db)):
-    service.delete_certificate(db, cert_id)
+def delete_salary_certificate(
+    cert_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "salary_certificates", "delete")),
+):
+    service.delete_certificate(db, cert_id, current_user=current_user)
     return None

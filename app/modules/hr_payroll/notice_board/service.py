@@ -1,8 +1,10 @@
 import uuid
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.notice_board.models import Notice, NoticeReadReceipt
 from app.modules.hr_payroll.notice_board.repository import NoticeBoardRepository
 from app.modules.hr_payroll.notice_board.schemas import NoticeCreate, NoticeUpdate
@@ -30,8 +32,14 @@ class NoticeBoardService:
             active_only=active_only,
         )
 
-    def get_notice(self, db: Session, notice_id: uuid.UUID) -> Notice:
+    def get_notice(
+        self, db: Session, notice_id: uuid.UUID, current_user: Any | None = None
+    ) -> Notice:
         notice = self.repo.get_by_id(db, notice_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                notice, current_user, detail=f"Notice with ID '{notice_id}' not found."
+            )
         if not notice:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -56,18 +64,28 @@ class NoticeBoardService:
         return self.repo.create(db, notice)
 
     def update_notice(
-        self, db: Session, notice_id: uuid.UUID, notice_in: NoticeUpdate
+        self,
+        db: Session,
+        notice_id: uuid.UUID,
+        notice_in: NoticeUpdate,
+        current_user: Any | None = None,
     ) -> Notice:
-        notice = self.get_notice(db, notice_id)
+        notice = self.get_notice(db, notice_id, current_user=current_user)
         update_data = notice_in.model_dump(exclude_unset=True)
         return self.repo.update(db, notice, update_data)
 
-    def delete_notice(self, db: Session, notice_id: uuid.UUID) -> None:
-        notice = self.get_notice(db, notice_id)
+    def delete_notice(
+        self, db: Session, notice_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        notice = self.get_notice(db, notice_id, current_user=current_user)
         self.repo.delete(db, notice)
 
     def mark_notice_as_read(
-        self, db: Session, notice_id: uuid.UUID, employee_id: uuid.UUID
+        self,
+        db: Session,
+        notice_id: uuid.UUID,
+        employee_id: uuid.UUID,
+        current_user: Any | None = None,
     ) -> NoticeReadReceipt:
-        self.get_notice(db, notice_id)
+        self.get_notice(db, notice_id, current_user=current_user)
         return self.repo.mark_as_read(db, notice_id, employee_id)

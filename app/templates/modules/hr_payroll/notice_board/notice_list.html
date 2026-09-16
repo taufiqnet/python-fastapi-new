@@ -146,6 +146,15 @@
         <option value="General">General</option>
     </select>
 
+    {% if current_user and current_user.is_superuser %}
+    <select id="filterBusiness">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}">{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+
     <button type="button" id="btnClearFilters" 
             class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
         <i class="fas fa-times-circle text-xs"></i> Clear Filters
@@ -158,11 +167,14 @@
             <thead>
                 <tr>
                     <th>Title</th>
+                    <th>Business Profile</th>
                     <th>Category</th>
                     <th>Target Audience</th>
                     <th>Publish Date</th>
                     <th>Pinned</th>
                     <th style="width:110px">Actions</th>
+                    <th class="hidden"></th>
+                    <th class="hidden"></th>
                 </tr>
             </thead>
             <tbody>
@@ -175,6 +187,13 @@
                             {% endif %}
                             {{ n.title }}
                         </div>
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {% if n.business_id and biz_map.get(n.business_id) %}
+                        {{ biz_map.get(n.business_id) }}
+                        {% else %}
+                        <span class="text-gray-400">— Global —</span>
+                        {% endif %}
                     </td>
                     <td>
                         {% if n.category.value == 'urgent' %}
@@ -215,6 +234,8 @@
                             </button>
                         </div>
                     </td>
+                    <td class="hidden">{% if n.category.value == 'urgent' %}Urgent{% elif n.category.value == 'policy' %}Policy{% elif n.category.value == 'holiday' %}Holiday{% else %}General{% endif %}</td>
+                    <td class="hidden">{% if n.business_id and biz_map.get(n.business_id) %}{{ biz_map.get(n.business_id) }}{% else %}Global{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -251,12 +272,14 @@ $(document).ready(function () {
         responsive: true,
         pageLength: 10,
         dom: 'rt',
+        columnDefs: [{ targets: [7, 8], visible: false, searchable: true }],
         language: { emptyTable: "No notices posted yet." },
         drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterCategory').on('change', function () { table.column(1).search(this.value).draw(); });
+    $('#filterCategory').on('change', function () { table.column(7).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(8).search(this.value).draw(); });
     $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
     $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });
@@ -265,6 +288,7 @@ $(document).ready(function () {
         $('#customSearch').val('');
         table.search('');
         $('#filterCategory').val('');
+        $('#filterBusiness').val('');
         table.columns().search('').draw();
     });
 

@@ -96,14 +96,17 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
-                        <select id="business_id" name="business_id" required class="form-input">
+                        <select id="business_id" name="business_id" required class="form-input" {% if current_user and not current_user.is_superuser %}disabled{% endif %}>
                             <option value="">— Select Business —</option>
                             {% for b in businesses %}
-                            <option value="{{ b.id }}" {% if certificate and certificate.business_id == b.id %}selected{% endif %}>
+                            <option value="{{ b.id }}" {% if (certificate and certificate.business_id == b.id) or (current_user and current_user.business_id == b.id) %}selected{% endif %}>
                                 {{ b.name_en }} (ID: {{ b.id }})
                             </option>
                             {% endfor %}
                         </select>
+                        {% if current_user and not current_user.is_superuser %}
+                        <input type="hidden" id="business_id_hidden" value="{% if certificate %}{{ certificate.business_id }}{% else %}{{ current_user.business_id }}{% endif %}">
+                        {% endif %}
                     </div>
 
                     <div class="form-group">
@@ -182,8 +185,9 @@ function handleCertificateSubmit(event) {
     const isEdit = "{{ is_edit }}" === "True";
     const certId = document.getElementById('certId').value;
 
+    const businessIdInput = document.getElementById('business_id_hidden') || document.getElementById('business_id');
     const payload = {
-        business_id: parseInt(document.getElementById('business_id').value),
+        business_id: parseInt(businessIdInput.value),
         employee_id: document.getElementById('employee_id').value,
         issue_date: document.getElementById('issue_date').value,
         purpose: document.getElementById('purpose').value,
