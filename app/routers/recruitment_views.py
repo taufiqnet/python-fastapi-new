@@ -70,12 +70,12 @@ def candidate_create_page(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("hrm", "recruitment", "create")),
 ):
-    resolved_business_id = resolve_business_id(current_user, None)
+    jt_biz_id = None if current_user.is_superuser else current_user.business_id
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     if not current_user.is_superuser:
-        businesses = [b for b in businesses if b.id == resolved_business_id]
+        businesses = [b for b in businesses if b.id == current_user.business_id]
     job_titles = job_title_service.get_job_titles(
-        db, skip=0, limit=500, business_id=resolved_business_id
+        db, skip=0, limit=500, business_id=jt_biz_id
     )
 
     return templates.TemplateResponse(
@@ -103,8 +103,9 @@ def candidate_edit_page(
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     if not current_user.is_superuser:
         businesses = [b for b in businesses if b.id == candidate.business_id]
+    jt_biz_id = None if current_user.is_superuser else candidate.business_id
     job_titles = job_title_service.get_job_titles(
-        db, skip=0, limit=500, business_id=candidate.business_id
+        db, skip=0, limit=500, business_id=jt_biz_id
     )
 
     return templates.TemplateResponse(
@@ -169,15 +170,15 @@ def interview_create_page(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("hrm", "recruitment", "create")),
 ):
-    resolved_business_id = resolve_business_id(current_user, None)
+    biz_filter = None if current_user.is_superuser else current_user.business_id
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     if not current_user.is_superuser:
-        businesses = [b for b in businesses if b.id == resolved_business_id]
+        businesses = [b for b in businesses if b.id == current_user.business_id]
     candidates = recruitment_service.get_candidates(
-        db, skip=0, limit=500, business_id=resolved_business_id
+        db, skip=0, limit=500, business_id=biz_filter
     )
     employees = employee_service.get_employees(
-        db, skip=0, limit=500, business_id=resolved_business_id
+        db, skip=0, limit=500, business_id=biz_filter
     )
 
     return templates.TemplateResponse(
@@ -186,6 +187,40 @@ def interview_create_page(
         context={
             "interview": None,
             "is_edit": False,
+            "businesses": businesses,
+            "candidates": candidates,
+            "employees": employees,
+            "active_page": "recruitment_interviews",
+            "current_user": current_user,
+        },
+    )
+
+
+@router.get("/interviews/edit/{interview_id}", response_class=HTMLResponse)
+def interview_edit_page(
+    interview_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "recruitment", "update")),
+):
+    interview = recruitment_service.get_interview(db, interview_id, current_user=current_user)
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == interview.business_id]
+    biz_filter = None if current_user.is_superuser else interview.business_id
+    candidates = recruitment_service.get_candidates(
+        db, skip=0, limit=500, business_id=biz_filter
+    )
+    employees = employee_service.get_employees(
+        db, skip=0, limit=500, business_id=biz_filter
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/recruitment/interview_form.html",
+        context={
+            "interview": interview,
+            "is_edit": True,
             "businesses": businesses,
             "candidates": candidates,
             "employees": employees,

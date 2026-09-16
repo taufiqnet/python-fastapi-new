@@ -108,9 +108,9 @@ async def compensation_edit_page(
 ):
     current_user = await get_current_user_optional(request, None, async_db)
     salary = compensation_service.get_salary(db, salary_id, current_user=current_user)
-    resolved_business_id = resolve_business_id(current_user, salary.business_id)
+    emp_biz_id = None if (current_user and current_user.is_superuser) else current_user.business_id
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=emp_biz_id)
 
     if current_user and not current_user.is_superuser:
         businesses = [b for b in businesses if b.id == current_user.business_id]

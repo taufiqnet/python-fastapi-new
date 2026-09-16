@@ -142,7 +142,7 @@
                         <select id="job_title_id" name="job_title_id" class="form-input">
                             <option value="">— Unassigned / None —</option>
                             {% for j in job_titles %}
-                            <option value="{{ j.id }}" {% if candidate and candidate.job_title_id == j.id %}selected{% endif %}>
+                            <option value="{{ j.id }}" data-business-id="{{ j.business_id }}" {% if candidate and candidate.job_title_id == j.id %}selected{% endif %}>
                                 {{ j.name }}
                             </option>
                             {% endfor %}
@@ -182,6 +182,55 @@
 
 {% block extra_js %}
 <script>
+function filterJobTitlesByBusiness() {
+    const bizElem = document.getElementById('business_id');
+    const jtElem = document.getElementById('job_title_id');
+    if (!bizElem || !jtElem) return;
+
+    const selectedBizId = bizElem.value ? String(bizElem.value) : '';
+
+    if (!selectedBizId) {
+        jtElem.value = '';
+        jtElem.disabled = true;
+        Array.from(jtElem.options).forEach(opt => {
+            if (opt.value === '') {
+                opt.style.display = '';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        return;
+    }
+
+    jtElem.disabled = false;
+    let hasSelectedValid = false;
+    Array.from(jtElem.options).forEach(opt => {
+        if (opt.value === '') {
+            opt.style.display = '';
+            return;
+        }
+        const optBizId = opt.getAttribute('data-business-id');
+        if (optBizId === selectedBizId) {
+            opt.style.display = '';
+            if (opt.selected) hasSelectedValid = true;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    if (!hasSelectedValid) {
+        jtElem.value = '';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const bizElem = document.getElementById('business_id');
+    if (bizElem) {
+        bizElem.addEventListener('change', filterJobTitlesByBusiness);
+        filterJobTitlesByBusiness();
+    }
+});
+
 function handleCandidateSubmit(event) {
     event.preventDefault();
     const isEdit = "{{ is_edit }}" === "True";

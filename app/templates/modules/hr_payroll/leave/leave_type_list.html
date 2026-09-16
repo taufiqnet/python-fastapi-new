@@ -358,7 +358,6 @@
                     {% endif %}
                     {% endfor %}
                 </select>
-                <input type="hidden" id="import_business_id_hidden" value="{% if current_user and current_user.business_id %}{{ current_user.business_id }}{% else %}1{% endif %}">
                 {% endif %}
             </div>
 
@@ -506,8 +505,7 @@ function handleExportSubmit(e) {
 
 function downloadTemplate() {
     const selectElem = document.getElementById('import_business_id');
-    const hiddenElem = document.getElementById('import_business_id_hidden');
-    const bizId = (selectElem && selectElem.value) ? selectElem.value : (hiddenElem ? hiddenElem.value : '');
+    const bizId = selectElem ? selectElem.value : '';
     if (!bizId) {
         showWarningAlert('Business Required', 'Please select a business profile first to download the template.');
         return;
@@ -518,8 +516,7 @@ function downloadTemplate() {
 document.getElementById('import-excel-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const selectElem = document.getElementById('import_business_id');
-    const hiddenElem = document.getElementById('import_business_id_hidden');
-    const bizId = (selectElem && selectElem.value) ? selectElem.value : (hiddenElem ? hiddenElem.value : '');
+    const bizId = selectElem ? selectElem.value : '';
     const fileInput = document.getElementById('excel_file');
     
     if (!bizId) {

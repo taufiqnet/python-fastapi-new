@@ -89,18 +89,6 @@
                 <!-- Basic Assignment -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="form-group">
-                        <label class="form-label" for="employee_id">Employee <span class="text-red-500">*</span></label>
-                        <select id="employee_id" name="employee_id" class="form-input" required {% if is_edit %}disabled{% endif %}>
-                            <option value="">— Select Employee —</option>
-                            {% for e in employees %}
-                            <option value="{{ e.id }}" {% if is_edit and salary.employee_id == e.id %}selected{% endif %}>
-                                {{ e.full_name }} ({{ e.employee_id }})
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="form-group">
                         <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
                         {% if current_user and not current_user.is_superuser %}
                         <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
@@ -117,6 +105,18 @@
                             {% endfor %}
                         </select>
                         {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="employee_id">Employee <span class="text-red-500">*</span></label>
+                        <select id="employee_id" name="employee_id" class="form-input" required {% if is_edit %}disabled{% endif %}>
+                            <option value="">— Select Employee —</option>
+                            {% for e in employees %}
+                            <option value="{{ e.id }}" data-business-id="{{ e.business_id }}" {% if is_edit and salary.employee_id == e.id %}selected{% endif %}>
+                                {{ e.full_name }} ({{ e.employee_id }})
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -263,7 +263,61 @@ function calculateTotals() {
     document.getElementById('previewNet').innerText = net.toFixed(2);
 }
 
-document.addEventListener('DOMContentLoaded', calculateTotals);
+function filterEmployeesByBusiness() {
+    const bizElem = document.getElementById('business_id');
+    const empElem = document.getElementById('employee_id');
+    if (!bizElem || !empElem) return;
+
+    const selectedBizId = bizElem.value ? String(bizElem.value) : '';
+    const isEdit = "{{ is_edit }}" === "True";
+
+    if (!selectedBizId) {
+        if (!isEdit) {
+            empElem.value = '';
+            empElem.disabled = true;
+        }
+        Array.from(empElem.options).forEach(opt => {
+            if (opt.value === '') {
+                opt.style.display = '';
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+        return;
+    }
+
+    if (!isEdit) {
+        empElem.disabled = false;
+    }
+
+    let hasSelectedValid = false;
+    Array.from(empElem.options).forEach(opt => {
+        if (opt.value === '') {
+            opt.style.display = '';
+            return;
+        }
+        const optBizId = opt.getAttribute('data-business-id');
+        if (optBizId === selectedBizId) {
+            opt.style.display = '';
+            if (opt.selected) hasSelectedValid = true;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    if (!hasSelectedValid && !isEdit) {
+        empElem.value = '';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    calculateTotals();
+    const bizElem = document.getElementById('business_id');
+    if (bizElem) {
+        bizElem.addEventListener('change', filterEmployeesByBusiness);
+        filterEmployeesByBusiness();
+    }
+});
 
 function handleSalarySubmit(event) {
     event.preventDefault();

@@ -26,6 +26,7 @@ class CandidateCreate(CandidateBase):
 
 
 class CandidateUpdate(BaseModel):
+    business_id: int | None = None
     first_name: str | None = None
     last_name: str | None = None
     email: EmailStr | None = None
@@ -60,6 +61,8 @@ class InterviewCreate(InterviewBase):
 
 
 class InterviewUpdate(BaseModel):
+    business_id: int | None = None
+    candidate_id: uuid.UUID | None = None
     interviewer_id: uuid.UUID | None = None
     stage: InterviewStageEnum | None = None
     scheduled_at: datetime.datetime | None = None
