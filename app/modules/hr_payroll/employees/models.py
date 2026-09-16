@@ -76,6 +76,7 @@ class Employee(Base, UUIDMixin, TimestampMixin):
     nationality: Mapped[str | None] = mapped_column(String(100), nullable=True)
     national_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     passport_no: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    tin: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # ── Contact Information ────────────────────────────────────────
     work_email: Mapped[str] = mapped_column(String(255), nullable=False)

@@ -165,17 +165,17 @@
                 <h4 class="text-xs font-bold text-emerald-800 uppercase tracking-wider">Earnings</h4>
             </div>
             <div class="p-4 space-y-2 text-xs">
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Basic Salary</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.basic_salary) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">House Rent Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.house_rent) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Transport Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.transport_allowance) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Medical Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.medical_allowance) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Food Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.food_allowance) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Other Allowance</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.other_allowance) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Overtime Pay</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.overtime_pay) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Bonus</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.bonus) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Basic Salary</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.basic_salary) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">House Rent Allowance</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.house_rent) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Transport Allowance</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.transport_allowance) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Medical Allowance</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.medical_allowance) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Food Allowance</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.food_allowance) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Other Allowance</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.other_allowance) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Overtime Pay</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.overtime_pay) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Bonus</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.bonus) }}</span></div>
                 <div class="flex justify-between pt-2 text-sm font-bold text-gray-900 border-t border-gray-200">
                     <span>Gross Salary</span>
-                    <span class="text-emerald-700">${{ "%.2f"|format(record.gross_salary) }}</span>
+                    <span class="text-emerald-700">{{ "%.2f"|format(record.gross_salary) }}</span>
                 </div>
             </div>
         </div>
@@ -186,14 +186,14 @@
                 <h4 class="text-xs font-bold text-rose-800 uppercase tracking-wider">Deductions</h4>
             </div>
             <div class="p-4 space-y-2 text-xs">
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Tax</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.tax) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Provident Fund</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.provident_fund) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Unpaid Leave Deduction</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.unpaid_leave_deduction) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Loan Installment</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.loan_installment) }}</span></div>
-                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Other Deduction</span><span class="font-semibold text-gray-900">${{ "%.2f"|format(record.other_deduction) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Tax</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.tax) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Provident Fund</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.provident_fund) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Unpaid Leave Deduction</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.unpaid_leave_deduction) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Loan Installment</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.loan_installment) }}</span></div>
+                <div class="flex justify-between py-1 border-b border-gray-100"><span class="text-gray-600">Other Deduction</span><span class="font-semibold text-gray-900">{{ "%.2f"|format(record.other_deduction) }}</span></div>
                 <div class="flex justify-between pt-10 text-sm font-bold text-gray-900 border-t border-gray-200">
                     <span>Total Deduction</span>
-                    <span class="text-rose-600">${{ "%.2f"|format(record.total_deduction) }}</span>
+                    <span class="text-rose-600">{{ "%.2f"|format(record.total_deduction) }}</span>
                 </div>
             </div>
         </div>

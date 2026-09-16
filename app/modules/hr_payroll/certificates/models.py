@@ -57,11 +57,35 @@ class SalaryCertificate(Base, UUIDMixin, TimestampMixin):
         nullable=False,
     )
 
-    # Salary figures frozen at time of issue
+    # Fiscal year context and breakdown details
+    fiscal_year: Mapped[str] = mapped_column(String(20), default="2022-2023", nullable=False)
+    assessment_year: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    start_date: Mapped[Date | None] = mapped_column(Date, nullable=True)
+    end_date: Mapped[Date | None] = mapped_column(Date, nullable=True)
+
+    # Aggregated salary components across fiscal year
     basic_salary: Mapped[float] = mapped_column(
         Numeric(12, 2), default=0.0, nullable=False
     )
+    house_rent: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
+    medical_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
+    conveyance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
+    others_allowance: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
+    bonus: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
     gross_salary: Mapped[float] = mapped_column(
+        Numeric(12, 2), default=0.0, nullable=False
+    )
+    tax_deducted: Mapped[float] = mapped_column(
         Numeric(12, 2), default=0.0, nullable=False
     )
     net_salary: Mapped[float] = mapped_column(

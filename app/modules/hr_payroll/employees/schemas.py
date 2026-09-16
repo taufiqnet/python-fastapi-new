@@ -23,6 +23,7 @@ class EmployeeBase(BaseModel):
     nationality: str | None = Field(None, max_length=100)
     national_id: str | None = Field(None, max_length=50)
     passport_no: str | None = Field(None, max_length=50)
+    tin: str | None = Field(None, max_length=50)
 
     # Contact Information
     work_email: str = Field(..., max_length=255)
@@ -71,6 +72,7 @@ class EmployeeUpdate(BaseModel):
     nationality: str | None = Field(None, max_length=100)
     national_id: str | None = Field(None, max_length=50)
     passport_no: str | None = Field(None, max_length=50)
+    tin: str | None = Field(None, max_length=50)
 
     work_email: str | None = Field(None, max_length=255)
     personal_email: str | None = Field(None, max_length=255)

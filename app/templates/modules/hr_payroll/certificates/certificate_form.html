@@ -128,6 +128,20 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label" for="fiscal_year">Fiscal Year (Income Year) <span class="text-red-500">*</span></label>
+                        <input type="text" id="fiscal_year" name="fiscal_year" class="form-input" required
+                               value="{% if certificate and certificate.fiscal_year %}{{ certificate.fiscal_year }}{% else %}2022-2023{% endif %}"
+                               placeholder="e.g. 2022-2023">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="assessment_year">Assessment Year</label>
+                        <input type="text" id="assessment_year" name="assessment_year" class="form-input"
+                               value="{% if certificate and certificate.assessment_year %}{{ certificate.assessment_year }}{% endif %}"
+                               placeholder="e.g. 2021-2022 (leave blank to auto-derive)">
+                    </div>
+
+                    <div class="form-group">
                         <label class="form-label" for="purpose">Purpose <span class="text-red-500">*</span></label>
                         <select id="purpose" name="purpose" required class="form-input">
                             <option value="general" {% if certificate and certificate.purpose.value == 'general' %}selected{% endif %}>General</option>
@@ -190,6 +204,8 @@ function handleCertificateSubmit(event) {
         business_id: parseInt(businessIdInput.value),
         employee_id: document.getElementById('employee_id').value,
         issue_date: document.getElementById('issue_date').value,
+        fiscal_year: document.getElementById('fiscal_year').value,
+        assessment_year: document.getElementById('assessment_year').value || null,
         purpose: document.getElementById('purpose').value,
         addressed_to: document.getElementById('addressed_to').value || null,
         notes: document.getElementById('notes').value || null

@@ -161,21 +161,21 @@
         <div class="stat-icon blue"><i class="fas fa-coins"></i></div>
         <div>
             <div class="stat-label">Gross Payroll</div>
-            <div class="stat-value">${{ "%.2f"|format(total_gross) }}</div>
+            <div class="stat-value">{{ "%.2f"|format(total_gross) }}</div>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon rose"><i class="fas fa-minus-circle"></i></div>
         <div>
             <div class="stat-label">Total Deductions</div>
-            <div class="stat-value">${{ "%.2f"|format(total_deduction) }}</div>
+            <div class="stat-value">{{ "%.2f"|format(total_deduction) }}</div>
         </div>
     </div>
     <div class="stat-card">
         <div class="stat-icon emerald"><i class="fas fa-wallet"></i></div>
         <div>
             <div class="stat-label">Net Disbursement</div>
-            <div class="stat-value">${{ "%.2f"|format(total_net) }}</div>
+            <div class="stat-value">{{ "%.2f"|format(total_net) }}</div>
         </div>
     </div>
 </div>
@@ -255,9 +255,9 @@
                     <td class="text-xs text-gray-600 font-medium">
                         {{ period_map.get(r.period_id, '—') }}
                     </td>
-                    <td class="text-xs text-gray-900 font-semibold">${{ "%.2f"|format(r.gross_salary) }}</td>
-                    <td class="text-xs text-rose-600 font-semibold">${{ "%.2f"|format(r.total_deduction) }}</td>
-                    <td class="text-xs text-emerald-600 font-bold">${{ "%.2f"|format(r.net_salary) }}</td>
+                    <td class="text-xs text-gray-900 font-semibold">{{ "%.2f"|format(r.gross_salary) }}</td>
+                    <td class="text-xs text-rose-600 font-semibold">{{ "%.2f"|format(r.total_deduction) }}</td>
+                    <td class="text-xs text-emerald-600 font-bold">{{ "%.2f"|format(r.net_salary) }}</td>
                     <td class="text-xs text-gray-500 uppercase tracking-wider text-[10px]">{{ r.payment_method.value|default(r.payment_method)|replace('_', ' ') }}</td>
                     <td>
                         {% if r.is_paid %}

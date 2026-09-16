@@ -25,82 +25,123 @@
 
 <div id="printableArea" class="max-w-3xl mx-auto bg-white border border-gray-300 rounded-2xl p-10 shadow-sm text-gray-800 space-y-6">
     <!-- Header -->
-    <div class="flex items-start justify-between border-b border-gray-200 pb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">{{ business.name_en if business else 'Company Name' }}</h1>
-            <p class="text-xs text-gray-500 mt-1 max-w-sm">{{ business.full_address if business else '' }}</p>
-            <p class="text-xs text-gray-500">Phone: {{ business.phone if business else 'N/A' }} | Email: {{ business.email if business else 'N/A' }}</p>
+    <div class="text-center space-y-1 border-b border-gray-200 pb-4">
+        <h1 class="text-xl font-bold text-gray-900 tracking-wide">Salary Certificate</h1>
+        <h2 class="text-sm font-semibold text-gray-700">To Whom It May Concern</h2>
+    </div>
+
+    <!-- Date & Ref -->
+    <div class="flex items-center justify-between text-xs text-gray-700 font-medium pt-1">
+        <div><strong>Date:</strong> {{ certificate.issue_date.strftime('%d %B, %Y') if certificate.issue_date else '' }}</div>
+        <div><strong>Ref:</strong> {{ certificate.certificate_no }}</div>
+    </div>
+
+    <!-- Certify Statement -->
+    <div class="text-xs leading-relaxed text-gray-800 space-y-3">
+        <p>
+            This is to certify that <strong>{{ certificate.employee.full_name if certificate.employee else 'Employee' }}</strong> was paid total salary and allowances of <strong>{{ business.currency_code if (business and business.currency_code) else 'BDT' }} {{ "{:,.0f}".format(certificate.gross_salary) }}</strong> for the period <strong>{{ certificate.start_date.strftime('%d %B %Y') if certificate.start_date else '01 March 2023' }} to {{ certificate.end_date.strftime('%d %B, %Y') if certificate.end_date else '30 June, 2023' }}</strong> vide income year <strong>{{ certificate.fiscal_year }}</strong>. The detailed information is as under:
+        </p>
+    </div>
+
+    <!-- Employee Information Grid -->
+    <div class="text-xs text-gray-800 space-y-2.5 py-1">
+        <div class="grid grid-cols-[140px_1fr] items-center">
+            <span class="font-medium text-gray-700">Employee ID</span>
+            <span>: {{ certificate.employee.employee_id if certificate.employee else 'N/A' }}</span>
         </div>
-        <div class="text-right">
-            <span class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full border border-indigo-100">SALARY CERTIFICATE</span>
-            <div class="text-xs font-mono text-gray-500 mt-2">Ref: {{ certificate.certificate_no }}</div>
-            <div class="text-xs text-gray-500">Date: {{ certificate.issue_date }}</div>
+        <div class="grid grid-cols-[140px_1fr] items-center">
+            <span class="font-medium text-gray-700">Designation</span>
+            <span>: {{ certificate.employee.job_title.name if (certificate.employee and certificate.employee.job_title) else 'N/A' }}</span>
+        </div>
+        <div class="grid grid-cols-[140px_1fr] items-center">
+            <span class="font-medium text-gray-700">Department</span>
+            <span>: {{ certificate.employee.department.name if (certificate.employee and certificate.employee.department) else 'N/A' }}</span>
+        </div>
+        <div class="grid grid-cols-[140px_1fr] items-center">
+            <span class="font-medium text-gray-700">TIN</span>
+            <span>: {{ certificate.employee.tin if (certificate.employee and certificate.employee.tin) else 'N/A' }}</span>
+        </div>
+        <div class="grid grid-cols-[140px_1fr] items-center">
+            <span class="font-medium text-gray-700">Income Year</span>
+            <span>: {{ certificate.fiscal_year }}</span>
+        </div>
+        <div class="grid grid-cols-[140px_1fr] items-center">
+            <span class="font-medium text-gray-700">Assessment Year</span>
+            <span>: {{ certificate.assessment_year if certificate.assessment_year else 'N/A' }}</span>
         </div>
     </div>
 
-    <!-- Recipient -->
-    <div class="text-xs text-gray-700 space-y-1">
-        <div class="font-semibold text-gray-900">Addressed To:</div>
-        <div>{{ certificate.addressed_to if certificate.addressed_to else 'To Whom It May Concern' }}</div>
-    </div>
-
-    <!-- Subject -->
-    <div class="text-center py-2">
-        <h2 class="text-base font-bold text-gray-900 underline uppercase tracking-wide">TO WHOM IT MAY CONCERN</h2>
-    </div>
-
-    <!-- Statement -->
-    <div class="text-xs leading-relaxed text-gray-700 space-y-3">
-        <p>
-            This is to certify that <strong>{{ certificate.employee.full_name if certificate.employee else 'Employee' }}</strong> (Employee ID: <strong>{{ certificate.employee.employee_id if certificate.employee else '' }}</strong>) is a full-time employee at <strong>{{ business.name_en if business else 'our company' }}</strong>.
-        </p>
-        <p>
-            {{ certificate.employee.first_name }} holds the position of <strong>{{ certificate.employee.job_title.name if certificate.employee and certificate.employee.job_title else 'Employee' }}</strong> in the <strong>{{ certificate.employee.department.name if certificate.employee and certificate.employee.department else 'General' }}</strong> department and has been with the company since <strong>{{ certificate.employee.start_date if certificate.employee and certificate.employee.start_date else 'N/A' }}</strong>.
-        </p>
-        <p>
-            As per our official records, the monthly salary compensation for {{ certificate.employee.first_name }} is as follows:
-        </p>
-    </div>
-
-    <!-- Compensation Table -->
-    <div class="border border-gray-200 rounded-lg overflow-hidden">
-        <table class="w-full text-xs text-left">
-            <thead class="bg-gray-50 border-b border-gray-200 text-gray-600 font-bold uppercase text-[10px]">
+    <!-- Component Particulars Table -->
+    <div class="border border-gray-800 rounded-none overflow-hidden my-4">
+        <table class="w-full text-xs text-left border-collapse border border-gray-800">
+            <thead class="bg-gray-50 border-b border-gray-800 text-gray-900 font-bold">
                 <tr>
-                    <th class="p-3">Salary Component</th>
-                    <th class="p-3 text-right">Amount (BDT)</th>
+                    <th class="p-2.5 border-r border-gray-800 w-2/5 text-center">Particulars</th>
+                    <th class="p-2.5 border-r border-gray-800 w-1/5 text-center">Amount</th>
+                    <th class="p-2.5 border-r border-gray-800 w-1/5 text-center">Deduction</th>
+                    <th class="p-2.5 w-1/5 text-center">Amount</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody class="divide-y divide-gray-800 text-gray-900 font-medium">
                 <tr>
-                    <td class="p-3">Basic Salary</td>
-                    <td class="p-3 text-right font-medium">৳{{ "%.2f"|format(certificate.basic_salary) }}</td>
+                    <td class="p-2.5 border-r border-gray-800">Basic Pay</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">{{ "{:,.0f}".format(certificate.basic_salary) }}</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">Income Tax</td>
+                    <td class="p-2.5 text-center">{{ "{:,.0f}".format(certificate.tax_deducted) }}</td>
                 </tr>
                 <tr>
-                    <td class="p-3 font-semibold">Total Gross Salary</td>
-                    <td class="p-3 text-right font-semibold text-gray-900">৳{{ "%.2f"|format(certificate.gross_salary) }}</td>
+                    <td class="p-2.5 border-r border-gray-800">House Rent</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">{{ "{:,.0f}".format(certificate.house_rent) }}</td>
+                    <td class="p-2.5 border-r border-gray-800"></td>
+                    <td class="p-2.5"></td>
                 </tr>
-                <tr class="bg-gray-50 font-bold">
-                    <td class="p-3">Net Payable Salary</td>
-                    <td class="p-3 text-right text-indigo-700">৳{{ "%.2f"|format(certificate.net_salary) }}</td>
+                <tr>
+                    <td class="p-2.5 border-r border-gray-800">Medical Allowance</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">{{ "{:,.0f}".format(certificate.medical_allowance) }}</td>
+                    <td class="p-2.5 border-r border-gray-800"></td>
+                    <td class="p-2.5"></td>
+                </tr>
+                <tr>
+                    <td class="p-2.5 border-r border-gray-800">Conveyance</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">{{ "{:,.0f}".format(certificate.conveyance) }}</td>
+                    <td class="p-2.5 border-r border-gray-800"></td>
+                    <td class="p-2.5"></td>
+                </tr>
+                <tr>
+                    <td class="p-2.5 border-r border-gray-800">Others</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">{{ "{:,.0f}".format(certificate.others_allowance) }}</td>
+                    <td class="p-2.5 border-r border-gray-800"></td>
+                    <td class="p-2.5"></td>
+                </tr>
+                <tr>
+                    <td class="p-2.5 border-r border-gray-800">Bonus</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">{{ "{:,.0f}".format(certificate.bonus) }}</td>
+                    <td class="p-2.5 border-r border-gray-800"></td>
+                    <td class="p-2.5"></td>
+                </tr>
+                <tr class="font-bold bg-gray-50 border-t border-gray-800">
+                    <td class="p-2.5 border-r border-gray-800">Total</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">{{ "{:,.0f}".format(certificate.gross_salary) }}</td>
+                    <td class="p-2.5 border-r border-gray-800 text-center">Net Payable</td>
+                    <td class="p-2.5 text-center">{{ "{:,.0f}".format(certificate.net_salary) }}</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <div class="text-xs text-gray-700 leading-relaxed">
-        <p>This certificate is issued upon the employee's request for the purpose of <strong>{{ certificate.purpose.value.replace('_', ' ') }}</strong> and carries no financial liability or guarantee on behalf of this company.</p>
+    <!-- Tax Statement -->
+    <div class="text-xs text-gray-800 leading-relaxed pt-1">
+        <p>Tax deducted at source from his/her salary for the above-mentioned income year is <strong>{{ business.currency_code if (business and business.currency_code) else 'BDT' }} {{ "{:,.0f}".format(certificate.tax_deducted) }}</strong> and deposited the same to the Government Treasury through tax challan.</p>
     </div>
 
     <!-- Signatures -->
-    <div class="pt-12 grid grid-cols-2 gap-8 text-xs">
-        <div>
-            <div class="border-t border-gray-300 pt-2 font-semibold text-gray-800">Authorized HR Department</div>
-            <div class="text-gray-400 text-[11px]">{{ business.name_en if business else '' }}</div>
-        </div>
-        <div class="text-right">
-            <div class="border-t border-gray-300 pt-2 font-semibold text-gray-800">Official Stamp & Signature</div>
-            <div class="text-gray-400 text-[11px]">Human Resources Division</div>
+    <div class="pt-10 space-y-2 text-xs">
+        <div class="font-semibold text-gray-900">Sincerely,</div>
+        <div class="pt-6">
+            <div class="font-bold text-gray-900">{{ business.name_en if business else 'Authorized Signatory' }}</div>
+            <div class="text-gray-600">Director / Human Resources Division</div>
+            <div class="text-gray-500 text-[11px] mt-1">{{ business.full_address if business else '' }}</div>
+            <div class="text-gray-500 text-[11px]">Tel: {{ business.phone if business else '' }} | Email: {{ business.email if business else '' }}</div>
         </div>
     </div>
 </div>
