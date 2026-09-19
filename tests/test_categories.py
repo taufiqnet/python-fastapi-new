@@ -59,10 +59,21 @@ def sync_db():
 
 @pytest_asyncio.fixture
 async def client(sync_db):
+    from app.core.deps import get_current_user, get_current_user_optional
+    from app.core.identity.models import User
+
+    admin_user = User(id=1, username="admin", email="admin@example.com", is_superuser=True, is_active=True, business_id=1)
+
     def _override_get_db():
         yield sync_db
 
+    def _override_user(*args, **kwargs):
+        return admin_user
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = _override_user
+    app.dependency_overrides[get_current_user_optional] = _override_user
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -226,18 +237,10 @@ async def test_category_api_crud(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_category_html_views(client: AsyncClient):
-    # Override user to superuser/admin to view all ecommerce menus in sidebar
-    from app.core.deps import get_current_user_optional
-    from app.core.identity.models import User
-
-    admin_user = User(username="admin", email="admin@example.com", is_superuser=True, is_active=True)
-    async def _override_admin(*args, **kwargs):
-        return admin_user
-
-    app.dependency_overrides[get_current_user_optional] = _override_admin
-
     # 1. Manage Page
     manage_resp = await client.get("/categories/manage")
+    if manage_resp.status_code != 200:
+        print("MANAGE_RESP STATUS:", manage_resp.status_code, manage_resp.text)
     assert manage_resp.status_code == 200
     assert "Category List" in manage_resp.text
     assert "Ecommerce" in manage_resp.text
