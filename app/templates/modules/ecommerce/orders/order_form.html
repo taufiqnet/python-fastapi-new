@@ -178,6 +178,12 @@
                             <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                                 Business Partner
                             </label>
+                            {% if current_user and not current_user.is_superuser %}
+                            <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
+                            <input type="text" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 bg-gray-100 text-gray-700 cursor-not-allowed font-medium outline-none" 
+                                   value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% elif selected_business_id %}{% for b in businesses %}{% if b.id == selected_business_id %}{{ b.name_en }}{% endif %}{% endfor %}{% else %}My Business{% endif %}" 
+                                   readonly disabled>
+                            {% else %}
                             <select id="business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
                                 {% for b in businesses %}
                                 <option value="{{ b.id }}" {% if (selected_business_id == b.id) or (is_edit and order.business_id == b.id) %}selected{% endif %}>
@@ -185,6 +191,7 @@
                                 </option>
                                 {% endfor %}
                             </select>
+                            {% endif %}
                         </div>
 
                         <!-- Order Date & Time -->

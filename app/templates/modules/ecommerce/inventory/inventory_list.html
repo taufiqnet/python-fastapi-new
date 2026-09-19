@@ -104,11 +104,21 @@
         {% endfor %}
     </select>
 
+    {% if current_user and not current_user.is_superuser %}
+    <select id="filterBusiness" disabled class="bg-gray-100 text-gray-500 cursor-not-allowed">
+        {% for b in businesses %}
+        {% if b.id == current_user.business_id %}
+        <option value="{{ b.id }}" selected>{{ b.name_en }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+    {% else %}
     <select id="filterBusiness" onchange="window.location.href='/inventory/manage?business_id='+this.value">
         {% for b in businesses %}
         <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
         {% endfor %}
     </select>
+    {% endif %}
 </div>
 
 <!-- Table Card -->
