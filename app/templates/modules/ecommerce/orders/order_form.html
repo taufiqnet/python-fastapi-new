@@ -95,6 +95,28 @@
                     <!-- Customer & Order Metadata Grid -->
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                         
+                        <!-- Business Profile - FIRST FIELD -->
+                        <div class="md:col-span-12">
+                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                Business Profile <span class="text-rose-500">*</span>
+                            </label>
+                            {% if current_user and not current_user.is_superuser %}
+                            <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
+                            <input type="text" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 bg-gray-100 text-gray-700 cursor-not-allowed font-medium outline-none" 
+                                   value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% elif selected_business_id %}{% for b in businesses %}{% if b.id == selected_business_id %}{{ b.name_en }}{% endif %}{% endfor %}{% else %}My Business{% endif %}" 
+                                   readonly disabled>
+                            {% else %}
+                            <select id="business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
+                                <option value="">— Select Business —</option>
+                                {% for b in businesses %}
+                                <option value="{{ b.id }}" {% if (selected_business_id == b.id) or (is_edit and order.business_id == b.id) %}selected{% endif %}>
+                                    {{ b.name_en }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% endif %}
+                        </div>
+
                         <!-- Customer Dropdown (Select2) + Plus Button -->
                         <div class="md:col-span-4">
                             <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
@@ -170,32 +192,11 @@
 
                     </div>
 
-                    <!-- Row 2: Business Partner & Order Date/Time -->
+                    <!-- Row 2: Order Date & Time -->
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
 
-                        <!-- Business Partner (Business Profile) -->
-                        <div class="md:col-span-6">
-                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                Business Partner
-                            </label>
-                            {% if current_user and not current_user.is_superuser %}
-                            <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
-                            <input type="text" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 bg-gray-100 text-gray-700 cursor-not-allowed font-medium outline-none" 
-                                   value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% elif selected_business_id %}{% for b in businesses %}{% if b.id == selected_business_id %}{{ b.name_en }}{% endif %}{% endfor %}{% else %}My Business{% endif %}" 
-                                   readonly disabled>
-                            {% else %}
-                            <select id="business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
-                                {% for b in businesses %}
-                                <option value="{{ b.id }}" {% if (selected_business_id == b.id) or (is_edit and order.business_id == b.id) %}selected{% endif %}>
-                                    {{ b.name_en }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                            {% endif %}
-                        </div>
-
                         <!-- Order Date & Time -->
-                        <div class="md:col-span-6">
+                        <div class="md:col-span-12">
                             <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                                 Order Date & Time
                             </label>

@@ -62,16 +62,16 @@
     <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         <div class="p-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="form-group">
-                    <label class="form-label" for="business_id">Business Profile</label>
+                <div class="form-group md:col-span-2">
+                    <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
                     {% if current_user and not current_user.is_superuser %}
                     <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
                     <input type="text" class="form-input bg-gray-100 text-gray-700 cursor-not-allowed font-medium" 
                            value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% elif model and model.business_id %}{% for b in businesses %}{% if b.id == model.business_id %}{{ b.name_en }}{% endif %}{% endfor %}{% else %}My Business{% endif %}" 
                            readonly disabled>
                     {% else %}
-                    <select id="business_id" name="business_id" class="form-input">
-                        <option value="">— Global (All Businesses) —</option>
+                    <select id="business_id" name="business_id" class="form-input" onchange="onBusinessChange(this.value)">
+                        <option value="">— Select Business —</option>
                         {% for b in businesses %}
                         <option value="{{ b.id }}" {% if model and model.business_id == b.id %}selected{% endif %}>
                             {{ b.name_en }}
@@ -133,6 +133,42 @@
 
 {% block extra_js %}
 <script>
+async function onBusinessChange(bizId) {
+    const brandSelect = document.getElementById('brand_id');
+    if (!brandSelect) return;
+
+    const currentBrandVal = brandSelect.value;
+    brandSelect.innerHTML = '<option value="">— Select Brand —</option>';
+
+    if (!bizId) return;
+
+    try {
+        const resp = await fetch(`/brands/?business_id=${bizId}`);
+        if (resp.ok) {
+            const brands = await resp.json();
+            brands.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = b.name;
+                if (opt.value === currentBrandVal) opt.selected = true;
+                brandSelect.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error fetching brands by business:', e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const bizEl = document.getElementById('business_id');
+    if (bizEl && bizEl.value) {
+        const brandSelect = document.getElementById('brand_id');
+        if (brandSelect && brandSelect.options.length <= 1) {
+            onBusinessChange(bizEl.value);
+        }
+    }
+});
+
 // Auto-generate slug from name
 document.getElementById('name').addEventListener('input', function() {
     const slugInput = document.getElementById('slug');

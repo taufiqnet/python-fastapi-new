@@ -48,10 +48,16 @@ def get_categories(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     parent_id: uuid.UUID | None = Query(None),
+    is_root: bool | None = Query(None),
     db: Session = Depends(get_db),
 ):
     return service.get_categories(
-        db, skip=skip, limit=limit, business_id=business_id, parent_id=parent_id
+        db,
+        skip=skip,
+        limit=limit,
+        business_id=business_id,
+        parent_id=parent_id,
+        is_root=is_root,
     )
 
 

@@ -23,9 +23,15 @@ class CategoryService:
         limit: int = 100,
         business_id: int | None = None,
         parent_id: uuid.UUID | None = None,
+        is_root: bool | None = None,
     ) -> list[Category]:
         return self.repository.get_all(
-            db, skip=skip, limit=limit, business_id=business_id, parent_id=parent_id
+            db,
+            skip=skip,
+            limit=limit,
+            business_id=business_id,
+            parent_id=parent_id,
+            is_root=is_root,
         )
 
     def get_category_tree(

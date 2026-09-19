@@ -29,11 +29,14 @@ class CategoryRepository:
         limit: int = 100,
         business_id: int | None = None,
         parent_id: uuid.UUID | None = None,
+        is_root: bool | None = None,
     ) -> list[Category]:
         query = db.query(Category)
         if business_id is not None:
             query = query.filter(Category.business_id == business_id)
-        if parent_id is not None:
+        if is_root is True:
+            query = query.filter(Category.parent_id.is_(None))
+        elif parent_id is not None:
             query = query.filter(Category.parent_id == parent_id)
         return query.offset(skip).limit(limit).all()
 

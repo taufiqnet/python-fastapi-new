@@ -99,26 +99,17 @@
             <!-- TAB 1: PRODUCT INFORMATION -->
             <div id="tab-general" class="tab-content space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label class="form-label" for="title">Product Title <span class="text-red-500">*</span></label>
-                        <input type="text" id="title" name="title" class="form-input" required value="{{ product.title if product else '' }}" placeholder="e.g. iPhone 15 Pro Max">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="slug">URL Slug <span class="text-red-500">*</span></label>
-                        <input type="text" id="slug" name="slug" class="form-input font-mono" required value="{{ product.slug if product else '' }}" placeholder="e.g. iphone-15-pro-max">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="business_id">Business Profile</label>
+                    <!-- Business Profile - First Field -->
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
                         {% if current_user and not current_user.is_superuser %}
                         <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
                         <input type="text" class="form-input bg-gray-100 text-gray-700 cursor-not-allowed font-medium" 
                                value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% elif product and product.business_id %}{% for b in businesses %}{% if b.id == product.business_id %}{{ b.name_en }}{% endif %}{% endfor %}{% else %}My Business{% endif %}" 
                                readonly disabled>
                         {% else %}
-                        <select id="business_id" name="business_id" class="form-input">
-                            <option value="">— Global (All Businesses) —</option>
+                        <select id="business_id" name="business_id" class="form-input" onchange="onBusinessChange(this.value)">
+                            <option value="">— Select Business —</option>
                             {% for b in businesses %}
                             <option value="{{ b.id }}" {% if product and product.business_id == b.id %}selected{% endif %}>
                                 {{ b.name_en }}
@@ -129,20 +120,41 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label" for="title">Product Title <span class="text-red-500">*</span></label>
+                        <input type="text" id="title" name="title" class="form-input" required value="{{ product.title if product else '' }}" placeholder="e.g. iPhone 15 Pro Max">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="slug">URL Slug <span class="text-red-500">*</span></label>
+                        <input type="text" id="slug" name="slug" class="form-input font-mono" required value="{{ product.slug if product else '' }}" placeholder="e.g. iphone-15-pro-max">
+                    </div>
+
+                    <!-- Category & Subcategory -->
+                    <div class="form-group">
                         <label class="form-label" for="category_id">Category</label>
-                        <select id="category_id" name="category_id" class="form-input">
+                        <select id="category_id" name="category_id" class="form-input" onchange="onCategoryChange(this.value)">
                             <option value="">— Select Category —</option>
                             {% for c in categories %}
+                            {% if c.parent_id is none %}
                             <option value="{{ c.id }}" {% if product and product.category_id == c.id %}selected{% endif %}>
                                 {{ c.name }}
                             </option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="form-group">
+                        <label class="form-label" for="subcategory_id">Subcategory</label>
+                        <select id="subcategory_id" name="subcategory_id" class="form-input">
+                            <option value="">— Select Subcategory —</option>
+                        </select>
+                    </div>
+
+                    <!-- Brand & Model -->
+                    <div class="form-group">
                         <label class="form-label" for="brand_id">Brand</label>
-                        <select id="brand_id" name="brand_id" class="form-input">
+                        <select id="brand_id" name="brand_id" class="form-input" onchange="onBrandChange(this.value)">
                             <option value="">— Select Brand —</option>
                             {% for b in brands %}
                             <option value="{{ b.id }}" {% if product and product.brand_id == b.id %}selected{% endif %}>
@@ -443,6 +455,105 @@
 
 {% block extra_js %}
 <script>
+async function onBusinessChange(bizId) {
+    const catSelect = document.getElementById('category_id');
+    const subcatSelect = document.getElementById('subcategory_id');
+    const brandSelect = document.getElementById('brand_id');
+    const modelSelect = document.getElementById('model_id');
+
+    if (catSelect) catSelect.innerHTML = '<option value="">— Select Category —</option>';
+    if (subcatSelect) subcatSelect.innerHTML = '<option value="">— Select Subcategory —</option>';
+    if (brandSelect) brandSelect.innerHTML = '<option value="">— Select Brand —</option>';
+    if (modelSelect) modelSelect.innerHTML = '<option value="">— Select Model —</option>';
+
+    if (!bizId) return;
+
+    try {
+        const [catResp, brandResp] = await Promise.all([
+            fetch(`/categories/?business_id=${bizId}&is_root=true`),
+            fetch(`/brands/?business_id=${bizId}`)
+        ]);
+
+        if (catResp.ok && catSelect) {
+            const categories = await catResp.json();
+            categories.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                catSelect.appendChild(opt);
+            });
+        }
+
+        if (brandResp.ok && brandSelect) {
+            const brands = await brandResp.json();
+            brands.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.textContent = b.name;
+                brandSelect.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error fetching categories/brands by business:', e);
+    }
+}
+
+async function onCategoryChange(catId) {
+    const subcatSelect = document.getElementById('subcategory_id');
+    if (!subcatSelect) return;
+
+    subcatSelect.innerHTML = '<option value="">— Select Subcategory —</option>';
+    if (!catId) return;
+
+    try {
+        const resp = await fetch(`/categories/?parent_id=${catId}`);
+        if (resp.ok) {
+            const subcategories = await resp.json();
+            subcategories.forEach(sc => {
+                const opt = document.createElement('option');
+                opt.value = sc.id;
+                opt.textContent = sc.name;
+                subcatSelect.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error fetching subcategories:', e);
+    }
+}
+
+async function onBrandChange(brandId) {
+    const modelSelect = document.getElementById('model_id');
+    if (!modelSelect) return;
+
+    modelSelect.innerHTML = '<option value="">— Select Model —</option>';
+    if (!brandId) return;
+
+    try {
+        const resp = await fetch(`/brands/${brandId}/models`);
+        if (resp.ok) {
+            const models = await resp.json();
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = m.name;
+                modelSelect.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error fetching models by brand:', e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const bizEl = document.getElementById('business_id');
+    if (bizEl && bizEl.value) {
+        const catSelect = document.getElementById('category_id');
+        if (catSelect && catSelect.options.length <= 1) {
+            onBusinessChange(bizEl.value);
+        }
+    }
+});
+
 function switchTab(btn, tabName) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
@@ -749,11 +860,14 @@ document.getElementById('productForm').addEventListener('submit', async function
             }
         });
 
+        const subcatVal = document.getElementById('subcategory_id').value;
+        const finalCatId = subcatVal || categoryIdVal || null;
+
         const payload = {
             title: title,
             slug: slug,
             business_id: businessIdVal ? parseInt(businessIdVal) : null,
-            category_id: categoryIdVal ? categoryIdVal : null,
+            category_id: finalCatId,
             brand_id: brandIdVal ? brandIdVal : null,
             model_id: modelIdVal ? modelIdVal : null,
             status: statusVal,

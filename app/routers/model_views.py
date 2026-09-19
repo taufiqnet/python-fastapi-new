@@ -50,6 +50,7 @@ def model_list_page(
 @router.get("/brands/models/create", response_class=HTMLResponse)
 def model_create_page(request: Request, db: Session = Depends(get_db)):
     brands = brand_service.get_brands(db, skip=0, limit=500)
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
         request=request,
@@ -58,6 +59,7 @@ def model_create_page(request: Request, db: Session = Depends(get_db)):
             "model": None,
             "is_edit": False,
             "brands": brands,
+            "businesses": businesses,
             "active_page": "models",
         },
     )

@@ -96,6 +96,26 @@
             <!-- TAB 1: GENERAL INFORMATION -->
             <div id="tab-general" class="tab-content space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Business Profile - First Field -->
+                    <div class="form-group md:col-span-2">
+                        <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
+                        {% if current_user and not current_user.is_superuser %}
+                        <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
+                        <input type="text" class="form-input bg-gray-100 text-gray-700 cursor-not-allowed font-medium" 
+                               value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% elif category and category.business_id %}{% for b in businesses %}{% if b.id == category.business_id %}{{ b.name_en }}{% endif %}{% endfor %}{% else %}My Business{% endif %}" 
+                               readonly disabled>
+                        {% else %}
+                        <select id="business_id" name="business_id" class="form-input" onchange="onBusinessChange(this.value)">
+                            <option value="">— Select Business —</option>
+                            {% for b in businesses %}
+                            <option value="{{ b.id }}" {% if (category and category.business_id == b.id) or (selected_business_id == b.id) %}selected{% endif %}>
+                                {{ b.name_en }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label" for="name">Category Name <span class="text-red-500">*</span></label>
                         <input type="text" id="name" name="name" class="form-input" required value="{{ category.name if category else '' }}" placeholder="e.g. Electronics, Smartphones">
@@ -106,35 +126,26 @@
                         <input type="text" id="slug" name="slug" class="form-input" required value="{{ category.slug if category else '' }}" placeholder="e.g. electronics, smartphones">
                     </div>
 
+                    <!-- Category (Root Category) & Subcategory Dropdowns -->
                     <div class="form-group">
-                        <label class="form-label" for="parent_id">Parent Category</label>
-                        <select id="parent_id" name="parent_id" class="form-input">
+                        <label class="form-label" for="category_id">Category (Parent Category)</label>
+                        <select id="category_id" name="category_id" class="form-input" onchange="onCategoryChange(this.value)">
                             <option value="">— None (Root Category) —</option>
                             {% for p in parent_categories %}
+                            {% if p.parent_id is none %}
                             <option value="{{ p.id }}" {% if category and category.parent_id == p.id %}selected{% endif %}>
                                 {{ p.name }}
                             </option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="business_id">Business Profile</label>
-                        {% if current_user and not current_user.is_superuser %}
-                        <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
-                        <input type="text" class="form-input bg-gray-100 text-gray-700 cursor-not-allowed font-medium" 
-                               value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% elif category and category.business_id %}{% for b in businesses %}{% if b.id == category.business_id %}{{ b.name_en }}{% endif %}{% endfor %}{% else %}My Business{% endif %}" 
-                               readonly disabled>
-                        {% else %}
-                        <select id="business_id" name="business_id" class="form-input">
-                            <option value="">— Global (All Businesses) —</option>
-                            {% for b in businesses %}
-                            <option value="{{ b.id }}" {% if category and category.business_id == b.id %}selected{% endif %}>
-                                {{ b.name_en }}
-                            </option>
-                            {% endfor %}
+                        <label class="form-label" for="subcategory_id">Subcategory</label>
+                        <select id="subcategory_id" name="subcategory_id" class="form-input">
+                            <option value="">— Select Subcategory —</option>
                         </select>
-                        {% endif %}
                     </div>
 
                     <div class="form-group md:col-span-2">
@@ -282,6 +293,67 @@ document.getElementById('btnAddAttr').addEventListener('click', function() {
     container.appendChild(row);
 });
 
+async function onBusinessChange(bizId) {
+    const catSelect = document.getElementById('category_id');
+    const subcatSelect = document.getElementById('subcategory_id');
+    if (!catSelect) return;
+
+    const currentCatVal = catSelect.value;
+    catSelect.innerHTML = '<option value="">— None (Root Category) —</option>';
+    subcatSelect.innerHTML = '<option value="">— Select Subcategory —</option>';
+
+    if (!bizId) return;
+
+    try {
+        const resp = await fetch(`/categories/?business_id=${bizId}&is_root=true`);
+        if (resp.ok) {
+            const categories = await resp.json();
+            categories.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                if (opt.value === currentCatVal) opt.selected = true;
+                catSelect.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error fetching categories by business:', e);
+    }
+}
+
+async function onCategoryChange(catId) {
+    const subcatSelect = document.getElementById('subcategory_id');
+    if (!subcatSelect) return;
+
+    subcatSelect.innerHTML = '<option value="">— Select Subcategory —</option>';
+    if (!catId) return;
+
+    try {
+        const resp = await fetch(`/categories/?parent_id=${catId}`);
+        if (resp.ok) {
+            const subcategories = await resp.json();
+            subcategories.forEach(sc => {
+                const opt = document.createElement('option');
+                opt.value = sc.id;
+                opt.textContent = sc.name;
+                subcatSelect.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error('Error fetching subcategories:', e);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const bizEl = document.getElementById('business_id');
+    if (bizEl && bizEl.value) {
+        const catSelect = document.getElementById('category_id');
+        if (catSelect && catSelect.options.length <= 1) {
+            onBusinessChange(bizEl.value);
+        }
+    }
+});
+
 document.getElementById('categoryForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -290,7 +362,9 @@ document.getElementById('categoryForm').addEventListener('submit', function(e) {
 
     const name = document.getElementById('name').value;
     const slug = document.getElementById('slug').value;
-    const parentIdVal = document.getElementById('parent_id').value;
+    const subcatVal = document.getElementById('subcategory_id').value;
+    const catVal = document.getElementById('category_id').value;
+    const parentIdVal = subcatVal || catVal || null;
     const businessIdVal = document.getElementById('business_id').value;
     const iconVal = document.getElementById('icon').value;
     const descVal = document.getElementById('description').value;
