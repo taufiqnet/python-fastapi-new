@@ -6,6 +6,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.common.enums import Status
+from app.core.deps import get_current_user_optional
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.ecommerce.brands.service import BrandService
@@ -29,21 +32,28 @@ def product_list_page(
     business_id: int | None = None,
     category_id: uuid.UUID | None = None,
     brand_id: uuid.UUID | None = None,
+    current_user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     products = product_service.get_products(
         db,
         skip=skip,
         limit=limit,
-        business_id=business_id,
+        business_id=resolved_business_id,
         category_id=category_id,
         brand_id=brand_id,
     )
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    categories = category_service.get_categories(db, skip=0, limit=500)
-    brands = brand_service.get_brands(db, skip=0, limit=500)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
 
-    biz_map = {b.id: b.name_en for b in businesses}
+    categories = category_service.get_categories(db, skip=0, limit=500, business_id=resolved_business_id)
+    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=resolved_business_id)
+
+    biz_map = {b.id: b.name_en for b in all_businesses}
     cat_map = {c.id: c.name for c in categories}
     brand_map = {b.id: b.name for b in brands}
 
@@ -74,16 +84,27 @@ def product_list_page(
             "draft_count": draft_count,
             "archived_count": archived_count,
             "active_page": "products",
+            "current_user": current_user,
         },
     )
 
 
 @router.get("/products/create", response_class=HTMLResponse)
-def product_create_page(request: Request, db: Session = Depends(get_db)):
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    categories = category_service.get_categories(db, skip=0, limit=500)
-    brands = brand_service.get_brands(db, skip=0, limit=500)
-    models = brand_service.get_all_models(db, skip=0, limit=500)
+def product_create_page(
+    request: Request,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    resolved_business_id = resolve_business_id(current_user, None)
+    categories = category_service.get_categories(db, skip=0, limit=500, business_id=resolved_business_id)
+    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=resolved_business_id)
+    models = brand_service.get_all_models(db, skip=0, limit=500, business_id=resolved_business_id)
 
     return templates.TemplateResponse(
         request=request,
@@ -99,22 +120,29 @@ def product_create_page(request: Request, db: Session = Depends(get_db)):
             "conditions": [c.value for c in ProductCondition],
             "product_types": [t.value for t in ProductType],
             "active_page": "products",
+            "current_user": current_user,
         },
     )
 
 
 @router.get("/products/detail/{product_id}", response_class=HTMLResponse)
 def product_detail_page(
-    product_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    product_id: uuid.UUID,
+    request: Request,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
 ):
     product = product_service.get_product(db, product_id)
+    verify_record_ownership(product, current_user)
+
     business = None
     if product.business_id:
         business = business_service.get_business(db, product.business_id)
 
-    categories = category_service.get_categories(db, skip=0, limit=500)
-    brands = brand_service.get_brands(db, skip=0, limit=500)
-    models = brand_service.get_all_models(db, skip=0, limit=500)
+    resolved_business_id = resolve_business_id(current_user, product.business_id)
+    categories = category_service.get_categories(db, skip=0, limit=500, business_id=resolved_business_id)
+    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=resolved_business_id)
+    models = brand_service.get_all_models(db, skip=0, limit=500, business_id=resolved_business_id)
 
     cat_map = {c.id: c.name for c in categories}
     brand_map = {b.id: b.name for b in brands}
@@ -130,19 +158,31 @@ def product_detail_page(
             "brand_map": brand_map,
             "model_map": model_map,
             "active_page": "products",
+            "current_user": current_user,
         },
     )
 
 
 @router.get("/products/edit/{product_id}", response_class=HTMLResponse)
 def product_edit_page(
-    product_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    product_id: uuid.UUID,
+    request: Request,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
 ):
     product = product_service.get_product(db, product_id)
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    categories = category_service.get_categories(db, skip=0, limit=500)
-    brands = brand_service.get_brands(db, skip=0, limit=500)
-    models = brand_service.get_all_models(db, skip=0, limit=500)
+    verify_record_ownership(product, current_user)
+
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    resolved_business_id = resolve_business_id(current_user, product.business_id)
+    categories = category_service.get_categories(db, skip=0, limit=500, business_id=resolved_business_id)
+    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=resolved_business_id)
+    models = brand_service.get_all_models(db, skip=0, limit=500, business_id=resolved_business_id)
 
     return templates.TemplateResponse(
         request=request,
@@ -158,5 +198,6 @@ def product_edit_page(
             "conditions": [c.value for c in ProductCondition],
             "product_types": [t.value for t in ProductType],
             "active_page": "products",
+            "current_user": current_user,
         },
     )

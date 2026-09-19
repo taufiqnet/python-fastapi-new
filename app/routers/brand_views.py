@@ -5,6 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user_optional
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.ecommerce.brands.service import BrandService
@@ -21,13 +24,20 @@ def brand_list_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
+    current_user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     brands = brand_service.get_brands(
-        db, skip=skip, limit=limit, business_id=business_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id
     )
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    biz_map = {b.id: b.name_en for b in businesses}
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    biz_map = {b.id: b.name_en for b in all_businesses}
 
     total_count = len(brands)
     active_count = sum(1 for b in brands if getattr(b, "is_active", True))
@@ -44,13 +54,22 @@ def brand_list_page(
             "active_count": active_count,
             "inactive_count": inactive_count,
             "active_page": "brands",
+            "current_user": current_user,
         },
     )
 
 
 @router.get("/brands/create", response_class=HTMLResponse)
-def brand_create_page(request: Request, db: Session = Depends(get_db)):
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+def brand_create_page(
+    request: Request,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
 
     return templates.TemplateResponse(
         request=request,
@@ -60,15 +79,20 @@ def brand_create_page(request: Request, db: Session = Depends(get_db)):
             "is_edit": False,
             "businesses": businesses,
             "active_page": "brands",
+            "current_user": current_user,
         },
     )
 
 
 @router.get("/brands/detail/{brand_id}", response_class=HTMLResponse)
 def brand_detail_page(
-    brand_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    brand_id: uuid.UUID,
+    request: Request,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
 ):
     brand = brand_service.get_brand(db, brand_id)
+    verify_record_ownership(brand, current_user)
     business = None
     if brand.business_id:
         business = business_service.get_business(db, brand.business_id)
@@ -80,16 +104,26 @@ def brand_detail_page(
             "brand": brand,
             "business": business,
             "active_page": "brands",
+            "current_user": current_user,
         },
     )
 
 
 @router.get("/brands/edit/{brand_id}", response_class=HTMLResponse)
 def brand_edit_page(
-    brand_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    brand_id: uuid.UUID,
+    request: Request,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
 ):
     brand = brand_service.get_brand(db, brand_id)
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    verify_record_ownership(brand, current_user)
+
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
 
     return templates.TemplateResponse(
         request=request,
@@ -99,5 +133,6 @@ def brand_edit_page(
             "is_edit": True,
             "businesses": businesses,
             "active_page": "brands",
+            "current_user": current_user,
         },
     )

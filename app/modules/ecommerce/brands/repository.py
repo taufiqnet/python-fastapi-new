@@ -92,9 +92,12 @@ class BrandRepository:
         db: Session,
         skip: int = 0,
         limit: int = 500,
+        business_id: int | None = None,
         is_active: bool | None = None,
     ) -> list[ProductModel]:
         query = db.query(ProductModel)
+        if business_id is not None:
+            query = query.join(Brand).filter(Brand.business_id == business_id)
         if is_active is not None:
             query = query.filter(ProductModel.is_active == is_active)
         return query.offset(skip).limit(limit).all()

@@ -95,10 +95,11 @@ class BrandService:
         db: Session,
         skip: int = 0,
         limit: int = 500,
+        business_id: int | None = None,
         is_active: bool | None = None,
     ) -> list[ProductModel]:
         return self.repository.get_all_models(
-            db, skip=skip, limit=limit, is_active=is_active
+            db, skip=skip, limit=limit, business_id=business_id, is_active=is_active
         )
 
     def get_brand_models(
@@ -150,7 +151,7 @@ class BrandService:
             )
         self.repository.delete_model(db, model)
 
-    def generate_excel_template(self, db: Session, business_id: int) -> bytes:
+    def generate_excel_template(self, db: Session, business_id: int | None = None) -> bytes:
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Brand Template"
@@ -186,7 +187,7 @@ class BrandService:
         return output.getvalue()
 
     def import_brands_excel(
-        self, db: Session, business_id: int, file_bytes: bytes
+        self, db: Session, business_id: int | None, file_bytes: bytes
     ) -> dict[str, int | list[str]]:
         try:
             wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
@@ -260,7 +261,7 @@ class BrandService:
             "errors": error_messages,
         }
 
-    def generate_model_excel_template(self, db: Session, business_id: int) -> bytes:
+    def generate_model_excel_template(self, db: Session, business_id: int | None = None) -> bytes:
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Model Template"
@@ -299,7 +300,7 @@ class BrandService:
         return output.getvalue()
 
     def import_models_excel(
-        self, db: Session, business_id: int, file_bytes: bytes
+        self, db: Session, business_id: int | None, file_bytes: bytes
     ) -> dict[str, int | list[str]]:
         try:
             wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
@@ -344,7 +345,7 @@ class BrandService:
                 slug_raw = re.sub(r"[^\w\s-]", "", name_raw).strip().lower().replace(" ", "-")
 
             brand_obj = self.repository.get_by_name(db, brand_name_raw, business_id)
-            if not brand_obj:
+            if not brand_obj and business_id is None:
                 brand_obj = self.repository.get_by_name(db, brand_name_raw, None)
 
             if not brand_obj:
