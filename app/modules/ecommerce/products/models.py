@@ -196,6 +196,12 @@ class ProductVariant(Base, UUIDMixin, TimestampMixin):
         ForeignKey("products.id", ondelete="CASCADE"),
         nullable=False,
     )
+    item_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("items.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     sku: Mapped[str] = mapped_column(
         String(100),
         unique=True,
@@ -243,6 +249,11 @@ class ProductVariant(Base, UUIDMixin, TimestampMixin):
     product: Mapped["Product"] = relationship(
         "Product",
         back_populates="variants",
+    )
+    item: Mapped["Item | None"] = relationship(  # noqa: F821
+        "Item",
+        back_populates="variants",
+        lazy="selectin",
     )
     images: Mapped[list["ProductImage"]] = relationship(
         "ProductImage",

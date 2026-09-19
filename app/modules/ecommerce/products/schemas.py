@@ -74,6 +74,7 @@ class VariantBase(BaseModel):
 
 class VariantCreate(VariantBase):
     cost_price: Decimal | None = Field(None, ge=Decimal("0.00"))
+    stock_qty: int | None = Field(None, exclude=True)  # Read-only / ignored on create
 
 
 class VariantUpdate(BaseModel):
@@ -84,7 +85,6 @@ class VariantUpdate(BaseModel):
     compare_at_price: Decimal | None = Field(None, gt=Decimal("0.00"))
     cost_price: Decimal | None = Field(None, ge=Decimal("0.00"))
     currency: str | None = Field(None, max_length=3)
-    stock_qty: int | None = Field(None, ge=0)
     low_stock_threshold: int | None = Field(None, ge=0)
     backorder_allowed: bool | None = None
     is_default: bool | None = None
@@ -94,6 +94,7 @@ class VariantUpdate(BaseModel):
     width: Decimal | None = Field(None, ge=Decimal("0.00"))
     height: Decimal | None = Field(None, ge=Decimal("0.00"))
     dimension_unit: str | None = Field(None, max_length=10)
+    stock_qty: int | None = Field(None, exclude=True)  # Read-only / ignored on update
 
 
 class VariantOut(VariantBase):

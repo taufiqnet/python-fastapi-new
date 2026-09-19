@@ -1942,6 +1942,408 @@
                                 }
                             },
                             "response": []
+                        },
+                        {
+                            "name": "Create Item Master",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/items-master",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "items-master"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"sku\": \"RAW-STEEL-001\",\n  \"name\": \"Raw Steel Sheet\",\n  \"barcode\": \"123456789012\",\n  \"item_type\": \"raw_material\",\n  \"tracking_type\": \"lot\",\n  \"default_cost\": \"45.00\",\n  \"is_active\": true\n}"
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "List Item Master",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/items-master?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "items-master"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Create Unit of Measure",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/uom/units",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "uom",
+                                        "units"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"code\": \"KG\",\n  \"name\": \"Kilogram\",\n  \"precision\": 2\n}"
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "List Units of Measure",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/uom/units?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "uom",
+                                        "units"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Create UoM Conversion",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/uom/conversions",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "uom",
+                                        "conversions"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"from_uom_id\": \"{{from_uom_id}}\",\n  \"to_uom_id\": \"{{to_uom_id}}\",\n  \"factor\": \"1000.00\"\n}"
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Convert UoM Quantity",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/uom/convert",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "uom",
+                                        "convert"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"from_uom_id\": \"{{from_uom_id}}\",\n  \"to_uom_id\": \"{{to_uom_id}}\",\n  \"quantity\": \"2.5\"\n}"
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Stock Availability",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/availability?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "availability"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Expiring Lots",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/lots/expiring?business_id={{business_id}}&days=30",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "lots",
+                                        "expiring"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        },
+                                        {
+                                            "key": "days",
+                                            "value": "30"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Inventory Valuation",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/valuation?business_id={{business_id}}&costing_method=FIFO",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "valuation"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        },
+                                        {
+                                            "key": "costing_method",
+                                            "value": "FIFO"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Create Stock Transfer",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/transfers",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "transfers"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"transfer_number\": \"TR-1001\",\n  \"source_warehouse_id\": \"{{source_warehouse_id}}\",\n  \"destination_warehouse_id\": \"{{destination_warehouse_id}}\",\n  \"lines\": [\n    {\n      \"item_id\": \"{{item_id}}\",\n      \"quantity\": 10\n    }\n  ],\n  \"notes\": \"Inter-warehouse replenishment\"\n}"
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "List Stock Transfers",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/transfers?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "transfers"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Create Stock Count",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/counts",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "counts"
+                                    ]
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"warehouse_id\": \"{{warehouse_id}}\",\n  \"scheduled_date\": \"2025-01-15T00:00:00Z\",\n  \"counted_by\": \"John Inspector\"\n}"
+                                }
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get Reorder Alerts",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/inventory/reorder-alerts?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "inventory",
+                                        "reorder-alerts"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            },
+                            "response": []
                         }
                     ]
                 },
