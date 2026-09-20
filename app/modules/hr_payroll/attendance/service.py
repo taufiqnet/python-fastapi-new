@@ -14,10 +14,12 @@ from app.modules.hr_payroll.attendance.schemas import (
     AttendanceCreate,
     AttendanceUpdate,
 )
+import calendar
 from io import BytesIO, StringIO
 import csv
 import json
 import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
 from app.core.tenancy.repository import BusinessRepository
 from app.core.tenancy.scoping import verify_record_ownership
@@ -335,6 +337,242 @@ class AttendanceService:
             max_len = max(len(str(cell.value or "")) for cell in col)
             col_letter = openpyxl.utils.get_column_letter(col[0].column)
             ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
+    def generate_monthly_register_excel(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        year: int | None = None,
+        month: int | None = None,
+    ) -> bytes:
+        today = date.today()
+        year = year or today.year
+        month = month or today.month
+
+        num_days = calendar.monthrange(year, month)[1]
+        start_date = date(year, month, 1)
+        end_date = date(year, month, num_days)
+
+        biz_repo = BusinessRepository()
+        business = biz_repo.get_by_id(db, business_id) if business_id else None
+        company_name = business.name_en if business and business.name_en else "All Businesses"
+
+        employees = self.employee_repository.get_all(db, business_id=business_id, limit=2000)
+        employees = sorted(employees, key=lambda e: (e.employee_id or "", e.full_name or ""))
+
+        att_records = self.repository.get_all(
+            db,
+            skip=0,
+            limit=50000,
+            business_id=business_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        att_map = {(r.employee_id, r.date): r for r in att_records}
+
+        from app.modules.hr_payroll.payroll.repository import HolidayRepository
+        from app.modules.hr_payroll.payroll.models import HolidayTypeEnum
+        holiday_repo = HolidayRepository()
+        holidays = holiday_repo.get_all(db, business_id=business_id, limit=500)
+
+        holiday_map = {}
+        for h in holidays:
+            h_start = max(start_date, h.start_date)
+            h_end = min(end_date, h.end_date)
+            if h_start <= h_end:
+                cur = h_start
+                while cur <= h_end:
+                    is_wo = getattr(h, "holiday_type", None) in (HolidayTypeEnum.WEEKEND, "weekend") or getattr(getattr(h, "holiday_type", None), "value", None) == "weekend"
+                    holiday_map[cur] = "WO" if is_wo else "H"
+                    cur += timedelta(days=1)
+
+        from app.modules.hr_payroll.leave.repository import LeaveApplicationRepository
+        from app.modules.hr_payroll.leave.models import LeaveStatusEnum
+        leave_repo = LeaveApplicationRepository()
+        leaves = leave_repo.get_all(
+            db,
+            business_id=business_id,
+            status=LeaveStatusEnum.APPROVED,
+            limit=5000,
+        )
+        leave_map = set()
+        for l in leaves:
+            l_start = max(start_date, l.start_date)
+            l_end = min(end_date, l.end_date)
+            if l_start <= l_end:
+                cur = l_start
+                while cur <= l_end:
+                    leave_map.add((l.employee_id, cur))
+                    cur += timedelta(days=1)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Monthly Register"
+
+        font_company = Font(name="Calibri", size=14, bold=True, color="1E1B4B")
+        font_title = Font(name="Calibri", size=12, bold=True, color="374151")
+        font_month = Font(name="Calibri", size=11, bold=True, color="1F2937")
+        font_legend = Font(name="Calibri", size=9, italic=True, color="4B5563")
+        font_header = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+        font_bold = Font(name="Calibri", size=10, bold=True)
+        font_regular = Font(name="Calibri", size=10)
+
+        fill_header = PatternFill(start_color="4F46E5", end_color="4F46E5", fill_type="solid")
+        fill_summary_header = PatternFill(start_color="3730A3", end_color="3730A3", fill_type="solid")
+
+        thin_border = Border(
+            left=Side(style="thin", color="D1D5DB"),
+            right=Side(style="thin", color="D1D5DB"),
+            top=Side(style="thin", color="D1D5DB"),
+            bottom=Side(style="thin", color="D1D5DB"),
+        )
+
+        align_center = Alignment(horizontal="center", vertical="center")
+        align_left = Alignment(horizontal="left", vertical="center")
+
+        ws.cell(row=1, column=1, value=company_name).font = font_company
+        ws.cell(row=2, column=1, value="Monthly Attendance Register").font = font_title
+        month_name = calendar.month_name[month]
+        ws.cell(row=3, column=1, value=f"Month: {month_name} {year}").font = font_month
+        ws.cell(
+            row=4,
+            column=1,
+            value="Legend: P = Present | A = Absent | L = Leave | H = Holiday | HD = Half Day | WO = Weekly Off",
+        ).font = font_legend
+
+        header_row = 6
+        headers = ["Employee ID", "Employee Name"]
+        for d in range(1, num_days + 1):
+            headers.append(str(d))
+
+        summary_headers = [
+            "Present (P)",
+            "Half Day (HD)",
+            "Absent (A)",
+            "Leave (L)",
+            "Holiday (H)",
+            "Weekly Off (WO)",
+            "Working Days",
+        ]
+        headers.extend(summary_headers)
+
+        for col_num, h_text in enumerate(headers, 1):
+            cell = ws.cell(row=header_row, column=col_num, value=h_text)
+            cell.font = font_header
+            cell.border = thin_border
+            if col_num <= 2 + num_days:
+                cell.fill = fill_header
+            else:
+                cell.fill = fill_summary_header
+
+            if col_num <= 2:
+                cell.alignment = align_left
+            else:
+                cell.alignment = align_center
+
+        start_data_row = 7
+        for idx, emp in enumerate(employees, start=start_data_row):
+            ws.cell(row=idx, column=1, value=emp.employee_id or "").alignment = align_left
+            ws.cell(row=idx, column=1).font = font_bold
+            ws.cell(row=idx, column=1).border = thin_border
+
+            ws.cell(row=idx, column=2, value=emp.full_name or "").alignment = align_left
+            ws.cell(row=idx, column=2).font = font_regular
+            ws.cell(row=idx, column=2).border = thin_border
+
+            p_cnt = 0.0
+            hd_cnt = 0
+            a_cnt = 0
+            l_cnt = 0
+            h_cnt = 0
+            wo_cnt = 0
+
+            for d in range(1, num_days + 1):
+                col_idx = 2 + d
+                day_date = date(year, month, d)
+                code = ""
+
+                att_rec = att_map.get((emp.id, day_date))
+                if att_rec:
+                    st = getattr(att_rec.status, "value", att_rec.status)
+                    if st in ("present", "late"):
+                        code = "P"
+                    elif st == "half_day":
+                        code = "HD"
+                    elif st == "on_leave":
+                        code = "L"
+                    elif st == "absent":
+                        code = "A"
+                    elif st == "holiday":
+                        code = "H"
+                    elif st == "weekend":
+                        code = "WO"
+                    else:
+                        code = "P"
+                else:
+                    if (emp.id, day_date) in leave_map:
+                        code = "L"
+                    elif day_date in holiday_map:
+                        code = holiday_map[day_date]
+                    elif day_date.weekday() in (5, 6):
+                        code = "WO"
+                    elif day_date <= today:
+                        code = "A"
+                    else:
+                        code = ""
+
+                if code == "P":
+                    p_cnt += 1.0
+                elif code == "HD":
+                    hd_cnt += 1
+                    p_cnt += 0.5
+                elif code == "A":
+                    a_cnt += 1
+                elif code == "L":
+                    l_cnt += 1
+                elif code == "H":
+                    h_cnt += 1
+                elif code == "WO":
+                    wo_cnt += 1
+
+                cell = ws.cell(row=idx, column=col_idx, value=code)
+                cell.alignment = align_center
+                cell.font = font_regular
+                cell.border = thin_border
+
+            working_days = num_days - h_cnt - wo_cnt
+
+            totals = [
+                p_cnt,
+                hd_cnt,
+                a_cnt,
+                l_cnt,
+                h_cnt,
+                wo_cnt,
+                working_days,
+            ]
+
+            for s_idx, tot_val in enumerate(totals, 3 + num_days):
+                cell = ws.cell(row=idx, column=s_idx, value=tot_val)
+                cell.alignment = align_center
+                cell.font = font_bold
+                cell.border = thin_border
+
+        ws.freeze_panes = "C7"
+
+        ws.column_dimensions["A"].width = 16
+        ws.column_dimensions["B"].width = 26
+        for d in range(1, num_days + 1):
+            col_letter = openpyxl.utils.get_column_letter(2 + d)
+            ws.column_dimensions[col_letter].width = 4.5
+
+        for s_idx in range(3 + num_days, 10 + num_days):
+            col_letter = openpyxl.utils.get_column_letter(s_idx)
+            ws.column_dimensions[col_letter].width = 14
 
         output = BytesIO()
         wb.save(output)

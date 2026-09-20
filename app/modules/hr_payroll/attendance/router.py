@@ -85,6 +85,35 @@ def export_attendance_excel(
     )
 
 
+@router.get("/attendance/export-register-excel")
+def export_attendance_monthly_register_excel(
+    business_id: int | None = Query(None),
+    year: int | None = Query(None),
+    month: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "attendance", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = attendance_service.generate_monthly_register_excel(
+        db,
+        business_id=resolved_business_id,
+        year=year,
+        month=month,
+    )
+    y_str = str(year) if year else str(date.today().year)
+    m_str = f"{month:02d}" if month else f"{date.today().month:02d}"
+    filename = (
+        f"monthly_attendance_register_{y_str}_{m_str}.xlsx"
+        if not resolved_business_id
+        else f"monthly_attendance_register_business_{resolved_business_id}_{y_str}_{m_str}.xlsx"
+    )
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 @router.get("/attendance/template-excel")
 def download_attendance_excel_template(
     business_id: int = Query(...),
