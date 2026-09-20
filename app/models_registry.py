@@ -57,7 +57,9 @@ from app.modules.ecommerce.payments.models import (  # noqa: F401
     Refund,
 )
 from app.modules.ecommerce.pricing.models import (  # noqa: F401
+    Coupon,
     CurrencyRate,
+    DiscountRule,
     PriceHistory,
     TaxRule,
 )

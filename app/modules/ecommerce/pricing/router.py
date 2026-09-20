@@ -7,8 +7,18 @@ from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.database import get_db
 from app.modules.ecommerce.pricing.schemas import (
+    CartCalculationRequest,
+    CartCalculationResponse,
+    CouponCreate,
+    CouponOut,
+    CouponUpdate,
+    CouponValidateRequest,
+    CouponValidateResponse,
     CurrencyRateCreate,
     CurrencyRateOut,
+    DiscountRuleCreate,
+    DiscountRuleOut,
+    DiscountRuleUpdate,
     PriceHistoryCreate,
     PriceHistoryOut,
     TaxCalculationRequest,
@@ -115,3 +125,113 @@ def get_currency_rates(
     db: Session = Depends(get_db),
 ):
     return service.get_currency_rates(db, business_id=business_id)
+
+
+# --- Discount Rule Endpoints ---
+@router.post(
+    "/discount-rules",
+    response_model=DiscountRuleOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_discount_rule(
+    data: DiscountRuleCreate,
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
+    db: Session = Depends(get_db),
+):
+    return service.create_discount_rule(db, data)
+
+
+@router.get("/discount-rules", response_model=list[DiscountRuleOut])
+def get_discount_rules(
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_discount_rules(db, business_id=business_id)
+
+
+@router.put("/discount-rules/{rule_id}", response_model=DiscountRuleOut)
+def update_discount_rule(
+    rule_id: uuid.UUID,
+    data: DiscountRuleUpdate,
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "update")),
+    db: Session = Depends(get_db),
+):
+    return service.update_discount_rule(
+        db, rule_id=rule_id, data=data, business_id=business_id
+    )
+
+
+@router.delete("/discount-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_discount_rule(
+    rule_id: uuid.UUID,
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "delete")),
+    db: Session = Depends(get_db),
+):
+    service.delete_discount_rule(db, rule_id=rule_id, business_id=business_id)
+
+
+# --- Coupon Endpoints ---
+@router.post(
+    "/coupons",
+    response_model=CouponOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_coupon(
+    data: CouponCreate,
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
+    db: Session = Depends(get_db),
+):
+    return service.create_coupon(db, data)
+
+
+@router.get("/coupons", response_model=list[CouponOut])
+def get_coupons(
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_coupons(db, business_id=business_id)
+
+
+@router.put("/coupons/{coupon_id}", response_model=CouponOut)
+def update_coupon(
+    coupon_id: uuid.UUID,
+    data: CouponUpdate,
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "update")),
+    db: Session = Depends(get_db),
+):
+    return service.update_coupon(
+        db, coupon_id=coupon_id, data=data, business_id=business_id
+    )
+
+
+@router.delete("/coupons/{coupon_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_coupon(
+    coupon_id: uuid.UUID,
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "delete")),
+    db: Session = Depends(get_db),
+):
+    service.delete_coupon(db, coupon_id=coupon_id, business_id=business_id)
+
+
+@router.post("/coupons/validate", response_model=CouponValidateResponse)
+def validate_coupon(
+    req: CouponValidateRequest,
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.validate_coupon(db, req)
+
+
+@router.post("/calculate", response_model=CartCalculationResponse)
+def calculate_cart(
+    req: CartCalculationRequest,
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.calculate_cart(db, req)

@@ -115,3 +115,53 @@ class CurrencyRate(Base, UUIDMixin, TimestampMixin):
     effective_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class DiscountRule(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "discount_rules"
+
+    business_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    code: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    discount_type: Mapped[str] = mapped_column(String(20), nullable=False, default="percentage") # percentage, fixed, buy_x_get_y
+    discount_value: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"), nullable=False)
+    buy_x_qty: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    get_y_qty: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    min_order_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class Coupon(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "coupons"
+    __table_args__ = (
+        UniqueConstraint(
+            "business_id", "code",
+            name="uq_coupons_business_code",
+        ),
+    )
+
+    business_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    discount_rule_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("discount_rules.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    max_uses: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    used_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    valid_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    discount_rule: Mapped["DiscountRule"] = relationship("DiscountRule", lazy="selectin")

@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Coupons & Promotional Management - SaaS Platform Admin{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <i class="fas fa-ticket-alt text-indigo-600"></i>
+                Coupons & Promotional Campaigns
+            </h1>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Generate discount coupon codes, configure usage limits, validate promotional vouchers, and track redemption activity.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Business Profile Selector -->
+            {% if current_user.is_superuser %}
+            <form method="GET" action="/coupons/manage" class="inline-block" id="business-filter-form">
+                <select name="business_id" onchange="this.form.submit()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:border-indigo-500">
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+
+            <button type="button" id="open-coupon-modal-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                <i class="fas fa-plus"></i>
+                <span>Generate Coupon Code</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Coupons</p>
+                <h3 class="text-2xl font-black text-gray-900 mt-1">{{ total_coupons }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold">
+                <i class="fas fa-ticket-alt"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Coupons</p>
+                <h3 class="text-2xl font-black text-emerald-600 mt-1">{{ active_coupons }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold">
+                <i class="fas fa-check-circle"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Redemptions</p>
+                <h3 class="text-2xl font-black text-blue-600 mt-1">{{ total_uses }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coupon Codes Table -->
+    <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-tags text-indigo-600"></i>
+                Promotional Coupon Vouchers
+            </h2>
+            <span class="text-xs text-gray-500 font-medium">Coupon vouchers linked to discount rules</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50/70 border-b border-gray-100 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                        <th class="py-3.5 px-4">Coupon Code</th>
+                        <th class="py-3.5 px-4">Linked Discount Rule</th>
+                        <th class="py-3.5 px-4">Usage Progress</th>
+                        <th class="py-3.5 px-4">Validity Period</th>
+                        <th class="py-3.5 px-4">Status</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                    {% if coupons %}
+                        {% for c in coupons %}
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="py-3.5 px-4 font-mono font-bold text-indigo-600 text-sm">
+                                {{ c.code }}
+                            </td>
+                            <td class="py-3.5 px-4 font-semibold text-gray-900">
+                                {% if c.discount_rule %}
+                                    <div>{{ c.discount_rule.name }}</div>
+                                    <span class="text-[10px] text-gray-500 font-medium">
+                                        {% if c.discount_rule.discount_type == 'percentage' %}{{ "%.1f"|format(c.discount_rule.discount_value) }}% Off
+                                        {% elif c.discount_rule.discount_type == 'fixed' %}${{ "%.2f"|format(c.discount_rule.discount_value) }} Off
+                                        {% else %}Buy {{ c.discount_rule.buy_x_qty or 1 }} Get {{ c.discount_rule.get_y_qty or 1 }}{% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-gray-400">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-[11px] font-semibold text-gray-600">
+                                        <span>{{ c.used_count }} / {% if c.max_uses %}{{ c.max_uses }}{% else %}∞{% endif %} uses</span>
+                                    </div>
+                                    {% if c.max_uses %}
+                                    <div class="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                        <div class="bg-indigo-600 h-1.5 rounded-full" style="width: {{ (c.used_count / c.max_uses * 100)|round }}%;"></div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-4 text-[11px] text-gray-600">
+                                <div>From: {{ c.valid_from.strftime('%Y-%m-%d') if c.valid_from else 'Immediate' }}</div>
+                                <div>To: {{ c.valid_to.strftime('%Y-%m-%d') if c.valid_to else 'No Expiry' }}</div>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                {% if c.is_active %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">Active</span>
+                                {% else %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-right space-x-1">
+                                <button type="button" onclick="deleteCoupon('{{ c.id }}')" class="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors" title="Delete Coupon">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-gray-400">
+                                <i class="fas fa-ticket-alt text-2xl mb-2"></i>
+                                <p>No promotional coupons created yet.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section: Coupon Code Validation Test Tool -->
+    <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-vial text-indigo-600"></i>
+                Coupon Validation Test Tool
+            </h2>
+            <span class="text-xs text-gray-500 font-medium">Simulate POST /pricing/coupons/validate endpoint</span>
+        </div>
+
+        <form id="coupon-val-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Coupon Code</label>
+                <input type="text" id="val-code" required placeholder="e.g. SAVE20" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold uppercase text-indigo-600 focus:outline-none focus:border-indigo-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Cart Amount ($)</label>
+                <input type="number" step="0.01" id="val-amount" value="150.00" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:outline-none focus:border-indigo-500" />
+            </div>
+
+            <div class="flex items-end">
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Test Coupon Validation</span>
+                </button>
+            </div>
+        </form>
+
+        <div id="val-results" class="hidden p-4 rounded-xl border space-y-2">
+            <div class="flex items-center gap-2 font-bold text-sm" id="val-status-header"></div>
+            <p id="val-message" class="text-xs font-medium"></p>
+            <div id="val-details" class="text-xs font-semibold pt-1"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Generate New Coupon -->
+<div id="coupon-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h3 class="text-base font-semibold text-gray-900">Generate Coupon Voucher</h3>
+            <button type="button" id="close-coupon-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="coupon-form" class="p-6 space-y-4">
+            <input type="hidden" id="coupon-business-id" value="{{ selected_business_id }}" />
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Coupon Code</label>
+                <div class="flex gap-2">
+                    <input type="text" id="coupon-code" required placeholder="e.g. WELCOME10" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold uppercase focus:outline-none focus:bg-white focus:border-indigo-500" />
+                    <button type="button" onclick="generateRandomCode()" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl shrink-0">Random</button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Linked Discount Rule</label>
+                <select id="coupon-discount-rule-id" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500">
+                    <option value="">-- Select Discount Rule --</option>
+                    {% for r in discount_rules %}
+                    <option value="{{ r.id }}">{{ r.name }} ({{ r.discount_type }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Max Uses (Optional)</label>
+                <input type="number" id="coupon-max-uses" placeholder="Leave empty for unlimited" min="1" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Valid From</label>
+                    <input type="date" id="coupon-valid-from" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Valid To</label>
+                    <input type="date" id="coupon-valid-to" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2">
+                <input type="checkbox" id="coupon-is-active" checked class="w-4 h-4 text-indigo-600 rounded border-gray-300" />
+                <label for="coupon-is-active" class="text-xs font-medium text-gray-700">Active Coupon</label>
+            </div>
+
+            <div class="pt-3 flex justify-end gap-2">
+                <button type="button" id="cancel-coupon-modal" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Save Coupon Code</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function generateRandomCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = 'PROMO';
+        for (let i = 0; i < 5; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('coupon-code').value = code;
+    }
+
+    // Modal Controls
+    const couponModal = document.getElementById('coupon-modal');
+    document.getElementById('open-coupon-modal-btn').addEventListener('click', () => couponModal.classList.remove('hidden'));
+    document.getElementById('close-coupon-modal').addEventListener('click', () => couponModal.classList.add('hidden'));
+    document.getElementById('cancel-coupon-modal').addEventListener('click', () => couponModal.classList.add('hidden'));
+
+    // Submit Coupon Form
+    document.getElementById('coupon-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const validFromVal = document.getElementById('coupon-valid-from').value;
+        const validToVal = document.getElementById('coupon-valid-to').value;
+
+        const payload = {
+            business_id: parseInt(document.getElementById('coupon-business-id').value),
+            code: document.getElementById('coupon-code').value.toUpperCase(),
+            discount_rule_id: document.getElementById('coupon-discount-rule-id').value,
+            max_uses: parseInt(document.getElementById('coupon-max-uses').value) || null,
+            valid_from: validFromVal ? new Date(validFromVal).toISOString() : null,
+            valid_to: validToVal ? new Date(validToVal).toISOString() : null,
+            is_active: document.getElementById('coupon-is-active').checked,
+        };
+
+        try {
+            const res = await fetch('/pricing/coupons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                couponModal.classList.add('hidden');
+                showSuccessToast('Coupon created!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const err = await res.json();
+                showErrorAlert('Failed to create coupon', err.detail || 'Error occurred');
+            }
+        } catch (err) {
+            showErrorAlert('Error', err.message);
+        }
+    });
+
+    // Delete Coupon
+    async function deleteCoupon(id) {
+        if (!confirm('Are you sure you want to delete this coupon?')) return;
+        const bizId = document.getElementById('coupon-business-id').value;
+        try {
+            const res = await fetch(`/pricing/coupons/${id}?business_id=${bizId}`, { method: 'DELETE' });
+            if (res.ok) {
+                showSuccessToast('Coupon deleted!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showErrorAlert('Failed to delete coupon');
+            }
+        } catch (err) {
+            showErrorAlert('Error', err.message);
+        }
+    }
+
+    // Coupon Validation Test Handler
+    document.getElementById('coupon-val-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const code = document.getElementById('val-code').value;
+        const cartAmount = parseFloat(document.getElementById('val-amount').value) || 0;
+        const bizId = parseInt(document.getElementById('coupon-business-id').value);
+
+        try {
+            const res = await fetch('/pricing/coupons/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ business_id: bizId, code: code, cart_amount: cartAmount })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const container = document.getElementById('val-results');
+                container.classList.remove('hidden');
+
+                const statusHeader = document.getElementById('val-status-header');
+                const message = document.getElementById('val-message');
+                const details = document.getElementById('val-details');
+
+                if (data.is_valid) {
+                    container.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 text-emerald-950 space-y-2';
+                    statusHeader.innerHTML = '<i class="fas fa-check-circle text-emerald-600"></i><span>COUPON VALID</span>';
+                    message.textContent = data.message;
+                    details.textContent = `Calculated Discount: -$${data.discount_amount.toFixed(2)}`;
+                } else {
+                    container.className = 'p-4 rounded-xl border border-rose-200 bg-rose-50/60 text-rose-950 space-y-2';
+                    statusHeader.innerHTML = '<i class="fas fa-times-circle text-rose-600"></i><span>COUPON INVALID</span>';
+                    message.textContent = data.message;
+                    details.textContent = '';
+                }
+            }
+        } catch (err) {
+            showErrorAlert('Validation error', err.message);
+        }
+    });
+</script>
+{% endblock %}

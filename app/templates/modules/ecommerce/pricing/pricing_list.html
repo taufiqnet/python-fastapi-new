@@ -1,0 +1,624 @@
+{% extends "base.html" %}
+
+{% block title %}Pricing & Discount Rules - SaaS Platform Admin{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <i class="fas fa-tags text-indigo-600"></i>
+                Pricing, Tax & Dynamic Discount Rules
+            </h1>
+            <p class="text-xs text-gray-500 mt-1 font-medium">Configure regional tax rules, currency exchange rates, dynamic discount campaigns, and calculate cart totals.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Business Profile Selector -->
+            {% if current_user.is_superuser %}
+            <form method="GET" action="/pricing/manage" class="inline-block" id="business-filter-form">
+                <select name="business_id" onchange="this.form.submit()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:border-indigo-500">
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+
+            <button type="button" id="open-discount-modal-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                <i class="fas fa-plus"></i>
+                <span>New Discount Rule</span>
+            </button>
+            <button type="button" id="open-tax-modal-btn" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5">
+                <i class="fas fa-percentage"></i>
+                <span>New Tax Rule</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Tax Rules</p>
+                <h3 class="text-2xl font-black text-gray-900 mt-1">{{ total_tax_rules }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Currency Rates</p>
+                <h3 class="text-2xl font-black text-gray-900 mt-1">{{ total_currency_rates }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg font-bold">
+                <i class="fas fa-coins"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Discount Rules</p>
+                <h3 class="text-2xl font-black text-gray-900 mt-1">{{ total_discount_rules }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold">
+                <i class="fas fa-percent"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-gray-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Active Campaigns</p>
+                <h3 class="text-2xl font-black text-emerald-600 mt-1">{{ active_discount_rules }}</h3>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg font-bold">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Dynamic Discount Rules Table -->
+    <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-bolt text-indigo-600"></i>
+                Dynamic Pricing & Dynamic Discount Rules
+            </h2>
+            <span class="text-xs text-gray-500 font-medium">Automatic order-level & item-level discounts</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50/70 border-b border-gray-100 text-[11px] font-bold text-gray-500 uppercase tracking-wider">
+                        <th class="py-3.5 px-4">Rule Name & Code</th>
+                        <th class="py-3.5 px-4">Discount Type</th>
+                        <th class="py-3.5 px-4">Discount Value</th>
+                        <th class="py-3.5 px-4">Buy X / Get Y</th>
+                        <th class="py-3.5 px-4">Min Order Amount</th>
+                        <th class="py-3.5 px-4">Status</th>
+                        <th class="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                    {% if discount_rules %}
+                        {% for r in discount_rules %}
+                        <tr class="hover:bg-gray-50/50 transition-colors">
+                            <td class="py-3.5 px-4 font-semibold text-gray-900">
+                                <div>{{ r.name }}</div>
+                                {% if r.code %}<span class="inline-block mt-0.5 px-2 py-0.5 bg-gray-100 text-gray-600 font-mono text-[10px] rounded">{{ r.code }}</span>{% endif %}
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide
+                                    {% if r.discount_type == 'percentage' %}bg-indigo-50 text-indigo-700 border border-indigo-100
+                                    {% elif r.discount_type == 'fixed' %}bg-emerald-50 text-emerald-700 border border-emerald-100
+                                    {% else %}bg-purple-50 text-purple-700 border border-purple-100{% endif %}">
+                                    {{ r.discount_type }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 font-bold text-gray-900">
+                                {% if r.discount_type == 'percentage' %}
+                                    {{ "%.1f"|format(r.discount_value) }}%
+                                {% else %}
+                                    ${{ "%.2f"|format(r.discount_value) }}
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-gray-600">
+                                {% if r.discount_type == 'buy_x_get_y' %}
+                                    Buy {{ r.buy_x_qty or 1 }} Get {{ r.get_y_qty or 1 }} Free
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 font-medium text-gray-700">${{ "%.2f"|format(r.min_order_amount) }}</td>
+                            <td class="py-3.5 px-4">
+                                {% if r.is_active %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">Active</span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-right space-x-1">
+                                <button type="button" onclick="deleteDiscountRule('{{ r.id }}')" class="p-1.5 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors" title="Delete Rule">
+                                    <i class="fas fa-trash-alt text-xs"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="py-8 text-center text-gray-400">
+                                <i class="fas fa-tags text-2xl mb-2"></i>
+                                <p>No discount rules defined yet.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section: Tax Rules & Currency Exchange Rates Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Regional Tax Rules -->
+        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fas fa-percentage text-emerald-600"></i>
+                    Regional Tax Rules
+                </h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/70 border-b border-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            <th class="py-3 px-4">Region</th>
+                            <th class="py-3 px-4">Tax %</th>
+                            <th class="py-3 px-4">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                        {% if tax_rules %}
+                            {% for t in tax_rules %}
+                            <tr>
+                                <td class="py-3 px-4 font-semibold text-gray-900">{{ t.region }}</td>
+                                <td class="py-3 px-4 font-bold text-emerald-600">{{ "%.2f"|format(t.tax_percentage) }}%</td>
+                                <td class="py-3 px-4">
+                                    {% if t.is_active %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700">Active</span>
+                                    {% else %}
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-100 text-gray-600">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="3" class="py-6 text-center text-gray-400">No regional tax rules defined.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Currency Exchange Rates -->
+        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-xs overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fas fa-exchange-alt text-blue-600"></i>
+                    Currency Rates
+                </h3>
+                <button type="button" id="open-currency-modal-btn" class="px-3 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold rounded-lg transition-colors">
+                    + Add Rate
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/70 border-b border-gray-100 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                            <th class="py-3 px-4">Currency Code</th>
+                            <th class="py-3 px-4">Exchange Rate</th>
+                            <th class="py-3 px-4">Effective At</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                        {% if currency_rates %}
+                            {% for c in currency_rates %}
+                            <tr>
+                                <td class="py-3 px-4 font-mono font-bold text-gray-900">{{ c.currency_code }}</td>
+                                <td class="py-3 px-4 font-semibold text-gray-800">{{ "%.4f"|format(c.rate) }}</td>
+                                <td class="py-3 px-4 text-gray-500 text-[11px]">{{ c.effective_at.strftime('%Y-%m-%d %H:%M') if c.effective_at else 'N/A' }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr><td colspan="3" class="py-6 text-center text-gray-400">No currency rates defined.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Section: Promotional Cart Calculation Preview Tool -->
+    <div class="bg-white p-6 rounded-2xl border border-gray-200/80 shadow-xs space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-calculator text-indigo-600"></i>
+                Promotional Cart Calculation Engine Preview
+            </h2>
+            <span class="text-xs text-gray-500 font-medium">Test discount rules, coupon codes, and regional taxes in real-time</span>
+        </div>
+
+        <form id="cart-calc-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Cart Unit Price ($)</label>
+                <input type="number" step="0.01" id="calc-price" value="100.00" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:outline-none focus:border-indigo-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Quantity</label>
+                <input type="number" id="calc-qty" value="2" required min="1" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:outline-none focus:border-indigo-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Coupon Code (Optional)</label>
+                <input type="text" id="calc-coupon" placeholder="e.g. SAVE20" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:outline-none focus:border-indigo-500" />
+            </div>
+
+            <div class="md:col-span-2">
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Tax Region (Optional)</label>
+                <input type="text" id="calc-region" placeholder="e.g. California" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 focus:outline-none focus:border-indigo-500" />
+            </div>
+
+            <div class="flex items-end">
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-play"></i>
+                    <span>Calculate Total</span>
+                </button>
+            </div>
+        </form>
+
+        <div id="calc-results" class="hidden p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl space-y-2">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div class="bg-white p-3 rounded-xl border border-gray-100">
+                    <p class="text-[10px] text-gray-500 uppercase font-semibold">Subtotal</p>
+                    <p id="res-subtotal" class="text-base font-bold text-gray-900">$0.00</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-gray-100">
+                    <p class="text-[10px] text-gray-500 uppercase font-semibold">Discount</p>
+                    <p id="res-discount" class="text-base font-bold text-emerald-600">-$0.00</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-gray-100">
+                    <p class="text-[10px] text-gray-500 uppercase font-semibold">Tax</p>
+                    <p id="res-tax" class="text-base font-bold text-gray-900">+$0.00</p>
+                </div>
+                <div class="bg-white p-3 rounded-xl border border-gray-100">
+                    <p class="text-[10px] text-gray-500 uppercase font-semibold">Net Total</p>
+                    <p id="res-total" class="text-lg font-black text-indigo-600">$0.00</p>
+                </div>
+            </div>
+            <div id="res-applied-rule" class="text-xs text-indigo-900 font-medium text-center pt-1"></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: New Discount Rule -->
+<div id="discount-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h3 class="text-base font-semibold text-gray-900">Create Dynamic Discount Rule</h3>
+            <button type="button" id="close-discount-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="discount-form" class="p-6 space-y-4">
+            <input type="hidden" id="discount-business-id" value="{{ selected_business_id }}" />
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Rule Name</label>
+                <input type="text" id="discount-name" required placeholder="e.g. Summer Sale 20% Off" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Discount Type</label>
+                    <select id="discount-type" onchange="toggleBuyXFields()" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500">
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed Amount ($)</option>
+                        <option value="buy_x_get_y">Buy X Get Y Free</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Discount Value</label>
+                    <input type="number" step="0.01" id="discount-value" value="10.00" required class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+                </div>
+            </div>
+
+            <div id="buy-x-fields" class="hidden grid grid-cols-2 gap-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 uppercase mb-1">Buy Quantity (X)</label>
+                    <input type="number" id="discount-buy-x" min="1" value="2" class="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm" />
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 uppercase mb-1">Get Quantity (Y)</label>
+                    <input type="number" id="discount-get-y" min="1" value="1" class="w-full px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Min Order Amount ($)</label>
+                    <input type="number" step="0.01" id="discount-min-order" value="0.00" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Code (Optional)</label>
+                    <input type="text" id="discount-code" placeholder="e.g. SUMMER20" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2">
+                <input type="checkbox" id="discount-is-active" checked class="w-4 h-4 text-indigo-600 rounded border-gray-300" />
+                <label for="discount-is-active" class="text-xs font-medium text-gray-700">Active Rule</label>
+            </div>
+
+            <div class="pt-3 flex justify-end gap-2">
+                <button type="button" id="cancel-discount-modal" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Save Discount Rule</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: New Tax Rule -->
+<div id="tax-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h3 class="text-base font-semibold text-gray-900">Create Tax Rule</h3>
+            <button type="button" id="close-tax-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="tax-form" class="p-6 space-y-4">
+            <input type="hidden" id="tax-business-id" value="{{ selected_business_id }}" />
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Region / State</label>
+                <input type="text" id="tax-region" required placeholder="e.g. California" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Tax Percentage (%)</label>
+                <input type="number" step="0.01" id="tax-percentage" required value="7.50" min="0" max="100" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+            </div>
+
+            <div class="flex items-center space-x-2 pt-2">
+                <input type="checkbox" id="tax-is-active" checked class="w-4 h-4 text-emerald-600 rounded border-gray-300" />
+                <label for="tax-is-active" class="text-xs font-medium text-gray-700">Active Tax Rule</label>
+            </div>
+
+            <div class="pt-3 flex justify-end gap-2">
+                <button type="button" id="cancel-tax-modal" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs">Save Tax Rule</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: New Currency Rate -->
+<div id="currency-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <h3 class="text-base font-semibold text-gray-900">Add Currency Rate</h3>
+            <button type="button" id="close-currency-modal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="currency-form" class="p-6 space-y-4">
+            <input type="hidden" id="currency-business-id" value="{{ selected_business_id }}" />
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Currency Code (3-letter ISO)</label>
+                <input type="text" id="currency-code" required maxlength="3" placeholder="e.g. EUR" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm uppercase focus:outline-none focus:bg-white focus:border-indigo-500" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Exchange Rate</label>
+                <input type="number" step="0.0001" id="currency-rate" required value="0.9200" min="0.0001" class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500" />
+            </div>
+
+            <div class="pt-3 flex justify-end gap-2">
+                <button type="button" id="cancel-currency-modal" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" class="px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs">Save Currency Rate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleBuyXFields() {
+        const type = document.getElementById('discount-type').value;
+        const buyXDiv = document.getElementById('buy-x-fields');
+        if (type === 'buy_x_get_y') {
+            buyXDiv.classList.remove('hidden');
+        } else {
+            buyXDiv.classList.add('hidden');
+        }
+    }
+
+    // Modal controls
+    const discountModal = document.getElementById('discount-modal');
+    document.getElementById('open-discount-modal-btn').addEventListener('click', () => discountModal.classList.remove('hidden'));
+    document.getElementById('close-discount-modal').addEventListener('click', () => discountModal.classList.add('hidden'));
+    document.getElementById('cancel-discount-modal').addEventListener('click', () => discountModal.classList.add('hidden'));
+
+    const taxModal = document.getElementById('tax-modal');
+    document.getElementById('open-tax-modal-btn').addEventListener('click', () => taxModal.classList.remove('hidden'));
+    document.getElementById('close-tax-modal').addEventListener('click', () => taxModal.classList.add('hidden'));
+    document.getElementById('cancel-tax-modal').addEventListener('click', () => taxModal.classList.add('hidden'));
+
+    const currencyModal = document.getElementById('currency-modal');
+    document.getElementById('open-currency-modal-btn').addEventListener('click', () => currencyModal.classList.remove('hidden'));
+    document.getElementById('close-currency-modal').addEventListener('click', () => currencyModal.classList.add('hidden'));
+    document.getElementById('cancel-currency-modal').addEventListener('click', () => currencyModal.classList.add('hidden'));
+
+    // Submit Discount Form
+    document.getElementById('discount-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            business_id: parseInt(document.getElementById('discount-business-id').value),
+            name: document.getElementById('discount-name').value,
+            code: document.getElementById('discount-code').value || null,
+            discount_type: document.getElementById('discount-type').value,
+            discount_value: parseFloat(document.getElementById('discount-value').value),
+            buy_x_qty: parseInt(document.getElementById('discount-buy-x').value) || null,
+            get_y_qty: parseInt(document.getElementById('discount-get-y').value) || null,
+            min_order_amount: parseFloat(document.getElementById('discount-min-order').value) || 0,
+            is_active: document.getElementById('discount-is-active').checked,
+        };
+
+        try {
+            const res = await fetch('/pricing/discount-rules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                discountModal.classList.add('hidden');
+                showSuccessToast('Discount rule created!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const err = await res.json();
+                showErrorAlert('Failed to create discount rule', err.detail || 'Error occurred');
+            }
+        } catch (err) {
+            showErrorAlert('Error', err.message);
+        }
+    });
+
+    // Submit Tax Form
+    document.getElementById('tax-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            business_id: parseInt(document.getElementById('tax-business-id').value),
+            region: document.getElementById('tax-region').value,
+            tax_percentage: parseFloat(document.getElementById('tax-percentage').value),
+            is_active: document.getElementById('tax-is-active').checked,
+        };
+
+        try {
+            const res = await fetch('/pricing/tax-rules', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                taxModal.classList.add('hidden');
+                showSuccessToast('Tax rule created!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const err = await res.json();
+                showErrorAlert('Failed to create tax rule', err.detail || 'Error occurred');
+            }
+        } catch (err) {
+            showErrorAlert('Error', err.message);
+        }
+    });
+
+    // Submit Currency Form
+    document.getElementById('currency-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+            business_id: parseInt(document.getElementById('currency-business-id').value),
+            currency_code: document.getElementById('currency-code').value.toUpperCase(),
+            rate: parseFloat(document.getElementById('currency-rate').value),
+        };
+
+        try {
+            const res = await fetch('/pricing/currency-rates', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                currencyModal.classList.add('hidden');
+                showSuccessToast('Currency rate created!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                const err = await res.json();
+                showErrorAlert('Failed to create currency rate', err.detail || 'Error occurred');
+            }
+        } catch (err) {
+            showErrorAlert('Error', err.message);
+        }
+    });
+
+    // Delete Discount Rule
+    async function deleteDiscountRule(id) {
+        if (!confirm('Are you sure you want to delete this discount rule?')) return;
+        const bizId = document.getElementById('discount-business-id').value;
+        try {
+            const res = await fetch(`/pricing/discount-rules/${id}?business_id=${bizId}`, { method: 'DELETE' });
+            if (res.ok) {
+                showSuccessToast('Rule deleted!');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showErrorAlert('Failed to delete rule');
+            }
+        } catch (err) {
+            showErrorAlert('Error', err.message);
+        }
+    }
+
+    // Promotional Cart Calculation Form Handler
+    document.getElementById('cart-calc-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const price = parseFloat(document.getElementById('calc-price').value) || 0;
+        const qty = parseInt(document.getElementById('calc-qty').value) || 1;
+        const coupon = document.getElementById('calc-coupon').value || null;
+        const region = document.getElementById('calc-region').value || null;
+        const bizId = parseInt(document.getElementById('discount-business-id').value);
+
+        const payload = {
+            business_id: bizId,
+            items: [{ unit_price: price, quantity: qty }],
+            coupon_code: coupon,
+            region: region
+        };
+
+        try {
+            const res = await fetch('/pricing/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('calc-results').classList.remove('hidden');
+                document.getElementById('res-subtotal').textContent = `$${data.subtotal.toFixed(2)}`;
+                document.getElementById('res-discount').textContent = `-$${data.discount_amount.toFixed(2)}`;
+                document.getElementById('res-tax').textContent = `+$${data.tax_amount.toFixed(2)}`;
+                document.getElementById('res-total').textContent = `$${data.total.toFixed(2)}`;
+
+                let infoStr = '';
+                if (data.applied_discount_rule) {
+                    infoStr += `Applied Rule: <strong>${data.applied_discount_rule.name}</strong> (${data.applied_discount_rule.discount_type})`;
+                } else {
+                    infoStr += 'No promotional discount applied.';
+                }
+                document.getElementById('res-applied-rule').innerHTML = infoStr;
+            }
+        } catch (err) {
+            showErrorAlert('Error calculating cart', err.message);
+        }
+    });
+</script>
+{% endblock %}
