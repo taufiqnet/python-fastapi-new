@@ -135,11 +135,9 @@
                         <select id="category_id" name="category_id" class="form-input" onchange="onCategoryChange(this.value)">
                             <option value="">— Select Category —</option>
                             {% for c in categories %}
-                            {% if c.parent_id is none %}
-                            <option value="{{ c.id }}" {% if product and product.category_id == c.id %}selected{% endif %}>
+                            <option value="{{ c.id }}" {% if selected_root_category_id and selected_root_category_id == c.id %}selected{% elif product and product.category_id == c.id %}selected{% endif %}>
                                 {{ c.name }}
                             </option>
-                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
@@ -148,6 +146,13 @@
                         <label class="form-label" for="subcategory_id">Subcategory</label>
                         <select id="subcategory_id" name="subcategory_id" class="form-input">
                             <option value="">— Select Subcategory —</option>
+                            {% if subcategories %}
+                            {% for sc in subcategories %}
+                            <option value="{{ sc.id }}" {% if selected_subcategory_id and selected_subcategory_id == sc.id %}selected{% endif %}>
+                                {{ sc.name }}
+                            </option>
+                            {% endfor %}
+                            {% endif %}
                         </select>
                     </div>
 

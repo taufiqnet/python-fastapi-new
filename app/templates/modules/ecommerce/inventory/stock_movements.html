@@ -2,6 +2,31 @@
 
 {% block title %}Stock Movements Log | SaaS Platform{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 768px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green  { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.rose   { background: #fff1f2; color: #e11d48; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
+    .toolbar-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
+    .toolbar-search input { width: 100%; padding: 7px 12px 7px 30px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+    .toolbar select { padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+
+    .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table.dataTable thead tr th { background: #f9fafb !important; border-bottom: 1px solid #e5e7eb !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; color: #6b7280 !important; padding: 10px 14px !important; }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
     <div>
@@ -10,46 +35,105 @@
     </div>
 
     <div class="flex items-center gap-2">
-        <a href="/inventory/manage" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+        <a href="/inventory/manage?business_id={{ selected_business_id }}" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
             <i class="fas fa-arrow-left text-[10px]"></i> Back to Inventory Stock
         </a>
     </div>
 </div>
 
-<div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+<!-- Stat cards -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-history"></i></div>
+        <div>
+            <div class="stat-label">Total Movements</div>
+            <div class="stat-value">{{ total_movements }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-arrow-trend-up"></i></div>
+        <div>
+            <div class="stat-label">Inbound (+)</div>
+            <div class="stat-value">{{ inbound_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon rose"><i class="fas fa-arrow-trend-down"></i></div>
+        <div>
+            <div class="stat-label">Outbound (-)</div>
+            <div class="stat-value">{{ outbound_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by SKU, product name, reason, reference...">
+    </div>
+
+    {% if current_user and not current_user.is_superuser %}
+    <select id="filterBusiness" disabled class="bg-gray-100 text-gray-500 cursor-not-allowed">
+        {% for b in businesses %}
+        {% if b.id == current_user.business_id %}
+        <option value="{{ b.id }}" selected>{{ b.name_en }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+    {% else %}
+    <select id="filterBusiness" onchange="window.location.href='/inventory/movements/manage?business_id='+this.value">
+        {% for b in businesses %}
+        <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+</div>
+
+<!-- Table Card -->
+<div class="table-card">
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table id="movementsTable" class="w-full text-left display">
             <thead>
-                <tr class="bg-gray-50/80 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                    <th class="py-3 px-5">Timestamp</th>
-                    <th class="py-3 px-5">Inventory Item ID</th>
-                    <th class="py-3 px-5">Reason</th>
-                    <th class="py-3 px-5">Quantity Delta</th>
-                    <th class="py-3 px-5">Reference ID / Order</th>
-                    <th class="py-3 px-5">Notes</th>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Product / Variant SKU</th>
+                    <th>Warehouse</th>
+                    <th>Reason</th>
+                    <th>Quantity Delta</th>
+                    <th>Reference ID / Order</th>
+                    <th>Notes</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 text-xs">
+            <tbody>
                 {% for m in movements %}
+                {% set inv_item = item_map.get(m.inventory_item_id) %}
+                {% set v_info = variants_map.get(inv_item.variant_id) if inv_item else None %}
+                {% set wh_name = warehouses_map.get(inv_item.warehouse_id) if inv_item else None %}
                 <tr class="hover:bg-gray-50/50 transition-colors">
-                    <td class="py-3.5 px-5 text-gray-600 whitespace-nowrap">
+                    <td class="text-gray-600 whitespace-nowrap">
                         {{ m.created_at.strftime('%Y-%m-%d %H:%M') if m.created_at else 'N/A' }}
                     </td>
-                    <td class="py-3.5 px-5 font-mono text-indigo-600 font-semibold">
-                        {{ m.inventory_item_id }}
+                    <td>
+                        <div class="font-bold text-gray-900">{{ v_info.title if v_info else 'Product Variant' }}</div>
+                        <div class="text-[11px] text-indigo-600 font-mono mt-0.5">SKU: {{ v_info.sku if v_info else (inv_item.variant_id if inv_item else m.inventory_item_id) }}</div>
                     </td>
-                    <td class="py-3.5 px-5">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize {% if m.reason.value == 'order' %}bg-purple-50 text-purple-700 border border-purple-200{% elif m.reason.value == 'restock' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
-                            {{ m.reason.value if m.reason.value is defined else m.reason }}
+                    <td class="text-xs text-gray-700 font-medium">
+                        {{ wh_name or '—' }}
+                    </td>
+                    <td>
+                        {% set r_val = m.reason.value if m.reason.value is defined else m.reason %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize {% if r_val in ['order', 'sale'] %}bg-purple-50 text-purple-700 border border-purple-200{% elif r_val in ['restock', 'receipt', 'opening_balance'] %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                            {{ r_val }}
                         </span>
                     </td>
-                    <td class="py-3.5 px-5 font-bold {% if m.delta < 0 %}text-rose-600{% else %}text-emerald-600{% endif %}">
+                    <td class="font-bold {% if m.delta < 0 %}text-rose-600{% else %}text-emerald-600{% endif %}">
                         {% if m.delta > 0 %}+{% endif %}{{ m.delta }}
                     </td>
-                    <td class="py-3.5 px-5 font-mono text-gray-700">
-                        {{ m.reference_id or '—' }}
+                    <td class="font-mono text-gray-700">
+                        {{ m.reference_id or m.source_id or '—' }}
                     </td>
-                    <td class="py-3.5 px-5 text-gray-600 italic">
+                    <td class="text-gray-600 italic">
                         {{ m.notes or '—' }}
                     </td>
                 </tr>
@@ -58,4 +142,21 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    var table = $('#movementsTable').DataTable({
+        pageLength: 15,
+        dom: 'rtip',
+        language: { emptyTable: "No stock movements recorded." }
+    });
+
+    $('#customSearch').on('input', function() { table.search(this.value).draw(); });
+});
+</script>
 {% endblock %}

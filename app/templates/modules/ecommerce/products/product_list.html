@@ -184,12 +184,17 @@
         <option value="archived">Archived</option>
     </select>
     {% if current_user and not current_user.is_superuser %}
-    <input type="hidden" id="filterBusinessHidden" value="{% if businesses %}{{ businesses[0].name_en }}{% endif %}">
-    {% else %}
-    <select id="filterBusiness">
-        <option value="">All Businesses</option>
+    <select id="filterBusiness" disabled class="bg-gray-100 text-gray-500 cursor-not-allowed">
         {% for b in businesses %}
-        <option value="{{ b.name_en }}">{{ b.name_en }}</option>
+        {% if b.id == current_user.business_id %}
+        <option value="{{ b.id }}" selected>{{ b.name_en }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+    {% else %}
+    <select id="filterBusiness" onchange="window.location.href='/products?business_id='+this.value">
+        {% for b in businesses %}
+        <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
         {% endfor %}
     </select>
     {% endif %}

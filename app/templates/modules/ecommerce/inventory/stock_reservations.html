@@ -2,6 +2,31 @@
 
 {% block title %}Stock Reservations | SaaS Platform{% endblock %}
 
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 768px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.amber  { background: #fefce8; color: #ca8a04; }
+    .stat-icon.green  { background: #f0fdf4; color: #16a34a; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
+    .toolbar-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
+    .toolbar-search input { width: 100%; padding: 7px 12px 7px 30px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+    .toolbar select { padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+
+    .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+    table.dataTable thead tr th { background: #f9fafb !important; border-bottom: 1px solid #e5e7eb !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; color: #6b7280 !important; padding: 10px 14px !important; }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
     <div>
@@ -10,47 +35,105 @@
     </div>
 
     <div class="flex items-center gap-2">
-        <a href="/inventory/manage" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+        <a href="/inventory/manage?business_id={{ selected_business_id }}" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
             <i class="fas fa-arrow-left text-[10px]"></i> Back to Inventory Stock
         </a>
     </div>
 </div>
 
-<div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+<!-- Stat cards -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-bookmark"></i></div>
+        <div>
+            <div class="stat-label">Total Reservations</div>
+            <div class="stat-value">{{ total_reservations }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><i class="fas fa-clock"></i></div>
+        <div>
+            <div class="stat-label">Active Reservations</div>
+            <div class="stat-value">{{ active_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-check-double"></i></div>
+        <div>
+            <div class="stat-label">Committed Reservations</div>
+            <div class="stat-value">{{ committed_count }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by SKU, product name, reservation ID, cart/order reference...">
+    </div>
+
+    {% if current_user and not current_user.is_superuser %}
+    <select id="filterBusiness" disabled class="bg-gray-100 text-gray-500 cursor-not-allowed">
+        {% for b in businesses %}
+        {% if b.id == current_user.business_id %}
+        <option value="{{ b.id }}" selected>{{ b.name_en }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+    {% else %}
+    <select id="filterBusiness" onchange="window.location.href='/inventory/reservations/manage?business_id='+this.value">
+        {% for b in businesses %}
+        <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+</div>
+
+<!-- Table Card -->
+<div class="table-card">
     <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
+        <table id="reservationsTable" class="w-full text-left display">
             <thead>
-                <tr class="bg-gray-50/80 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
-                    <th class="py-3 px-5">Reservation ID</th>
-                    <th class="py-3 px-5">Inventory Item ID</th>
-                    <th class="py-3 px-5">Qty Reserved</th>
-                    <th class="py-3 px-5">Status</th>
-                    <th class="py-3 px-5">Order / Cart Reference</th>
-                    <th class="py-3 px-5">Expires At</th>
+                <tr>
+                    <th>Reservation ID</th>
+                    <th>Product / Variant SKU</th>
+                    <th>Warehouse</th>
+                    <th>Qty Reserved</th>
+                    <th>Status</th>
+                    <th>Order / Cart Reference</th>
+                    <th>Expires At</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100 text-xs">
+            <tbody>
                 {% for r in reservations %}
+                {% set inv_item = item_map.get(r.inventory_item_id) %}
+                {% set v_info = variants_map.get(inv_item.variant_id) if inv_item else None %}
+                {% set wh_name = warehouses_map.get(inv_item.warehouse_id) if inv_item else None %}
                 <tr class="hover:bg-gray-50/50 transition-colors">
-                    <td class="py-3.5 px-5 font-mono text-xs text-gray-900 font-bold">
+                    <td class="font-mono text-xs text-gray-900 font-bold">
                         {{ r.id }}
                     </td>
-                    <td class="py-3.5 px-5 font-mono text-indigo-600 font-semibold">
-                        {{ r.inventory_item_id }}
+                    <td>
+                        <div class="font-bold text-gray-900">{{ v_info.title if v_info else 'Product Variant' }}</div>
+                        <div class="text-[11px] text-indigo-600 font-mono mt-0.5">SKU: {{ v_info.sku if v_info else (inv_item.variant_id if inv_item else r.inventory_item_id) }}</div>
                     </td>
-                    <td class="py-3.5 px-5 font-bold text-amber-600">
+                    <td class="text-xs text-gray-700 font-medium">
+                        {{ wh_name or '—' }}
+                    </td>
+                    <td class="font-bold text-amber-600">
                         {{ r.quantity }}
                     </td>
-                    <td class="py-3.5 px-5">
+                    <td>
                         {% set r_stat = r.status.value if r.status.value is defined else r.status %}
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize {% if r_stat == 'committed' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif r_stat == 'active' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-gray-50 text-gray-600 border border-gray-200{% endif %}">
                             {{ r_stat }}
                         </span>
                     </td>
-                    <td class="py-3.5 px-5 font-mono text-gray-700">
+                    <td class="font-mono text-gray-700">
                         {% if r.order_id %}Order: {{ r.order_id }}{% elif r.cart_id %}Cart: {{ r.cart_id }}{% else %}—{% endif %}
                     </td>
-                    <td class="py-3.5 px-5 text-gray-600">
+                    <td class="text-gray-600">
                         {{ r.expires_at.strftime('%Y-%m-%d %H:%M') if r.expires_at else 'N/A' }}
                     </td>
                 </tr>
@@ -59,4 +142,21 @@
         </table>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    var table = $('#reservationsTable').DataTable({
+        pageLength: 15,
+        dom: 'rtip',
+        language: { emptyTable: "No stock reservations found." }
+    });
+
+    $('#customSearch').on('input', function() { table.search(this.value).draw(); });
+});
+</script>
 {% endblock %}

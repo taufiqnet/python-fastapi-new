@@ -36,22 +36,25 @@ def product_list_page(
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
-    products = product_service.get_products(
-        db,
-        skip=skip,
-        limit=limit,
-        business_id=resolved_business_id,
-        category_id=category_id,
-        brand_id=brand_id,
-    )
     all_businesses = business_service.list_businesses(db, skip=0, limit=500)
     if current_user and not current_user.is_superuser and current_user.business_id:
         businesses = [b for b in all_businesses if b.id == current_user.business_id]
     else:
         businesses = all_businesses
 
-    categories = category_service.get_categories(db, skip=0, limit=500, business_id=resolved_business_id)
-    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=resolved_business_id)
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    products = product_service.get_products(
+        db,
+        skip=skip,
+        limit=limit,
+        business_id=selected_business_id,
+        category_id=category_id,
+        brand_id=brand_id,
+    )
+
+    categories = category_service.get_categories(db, skip=0, limit=500, business_id=selected_business_id)
+    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=selected_business_id)
 
     biz_map = {b.id: b.name_en for b in all_businesses}
     cat_map = {c.id: c.name for c in categories}
@@ -74,6 +77,7 @@ def product_list_page(
         context={
             "products": products,
             "businesses": businesses,
+            "selected_business_id": selected_business_id,
             "categories": categories,
             "brands": brands,
             "biz_map": biz_map,
@@ -92,6 +96,7 @@ def product_list_page(
 @router.get("/products/create", response_class=HTMLResponse)
 def product_create_page(
     request: Request,
+    business_id: int | None = None,
     current_user: User | None = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
@@ -101,10 +106,13 @@ def product_create_page(
     else:
         businesses = all_businesses
 
-    resolved_business_id = resolve_business_id(current_user, None)
-    categories = category_service.get_categories(db, skip=0, limit=500, business_id=resolved_business_id)
-    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=resolved_business_id)
-    models = brand_service.get_all_models(db, skip=0, limit=500, business_id=resolved_business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    categories = category_service.get_categories(db, skip=0, limit=500, business_id=selected_business_id)
+    root_categories = [c for c in categories if c.parent_id is None]
+    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=selected_business_id)
+    models = brand_service.get_all_models(db, skip=0, limit=500, business_id=selected_business_id)
 
     return templates.TemplateResponse(
         request=request,
@@ -113,7 +121,8 @@ def product_create_page(
             "product": None,
             "is_edit": False,
             "businesses": businesses,
-            "categories": categories,
+            "selected_business_id": selected_business_id,
+            "categories": root_categories,
             "brands": brands,
             "models": models,
             "statuses": [s.value for s in Status],
@@ -180,9 +189,28 @@ def product_edit_page(
         businesses = all_businesses
 
     resolved_business_id = resolve_business_id(current_user, product.business_id)
-    categories = category_service.get_categories(db, skip=0, limit=500, business_id=resolved_business_id)
-    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=resolved_business_id)
-    models = brand_service.get_all_models(db, skip=0, limit=500, business_id=resolved_business_id)
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    categories = category_service.get_categories(db, skip=0, limit=500, business_id=selected_business_id)
+    root_categories = [c for c in categories if c.parent_id is None]
+    brands = brand_service.get_brands(db, skip=0, limit=500, business_id=selected_business_id)
+    models = brand_service.get_all_models(db, skip=0, limit=500, business_id=selected_business_id)
+
+    selected_root_category_id = None
+    selected_subcategory_id = None
+    subcategories = []
+
+    if product.category_id:
+        cat = category_service.get_category(db, product.category_id)
+        if cat:
+            if cat.parent_id:
+                selected_root_category_id = cat.parent_id
+                selected_subcategory_id = cat.id
+                subcategories = [c for c in categories if c.parent_id == cat.parent_id]
+            else:
+                selected_root_category_id = cat.id
+                selected_subcategory_id = None
+                subcategories = [c for c in categories if c.parent_id == cat.id]
 
     return templates.TemplateResponse(
         request=request,
@@ -191,7 +219,11 @@ def product_edit_page(
             "product": product,
             "is_edit": True,
             "businesses": businesses,
-            "categories": categories,
+            "selected_business_id": selected_business_id,
+            "categories": root_categories,
+            "subcategories": subcategories,
+            "selected_root_category_id": selected_root_category_id,
+            "selected_subcategory_id": selected_subcategory_id,
             "brands": brands,
             "models": models,
             "statuses": [s.value for s in Status],

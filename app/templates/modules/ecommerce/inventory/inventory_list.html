@@ -49,10 +49,13 @@
         <a href="/inventory/warehouses/manage?business_id={{ selected_business_id }}" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
             <i class="fas fa-warehouse text-indigo-600"></i> Warehouses
         </a>
-        <a href="/inventory/movements/manage" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+        <a href="/inventory/movements/manage?business_id={{ selected_business_id }}" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
             <i class="fas fa-history text-indigo-600"></i> Stock Movements
         </a>
-        <button type="button" onclick="openItemModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+        <a href="/inventory/reservations/manage?business_id={{ selected_business_id }}" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+            <i class="fas fa-bookmark text-indigo-600"></i> Reservations
+        </a>
+        <button type="button" onclick="openCreateItemModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
             <i class="fas fa-plus"></i> Add Inventory Item
         </button>
     </div>
@@ -166,7 +169,15 @@
                             <button type="button" onclick="openAdjustmentModal('{{ item.id }}', '{{ v_info.sku if v_info else item.variant_id }}')" class="action-btn adjust" title="Adjust Stock">
                                 <i class="fas fa-sliders-h"></i>
                             </button>
-                            <button type="button" onclick='openItemModal({id: "{{ item.id }}", warehouse_id: "{{ item.warehouse_id }}", quantity_on_hand: {{ item.quantity_on_hand }}, reorder_point: {{ item.reorder_point or "null" }}, aisle: "{{ item.aisle or "" }}", bin_code: "{{ item.bin_code or "" }}"})' class="action-btn edit" title="Edit Item">
+                            <button type="button"
+                                    data-id="{{ item.id }}"
+                                    data-warehouse-id="{{ item.warehouse_id }}"
+                                    data-qoh="{{ item.quantity_on_hand }}"
+                                    data-reorder-point="{{ item.reorder_point if item.reorder_point is not none else '' }}"
+                                    data-aisle="{{ item.aisle or '' }}"
+                                    data-bin-code="{{ item.bin_code or '' }}"
+                                    onclick="openEditItemModal(this)"
+                                    class="action-btn edit" title="Edit Item">
                                 <i class="fas fa-edit"></i>
                             </button>
                         </div>
@@ -307,23 +318,24 @@ $(document).ready(function() {
     $('#filterWarehouse').on('change', function() { table.column(1).search(this.value).draw(); });
 });
 
-function openItemModal(item = null) {
+function openCreateItemModal() {
     document.getElementById('item-modal').classList.remove('hidden');
-    if (item) {
-        document.getElementById('item-modal-title').innerText = 'Edit Inventory Item';
-        document.getElementById('edit_item_id').value = item.id;
-        document.getElementById('variant-select-group').classList.add('hidden');
-        document.getElementById('item_warehouse_id').value = item.warehouse_id;
-        document.getElementById('item_qoh').value = item.quantity_on_hand;
-        document.getElementById('item_reorder_point').value = item.reorder_point || '';
-        document.getElementById('item_aisle').value = item.aisle || '';
-        document.getElementById('item_bin_code').value = item.bin_code || '';
-    } else {
-        document.getElementById('item-modal-title').innerText = 'Add Inventory Item';
-        document.getElementById('edit_item_id').value = '';
-        document.getElementById('variant-select-group').classList.remove('hidden');
-        document.getElementById('item-form').reset();
-    }
+    document.getElementById('item-modal-title').innerText = 'Add Inventory Item';
+    document.getElementById('edit_item_id').value = '';
+    document.getElementById('variant-select-group').classList.remove('hidden');
+    document.getElementById('item-form').reset();
+}
+
+function openEditItemModal(btn) {
+    document.getElementById('item-modal').classList.remove('hidden');
+    document.getElementById('item-modal-title').innerText = 'Edit Inventory Item';
+    document.getElementById('edit_item_id').value = btn.getAttribute('data-id');
+    document.getElementById('variant-select-group').classList.add('hidden');
+    document.getElementById('item_warehouse_id').value = btn.getAttribute('data-warehouse-id');
+    document.getElementById('item_qoh').value = btn.getAttribute('data-qoh');
+    document.getElementById('item_reorder_point').value = btn.getAttribute('data-reorder-point') || '';
+    document.getElementById('item_aisle').value = btn.getAttribute('data-aisle') || '';
+    document.getElementById('item_bin_code').value = btn.getAttribute('data-bin-code') || '';
 }
 
 function closeItemModal() {
