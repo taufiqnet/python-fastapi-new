@@ -3,6 +3,8 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
 from app.database import get_db
 from app.modules.ecommerce.pricing.schemas import (
     CurrencyRateCreate,
@@ -27,7 +29,11 @@ service = PricingService()
     response_model=PriceHistoryOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_price_history(data: PriceHistoryCreate, db: Session = Depends(get_db)):
+def create_price_history(
+    data: PriceHistoryCreate,
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
+    db: Session = Depends(get_db),
+):
     return service.create_price_history(db, data)
 
 
@@ -35,6 +41,7 @@ def create_price_history(data: PriceHistoryCreate, db: Session = Depends(get_db)
 def get_price_histories(
     variant_id: uuid.UUID = Query(...),
     business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_price_histories(
@@ -48,12 +55,20 @@ def get_price_histories(
     response_model=TaxRuleOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_tax_rule(data: TaxRuleCreate, db: Session = Depends(get_db)):
+def create_tax_rule(
+    data: TaxRuleCreate,
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
+    db: Session = Depends(get_db),
+):
     return service.create_tax_rule(db, data)
 
 
 @router.get("/tax-rules", response_model=list[TaxRuleOut])
-def get_tax_rules(business_id: int = Query(1), db: Session = Depends(get_db)):
+def get_tax_rules(
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
     return service.get_tax_rules(db, business_id=business_id)
 
 
@@ -62,6 +77,7 @@ def update_tax_rule(
     rule_id: uuid.UUID,
     data: TaxRuleUpdate,
     business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "update")),
     db: Session = Depends(get_db),
 ):
     return service.update_tax_rule(
@@ -70,7 +86,11 @@ def update_tax_rule(
 
 
 @router.post("/calculate-tax", response_model=TaxCalculationResponse)
-def calculate_tax(req: TaxCalculationRequest, db: Session = Depends(get_db)):
+def calculate_tax(
+    req: TaxCalculationRequest,
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
     return service.calculate_tax(db, req)
 
 
@@ -80,10 +100,18 @@ def calculate_tax(req: TaxCalculationRequest, db: Session = Depends(get_db)):
     response_model=CurrencyRateOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_currency_rate(data: CurrencyRateCreate, db: Session = Depends(get_db)):
+def create_currency_rate(
+    data: CurrencyRateCreate,
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
+    db: Session = Depends(get_db),
+):
     return service.create_currency_rate(db, data)
 
 
 @router.get("/currency-rates", response_model=list[CurrencyRateOut])
-def get_currency_rates(business_id: int = Query(1), db: Session = Depends(get_db)):
+def get_currency_rates(
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
     return service.get_currency_rates(db, business_id=business_id)

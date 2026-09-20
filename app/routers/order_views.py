@@ -5,6 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.ecommerce.customer.service import CustomerService
@@ -29,10 +32,15 @@ def order_list_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    selected_business_id = business_id or (businesses[0].id if businesses else 1)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
 
     orders = order_service.get_orders(
         db, skip=skip, limit=limit, business_id=selected_business_id
@@ -89,10 +97,15 @@ def order_list_page(
 def order_create_page(
     request: Request,
     business_id: int | None = None,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "create")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    selected_business_id = business_id or (businesses[0].id if businesses else 1)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
 
     products = product_service.get_products(
         db, business_id=selected_business_id, skip=0, limit=500
@@ -155,9 +168,12 @@ def order_detail_page(
     order_id: uuid.UUID,
     request: Request,
     business_id: int = 1,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
     db: Session = Depends(get_db),
 ):
-    order = order_service.get_order(db, order_id=order_id, business_id=business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    order = order_service.get_order(db, order_id=order_id, business_id=resolved_business_id or business_id)
+    verify_record_ownership(order, current_user)
     business = (
         business_service.get_business(db, order.business_id)
         if order.business_id
@@ -191,11 +207,16 @@ def order_edit_page(
     order_id: uuid.UUID,
     request: Request,
     business_id: int = 1,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "update")),
     db: Session = Depends(get_db),
 ):
-    order = order_service.get_order(db, order_id=order_id, business_id=business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    order = order_service.get_order(db, order_id=order_id, business_id=resolved_business_id or business_id)
+    verify_record_ownership(order, current_user)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
-    selected_business_id = order.business_id or business_id
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+    selected_business_id = order.business_id or resolved_business_id or business_id
 
     from app.modules.ecommerce.products.models import ProductVariant
 

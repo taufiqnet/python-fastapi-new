@@ -3,6 +3,8 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
 from app.database import get_db
 from app.modules.ecommerce.payments.schemas import (
     PaymentIntentCreate,
@@ -19,7 +21,11 @@ service = PaymentService()
 
 
 @router.post("", response_model=PaymentOut, status_code=status.HTTP_201_CREATED)
-def create_payment_intent(data: PaymentIntentCreate, db: Session = Depends(get_db)):
+def create_payment_intent(
+    data: PaymentIntentCreate,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "create")),
+    db: Session = Depends(get_db),
+):
     return service.create_payment_intent(db, data)
 
 
@@ -27,6 +33,7 @@ def create_payment_intent(data: PaymentIntentCreate, db: Session = Depends(get_d
 def get_payment(
     payment_id: uuid.UUID,
     business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_payment(db, payment_id=payment_id, business_id=business_id)
@@ -36,6 +43,7 @@ def get_payment(
 def capture_payment(
     payment_id: uuid.UUID,
     business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "update")),
     db: Session = Depends(get_db),
 ):
     return service.capture_payment(db, payment_id=payment_id, business_id=business_id)
@@ -46,6 +54,7 @@ def refund_payment(
     payment_id: uuid.UUID,
     req: RefundRequest,
     business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "update")),
     db: Session = Depends(get_db),
 ):
     return service.refund_payment(
@@ -56,7 +65,11 @@ def refund_payment(
 @router.post(
     "/methods", response_model=PaymentMethodOut, status_code=status.HTTP_201_CREATED
 )
-def create_payment_method(data: PaymentMethodCreate, db: Session = Depends(get_db)):
+def create_payment_method(
+    data: PaymentMethodCreate,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "create")),
+    db: Session = Depends(get_db),
+):
     return service.create_payment_method(db, data)
 
 
@@ -64,6 +77,7 @@ def create_payment_method(data: PaymentMethodCreate, db: Session = Depends(get_d
 def get_payment_methods(
     user_id: uuid.UUID = Query(...),
     business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_payment_methods(db, user_id=user_id, business_id=business_id)

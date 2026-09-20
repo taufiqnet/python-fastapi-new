@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.database import get_db
@@ -26,7 +26,7 @@ service = BrandService()
 @router.get("/template-excel")
 def download_brands_excel_template(
     business_id: int | None = Query(None),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -43,7 +43,7 @@ def download_brands_excel_template(
 async def import_brands_excel(
     business_id: int | None = Query(None),
     file: UploadFile = File(...),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "create")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -59,7 +59,7 @@ def get_brands(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     is_active: bool | None = Query(None),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -75,7 +75,7 @@ def get_brands(
 @router.get("/dropdown", response_model=list[BrandDropdownItem])
 def get_brand_dropdown(
     business_id: int | None = Query(None),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -85,7 +85,7 @@ def get_brand_dropdown(
 @router.get("/{brand_id}", response_model=BrandOut)
 def get_brand(
     brand_id: uuid.UUID,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "view")),
     db: Session = Depends(get_db),
 ):
     brand = service.get_brand(db, brand_id)
@@ -96,7 +96,7 @@ def get_brand(
 @router.post("/", response_model=BrandOut, status_code=status.HTTP_201_CREATED)
 def create_brand(
     data: BrandCreate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "create")),
     db: Session = Depends(get_db),
 ):
     data.business_id = resolve_business_id(current_user, data.business_id)
@@ -107,7 +107,7 @@ def create_brand(
 def update_brand(
     brand_id: uuid.UUID,
     data: BrandUpdate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "update")),
     db: Session = Depends(get_db),
 ):
     brand = service.get_brand(db, brand_id)
@@ -120,7 +120,7 @@ def update_brand(
 @router.delete("/{brand_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_brand(
     brand_id: uuid.UUID,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "delete")),
     db: Session = Depends(get_db),
 ):
     brand = service.get_brand(db, brand_id)
@@ -133,7 +133,7 @@ def delete_brand(
 @router.get("/models/template-excel")
 def download_models_excel_template(
     business_id: int | None = Query(None),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "models", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -152,7 +152,7 @@ def download_models_excel_template(
 async def import_models_excel(
     business_id: int | None = Query(None),
     file: UploadFile = File(...),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "models", "create")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -166,7 +166,7 @@ async def import_models_excel(
 def get_brand_models(
     brand_id: uuid.UUID,
     is_active: bool | None = Query(None),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "models", "view")),
     db: Session = Depends(get_db),
 ):
     brand = service.get_brand(db, brand_id)
@@ -182,7 +182,7 @@ def get_brand_models(
 def create_model(
     brand_id: uuid.UUID,
     data: ProductModelCreate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "models", "create")),
     db: Session = Depends(get_db),
 ):
     brand = service.get_brand(db, brand_id)
@@ -194,7 +194,7 @@ def create_model(
 def update_model(
     model_id: uuid.UUID,
     data: ProductModelUpdate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "models", "update")),
     db: Session = Depends(get_db),
 ):
     model = service.repository.get_model_by_id(db, model_id)
@@ -210,7 +210,7 @@ def update_model(
 @router.delete("/models/{model_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_model(
     model_id: uuid.UUID,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "models", "delete")),
     db: Session = Depends(get_db),
 ):
     model = service.repository.get_model_by_id(db, model_id)

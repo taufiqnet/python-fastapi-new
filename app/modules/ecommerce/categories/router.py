@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.database import get_db
@@ -22,7 +22,7 @@ service = CategoryService()
 @router.get("/template-excel")
 def download_categories_excel_template(
     business_id: int = Query(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("ecommerce", "categories", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -44,7 +44,7 @@ def download_categories_excel_template(
 async def import_categories_excel(
     business_id: int = Query(...),
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("ecommerce", "categories", "create")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -66,7 +66,7 @@ def get_categories(
     business_id: int | None = Query(None),
     parent_id: uuid.UUID | None = Query(None),
     is_root: bool | None = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("ecommerce", "categories", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -83,7 +83,7 @@ def get_categories(
 @router.get("/tree", response_model=list[CategoryTreeNode])
 def get_category_tree(
     business_id: int | None = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("ecommerce", "categories", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -93,7 +93,7 @@ def get_category_tree(
 @router.get("/{category_id}", response_model=CategoryOut)
 def get_category(
     category_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("ecommerce", "categories", "view")),
     db: Session = Depends(get_db),
 ):
     category = service.get_category(db, category_id)
@@ -104,7 +104,7 @@ def get_category(
 @router.post("/", response_model=CategoryOut, status_code=status.HTTP_201_CREATED)
 def create_category(
     category_data: CategoryCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("ecommerce", "categories", "create")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, category_data.business_id)
@@ -116,7 +116,7 @@ def create_category(
 def update_category(
     category_id: uuid.UUID,
     category_data: CategoryUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("ecommerce", "categories", "update")),
     db: Session = Depends(get_db),
 ):
     category = service.get_category(db, category_id)
@@ -129,7 +129,7 @@ def update_category(
 @router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_category(
     category_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("ecommerce", "categories", "delete")),
     db: Session = Depends(get_db),
 ):
     category = service.get_category(db, category_id)

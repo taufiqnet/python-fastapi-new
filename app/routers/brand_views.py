@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.core.tenancy.service import BusinessService
@@ -24,7 +24,7 @@ def brand_list_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -62,7 +62,7 @@ def brand_list_page(
 @router.get("/brands/create", response_class=HTMLResponse)
 def brand_create_page(
     request: Request,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "create")),
     db: Session = Depends(get_db),
 ):
     all_businesses = business_service.list_businesses(db, skip=0, limit=500)
@@ -88,7 +88,7 @@ def brand_create_page(
 def brand_detail_page(
     brand_id: uuid.UUID,
     request: Request,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "view")),
     db: Session = Depends(get_db),
 ):
     brand = brand_service.get_brand(db, brand_id)
@@ -113,7 +113,7 @@ def brand_detail_page(
 def brand_edit_page(
     brand_id: uuid.UUID,
     request: Request,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "brands", "update")),
     db: Session = Depends(get_db),
 ):
     brand = brand_service.get_brand(db, brand_id)

@@ -3,6 +3,8 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
 from app.database import get_db
 from datetime import datetime
 
@@ -56,6 +58,7 @@ def get_uoms(
     business_id: int = Query(...),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_uoms(db, business_id=business_id, skip=skip, limit=limit)
@@ -65,6 +68,7 @@ def get_uoms(
 def get_uom(
     uom_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_uom(db, uom_id=uom_id, business_id=business_id)
@@ -75,7 +79,11 @@ def get_uom(
     response_model=UoMOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_uom(uom_data: UoMCreate, db: Session = Depends(get_db)):
+def create_uom(
+    uom_data: UoMCreate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
+    db: Session = Depends(get_db),
+):
     return service.create_uom(db, uom_data)
 
 
@@ -84,6 +92,7 @@ def update_uom(
     uom_id: uuid.UUID,
     uom_data: UoMUpdate,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.update_uom(
@@ -95,6 +104,7 @@ def update_uom(
 def delete_uom(
     uom_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "delete")),
     db: Session = Depends(get_db),
 ):
     service.delete_uom(db, uom_id=uom_id, business_id=business_id)
@@ -107,6 +117,7 @@ def get_conversions(
     item_id: uuid.UUID | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_conversions(
@@ -120,7 +131,9 @@ def get_conversions(
     status_code=status.HTTP_201_CREATED,
 )
 def create_conversion(
-    conversion_data: UoMConversionCreate, db: Session = Depends(get_db)
+    conversion_data: UoMConversionCreate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
+    db: Session = Depends(get_db),
 ):
     return service.create_conversion(db, conversion_data)
 
@@ -130,6 +143,7 @@ def update_conversion(
     conversion_id: uuid.UUID,
     conversion_data: UoMConversionUpdate,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.update_conversion(
@@ -143,6 +157,7 @@ def update_conversion(
 def delete_conversion(
     conversion_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "delete")),
     db: Session = Depends(get_db),
 ):
     service.delete_conversion(db, conversion_id=conversion_id, business_id=business_id)
@@ -151,7 +166,9 @@ def delete_conversion(
 
 @router.post("/uom/convert", response_model=UoMConvertResponse)
 def convert_quantity(
-    convert_req: UoMConvertRequest, db: Session = Depends(get_db)
+    convert_req: UoMConvertRequest,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
+    db: Session = Depends(get_db),
 ):
     return service.convert_quantity(db, convert_req)
 
@@ -164,6 +181,7 @@ def get_items(
     limit: int = Query(100, ge=1, le=500),
     category_id: uuid.UUID | None = Query(None),
     is_active: bool | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_items(
@@ -180,6 +198,7 @@ def get_items(
 def get_item(
     item_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_item(db, item_id, business_id=business_id)
@@ -190,7 +209,11 @@ def get_item(
     response_model=ItemOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_item(item_data: ItemCreate, db: Session = Depends(get_db)):
+def create_item(
+    item_data: ItemCreate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
+    db: Session = Depends(get_db),
+):
     return service.create_item(db, item_data)
 
 
@@ -199,6 +222,7 @@ def update_item(
     item_id: uuid.UUID,
     item_data: ItemUpdate,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.update_item(
@@ -210,6 +234,7 @@ def update_item(
 def delete_item(
     item_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "delete")),
     db: Session = Depends(get_db),
 ):
     service.delete_item(db, item_id=item_id, business_id=business_id)
@@ -223,6 +248,7 @@ def get_warehouses(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     is_active: bool | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_warehouses(
@@ -231,7 +257,11 @@ def get_warehouses(
 
 
 @router.get("/warehouses/{warehouse_id}", response_model=WarehouseOut)
-def get_warehouse(warehouse_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_warehouse(
+    warehouse_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
+    db: Session = Depends(get_db),
+):
     return service.get_warehouse(db, warehouse_id)
 
 
@@ -240,7 +270,11 @@ def get_warehouse(warehouse_id: uuid.UUID, db: Session = Depends(get_db)):
     response_model=WarehouseOut,
     status_code=status.HTTP_201_CREATED,
 )
-def create_warehouse(warehouse_data: WarehouseCreate, db: Session = Depends(get_db)):
+def create_warehouse(
+    warehouse_data: WarehouseCreate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
+    db: Session = Depends(get_db),
+):
     return service.create_warehouse(db, warehouse_data)
 
 
@@ -248,13 +282,18 @@ def create_warehouse(warehouse_data: WarehouseCreate, db: Session = Depends(get_
 def update_warehouse(
     warehouse_id: uuid.UUID,
     warehouse_data: WarehouseUpdate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.update_warehouse(db, warehouse_id, warehouse_data)
 
 
 @router.delete("/warehouses/{warehouse_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_warehouse(warehouse_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_warehouse(
+    warehouse_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "delete")),
+    db: Session = Depends(get_db),
+):
     service.delete_warehouse(db, warehouse_id)
     return None
 
@@ -264,6 +303,7 @@ def delete_warehouse(warehouse_id: uuid.UUID, db: Session = Depends(get_db)):
 def get_reorder_alerts(
     business_id: int = Query(...),
     warehouse_id: uuid.UUID | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_reorder_alerts(db, business_id=business_id, warehouse_id=warehouse_id)
@@ -276,6 +316,7 @@ def get_counts(
     status_filter: CountStatus | None = Query(None, alias="status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_counts(
@@ -292,6 +333,7 @@ def get_counts(
 def get_count(
     count_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_count(db, count_id=count_id, business_id=business_id)
@@ -303,7 +345,9 @@ def get_count(
     status_code=status.HTTP_201_CREATED,
 )
 def create_count(
-    count_data: StockCountCreate, db: Session = Depends(get_db)
+    count_data: StockCountCreate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
+    db: Session = Depends(get_db),
 ):
     return service.create_count(db, count_data)
 
@@ -312,6 +356,7 @@ def create_count(
 def start_count(
     count_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.start_count(db, count_id=count_id, business_id=business_id)
@@ -322,6 +367,7 @@ def record_count(
     count_id: uuid.UUID,
     req: StockCountRecordRequest,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.record_count(db, count_id=count_id, req=req, business_id=business_id)
@@ -331,6 +377,7 @@ def record_count(
 def complete_count(
     count_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.complete_count(db, count_id=count_id, business_id=business_id)
@@ -343,6 +390,7 @@ def get_transfers(
     status_filter: TransferStatus | None = Query(None, alias="status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_transfers(
@@ -354,6 +402,7 @@ def get_transfers(
 def get_transfer(
     transfer_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_transfer(db, transfer_id=transfer_id, business_id=business_id)
@@ -365,7 +414,9 @@ def get_transfer(
     status_code=status.HTTP_201_CREATED,
 )
 def create_transfer(
-    transfer_data: StockTransferCreate, db: Session = Depends(get_db)
+    transfer_data: StockTransferCreate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
+    db: Session = Depends(get_db),
 ):
     return service.create_transfer(db, transfer_data)
 
@@ -374,6 +425,7 @@ def create_transfer(
 def ship_transfer(
     transfer_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.ship_transfer(db, transfer_id=transfer_id, business_id=business_id)
@@ -384,6 +436,7 @@ def receive_transfer(
     transfer_id: uuid.UUID,
     req: StockTransferReceiveRequest | None = None,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.receive_transfer(
@@ -395,6 +448,7 @@ def receive_transfer(
 def cancel_transfer(
     transfer_id: uuid.UUID,
     business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.cancel_transfer(db, transfer_id=transfer_id, business_id=business_id)
@@ -407,6 +461,7 @@ def get_inventory_valuation(
     warehouse_id: uuid.UUID | None = Query(None),
     as_of: datetime | None = Query(None),
     costing_method: CostingMethod = Query(CostingMethod.FIFO),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_valuation(
@@ -423,6 +478,7 @@ def get_inventory_valuation(
 def get_expiring_lots(
     business_id: int = Query(...),
     days: int = Query(30, ge=1, le=365),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_expiring_lots(db, business_id=business_id, days=days)
@@ -435,6 +491,7 @@ def get_lots(
     warehouse_id: uuid.UUID | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_lots(
@@ -451,6 +508,7 @@ def get_serials(
     search: str | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_serials(
@@ -472,6 +530,7 @@ def get_stock_availability(
     item_id: uuid.UUID | None = Query(None),
     variant_id: uuid.UUID | None = Query(None),
     warehouse_id: uuid.UUID | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_stock_availability(
@@ -486,6 +545,7 @@ def get_stock_availability(
 @router.get("/variants/{variant_id}/stock", response_model=VariantStockAggregationOut)
 def get_variant_stock_aggregation(
     variant_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_variant_stock_aggregation(db, variant_id)
@@ -499,6 +559,7 @@ def get_inventory_items(
     variant_id: uuid.UUID | None = Query(None),
     item_id: uuid.UUID | None = Query(None),
     warehouse_id: uuid.UUID | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_inventory_items(
@@ -512,7 +573,11 @@ def get_inventory_items(
 
 
 @router.get("/items/{item_id}", response_model=InventoryOut)
-def get_inventory_item(item_id: uuid.UUID, db: Session = Depends(get_db)):
+def get_inventory_item(
+    item_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
+    db: Session = Depends(get_db),
+):
     return service.get_inventory_item(db, item_id)
 
 
@@ -522,7 +587,9 @@ def get_inventory_item(item_id: uuid.UUID, db: Session = Depends(get_db)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_inventory_item(
-    item_data: InventoryItemCreate, db: Session = Depends(get_db)
+    item_data: InventoryItemCreate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
+    db: Session = Depends(get_db),
 ):
     return service.create_inventory_item(db, item_data)
 
@@ -531,6 +598,7 @@ def create_inventory_item(
 def update_inventory_item(
     item_id: uuid.UUID,
     item_data: InventoryItemUpdate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.update_inventory_item(db, item_id, item_data)
@@ -539,7 +607,9 @@ def update_inventory_item(
 # --- Stock Adjustment & Movement Endpoints ---
 @router.post("/adjustments", response_model=InventoryOut)
 def adjust_stock(
-    adjustment_data: StockAdjustmentRequest, db: Session = Depends(get_db)
+    adjustment_data: StockAdjustmentRequest,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
+    db: Session = Depends(get_db),
 ):
     updated_item, _ = service.adjust_stock(db, adjustment_data)
     return updated_item
@@ -558,6 +628,7 @@ def get_stock_movements(
     reason: StockMovementReason | None = Query(None),
     source_type: str | None = Query(None),
     source_id: str | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_stock_movements(
@@ -583,7 +654,9 @@ def get_stock_movements(
     status_code=status.HTTP_201_CREATED,
 )
 def create_reservation(
-    reservation_data: StockReservationCreate, db: Session = Depends(get_db)
+    reservation_data: StockReservationCreate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
+    db: Session = Depends(get_db),
 ):
     return service.create_reservation(db, reservation_data)
 
@@ -592,6 +665,7 @@ def create_reservation(
 def update_reservation(
     reservation_id: uuid.UUID,
     reservation_data: StockReservationUpdate,
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "update")),
     db: Session = Depends(get_db),
 ):
     return service.update_reservation(db, reservation_id, reservation_data)
@@ -604,6 +678,7 @@ def get_reservations(
     inventory_item_id: uuid.UUID | None = Query(None),
     cart_id: uuid.UUID | None = Query(None),
     order_id: uuid.UUID | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     return service.get_reservations(

@@ -5,6 +5,9 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.ecommerce.customer.service import CustomerService
@@ -21,10 +24,12 @@ def customer_list_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
+    current_user: User = Depends(require_permission("ecommerce", "customers", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     customers = customer_service.get_customers(
-        db, skip=skip, limit=limit, business_id=business_id
+        db, skip=skip, limit=limit, business_id=resolved_business_id
     )
     businesses = business_service.list_businesses(db, skip=0, limit=500)
     biz_map = {b.id: b.name_en for b in businesses}
@@ -51,7 +56,11 @@ def customer_list_page(
 
 
 @router.get("/customers/create", response_class=HTMLResponse)
-def customer_create_page(request: Request, db: Session = Depends(get_db)):
+def customer_create_page(
+    request: Request,
+    current_user: User = Depends(require_permission("ecommerce", "customers", "create")),
+    db: Session = Depends(get_db),
+):
     businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(
@@ -68,9 +77,13 @@ def customer_create_page(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/customers/detail/{customer_id}", response_class=HTMLResponse)
 def customer_detail_page(
-    customer_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    customer_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(require_permission("ecommerce", "customers", "view")),
+    db: Session = Depends(get_db),
 ):
     customer = customer_service.get_customer(db, customer_id)
+    verify_record_ownership(customer, current_user)
     business = None
     if customer.business_id:
         business = business_service.get_business(db, customer.business_id)
@@ -88,9 +101,13 @@ def customer_detail_page(
 
 @router.get("/customers/edit/{customer_id}", response_class=HTMLResponse)
 def customer_edit_page(
-    customer_id: uuid.UUID, request: Request, db: Session = Depends(get_db)
+    customer_id: uuid.UUID,
+    request: Request,
+    current_user: User = Depends(require_permission("ecommerce", "customers", "update")),
+    db: Session = Depends(get_db),
 ):
     customer = customer_service.get_customer(db, customer_id)
+    verify_record_ownership(customer, current_user)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
 
     return templates.TemplateResponse(

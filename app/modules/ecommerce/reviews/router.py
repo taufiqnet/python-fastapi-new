@@ -1,65 +1,61 @@
 import uuid
+from decimal import Decimal
+from typing import Literal
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.common.enums import Status
+from app.core.deps import require_permission
+from app.core.identity.models import User
 from app.database import get_db
-from app.modules.ecommerce.reviews.schemas import (
-    ReviewCreate,
-    ReviewOut,
-    ReviewSummary,
-    ReviewUpdate,
-    ReviewVoteCreate,
-    ReviewVoteOut,
-)
-from app.modules.ecommerce.reviews.service import ReviewService
+from app.modules.ecommerce.search.schemas import SearchQuery, SearchResult
+from app.modules.ecommerce.search.service import SearchService
 
-router = APIRouter(prefix="/reviews", tags=["Reviews"])
-service = ReviewService()
+router = APIRouter(prefix="/search", tags=["Search"])
+service = SearchService()
 
 
-@router.post("", response_model=ReviewOut, status_code=status.HTTP_201_CREATED)
-def create_review(data: ReviewCreate, db: Session = Depends(get_db)):
-    return service.create_review(db, data)
-
-
-@router.get("/product/{product_id}", response_model=list[ReviewOut])
-def get_reviews_by_product(
-    product_id: uuid.UUID,
-    rating: int | None = Query(None, ge=1, le=5),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+@router.get("", response_model=SearchResult)
+def search_products(
+    q: str | None = Query(None, description="Free text search term"),
+    business_id: int | None = Query(1),
+    category_id: uuid.UUID | None = Query(None),
+    brand: str | None = Query(None),
+    min_price: Decimal | None = Query(None, ge=0),
+    max_price: Decimal | None = Query(None, ge=0),
+    status: Status | None = Query(Status.ACTIVE),
+    rating_min: float | None = Query(None, ge=0, le=5),
+    is_featured: bool | None = Query(None),
+    sort_by: Literal["relevance", "price", "rating", "created_at", "sold_count"] = Query("relevance"),
+    sort_order: Literal["asc", "desc"] = Query("desc"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.get_reviews_by_product(
-        db, product_id=product_id, rating=rating, skip=skip, limit=limit
+    query = SearchQuery(
+        q=q,
+        business_id=business_id,
+        category_id=category_id,
+        brand=brand,
+        min_price=min_price,
+        max_price=max_price,
+        status=status,
+        rating_min=rating_min,
+        is_featured=is_featured,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        page=page,
+        page_size=page_size,
     )
+    return service.search_products(db, query)
 
 
-@router.get("/product/{product_id}/summary", response_model=ReviewSummary)
-def get_review_summary(product_id: uuid.UUID, db: Session = Depends(get_db)):
-    return service.get_review_summary(db, product_id)
-
-
-@router.get("/{review_id}", response_model=ReviewOut)
-def get_review(review_id: uuid.UUID, db: Session = Depends(get_db)):
-    return service.get_review(db, review_id)
-
-
-@router.put("/{review_id}", response_model=ReviewOut)
-def update_review(
-    review_id: uuid.UUID, data: ReviewUpdate, db: Session = Depends(get_db)
+@router.post("", response_model=SearchResult)
+def search_products_post(
+    query: SearchQuery,
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
 ):
-    return service.update_review(db, review_id=review_id, data=data)
-
-
-@router.delete("/{review_id}")
-def delete_review(review_id: uuid.UUID, db: Session = Depends(get_db)):
-    return service.delete_review(db, review_id=review_id)
-
-
-@router.post("/{review_id}/vote", response_model=ReviewVoteOut)
-def vote_review(
-    review_id: uuid.UUID, data: ReviewVoteCreate, db: Session = Depends(get_db)
-):
-    return service.vote_review(db, review_id=review_id, data=data)
+    return service.search_products(db, query)

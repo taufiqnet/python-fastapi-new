@@ -4,7 +4,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
@@ -38,7 +38,7 @@ def inventory_list_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -102,7 +102,7 @@ def inventory_valuation_page(
     warehouse_id: str | None = None,
     costing_method: str = "FIFO",
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -172,7 +172,7 @@ def lots_serials_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -221,7 +221,7 @@ def uom_manage_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -265,7 +265,7 @@ def items_master_manage_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -315,7 +315,7 @@ def stock_transfers_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -363,7 +363,7 @@ def stock_counts_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -409,7 +409,7 @@ def stock_counts_page(
 def warehouse_list_page(
     request: Request,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -449,7 +449,7 @@ def stock_movements_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -512,7 +512,7 @@ def stock_reservations_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)

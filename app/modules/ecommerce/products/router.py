@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile,
 from sqlalchemy.orm import Session
 
 from app.common.enums import Status
-from app.core.deps import get_current_user_optional
+from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.database import get_db
@@ -31,7 +31,7 @@ service = ProductService()
 @router.get("/template-excel")
 def download_products_excel_template(
     business_id: int | None = Query(None),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -48,7 +48,7 @@ def download_products_excel_template(
 async def import_products_excel(
     business_id: int | None = Query(None),
     file: UploadFile = File(...),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -67,7 +67,7 @@ def get_products(
     brand_id: uuid.UUID | None = Query(None),
     model_id: uuid.UUID | None = Query(None),
     product_status: Status | None = Query(None, alias="status"),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -86,7 +86,7 @@ def get_products(
 @router.get("/tags", response_model=list[ProductTagOut])
 def get_tags(
     business_id: int | None = Query(None),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
@@ -96,7 +96,7 @@ def get_tags(
 @router.post("/tags", response_model=ProductTagOut, status_code=status.HTTP_201_CREATED)
 def create_tag(
     tag_data: ProductTagCreate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
     tag_data.business_id = resolve_business_id(current_user, tag_data.business_id)
@@ -114,7 +114,7 @@ def upload_images(
 @router.get("/{product_id}", response_model=ProductDetailOut)
 def get_product(
     product_id: uuid.UUID,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
     product = service.get_product(db, product_id)
@@ -125,7 +125,7 @@ def get_product(
 @router.post("/", response_model=ProductDetailOut, status_code=status.HTTP_201_CREATED)
 def create_product(
     product_data: ProductCreate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
     product_data.business_id = resolve_business_id(current_user, product_data.business_id)
@@ -136,7 +136,7 @@ def create_product(
 def update_product(
     product_id: uuid.UUID,
     product_data: ProductUpdate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "update")),
     db: Session = Depends(get_db),
 ):
     product = service.get_product(db, product_id)
@@ -149,7 +149,7 @@ def update_product(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(
     product_id: uuid.UUID,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "delete")),
     db: Session = Depends(get_db),
 ):
     product = service.get_product(db, product_id)
@@ -167,7 +167,7 @@ def delete_product(
 def add_variant(
     product_id: uuid.UUID,
     variant_data: VariantCreate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
     product = service.get_product(db, product_id)
@@ -182,7 +182,7 @@ def add_variant(
 def update_variant(
     variant_id: uuid.UUID,
     variant_data: VariantUpdate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "update")),
     db: Session = Depends(get_db),
 ):
     variant = service.repository.get_variant_by_id(db, variant_id)
@@ -199,7 +199,7 @@ def update_variant(
 )
 def delete_variant(
     variant_id: uuid.UUID,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "delete")),
     db: Session = Depends(get_db),
 ):
     variant = service.repository.get_variant_by_id(db, variant_id)
@@ -220,7 +220,7 @@ def delete_variant(
 def add_image(
     product_id: uuid.UUID,
     image_data: ProductImageCreate,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
     product = service.get_product(db, product_id)
@@ -234,7 +234,7 @@ def add_image(
 )
 def delete_image(
     image_id: uuid.UUID,
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("ecommerce", "products", "delete")),
     db: Session = Depends(get_db),
 ):
     image = service.repository.get_image_by_id(db, image_id)

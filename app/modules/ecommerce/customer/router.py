@@ -3,6 +3,9 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.deps import require_permission
+from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.database import get_db
 from app.modules.ecommerce.customer.schemas import (
     CustomerCreate,
@@ -21,20 +24,33 @@ def get_customers(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     is_active: bool | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "customers", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_customers(
-        db, skip=skip, limit=limit, business_id=business_id, is_active=is_active
+        db, skip=skip, limit=limit, business_id=resolved_business_id, is_active=is_active
     )
 
 
 @router.get("/{customer_id}", response_model=CustomerOut)
-def get_customer(customer_id: uuid.UUID, db: Session = Depends(get_db)):
-    return service.get_customer(db, customer_id)
+def get_customer(
+    customer_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "customers", "view")),
+    db: Session = Depends(get_db),
+):
+    customer = service.get_customer(db, customer_id)
+    verify_record_ownership(customer, current_user)
+    return customer
 
 
 @router.post("/", response_model=CustomerOut, status_code=status.HTTP_201_CREATED)
-def create_customer(customer_data: CustomerCreate, db: Session = Depends(get_db)):
+def create_customer(
+    customer_data: CustomerCreate,
+    current_user: User = Depends(require_permission("ecommerce", "customers", "create")),
+    db: Session = Depends(get_db),
+):
+    customer_data.business_id = resolve_business_id(current_user, customer_data.business_id)
     return service.create_customer(db, customer_data)
 
 
@@ -42,12 +58,23 @@ def create_customer(customer_data: CustomerCreate, db: Session = Depends(get_db)
 def update_customer(
     customer_id: uuid.UUID,
     customer_data: CustomerUpdate,
+    current_user: User = Depends(require_permission("ecommerce", "customers", "update")),
     db: Session = Depends(get_db),
 ):
+    customer = service.get_customer(db, customer_id)
+    verify_record_ownership(customer, current_user)
+    if customer_data.business_id is not None or (current_user and not current_user.is_superuser):
+        customer_data.business_id = resolve_business_id(current_user, customer_data.business_id)
     return service.update_customer(db, customer_id, customer_data)
 
 
 @router.delete("/{customer_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_customer(customer_id: uuid.UUID, db: Session = Depends(get_db)):
+def delete_customer(
+    customer_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "customers", "delete")),
+    db: Session = Depends(get_db),
+):
+    customer = service.get_customer(db, customer_id)
+    verify_record_ownership(customer, current_user)
     service.delete_customer(db, customer_id)
     return None
