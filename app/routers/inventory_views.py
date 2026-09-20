@@ -10,8 +10,10 @@ from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
 from app.modules.ecommerce.inventory.models import (
+    CountStatus,
     ReservationStatus,
     StockMovementReason,
+    TransferStatus,
 )
 from app.modules.ecommerce.inventory.service import InventoryService
 from app.modules.ecommerce.products.service import ProductService
@@ -83,6 +85,102 @@ def inventory_list_page(
             "reasons": [r.value for r in StockMovementReason],
             "active_page": "inventory",
             "current_user": current_user,
+        },
+    )
+
+
+@router.get("/inventory/transfers/manage", response_class=HTMLResponse)
+def stock_transfers_page(
+    request: Request,
+    skip: int = 0,
+    limit: int = 500,
+    business_id: int | None = None,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    warehouses = inventory_service.get_warehouses(db, business_id=selected_business_id, skip=0, limit=500)
+    items = inventory_service.get_items(db, business_id=selected_business_id, skip=0, limit=500)
+    transfers = inventory_service.get_transfers(db, business_id=selected_business_id, skip=skip, limit=limit)
+
+    total_transfers = len(transfers)
+    draft_count = sum(1 for t in transfers if getattr(t.status, "value", t.status) == "draft")
+    in_transit_count = sum(1 for t in transfers if getattr(t.status, "value", t.status) == "in_transit")
+    received_count = sum(1 for t in transfers if getattr(t.status, "value", t.status) == "received")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/ecommerce/inventory/stock_transfer_list.html",
+        context={
+            "transfers": transfers,
+            "warehouses": warehouses,
+            "items": items,
+            "businesses": businesses,
+            "selected_business_id": selected_business_id,
+            "total_transfers": total_transfers,
+            "draft_count": draft_count,
+            "in_transit_count": in_transit_count,
+            "received_count": received_count,
+            "transfer_statuses": [s.value for s in TransferStatus],
+            "active_page": "inventory",
+            "current_user": current_user,
+            "getattr": getattr,
+        },
+    )
+
+
+@router.get("/inventory/counts/manage", response_class=HTMLResponse)
+def stock_counts_page(
+    request: Request,
+    skip: int = 0,
+    limit: int = 500,
+    business_id: int | None = None,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    warehouses = inventory_service.get_warehouses(db, business_id=selected_business_id, skip=0, limit=500)
+    items = inventory_service.get_items(db, business_id=selected_business_id, skip=0, limit=500)
+    counts = inventory_service.get_counts(db, business_id=selected_business_id, skip=skip, limit=limit)
+
+    total_counts = len(counts)
+    draft_count = sum(1 for c in counts if getattr(c.status, "value", c.status) == "draft")
+    in_progress_count = sum(1 for c in counts if getattr(c.status, "value", c.status) == "in_progress")
+    completed_count = sum(1 for c in counts if getattr(c.status, "value", c.status) == "completed")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/ecommerce/inventory/stock_count_list.html",
+        context={
+            "counts": counts,
+            "warehouses": warehouses,
+            "items": items,
+            "businesses": businesses,
+            "selected_business_id": selected_business_id,
+            "total_counts": total_counts,
+            "draft_count": draft_count,
+            "in_progress_count": in_progress_count,
+            "completed_count": completed_count,
+            "count_statuses": [s.value for s in CountStatus],
+            "active_page": "inventory",
+            "current_user": current_user,
+            "getattr": getattr,
         },
     )
 

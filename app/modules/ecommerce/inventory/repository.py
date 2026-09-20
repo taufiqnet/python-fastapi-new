@@ -49,6 +49,39 @@ from app.modules.ecommerce.inventory.schemas import (
 
 class InventoryRepository:
     # --- Stock Count Operations ---
+    def upsert_count_line(
+        self,
+        db: Session,
+        count_id: uuid.UUID,
+        item_id: uuid.UUID,
+        system_quantity: int,
+        counted_quantity: int,
+        variance: int,
+    ) -> StockCountLine:
+        c_line = (
+            db.query(StockCountLine)
+            .filter(StockCountLine.count_id == count_id, StockCountLine.item_id == item_id)
+            .first()
+        )
+        if not c_line:
+            c_line = StockCountLine(
+                count_id=count_id,
+                item_id=item_id,
+                system_quantity=system_quantity,
+                counted_quantity=counted_quantity,
+                variance=variance,
+                recount_flag=(variance != 0),
+            )
+            db.add(c_line)
+        else:
+            c_line.system_quantity = system_quantity
+            c_line.counted_quantity = counted_quantity
+            c_line.variance = variance
+            c_line.recount_flag = (variance != 0)
+        db.commit()
+        db.refresh(c_line)
+        return c_line
+
     def get_count_by_id(
         self, db: Session, count_id: uuid.UUID, business_id: int | None = None
     ) -> StockCount | None:
@@ -62,6 +95,7 @@ class InventoryRepository:
         db: Session,
         business_id: int,
         warehouse_id: uuid.UUID | None = None,
+        status_filter: CountStatus | None = None,
         status: CountStatus | None = None,
         skip: int = 0,
         limit: int = 100,
@@ -69,8 +103,9 @@ class InventoryRepository:
         query = db.query(StockCount).filter(StockCount.business_id == business_id)
         if warehouse_id:
             query = query.filter(StockCount.warehouse_id == warehouse_id)
-        if status:
-            query = query.filter(StockCount.status == status)
+        st = status_filter or status
+        if st:
+            query = query.filter(StockCount.status == st)
         return query.order_by(StockCount.created_at.desc()).offset(skip).limit(limit).all()
 
     def create_count(self, db: Session, data: StockCountCreate) -> StockCount:
@@ -134,13 +169,15 @@ class InventoryRepository:
         self,
         db: Session,
         business_id: int,
+        status_filter: TransferStatus | None = None,
         status: TransferStatus | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[StockTransfer]:
         query = db.query(StockTransfer).filter(StockTransfer.business_id == business_id)
-        if status:
-            query = query.filter(StockTransfer.status == status)
+        st = status_filter or status
+        if st:
+            query = query.filter(StockTransfer.status == st)
         return query.order_by(StockTransfer.created_at.desc()).offset(skip).limit(limit).all()
 
     def create_transfer(self, db: Session, data: StockTransferCreate) -> StockTransfer:
@@ -502,6 +539,21 @@ class InventoryRepository:
             )
             .first()
         )
+
+    def get_inventory_items_for_business(
+        self,
+        db: Session,
+        business_id: int,
+        warehouse_id: uuid.UUID | None = None,
+    ) -> list[InventoryItem]:
+        query = (
+            db.query(InventoryItem)
+            .join(Warehouse, InventoryItem.warehouse_id == Warehouse.id)
+            .filter(Warehouse.business_id == business_id)
+        )
+        if warehouse_id:
+            query = query.filter(InventoryItem.warehouse_id == warehouse_id)
+        return query.all()
 
     def get_inventory_items(
         self,

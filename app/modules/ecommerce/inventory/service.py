@@ -817,6 +817,323 @@ class InventoryService:
         )
         return [StockReservationOut.model_validate(r) for r in reservations]
 
+    # --- Stock Transfer Services ---
+    def get_transfers(
+        self,
+        db: Session,
+        business_id: int,
+        status_filter: TransferStatus | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[StockTransfer]:
+        return self.repository.get_transfers(
+            db, business_id=business_id, status_filter=status_filter, skip=skip, limit=limit
+        )
+
+    def get_transfer(
+        self, db: Session, transfer_id: uuid.UUID, business_id: int | None = None
+    ) -> StockTransfer:
+        transfer = self.repository.get_transfer_by_id(db, transfer_id, business_id=business_id)
+        if not transfer:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Stock transfer not found",
+            )
+        return transfer
+
+    def create_transfer(
+        self, db: Session, data: StockTransferCreate
+    ) -> StockTransfer:
+        if data.source_warehouse_id == data.destination_warehouse_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="source_warehouse_id and destination_warehouse_id cannot be the same",
+            )
+        self.get_warehouse(db, data.source_warehouse_id)
+        self.get_warehouse(db, data.destination_warehouse_id)
+        return self.repository.create_transfer(db, data)
+
+    def ship_transfer(
+        self, db: Session, transfer_id: uuid.UUID, business_id: int | None = None
+    ) -> StockTransfer:
+        transfer = self.get_transfer(db, transfer_id, business_id=business_id)
+        if transfer.status != TransferStatus.DRAFT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Transfer status must be draft to ship. Current status: {transfer.status}",
+            )
+        # Deduct stock from source warehouse
+        for line in transfer.lines:
+            inv_item = self.repository.get_inventory_item_by_item_and_warehouse(
+                db, line.item_id, transfer.source_warehouse_id
+            )
+            if not inv_item or inv_item.quantity_on_hand < line.quantity:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Insufficient stock in source warehouse for item {line.item_id}",
+                )
+            adj = StockAdjustmentRequest(
+                inventory_item_id=inv_item.id,
+                delta=-line.quantity,
+                reason=StockMovementReason.TRANSFER_OUT,
+                source_type="stock_transfer",
+                source_id=str(transfer.id),
+                notes=f"Stock transfer {transfer.transfer_number} shipped out",
+            )
+            self.adjust_stock(db, adj)
+
+        transfer.status = TransferStatus.IN_TRANSIT
+        transfer.shipped_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(transfer)
+        return transfer
+
+    def receive_transfer(
+        self,
+        db: Session,
+        transfer_id: uuid.UUID,
+        req: StockTransferReceiveRequest | None = None,
+        business_id: int | None = None,
+    ) -> StockTransfer:
+        transfer = self.get_transfer(db, transfer_id, business_id=business_id)
+        if transfer.status != TransferStatus.IN_TRANSIT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Transfer status must be in_transit to receive. Current status: {transfer.status}",
+            )
+        for line in transfer.lines:
+            recv_qty = line.quantity
+            line.received_quantity = recv_qty
+            inv_item = self.repository.get_inventory_item_by_item_and_warehouse(
+                db, line.item_id, transfer.destination_warehouse_id
+            )
+            if not inv_item:
+                inv_item = self.repository.create_inventory_item(
+                    db,
+                    InventoryItemCreate(
+                        item_id=line.item_id,
+                        warehouse_id=transfer.destination_warehouse_id,
+                        quantity_on_hand=0,
+                    ),
+                )
+            adj = StockAdjustmentRequest(
+                inventory_item_id=inv_item.id,
+                delta=recv_qty,
+                reason=StockMovementReason.TRANSFER_IN,
+                source_type="stock_transfer",
+                source_id=str(transfer.id),
+                notes=f"Stock transfer {transfer.transfer_number} received",
+            )
+            self.adjust_stock(db, adj)
+
+        transfer.status = TransferStatus.RECEIVED
+        transfer.received_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(transfer)
+        return transfer
+
+    def cancel_transfer(
+        self, db: Session, transfer_id: uuid.UUID, business_id: int | None = None
+    ) -> StockTransfer:
+        transfer = self.get_transfer(db, transfer_id, business_id=business_id)
+        if transfer.status not in (TransferStatus.DRAFT, TransferStatus.IN_TRANSIT):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot cancel transfer in status {transfer.status}",
+            )
+        if transfer.status == TransferStatus.IN_TRANSIT:
+            # Revert stock back to source warehouse
+            for line in transfer.lines:
+                inv_item = self.repository.get_inventory_item_by_item_and_warehouse(
+                    db, line.item_id, transfer.source_warehouse_id
+                )
+                if inv_item:
+                    adj = StockAdjustmentRequest(
+                        inventory_item_id=inv_item.id,
+                        delta=line.quantity,
+                        reason=StockMovementReason.TRANSFER_IN,
+                        source_type="stock_transfer_cancel",
+                        source_id=str(transfer.id),
+                        notes=f"Reverting shipped stock for cancelled transfer {transfer.transfer_number}",
+                    )
+                    self.adjust_stock(db, adj)
+
+        transfer.status = TransferStatus.CANCELLED
+        db.commit()
+        db.refresh(transfer)
+        return transfer
+
+    # --- Stock Count & Reorder Alert Services ---
+    def get_counts(
+        self,
+        db: Session,
+        business_id: int,
+        warehouse_id: uuid.UUID | None = None,
+        status_filter: CountStatus | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[StockCount]:
+        return self.repository.get_counts(
+            db,
+            business_id=business_id,
+            warehouse_id=warehouse_id,
+            status_filter=status_filter,
+            skip=skip,
+            limit=limit,
+        )
+
+    def get_count(
+        self, db: Session, count_id: uuid.UUID, business_id: int | None = None
+    ) -> StockCount:
+        count = self.repository.get_count_by_id(db, count_id, business_id=business_id)
+        if not count:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Stock count not found",
+            )
+        return count
+
+    def create_count(self, db: Session, data: StockCountCreate) -> StockCount:
+        self.get_warehouse(db, data.warehouse_id)
+        return self.repository.create_count(db, data)
+
+    def start_count(
+        self, db: Session, count_id: uuid.UUID, business_id: int | None = None
+    ) -> StockCount:
+        count = self.get_count(db, count_id, business_id=business_id)
+        if count.status != CountStatus.DRAFT:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Stock count status must be draft to start. Current: {count.status}",
+            )
+        count.status = CountStatus.IN_PROGRESS
+        db.commit()
+        db.refresh(count)
+        return count
+
+    def record_count(
+        self,
+        db: Session,
+        count_id: uuid.UUID,
+        req: StockCountRecordRequest,
+        business_id: int | None = None,
+    ) -> StockCount:
+        count = self.get_count(db, count_id, business_id=business_id)
+        if count.status != CountStatus.IN_PROGRESS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Stock count must be in_progress to record quantities. Current: {count.status}",
+            )
+
+        items_map = getattr(req, "counts", None)
+        if items_map is not None:
+            for item_id, counted_qty in items_map.items():
+                inv_row = self.repository.get_inventory_item_by_item_and_warehouse(
+                    db, item_id, count.warehouse_id
+                )
+                sys_qty = inv_row.quantity_on_hand if inv_row else 0
+                var = counted_qty - sys_qty
+                self.repository.upsert_count_line(
+                    db,
+                    count_id=count.id,
+                    item_id=item_id,
+                    system_quantity=sys_qty,
+                    counted_quantity=counted_qty,
+                    variance=var,
+                )
+
+        lines_list = getattr(req, "lines", None)
+        if lines_list is not None:
+            for line_req in lines_list:
+                item_id = line_req.item_id
+                counted_qty = line_req.counted_quantity
+                inv_row = self.repository.get_inventory_item_by_item_and_warehouse(
+                    db, item_id, count.warehouse_id
+                )
+                sys_qty = inv_row.quantity_on_hand if inv_row else 0
+                var = counted_qty - sys_qty
+                self.repository.upsert_count_line(
+                    db,
+                    count_id=count.id,
+                    item_id=item_id,
+                    system_quantity=sys_qty,
+                    counted_quantity=counted_qty,
+                    variance=var,
+                )
+
+        db.refresh(count)
+        return count
+
+    def complete_count(
+        self, db: Session, count_id: uuid.UUID, business_id: int | None = None
+    ) -> StockCount:
+        count = self.get_count(db, count_id, business_id=business_id)
+        if count.status != CountStatus.IN_PROGRESS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Stock count must be in_progress to complete. Current: {count.status}",
+            )
+        for line in count.lines:
+            if line.counted_quantity is not None and line.variance != 0:
+                inv_item = self.repository.get_inventory_item_by_item_and_warehouse(
+                    db, line.item_id, count.warehouse_id
+                )
+                if not inv_item:
+                    inv_item = self.repository.create_inventory_item(
+                        db,
+                        InventoryItemCreate(
+                            item_id=line.item_id,
+                            warehouse_id=count.warehouse_id,
+                            quantity_on_hand=0,
+                        ),
+                    )
+                adj = StockAdjustmentRequest(
+                    inventory_item_id=inv_item.id,
+                    delta=line.variance,
+                    reason=StockMovementReason.COUNT_CORRECTION,
+                    source_type="stock_count",
+                    source_id=str(count.id),
+                    notes=f"Count correction from cycle count {count.id}",
+                )
+                self.adjust_stock(db, adj)
+
+        count.status = CountStatus.COMPLETED
+        db.commit()
+        db.refresh(count)
+        return count
+
+    def get_reorder_alerts(
+        self,
+        db: Session,
+        business_id: int,
+        warehouse_id: uuid.UUID | None = None,
+    ) -> list[ReorderAlertOut]:
+        inv_items = self.repository.get_inventory_items_for_business(
+            db, business_id=business_id, warehouse_id=warehouse_id
+        )
+        alerts: list[ReorderAlertOut] = []
+        for inv in inv_items:
+            if inv.reorder_point is not None and inv.quantity_on_hand - inv.quantity_reserved <= inv.reorder_point:
+                reorder_qty = inv.reorder_quantity or max(1, inv.reorder_point * 2 - inv.quantity_on_hand)
+                sku = inv.item.sku if inv.item else (inv.variant.sku if inv.variant else "SKU-UNKNOWN")
+                name = inv.item.name if inv.item else (inv.variant.title if inv.variant else "Item Unknown")
+                wh_name = inv.warehouse.name if inv.warehouse else "Warehouse Unknown"
+                alerts.append(
+                    ReorderAlertOut(
+                        inventory_item_id=inv.id,
+                        item_id=inv.item_id or uuid.uuid4(),
+                        sku=sku,
+                        name=name,
+                        warehouse_id=inv.warehouse_id,
+                        warehouse_name=wh_name,
+                        quantity_available=max(0, inv.quantity_on_hand - inv.quantity_reserved),
+                        reorder_point=inv.reorder_point,
+                        reorder_quantity=reorder_qty,
+                        suggested_order_quantity=reorder_qty,
+                    )
+                )
+        return alerts
+
     @staticmethod
     def _to_inventory_out(item: InventoryItem) -> InventoryOut:
         available = max(0, item.quantity_on_hand - item.quantity_reserved)

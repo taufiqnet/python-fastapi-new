@@ -42,8 +42,14 @@ class StockCountCreate(StockCountBase):
     item_ids: list[uuid.UUID] = []  # Items to include in the count session
 
 
+class StockCountLineRecordItem(BaseModel):
+    item_id: uuid.UUID
+    counted_quantity: int
+
+
 class StockCountRecordRequest(BaseModel):
-    counts: dict[uuid.UUID, int]  # {item_id: counted_quantity}
+    counts: dict[uuid.UUID, int] | None = None  # {item_id: counted_quantity}
+    lines: list[StockCountLineRecordItem] | None = None
 
 
 class StockCountOut(StockCountBase):
