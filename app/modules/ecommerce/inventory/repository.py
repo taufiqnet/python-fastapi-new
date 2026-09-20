@@ -278,7 +278,7 @@ class InventoryRepository:
         db: Session,
         business_id: int,
         item_id: uuid.UUID | None = None,
-        warehouse_id: uuid.UUID | None = Query(None) if False else None,
+        warehouse_id: uuid.UUID | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[StockLot]:
