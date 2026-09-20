@@ -373,21 +373,27 @@
 
         <div class="flex flex-col h-full overflow-hidden">
 
-            <!-- Logo -->
+            <!-- Logo & Business Branding -->
             <div class="h-14 px-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
 
                 <div class="flex items-center space-x-2 overflow-hidden">
-                    <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
-                        <i class="fas fa-shield-alt text-white text-sm"></i>
+                    {% if current_business and current_business.logo %}
+                    <div class="w-8 h-8 rounded-lg bg-white border border-gray-200 p-0.5 flex items-center justify-center shadow-xs shrink-0 overflow-hidden">
+                        <img src="{{ current_business.logo }}" alt="Logo" class="max-w-full max-h-full object-contain">
                     </div>
+                    {% else %}
+                    <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
+                        <i class="fas fa-building text-white text-sm"></i>
+                    </div>
+                    {% endif %}
 
                     <div class="sidebar-text transition-all duration-300">
-                        <h2 class="text-sm font-semibold text-gray-900 leading-none">
-                            SaaS Platform
+                        <h2 class="text-sm font-semibold text-gray-900 leading-none truncate max-w-[140px]" title="{{ current_business.name_en if current_business else 'SaaS Platform' }}">
+                            {{ current_business.name_en if current_business else 'SaaS Platform' }}
                         </h2>
 
-                        <p class="text-[10px] text-gray-500 mt-0.5">
-                            Multi-Tenant Admin
+                        <p class="text-[10px] text-gray-500 mt-0.5 truncate max-w-[140px]">
+                            {{ current_business.short_name or current_business.company_tagline or 'Business Workspace' if current_business else 'Multi-Tenant Admin' }}
                         </p>
                     </div>
                 </div>

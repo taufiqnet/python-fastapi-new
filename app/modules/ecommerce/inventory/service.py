@@ -884,10 +884,27 @@ class InventoryService:
         if data.source_warehouse_id == data.destination_warehouse_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="source_warehouse_id and destination_warehouse_id cannot be the same",
+                detail="Source warehouse and destination warehouse must be different.",
             )
         self.get_warehouse(db, data.source_warehouse_id)
         self.get_warehouse(db, data.destination_warehouse_id)
+
+        for line in data.lines:
+            inv_item = self.repository.get_inventory_item_by_item_and_warehouse(
+                db, line.item_id, data.source_warehouse_id
+            )
+            avail_qty = (inv_item.quantity_on_hand - inv_item.quantity_reserved) if inv_item else 0
+            if not inv_item or avail_qty <= 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Selected product has no available stock in the source warehouse.",
+                )
+            if line.quantity > avail_qty:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Requested transfer quantity ({line.quantity}) exceeds available stock ({avail_qty}) in the source warehouse.",
+                )
+
         return self.repository.create_transfer(db, data)
 
     def ship_transfer(

@@ -69,6 +69,38 @@ async def test_warehouse_transfer_workflow(client: AsyncClient, test_business):
     inv_src = (await client.post("/inventory/items", json={"item_id": item["id"], "warehouse_id": wh_src["id"], "quantity_on_hand": 0})).json()
     await client.post("/inventory/adjustments", json={"inventory_item_id": inv_src["id"], "delta": 100, "reason": "receipt"})
 
+    # Test validation: Source and destination warehouses must be different
+    same_wh_res = await client.post("/inventory/transfers", json={
+        "business_id": business_id,
+        "transfer_number": "TR-INVALID-1",
+        "source_warehouse_id": wh_src["id"],
+        "destination_warehouse_id": wh_src["id"],
+        "lines": [{"item_id": item["id"], "quantity": 10}],
+    })
+    assert same_wh_res.status_code == 400
+    assert "different" in same_wh_res.json()["detail"].lower()
+
+    # Test validation: Cannot transfer more than available stock
+    excess_qty_res = await client.post("/inventory/transfers", json={
+        "business_id": business_id,
+        "transfer_number": "TR-INVALID-2",
+        "source_warehouse_id": wh_src["id"],
+        "destination_warehouse_id": wh_dst["id"],
+        "lines": [{"item_id": item["id"], "quantity": 150}],
+    })
+    assert excess_qty_res.status_code == 400
+
+    # Test validation: Cannot transfer item with zero stock in source warehouse
+    item_no_stock = (await client.post("/inventory/items-master", json={"business_id": business_id, "sku": "NO-STOCK-ITEM", "name": "No Stock Item"})).json()
+    no_stock_res = await client.post("/inventory/transfers", json={
+        "business_id": business_id,
+        "transfer_number": "TR-INVALID-3",
+        "source_warehouse_id": wh_src["id"],
+        "destination_warehouse_id": wh_dst["id"],
+        "lines": [{"item_id": item_no_stock["id"], "quantity": 5}],
+    })
+    assert no_stock_res.status_code == 400
+
     # 1. Create Draft Transfer (40 units)
     t_res = await client.post("/inventory/transfers", json={
         "business_id": business_id,

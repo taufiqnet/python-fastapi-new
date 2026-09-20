@@ -24,10 +24,33 @@
 </div>
 
 <div id="printableArea" class="max-w-3xl mx-auto bg-white border border-gray-300 rounded-2xl p-10 shadow-sm text-gray-800 space-y-6">
-    <!-- Header -->
-    <div class="text-center space-y-1 border-b border-gray-200 pb-4">
-        <h1 class="text-xl font-bold text-gray-900 tracking-wide">Salary Certificate</h1>
-        <h2 class="text-sm font-semibold text-gray-700">To Whom It May Concern</h2>
+    <!-- Company Header with Logo -->
+    <div class="flex items-center justify-between border-b border-gray-200 pb-4">
+        <div class="space-y-1">
+            <h1 class="text-lg font-bold text-gray-900 leading-tight">{{ business.name_en if business else 'Company Name' }}</h1>
+            {% if business and business.company_tagline %}
+            <p class="text-[11px] text-gray-500 italic">{{ business.company_tagline }}</p>
+            {% endif %}
+            <p class="text-[10px] text-gray-500">{{ business.full_address if business else '' }}</p>
+            {% if business and (business.vat_number or business.cr_number) %}
+            <p class="text-[10px] text-gray-500">
+                {% if business.cr_number %}CR No: {{ business.cr_number }}{% endif %}
+                {% if business.cr_number and business.vat_number %} | {% endif %}
+                {% if business.vat_number %}VAT Reg: {{ business.vat_number }}{% endif %}
+            </p>
+            {% endif %}
+        </div>
+        {% if business and business.logo %}
+        <div class="w-24 h-16 flex items-center justify-end overflow-hidden shrink-0">
+            <img src="{{ business.logo }}" alt="Logo" class="max-w-full max-h-full object-contain">
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Title -->
+    <div class="text-center space-y-1">
+        <h2 class="text-lg font-bold text-gray-900 tracking-wide uppercase">Salary Certificate</h2>
+        <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wider">To Whom It May Concern</h3>
     </div>
 
     <!-- Date & Ref -->
