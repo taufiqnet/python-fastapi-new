@@ -394,6 +394,8 @@ def resolve_menu_for_user(user: Any) -> Dict[str, Any]:
     Evaluates current user's business subscription plan against feature requirements.
     Returns structured menu sections with calculated 'is_locked' status and metadata for rendering.
     """
+    from app.core.config import settings
+
     if not user:
         return {"hr_payroll_categories": [], "ecommerce_categories": [], "user_plan_name": "Free"}
 
@@ -429,9 +431,10 @@ def resolve_menu_for_user(user: Any) -> Dict[str, Any]:
                 continue
 
             # Plan level check
-            # Plan is considered included if superuser, OR plan permissions include perm_code/wildcard,
+            # Plan is considered included if superuser, OR subscription is not required,
+            # OR plan permissions include perm_code/wildcard,
             # OR current plan name is explicitly listed in allowed_plans
-            if is_superuser:
+            if is_superuser or not settings.subscription_required:
                 is_included_in_plan = True
             else:
                 is_included_in_plan = (
@@ -483,6 +486,8 @@ def resolve_features_plans_for_user(user: Any) -> Dict[str, Any]:
     Resolves feature and plan data for subscriber-facing Features & Plans page.
     Evaluates current subscriber's subscription plan against all modules in FEATURE_CONFIG.
     """
+    from app.core.config import settings
+
     if not user:
         return {
             "categories": [],
@@ -516,7 +521,7 @@ def resolve_features_plans_for_user(user: Any) -> Dict[str, Any]:
             perm_code = item["permission_code"]
             allowed_plans = item["plans"]
 
-            if is_superuser:
+            if is_superuser or not settings.subscription_required:
                 is_included = True
             else:
                 is_included = (

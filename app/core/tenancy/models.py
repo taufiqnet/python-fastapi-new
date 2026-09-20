@@ -118,8 +118,8 @@ class BusinessProfile(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Subscription Plan
-    subscription_plan_id: Mapped[int] = mapped_column(
-        ForeignKey("subscription_plans.id"), nullable=False, default=1, index=True
+    subscription_plan_id: Mapped[int | None] = mapped_column(
+        ForeignKey("subscription_plans.id"), nullable=True, default=1, index=True
     )
     subscription_plan: Mapped["SubscriptionPlan | None"] = relationship(
         "SubscriptionPlan", back_populates="business_profiles"
@@ -128,8 +128,12 @@ class BusinessProfile(Base):
     def has_permission(self, permission_code: str) -> bool:
         """
         Check whether the business profile's subscription plan includes the given permission code.
-        If no plan is assigned, denies access (returns False) by default.
+        If subscription_required is False, returns True (bypassing subscription checks).
+        If subscription_required is True and no plan is assigned or active, returns False.
         """
+        from app.core.config import settings
+        if not settings.subscription_required:
+            return True
         if not self.subscription_plan_id or not self.subscription_plan:
             return False
         if not self.subscription_plan.is_active:

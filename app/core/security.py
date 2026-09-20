@@ -121,7 +121,7 @@ def require_permission(module: str, feature: str, action: str):
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Permission denied. Required permission: {code}",
             )
-        if current_user.business_id:
+        if settings.subscription_required and current_user.business_id:
             from app.core.tenancy.models import BusinessProfile
             from app.core.billing.models import SubscriptionPlan
             from sqlalchemy import select

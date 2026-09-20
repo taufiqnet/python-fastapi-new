@@ -47,6 +47,8 @@ def check_permissions(user: User, required_permissions: list[str]) -> None:
     """
     Ensures user has all required permission code(s) and their business plan includes them (unless superuser).
     """
+    from app.core.config import settings
+
     if user.is_superuser:
         return
 
@@ -55,7 +57,7 @@ def check_permissions(user: User, required_permissions: list[str]) -> None:
             raise PermissionError(
                 f"Permission denied: user lacks required permission '{code}'"
             )
-        if user.business_profile and not user.business_profile.has_permission(code):
+        if settings.subscription_required and user.business_profile and not user.business_profile.has_permission(code):
             if user.has_role("admin"):
                 plan_name = (
                     user.business_profile.subscription_plan.name

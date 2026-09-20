@@ -281,6 +281,8 @@
 
 {% block extra_js %}
 <script>
+const SUBSCRIPTION_REQUIRED = {{ 'true' if settings.subscription_required else 'false' }};
+
 // Build JS objects for Businesses and Plans to check subscription plan permissions client-side
 const BUSINESS_MAP = {
     {% for b in businesses %}
@@ -330,8 +332,8 @@ function updatePlanLockStatus() {
     const banner = document.getElementById('plan-lock-banner');
     const bannerText = document.getElementById('plan-lock-banner-text');
 
-    if (!selectedBizId || !BUSINESS_MAP[selectedBizId]) {
-        // Global or no specific business selected: hide banner and hide all locked tags
+    if (!SUBSCRIPTION_REQUIRED || !selectedBizId || !BUSINESS_MAP[selectedBizId]) {
+        // Subscription not required OR Global / no specific business selected: hide banner and hide all locked tags
         if (banner) banner.classList.add('hidden');
         document.querySelectorAll('.plan-lock-tag').forEach(el => {
             el.classList.add('hidden');

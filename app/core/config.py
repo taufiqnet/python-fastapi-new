@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
+    # Subscription Enforcement Gating
+    subscription_required: bool = True
+
     # AI Assistant Feature Flag & OpenRouter Config
     ai_assistant_enabled: bool = True
     openrouter_api_key: str
