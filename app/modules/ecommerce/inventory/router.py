@@ -428,6 +428,43 @@ def get_expiring_lots(
     return service.get_expiring_lots(db, business_id=business_id, days=days)
 
 
+@router.get("/lots", response_model=list[StockLotOut])
+def get_lots(
+    business_id: int = Query(...),
+    item_id: uuid.UUID | None = Query(None),
+    warehouse_id: uuid.UUID | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    return service.get_lots(
+        db, business_id=business_id, item_id=item_id, warehouse_id=warehouse_id, skip=skip, limit=limit
+    )
+
+
+@router.get("/serials", response_model=list[StockSerialOut])
+def get_serials(
+    business_id: int = Query(...),
+    item_id: uuid.UUID | None = Query(None),
+    warehouse_id: uuid.UUID | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
+    search: str | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+):
+    return service.get_serials(
+        db,
+        business_id=business_id,
+        item_id=item_id,
+        warehouse_id=warehouse_id,
+        status_filter=status_filter,
+        search=search,
+        skip=skip,
+        limit=limit,
+    )
+
+
 # --- Availability & Stock Aggregation Endpoints ---
 @router.get("/availability", response_model=StockAvailabilityOut)
 def get_stock_availability(

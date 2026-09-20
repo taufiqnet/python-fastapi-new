@@ -539,6 +539,43 @@ class InventoryService:
         lots = self.repository.get_expiring_lots(db, business_id=business_id, days=days)
         return [StockLotOut.model_validate(l) for l in lots]
 
+    def get_lots(
+        self,
+        db: Session,
+        business_id: int,
+        item_id: uuid.UUID | None = None,
+        warehouse_id: uuid.UUID | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[StockLotOut]:
+        lots = self.repository.get_lots(
+            db, business_id=business_id, item_id=item_id, warehouse_id=warehouse_id, skip=skip, limit=limit
+        )
+        return [StockLotOut.model_validate(l) for l in lots]
+
+    def get_serials(
+        self,
+        db: Session,
+        business_id: int,
+        item_id: uuid.UUID | None = None,
+        warehouse_id: uuid.UUID | None = None,
+        status_filter: str | None = None,
+        search: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[StockSerialOut]:
+        serials = self.repository.get_serials(
+            db,
+            business_id=business_id,
+            item_id=item_id,
+            warehouse_id=warehouse_id,
+            status_filter=status_filter,
+            search=search,
+            skip=skip,
+            limit=limit,
+        )
+        return [StockSerialOut.model_validate(s) for s in serials]
+
     def adjust_stock(
         self, db: Session, data: StockAdjustmentRequest
     ) -> tuple[InventoryOut, StockMovement]:

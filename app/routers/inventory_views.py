@@ -9,10 +9,16 @@ from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
+from app.modules.ecommerce.categories.service import CategoryService
 from app.modules.ecommerce.inventory.models import (
+    CostingMethod,
+    CostLayer,
     CountStatus,
+    ItemType,
     ReservationStatus,
+    SerialStatus,
     StockMovementReason,
+    TrackingType,
     TransferStatus,
 )
 from app.modules.ecommerce.inventory.service import InventoryService
@@ -23,6 +29,7 @@ templates = Jinja2Templates(directory="app/templates")
 inventory_service = InventoryService()
 business_service = BusinessService()
 product_service = ProductService()
+category_service = CategoryService()
 
 
 @router.get("/inventory/manage", response_class=HTMLResponse)
@@ -89,6 +96,219 @@ def inventory_list_page(
     )
 
 
+@router.get("/inventory/valuation/manage", response_class=HTMLResponse)
+def inventory_valuation_page(
+    request: Request,
+    warehouse_id: str | None = None,
+    costing_method: str = "FIFO",
+    business_id: int | None = None,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    selected_warehouse_uuid = None
+    if warehouse_id and warehouse_id != "all":
+        try:
+            import uuid
+            selected_warehouse_uuid = uuid.UUID(warehouse_id)
+        except ValueError:
+            pass
+
+    method_enum = CostingMethod.WEIGHTED_AVERAGE if costing_method.lower() in ["weighted_average", "average"] else CostingMethod.FIFO
+
+    valuation_report = inventory_service.get_valuation(
+        db,
+        business_id=selected_business_id,
+        warehouse_id=selected_warehouse_uuid,
+        costing_method=method_enum,
+    )
+
+    warehouses = inventory_service.get_warehouses(db, business_id=selected_business_id, skip=0, limit=500)
+
+    # Query active cost layers
+    cost_layers_query = db.query(CostLayer).filter(
+        CostLayer.business_id == selected_business_id,
+        CostLayer.quantity_remaining > 0,
+    )
+    if selected_warehouse_uuid:
+        cost_layers_query = cost_layers_query.filter(CostLayer.warehouse_id == selected_warehouse_uuid)
+    cost_layers = cost_layers_query.order_by(CostLayer.received_at.desc()).all()
+
+    total_valuation = float(valuation_report.total_valuation)
+    total_quantity = sum(item.quantity_on_hand for item in valuation_report.items)
+    avg_unit_cost = (total_valuation / total_quantity) if total_quantity > 0 else 0.0
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/ecommerce/inventory/valuation_report.html",
+        context={
+            "valuation_report": valuation_report,
+            "warehouses": warehouses,
+            "cost_layers": cost_layers,
+            "businesses": businesses,
+            "selected_business_id": selected_business_id,
+            "selected_warehouse_id": warehouse_id or "all",
+            "costing_method": method_enum.value,
+            "total_valuation": total_valuation,
+            "total_quantity": total_quantity,
+            "avg_unit_cost": avg_unit_cost,
+            "active_page": "inventory_valuation",
+            "current_user": current_user,
+        },
+    )
+
+
+@router.get("/inventory/lots-serials/manage", response_class=HTMLResponse)
+def lots_serials_page(
+    request: Request,
+    skip: int = 0,
+    limit: int = 500,
+    business_id: int | None = None,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    expiring_lots = inventory_service.get_expiring_lots(db, business_id=selected_business_id, days=30)
+    all_lots = inventory_service.get_lots(db, business_id=selected_business_id, skip=skip, limit=limit)
+    all_serials = inventory_service.get_serials(db, business_id=selected_business_id, skip=skip, limit=limit)
+    warehouses = inventory_service.get_warehouses(db, business_id=selected_business_id, skip=0, limit=500)
+
+    total_expiring_lots = len(expiring_lots)
+    total_lots = len(all_lots)
+    total_serials = len(all_serials)
+    available_serials_count = sum(1 for s in all_serials if getattr(s.status, "value", s.status) == "available")
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/ecommerce/inventory/lots_serials_manage.html",
+        context={
+            "expiring_lots": expiring_lots,
+            "all_lots": all_lots,
+            "all_serials": all_serials,
+            "warehouses": warehouses,
+            "businesses": businesses,
+            "selected_business_id": selected_business_id,
+            "total_expiring_lots": total_expiring_lots,
+            "total_lots": total_lots,
+            "total_serials": total_serials,
+            "available_serials_count": available_serials_count,
+            "serial_statuses": [s.value for s in SerialStatus],
+            "active_page": "lots_serials",
+            "current_user": current_user,
+        },
+    )
+
+
+@router.get("/inventory/uom/manage", response_class=HTMLResponse)
+def uom_manage_page(
+    request: Request,
+    skip: int = 0,
+    limit: int = 500,
+    business_id: int | None = None,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    uoms = inventory_service.get_uoms(db, business_id=selected_business_id, skip=skip, limit=limit)
+    conversions = inventory_service.get_conversions(db, business_id=selected_business_id, skip=skip, limit=limit)
+    items = inventory_service.get_items(db, business_id=selected_business_id, skip=0, limit=500)
+
+    total_uoms = len(uoms)
+    total_conversions = len(conversions)
+    global_conversions_count = sum(1 for c in conversions if c.item_id is None)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/ecommerce/inventory/uom_manage.html",
+        context={
+            "uoms": uoms,
+            "conversions": conversions,
+            "items": items,
+            "businesses": businesses,
+            "selected_business_id": selected_business_id,
+            "total_uoms": total_uoms,
+            "total_conversions": total_conversions,
+            "global_conversions_count": global_conversions_count,
+            "active_page": "inventory_uom",
+            "current_user": current_user,
+        },
+    )
+
+
+@router.get("/inventory/items-master/manage", response_class=HTMLResponse)
+def items_master_manage_page(
+    request: Request,
+    skip: int = 0,
+    limit: int = 500,
+    business_id: int | None = None,
+    current_user: User | None = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+
+    items = inventory_service.get_items(db, business_id=selected_business_id, skip=skip, limit=limit)
+    uoms = inventory_service.get_uoms(db, business_id=selected_business_id, skip=0, limit=500)
+    categories = category_service.get_categories(db, business_id=selected_business_id, skip=0, limit=500)
+
+    total_items = len(items)
+    stock_items_count = sum(1 for item in items if getattr(item.item_type, "value", item.item_type) == "stock")
+    service_items_count = sum(
+        1 for item in items if getattr(item.item_type, "value", item.item_type) in ["service", "raw_material", "consumable"]
+    )
+    active_items_count = sum(1 for item in items if item.is_active)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/ecommerce/inventory/items_master_manage.html",
+        context={
+            "items": items,
+            "uoms": uoms,
+            "categories": categories,
+            "businesses": businesses,
+            "selected_business_id": selected_business_id,
+            "total_items": total_items,
+            "stock_items_count": stock_items_count,
+            "service_items_count": service_items_count,
+            "active_items_count": active_items_count,
+            "item_types": [t.value for t in ItemType],
+            "tracking_types": [t.value for t in TrackingType],
+            "active_page": "items_master",
+            "current_user": current_user,
+        },
+    )
+
+
 @router.get("/inventory/transfers/manage", response_class=HTMLResponse)
 def stock_transfers_page(
     request: Request,
@@ -130,7 +350,7 @@ def stock_transfers_page(
             "in_transit_count": in_transit_count,
             "received_count": received_count,
             "transfer_statuses": [s.value for s in TransferStatus],
-            "active_page": "inventory",
+            "active_page": "inventory_transfers",
             "current_user": current_user,
             "getattr": getattr,
         },
@@ -178,7 +398,7 @@ def stock_counts_page(
             "in_progress_count": in_progress_count,
             "completed_count": completed_count,
             "count_statuses": [s.value for s in CountStatus],
-            "active_page": "inventory",
+            "active_page": "inventory_counts",
             "current_user": current_user,
             "getattr": getattr,
         },

@@ -273,6 +273,44 @@ class InventoryRepository:
             .all()
         )
 
+    def get_lots(
+        self,
+        db: Session,
+        business_id: int,
+        item_id: uuid.UUID | None = None,
+        warehouse_id: uuid.UUID | None = Query(None) if False else None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[StockLot]:
+        query = db.query(StockLot).filter(StockLot.business_id == business_id)
+        if item_id:
+            query = query.filter(StockLot.item_id == item_id)
+        if warehouse_id:
+            query = query.filter(StockLot.warehouse_id == warehouse_id)
+        return query.order_by(StockLot.created_at.desc()).offset(skip).limit(limit).all()
+
+    def get_serials(
+        self,
+        db: Session,
+        business_id: int,
+        item_id: uuid.UUID | None = None,
+        warehouse_id: uuid.UUID | None = None,
+        status_filter: str | None = None,
+        search: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[StockSerial]:
+        query = db.query(StockSerial).filter(StockSerial.business_id == business_id)
+        if item_id:
+            query = query.filter(StockSerial.item_id == item_id)
+        if warehouse_id:
+            query = query.filter(StockSerial.current_warehouse_id == warehouse_id)
+        if status_filter:
+            query = query.filter(StockSerial.status == status_filter)
+        if search:
+            query = query.filter(StockSerial.serial_number.ilike(f"%{search}%"))
+        return query.order_by(StockSerial.created_at.desc()).offset(skip).limit(limit).all()
+
     def get_lot_by_number(
         self, db: Session, business_id: int, item_id: uuid.UUID, warehouse_id: uuid.UUID, lot_number: str
     ) -> StockLot | None:

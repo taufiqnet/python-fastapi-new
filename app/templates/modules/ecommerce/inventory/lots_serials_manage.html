@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Lot, Serial & Expiry Management | SaaS Platform{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<style>
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+    .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .stat-icon.rose    { background: #fff1f2; color: #e11d48; }
+    .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.emerald { background: #ecfdf5; color: #059669; }
+    .stat-icon.amber   { background: #fffbeb; color: #d97706; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
+    .toolbar-search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9ca3af; font-size: 13px; }
+    .toolbar-search input { width: 100%; padding: 7px 12px 7px 30px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+    .toolbar select { padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; color: #374151; font-size: 13px; outline: none; }
+
+    .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+    table.dataTable thead tr th { background: #f9fafb !important; border-bottom: 1px solid #e5e7eb !important; font-size: 10px !important; font-weight: 700 !important; text-transform: uppercase; color: #6b7280 !important; padding: 10px 14px !important; }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Lot, Serial & Expiry Management</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Track lot numbers, monitor upcoming expiration alerts (FEFO), and perform serial status lookups</p>
+    </div>
+
+    <div class="flex items-center gap-2">
+        <a href="/inventory/valuation/manage?business_id={{ selected_business_id }}" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+            <i class="fas fa-calculator text-indigo-600"></i> Valuation Reports
+        </a>
+        <a href="/inventory/manage?business_id={{ selected_business_id }}" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors shadow-sm flex items-center gap-1.5">
+            <i class="fas fa-boxes text-indigo-600"></i> Stock Items
+        </a>
+    </div>
+</div>
+
+<!-- Stat cards -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon rose"><i class="fas fa-exclamation-triangle"></i></div>
+        <div>
+            <div class="stat-label">Lots Expiring (30 Days)</div>
+            <div class="stat-value text-rose-600">{{ total_expiring_lots }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-layer-group"></i></div>
+        <div>
+            <div class="stat-label">Total Stock Lots</div>
+            <div class="stat-value">{{ total_lots }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon emerald"><i class="fas fa-barcode"></i></div>
+        <div>
+            <div class="stat-label">Available Serials</div>
+            <div class="stat-value">{{ available_serials_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><i class="fas fa-tag"></i></div>
+        <div>
+            <div class="stat-label">Total Tracked Serials</div>
+            <div class="stat-value">{{ total_serials }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Expiring Lots Alert Banner -->
+{% if total_expiring_lots > 0 %}
+<div class="bg-gradient-to-r from-rose-500 to-amber-600 text-white rounded-2xl p-4 mb-6 shadow-sm flex items-center justify-between">
+    <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-bold text-lg">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div>
+            <div class="text-sm font-bold">Expiration Alert Notice</div>
+            <div class="text-xs text-rose-100">{{ total_expiring_lots }} batch lot(s) are expiring within the next 30 days. Prioritize FEFO fulfillment.</div>
+        </div>
+    </div>
+    <a href="#expiringLotsSection" class="px-3.5 py-1.5 bg-white text-rose-700 font-bold rounded-xl text-xs shadow-sm hover:bg-rose-50 transition-colors">
+        View Expiring Lots
+    </a>
+</div>
+{% endif %}
+
+<!-- Toolbar -->
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search lot number, serial number, item name, or status...">
+    </div>
+
+    {% if current_user and not current_user.is_superuser %}
+    <select id="filterBusiness" disabled class="bg-gray-100 text-gray-500 cursor-not-allowed">
+        {% for b in businesses %}
+        {% if b.id == current_user.business_id %}
+        <option value="{{ b.id }}" selected>{{ b.name_en }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+    {% else %}
+    <select id="filterBusiness" onchange="window.location.href='/inventory/lots-serials/manage?business_id='+this.value">
+        {% for b in businesses %}
+        <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+</div>
+
+<!-- Expiring Lots Table Card (if any) -->
+{% if total_expiring_lots > 0 %}
+<div id="expiringLotsSection" class="table-card border-rose-200">
+    <div class="px-5 py-3.5 border-b border-rose-100 flex items-center justify-between bg-rose-50/50">
+        <h2 class="text-xs font-bold text-rose-900 uppercase tracking-wider flex items-center gap-2">
+            <i class="fas fa-exclamation-circle text-rose-600"></i> Expiring Lots (Next 30 Days)
+        </h2>
+        <span class="text-xs text-rose-700 font-bold">{{ total_expiring_lots }} Alert(s)</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table id="expiringLotTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Lot Number</th>
+                    <th>Item</th>
+                    <th>Warehouse</th>
+                    <th>Remaining Qty</th>
+                    <th>Expiry Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lot in expiring_lots %}
+                <tr class="hover:bg-rose-50/30 transition-colors">
+                    <td class="font-mono font-bold text-rose-700 text-xs">
+                        {{ lot.lot_number }}
+                    </td>
+                    <td>
+                        <div class="font-bold text-gray-900">{{ lot.item.name if lot.item else '—' }}</div>
+                        <div class="text-[10px] text-gray-400 font-mono">{{ lot.item.sku if lot.item else '' }}</div>
+                    </td>
+                    <td class="text-gray-700 font-medium">
+                        {{ lot.warehouse.name if lot.warehouse else '—' }}
+                    </td>
+                    <td class="font-mono font-bold text-rose-600">
+                        {{ lot.quantity }}
+                    </td>
+                    <td class="font-mono font-bold text-rose-700 text-xs">
+                        {{ lot.expiry_date.strftime('%Y-%m-%d') if lot.expiry_date else '—' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Split View: Stock Lots & Stock Serials -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- Stock Lots Table Card -->
+    <div class="table-card">
+        <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h2 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                <i class="fas fa-layer-group text-indigo-600"></i> All Stock Lots
+            </h2>
+            <span class="text-xs text-gray-500 font-semibold">{{ total_lots }} Lots</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table id="lotsTable" class="w-full text-left display">
+                <thead>
+                    <tr>
+                        <th>Lot Number</th>
+                        <th>Item</th>
+                        <th>Warehouse</th>
+                        <th>Quantity</th>
+                        <th>Expiry Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lot in all_lots %}
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="font-mono font-bold text-indigo-600 text-xs">
+                            {{ lot.lot_number }}
+                        </td>
+                        <td>
+                            <div class="font-semibold text-gray-900">{{ lot.item.name if lot.item else '—' }}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">{{ lot.item.sku if lot.item else '' }}</div>
+                        </td>
+                        <td class="text-gray-700">
+                            {{ lot.warehouse.name if lot.warehouse else '—' }}
+                        </td>
+                        <td class="font-bold text-gray-900 font-mono">
+                            {{ lot.quantity }}
+                        </td>
+                        <td class="font-mono text-xs text-gray-600">
+                            {{ lot.expiry_date.strftime('%Y-%m-%d') if lot.expiry_date else '—' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Stock Serials Table Card -->
+    <div class="table-card">
+        <div class="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h2 class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                <i class="fas fa-barcode text-emerald-600"></i> Tracked Serial Numbers
+            </h2>
+            <span class="text-xs text-gray-500 font-semibold">{{ total_serials }} Serials</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table id="serialsTable" class="w-full text-left display">
+                <thead>
+                    <tr>
+                        <th>Serial Number</th>
+                        <th>Item</th>
+                        <th>Warehouse</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for serial in all_serials %}
+                    <tr class="hover:bg-gray-50/50 transition-colors">
+                        <td class="font-mono font-bold text-slate-900 text-xs">
+                            {{ serial.serial_number }}
+                        </td>
+                        <td>
+                            <div class="font-semibold text-gray-900">{{ serial.item.name if serial.item else '—' }}</div>
+                            <div class="text-[10px] text-gray-400 font-mono">{{ serial.item.sku if serial.item else '' }}</div>
+                        </td>
+                        <td class="text-gray-700">
+                            {{ serial.warehouse.name if serial.warehouse else 'Unassigned' }}
+                        </td>
+                        <td>
+                            {% set status_val = serial.status.value if serial.status and serial.status.value is defined else serial.status %}
+                            {% if status_val == 'available' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Available
+                            </span>
+                            {% elif status_val == 'reserved' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                Reserved
+                            </span>
+                            {% elif status_val == 'sold' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                Sold
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                {{ status_val|capitalize }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    var lTable = $('#lotsTable').DataTable({
+        pageLength: 10,
+        dom: 'rtip',
+        language: { emptyTable: "No stock lots found." }
+    });
+
+    var sTable = $('#serialsTable').DataTable({
+        pageLength: 10,
+        dom: 'rtip',
+        language: { emptyTable: "No serial numbers found." }
+    });
+
+    if ($('#expiringLotTable').length) {
+        $('#expiringLotTable').DataTable({
+            pageLength: 5,
+            dom: 'rtip',
+            language: { emptyTable: "No expiring lots found." }
+        });
+    }
+
+    $('#customSearch').on('input', function() {
+        lTable.search(this.value).draw();
+        sTable.search(this.value).draw();
+    });
+});
+</script>
+{% endblock %}
