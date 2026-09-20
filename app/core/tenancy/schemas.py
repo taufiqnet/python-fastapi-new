@@ -102,5 +102,7 @@ class BusinessProfileResponse(BusinessProfileCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    logo: str | None = None
+    favicon: str | None = None
     created_at: datetime
     updated_at: datetime

@@ -227,6 +227,7 @@ async def auth_and_cache_middleware(request: Request, call_next):
 
 
 os.makedirs("app/static/ecommerce/images", exist_ok=True)
+os.makedirs("app/static/uploads/logos", exist_ok=True)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.add_middleware(
