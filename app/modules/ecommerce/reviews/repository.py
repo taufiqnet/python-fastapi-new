@@ -63,6 +63,36 @@ class ReviewRepository:
     def get_review_by_id(self, db: Session, review_id: uuid.UUID) -> Review | None:
         return db.query(Review).filter(Review.id == review_id).first()
 
+    def get_all_reviews(
+        self,
+        db: Session,
+        business_id: int | None = 1,
+        status: str | None = None,
+        rating: int | None = None,
+        product_id: uuid.UUID | None = None,
+        skip: int = 0,
+        limit: int = 500,
+    ) -> list[Review]:
+        query = db.query(Review)
+        if business_id is not None:
+            query = query.filter(Review.business_id == business_id)
+        if status:
+            query = query.filter(Review.status == status)
+        if rating:
+            query = query.filter(Review.rating == rating)
+        if product_id:
+            query = query.filter(Review.product_id == product_id)
+        return query.order_by(Review.created_at.desc()).offset(skip).limit(limit).all()
+
+    def update_review_status(
+        self, db: Session, review: Review, status: str
+    ) -> Review:
+        review.status = status
+        db.commit()
+        db.refresh(review)
+        self.update_product_rating_stats(db, review.product_id)
+        return review
+
     def get_reviews_by_product(
         self,
         db: Session,

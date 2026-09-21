@@ -1,61 +1,131 @@
 import uuid
-from decimal import Decimal
-from typing import Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.common.enums import Status
 from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.database import get_db
-from app.modules.ecommerce.search.schemas import SearchQuery, SearchResult
-from app.modules.ecommerce.search.service import SearchService
+from app.modules.ecommerce.reviews.schemas import (
+    ReviewCreate,
+    ReviewOut,
+    ReviewSummary,
+    ReviewUpdate,
+    ReviewVoteCreate,
+    ReviewVoteOut,
+)
+from app.modules.ecommerce.reviews.service import ReviewService
 
-router = APIRouter(prefix="/search", tags=["Search"])
-service = SearchService()
+router = APIRouter(prefix="/reviews", tags=["Reviews"])
+service = ReviewService()
 
 
-@router.get("", response_model=SearchResult)
-def search_products(
-    q: str | None = Query(None, description="Free text search term"),
+@router.post("", response_model=ReviewOut, status_code=status.HTTP_201_CREATED)
+def create_review(
+    data: ReviewCreate,
+    current_user: User = Depends(require_permission("ecommerce", "products", "create")),
+    db: Session = Depends(get_db),
+):
+    return service.create_review(db, data)
+
+
+@router.get("", response_model=list[ReviewOut])
+def get_all_reviews(
     business_id: int | None = Query(1),
-    category_id: uuid.UUID | None = Query(None),
-    brand: str | None = Query(None),
-    min_price: Decimal | None = Query(None, ge=0),
-    max_price: Decimal | None = Query(None, ge=0),
-    status: Status | None = Query(Status.ACTIVE),
-    rating_min: float | None = Query(None, ge=0, le=5),
-    is_featured: bool | None = Query(None),
-    sort_by: Literal["relevance", "price", "rating", "created_at", "sold_count"] = Query("relevance"),
-    sort_order: Literal["asc", "desc"] = Query("desc"),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    status_filter: str | None = Query(None, alias="status"),
+    rating: int | None = Query(None, ge=1, le=5),
+    product_id: uuid.UUID | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(500, ge=1, le=1000),
     current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
-    query = SearchQuery(
-        q=q,
+    return service.get_all_reviews(
+        db,
         business_id=business_id,
-        category_id=category_id,
-        brand=brand,
-        min_price=min_price,
-        max_price=max_price,
-        status=status,
-        rating_min=rating_min,
-        is_featured=is_featured,
-        sort_by=sort_by,
-        sort_order=sort_order,
-        page=page,
-        page_size=page_size,
+        status=status_filter,
+        rating=rating,
+        product_id=product_id,
+        skip=skip,
+        limit=limit,
     )
-    return service.search_products(db, query)
 
 
-@router.post("", response_model=SearchResult)
-def search_products_post(
-    query: SearchQuery,
+@router.get("/product/{product_id}", response_model=list[ReviewOut])
+def get_reviews_by_product(
+    product_id: uuid.UUID,
+    rating: int | None = Query(None, ge=1, le=5),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.search_products(db, query)
+    return service.get_reviews_by_product(
+        db, product_id=product_id, rating=rating, skip=skip, limit=limit
+    )
+
+
+@router.get("/product/{product_id}/summary", response_model=ReviewSummary)
+def get_review_summary(
+    product_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_review_summary(db, product_id)
+
+
+@router.get("/{review_id}", response_model=ReviewOut)
+def get_review(
+    review_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_review(db, review_id)
+
+
+@router.put("/{review_id}", response_model=ReviewOut)
+def update_review(
+    review_id: uuid.UUID,
+    data: ReviewUpdate,
+    current_user: User = Depends(require_permission("ecommerce", "products", "update")),
+    db: Session = Depends(get_db),
+):
+    return service.update_review(db, review_id, data)
+
+
+@router.put("/{review_id}/approve", response_model=ReviewOut)
+def approve_review(
+    review_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "products", "update")),
+    db: Session = Depends(get_db),
+):
+    return service.update_review_status(db, review_id, status="approved")
+
+
+@router.put("/{review_id}/status", response_model=ReviewOut)
+def update_review_status(
+    review_id: uuid.UUID,
+    status_val: str = Query(..., alias="status"),
+    current_user: User = Depends(require_permission("ecommerce", "products", "update")),
+    db: Session = Depends(get_db),
+):
+    return service.update_review_status(db, review_id, status=status_val)
+
+
+@router.delete("/{review_id}")
+def delete_review(
+    review_id: uuid.UUID,
+    current_user: User = Depends(require_permission("ecommerce", "products", "delete")),
+    db: Session = Depends(get_db),
+):
+    return service.delete_review(db, review_id)
+
+
+@router.post("/{review_id}/vote", response_model=ReviewVoteOut)
+def vote_review(
+    review_id: uuid.UUID,
+    data: ReviewVoteCreate,
+    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.vote_review(db, review_id, data)

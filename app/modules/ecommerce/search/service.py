@@ -156,3 +156,44 @@ class SearchService:
             has_prev=has_prev,
             facets=facets,
         )
+
+    def suggest_products(
+        self, db: Session, q: str, business_id: int | None = 1, limit: int = 10
+    ) -> list[dict]:
+        if not q or not q.strip():
+            return []
+
+        term = f"%{q.strip()}%"
+        query = (
+            db.query(Product)
+            .filter(
+                or_(
+                    Product.title.ilike(term),
+                    Product.description.ilike(term),
+                    Product.brand.ilike(term),
+                )
+            )
+        )
+        if business_id is not None:
+            query = query.filter(Product.business_id == business_id)
+
+        products = query.limit(limit).all()
+
+        results = []
+        for p in products:
+            prices = [v.price for v in p.variants] if p.variants else []
+            min_p = float(min(prices)) if prices else None
+            primary_img = next((img.url for img in p.images if img.is_primary), None)
+            if not primary_img and p.images:
+                primary_img = p.images[0].url
+
+            results.append({
+                "id": p.id,
+                "title": p.title,
+                "slug": p.slug,
+                "brand": p.brand,
+                "min_price": min_p,
+                "primary_image_url": primary_img,
+            })
+
+        return results

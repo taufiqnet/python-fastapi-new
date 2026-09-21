@@ -35,6 +35,12 @@ class ShippingService:
             )
         return ShipmentOut.model_validate(shipment)
 
+    def get_shipments(
+        self, db: Session, business_id: int = 1
+    ) -> list[ShipmentOut]:
+        shipments = self.repository.get_shipments(db, business_id=business_id)
+        return [ShipmentOut.model_validate(s) for s in shipments]
+
     def update_tracking(
         self,
         db: Session,

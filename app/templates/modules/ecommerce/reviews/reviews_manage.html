@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+
+{% block title %}Product Reviews & Moderation - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    Ecommerce Store Operations
+                </span>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 mt-1">Product Reviews & Moderation Queue</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Inspect customer product reviews, verify purchase badges, approve or reject ratings, and monitor store sentiment.</p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <!-- Business Profile Filter -->
+            <label for="filterBusiness" class="text-xs font-medium text-gray-600">Business:</label>
+            <select id="filterBusiness" onchange="onBusinessFilterChange(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 text-xs rounded-xl px-3 py-2 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all font-medium"
+                {% if current_user and not current_user.is_superuser %}disabled{% endif %}>
+                {% for b in businesses %}
+                <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Stat Summary Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Reviews</p>
+                <h3 class="text-xl font-bold text-gray-900 mt-1">{{ total_reviews }}</h3>
+                <p class="text-[10px] text-gray-500 mt-0.5">Submitted customer ratings</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                <i class="fas fa-comments text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Pending Moderation</p>
+                <h3 class="text-xl font-bold text-amber-600 mt-1">{{ pending_count }}</h3>
+                <p class="text-[10px] text-amber-500 mt-0.5">Awaiting store manager review</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                <i class="fas fa-clock text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Approved Reviews</p>
+                <h3 class="text-xl font-bold text-emerald-600 mt-1">{{ approved_count }}</h3>
+                <p class="text-[10px] text-emerald-500 mt-0.5">Published on storefront</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <i class="fas fa-check-circle text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Avg Store Score</p>
+                <h3 class="text-xl font-bold text-amber-500 mt-1 flex items-center space-x-1">
+                    <span>{{ avg_rating }}</span>
+                    <i class="fas fa-star text-sm"></i>
+                </h3>
+                <p class="text-[10px] text-gray-500 mt-0.5">Across all approved ratings</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                <i class="fas fa-star text-base"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Moderation Queue Table -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-tasks text-sm"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900">Review Moderation Queue</h2>
+                    <p class="text-[11px] text-gray-500">Filter reviews by status or rating and execute moderation actions.</p>
+                </div>
+            </div>
+
+            <!-- Toolbar Search / Filters -->
+            <div class="flex flex-wrap items-center gap-2">
+                <div class="relative">
+                    <input type="text" id="reviewSearchInput" onkeyup="filterReviewTable()" placeholder="Search review text or customer..."
+                        class="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                    <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                </div>
+
+                <select id="statusFilter" onchange="filterReviewTable()" class="bg-gray-50 border border-gray-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors font-medium">
+                    <option value="">All Statuses</option>
+                    {% for st in review_statuses %}
+                    <option value="{{ st }}">{{ st|title }}</option>
+                    {% endfor %}
+                </select>
+
+                <select id="ratingFilter" onchange="filterReviewTable()" class="bg-gray-50 border border-gray-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors font-medium">
+                    <option value="">All Ratings</option>
+                    <option value="5">5 Stars</option>
+                    <option value="4">4 Stars</option>
+                    <option value="3">3 Stars</option>
+                    <option value="2">2 Stars</option>
+                    <option value="1">1 Star</option>
+                </select>
+            </div>
+        </div>
+
+        {% if not reviews %}
+        <div class="text-center py-12 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+            <i class="fas fa-star-half-alt text-3xl text-gray-300 mb-2"></i>
+            <p class="text-xs font-semibold text-gray-600">No Product Reviews Found</p>
+            <p class="text-[11px] text-gray-400 mt-0.5">Reviews submitted by storefront customers will appear here for moderation.</p>
+        </div>
+        {% else %}
+        <div class="overflow-x-auto">
+            <table id="reviewsTable" class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50/70 border-b border-gray-200/80 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        <th class="py-2.5 px-3">Product</th>
+                        <th class="py-2.5 px-3">User / Customer</th>
+                        <th class="py-2.5 px-3">Rating</th>
+                        <th class="py-2.5 px-3">Title & Comment</th>
+                        <th class="py-2.5 px-3">Verified</th>
+                        <th class="py-2.5 px-3">Status</th>
+                        <th class="py-2.5 px-3">Submitted</th>
+                        <th class="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                    {% for r in reviews %}
+                    {% set prod = prod_map.get(r.product_id) %}
+                    {% set st = getattr(r.status, 'value', r.status) %}
+                    <tr class="hover:bg-gray-50/80 transition-colors review-row"
+                        data-status="{{ st }}"
+                        data-rating="{{ r.rating }}"
+                        data-search="{{ r.title or '' }} {{ r.comment or '' }} {{ r.user_id }} {{ prod.title if prod else '' }}">
+                        <td class="py-3 px-3">
+                            <span class="font-bold text-gray-900 block max-w-[150px] truncate" title="{{ prod.title if prod else r.product_id }}">
+                                {{ prod.title if prod else r.product_id }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 font-mono text-[11px] text-gray-600">
+                            {{ r.user_id|string|truncate(12, True, '') }}
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="flex items-center text-amber-400 text-xs space-x-0.5" title="{{ r.rating }} out of 5 stars">
+                                {% for i in range(1, 6) %}
+                                    {% if i <= r.rating %}
+                                    <i class="fas fa-star"></i>
+                                    {% else %}
+                                    <i class="far fa-star text-gray-200"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td class="py-3 px-3 max-w-[240px]">
+                            <p class="font-bold text-gray-900 text-xs truncate">{{ r.title or 'No Title' }}</p>
+                            <p class="text-[11px] text-gray-500 line-clamp-2 mt-0.5">{{ r.comment or '-' }}</p>
+                        </td>
+                        <td class="py-3 px-3">
+                            {% if r.is_verified_purchase %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center space-x-1 w-max">
+                                <i class="fas fa-check text-[9px]"></i>
+                                <span>Verified</span>
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400 text-[11px]">Unverified</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3">
+                            {% if st == 'approved' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Approved</span>
+                            {% elif st == 'pending' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Pending</span>
+                            {% elif st == 'rejected' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Rejected</span>
+                            {% elif st == 'flagged' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">Flagged</span>
+                            {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">{{ st|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3 text-gray-500 text-[11px]">
+                            {{ r.created_at.strftime('%Y-%m-%d') if r.created_at else '-' }}
+                        </td>
+                        <td class="py-3 px-3 text-right space-x-1">
+                            {% if st != 'approved' %}
+                            <button type="button" onclick="updateReviewStatus('{{ r.id }}', 'approved')"
+                                class="px-2 py-1 text-[10px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors" title="Approve Review">
+                                Approve
+                            </button>
+                            {% endif %}
+                            {% if st != 'rejected' %}
+                            <button type="button" onclick="updateReviewStatus('{{ r.id }}', 'rejected')"
+                                class="px-2 py-1 text-[10px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors" title="Reject Review">
+                                Reject
+                            </button>
+                            {% endif %}
+                            <button type="button" onclick="deleteReview('{{ r.id }}')"
+                                class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg transition-colors" title="Delete Review">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const currentBusinessId = parseInt("{{ selected_business_id }}");
+
+    function onBusinessFilterChange(val) {
+        window.location.href = `/reviews/manage?business_id=${val}`;
+    }
+
+    async function updateReviewStatus(reviewId, newStatus) {
+        try {
+            const res = await fetch(`/reviews/${reviewId}/status?status=${newStatus}`, {
+                method: 'PUT'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Status Updated', `Review status set to ${newStatus}.`);
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Update Failed', err.detail || 'Could not update review status.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        }
+    }
+
+    async function deleteReview(reviewId) {
+        const result = await Swal.fire({
+            title: 'Delete Review?',
+            text: 'This customer review will be permanently removed.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, Delete'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const res = await fetch(`/reviews/${reviewId}`, { method: 'DELETE' });
+                if (res.ok) {
+                    window.showSuccessToast('Review Deleted', 'Review removed successfully.');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    const err = await res.json();
+                    window.showErrorAlert('Deletion Failed', err.detail || 'Could not delete review.');
+                }
+            } catch (err) {
+                console.error(err);
+                window.showErrorAlert('Error', 'An unexpected error occurred.');
+            }
+        }
+    }
+
+    function filterReviewTable() {
+        const search = document.getElementById('reviewSearchInput').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const rating = document.getElementById('ratingFilter').value;
+        const rows = document.querySelectorAll('.review-row');
+
+        rows.forEach(row => {
+            const rowSearch = row.getAttribute('data-search').toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+            const rowRating = row.getAttribute('data-rating');
+
+            const matchesSearch = !search || rowSearch.includes(search);
+            const matchesStatus = !status || rowStatus === status;
+            const matchesRating = !rating || rowRating === rating;
+
+            if (matchesSearch && matchesStatus && matchesRating) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

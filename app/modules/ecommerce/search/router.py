@@ -7,11 +7,21 @@ from sqlalchemy.orm import Session
 
 from app.common.enums import Status
 from app.database import get_db
-from app.modules.ecommerce.search.schemas import SearchQuery, SearchResult
+from app.modules.ecommerce.search.schemas import SearchQuery, SearchResult, SuggestItem
 from app.modules.ecommerce.search.service import SearchService
 
 router = APIRouter(prefix="/search", tags=["Search"])
 service = SearchService()
+
+
+@router.get("/suggest", response_model=list[SuggestItem])
+def suggest_products(
+    q: str = Query(..., description="Search term for auto-suggest"),
+    business_id: int | None = Query(1),
+    limit: int = Query(10, ge=1, le=20),
+    db: Session = Depends(get_db),
+):
+    return service.suggest_products(db, q=q, business_id=business_id, limit=limit)
 
 
 @router.get("", response_model=SearchResult)

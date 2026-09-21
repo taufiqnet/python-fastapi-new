@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Catalog Search & Faceted Filtering - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    Store Operations Catalog
+                </span>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 mt-1">Product Catalog & Faceted Search</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Filter products dynamically by category, brand, price brackets, customer ratings, and inventory attributes.</p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <!-- Business Profile Selector -->
+            <label for="filterBusiness" class="text-xs font-medium text-gray-600">Business:</label>
+            <select id="filterBusiness" onchange="onBusinessFilterChange(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 text-xs rounded-xl px-3 py-2 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all font-medium"
+                {% if current_user and not current_user.is_superuser %}disabled{% endif %}>
+                {% for b in businesses %}
+                <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Main Layout: Multi-Facet Filter Sidebar + Product Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+        <!-- Multi-Facet Sidebar Filters (1 col) -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-5 h-fit">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <i class="fas fa-filter text-sm"></i>
+                    </div>
+                    <h2 class="text-sm font-bold text-gray-900">Faceted Filters</h2>
+                </div>
+                <a href="/catalog/browse" class="text-[11px] font-semibold text-rose-600 hover:text-rose-800 transition-colors">
+                    Reset All
+                </a>
+            </div>
+
+            <form id="facet-filter-form" method="GET" action="/catalog/browse" class="space-y-4">
+                <input type="hidden" name="business_id" value="{{ selected_business_id }}" />
+
+                <!-- Search Term -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">Keywords / Search</label>
+                    <div class="relative">
+                        <input type="text" name="q" value="{{ q }}" placeholder="Product title or keyword..."
+                            class="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                        <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Category Facet -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">Category</label>
+                    <select name="category_id" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                        <option value="">All Categories</option>
+                        {% for c in categories %}
+                        <option value="{{ c.id }}" {% if category_id and c.id|string == category_id|string %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Brand Facet -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">Brand</label>
+                    <select name="brand" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                        <option value="">All Brands</option>
+                        {% for b in brands %}
+                        <option value="{{ b.name }}" {% if selected_brand and b.name == selected_brand %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Price Range Facet -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">Price Range ($)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="number" step="0.01" min="0" name="min_price" value="{{ min_price if min_price is not none else '' }}" placeholder="Min Price"
+                            class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500" />
+                        <input type="number" step="0.01" min="0" name="max_price" value="{{ max_price if max_price is not none else '' }}" placeholder="Max Price"
+                            class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500" />
+                    </div>
+                </div>
+
+                <!-- Min Customer Rating Facet -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">Minimum Customer Rating</label>
+                    <select name="rating_min" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                        <option value="">Any Score</option>
+                        <option value="4.0" {% if rating_min == 4.0 %}selected{% endif %}>4.0 Stars & Above</option>
+                        <option value="3.0" {% if rating_min == 3.0 %}selected{% endif %}>3.0 Stars & Above</option>
+                        <option value="2.0" {% if rating_min == 2.0 %}selected{% endif %}>2.0 Stars & Above</option>
+                    </select>
+                </div>
+
+                <!-- Featured Products Toggle -->
+                <div class="pt-1">
+                    <label class="inline-flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" name="is_featured" value="true" {% if is_featured %}checked{% endif %} class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4" />
+                        <span class="text-xs font-semibold text-gray-700">Featured Products Only</span>
+                    </label>
+                </div>
+
+                <!-- Sorting Controls -->
+                <div class="pt-2 border-t border-gray-100">
+                    <label class="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">Sort Results By</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select name="sort_by" class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium">
+                            <option value="relevance" {% if sort_by == 'relevance' %}selected{% endif %}>Relevance</option>
+                            <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Price</option>
+                            <option value="rating" {% if sort_by == 'rating' %}selected{% endif %}>Rating</option>
+                            <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Newest</option>
+                            <option value="sold_count" {% if sort_by == 'sold_count' %}selected{% endif %}>Best Sellers</option>
+                        </select>
+                        <select name="sort_order" class="px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium">
+                            <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Descending</option>
+                            <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Ascending</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1.5">
+                    <i class="fas fa-sliders-h text-xs"></i>
+                    <span>Apply Facet Filters</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- Product Results Grid (3 cols) -->
+        <div class="lg:col-span-3 space-y-4">
+
+            <!-- Result Count & Header -->
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-bold text-gray-900">
+                        Showing {{ result.items|length }} of {{ result.total }} matched catalog items
+                    </p>
+                    {% if q %}
+                    <p class="text-[11px] text-gray-500 mt-0.5">Filtering for term: <span class="font-semibold text-indigo-600">"{{ q }}"</span></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if not result.items %}
+            <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-gray-200 shadow-xs">
+                <i class="fas fa-search text-3xl text-gray-300 mb-2 block"></i>
+                <p class="text-xs font-semibold text-gray-600">No Catalog Products Found</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">Try loosening filter criteria or searching for broader keywords.</p>
+            </div>
+            {% else %}
+            <!-- Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {% for item in result.items %}
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow">
+                    <div>
+                        <!-- Product Image Box -->
+                        <div class="h-44 bg-gray-50 border-b border-gray-100 relative flex items-center justify-center p-4">
+                            {% if item.primary_image_url %}
+                            <img src="{{ item.primary_image_url }}" alt="{{ item.title }}" class="max-h-full max-w-full object-contain" />
+                            {% else %}
+                            <i class="fas fa-box text-3xl text-gray-300"></i>
+                            {% endif %}
+
+                            {% if item.is_featured %}
+                            <span class="absolute top-3 left-3 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950 shadow-xs">
+                                <i class="fas fa-star text-[9px] mr-1"></i> Featured
+                            </span>
+                            {% endif %}
+
+                            <span class="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700 uppercase">
+                                {{ item.status }}
+                            </span>
+                        </div>
+
+                        <!-- Card Content -->
+                        <div class="p-4 space-y-2">
+                            <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">{{ item.brand or 'Unbranded' }}</p>
+                            <h3 class="text-sm font-bold text-gray-900 line-clamp-1" title="{{ item.title }}">{{ item.title }}</h3>
+                            <p class="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">{{ item.description or 'No description available.' }}</p>
+
+                            <!-- Rating & Reviews -->
+                            <div class="flex items-center space-x-2 pt-1">
+                                <div class="flex items-center text-amber-400 text-xs space-x-0.5">
+                                    <i class="fas fa-star"></i>
+                                    <span class="font-bold text-gray-800 ml-1 text-xs">{{ "%.1f"|format(item.average_rating) }}</span>
+                                </div>
+                                <span class="text-[10px] text-gray-400">({{ item.review_count }} reviews)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card Footer & Price -->
+                    <div class="p-4 pt-2 border-t border-gray-50 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] text-gray-400 font-medium block">Catalog Price</span>
+                            <span class="text-base font-extrabold text-emerald-600">
+                                {% if item.min_price != None %}
+                                    ${{ "%.2f"|format(item.min_price) }}
+                                {% else %}
+                                    Contact
+                                {% endif %}
+                            </span>
+                        </div>
+
+                        <a href="/products/edit/{{ item.id }}" class="px-3 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors">
+                            Manage Product
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination Footer -->
+            {% if result.total_pages > 1 %}
+            <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 shadow-xs text-xs">
+                <span class="text-gray-500 font-medium">Page {{ result.page }} of {{ result.total_pages }}</span>
+                <div class="flex items-center space-x-2">
+                    {% if result.has_prev %}
+                    <a href="/catalog/browse?page={{ result.page - 1 }}&q={{ q }}&business_id={{ selected_business_id }}&brand={{ selected_brand }}&sort_by={{ sort_by }}"
+                        class="px-3 py-1.5 font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors">
+                        Previous
+                    </a>
+                    {% endif %}
+                    {% if result.has_next %}
+                    <a href="/catalog/browse?page={{ result.page + 1 }}&q={{ q }}&business_id={{ selected_business_id }}&brand={{ selected_brand }}&sort_by={{ sort_by }}"
+                        class="px-3 py-1.5 font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors">
+                        Next
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function onBusinessFilterChange(val) {
+        window.location.href = `/catalog/browse?business_id=${val}`;
+    }
+</script>
+{% endblock %}

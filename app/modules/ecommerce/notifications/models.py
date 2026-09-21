@@ -45,6 +45,28 @@ class Notification(Base, UUIDMixin, TimestampMixin):
     data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
 
+class NotificationTemplate(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "notification_templates"
+    __table_args__ = (
+        UniqueConstraint(
+            "business_id", "event_type", "channel", name="uq_notification_template_biz_event_channel"
+        ),
+    )
+
+    business_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True) # order_status, shipping_dispatches, payment_receipts, low_stock_alerts
+    channel: Mapped[str] = mapped_column(String(50), default="email", nullable=False) # email, sms, in_app, push
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    body_template: Mapped[str] = mapped_column(Text, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
 class NotificationPreference(Base, UUIDMixin, TimestampMixin):
     __tablename__ = "notification_preferences"
     __table_args__ = (

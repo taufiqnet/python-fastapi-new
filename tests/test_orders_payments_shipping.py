@@ -12,6 +12,9 @@ from sqlalchemy.pool import StaticPool
 from app.common.enums import Status
 from app.database import Base, get_db
 from app.main import app
+from app.core.identity.models import User
+from app.core.tenancy.models import BusinessProfile
+from app.core.deps import get_current_user, get_current_user_optional
 from app.modules.ecommerce.products.models import Product, ProductVariant
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
@@ -35,6 +38,21 @@ SyncTestingSessionLocal = sessionmaker(
 def sync_db():
     Base.metadata.create_all(bind=sync_engine)
     db = SyncTestingSessionLocal()
+    biz = BusinessProfile(id=1, name_en="Test Business", is_active=True)
+    db.add(biz)
+
+    user = User(
+        id=1,
+        username="admin",
+        email="admin@example.com",
+        password_hash="fakehash",
+        is_superuser=True,
+        is_active=True,
+        business_id=1,
+    )
+    db.add(user)
+    db.commit()
+
     try:
         yield db
     finally:
@@ -47,7 +65,18 @@ async def client(sync_db):
     def _override_get_db():
         yield sync_db
 
+    superuser = sync_db.query(User).filter(User.username == "admin").first()
+
+    def _override_get_current_user():
+        return superuser
+
+    async def _override_get_current_user_optional(*args, **kwargs):
+        return superuser
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = _override_get_current_user
+    app.dependency_overrides[get_current_user_optional] = _override_get_current_user_optional
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

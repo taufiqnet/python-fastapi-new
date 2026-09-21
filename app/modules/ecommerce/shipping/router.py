@@ -32,6 +32,15 @@ def create_shipment(
     return service.create_shipment(db, data)
 
 
+@router.get("/shipments", response_model=list[ShipmentOut])
+def get_shipments(
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_shipments(db, business_id=business_id)
+
+
 @router.get("/shipments/{shipment_id}", response_model=ShipmentOut)
 def get_shipment(
     shipment_id: uuid.UUID,
@@ -82,3 +91,21 @@ def quote_shipping_rate(
     db: Session = Depends(get_db),
 ):
     return service.quote_shipping_rate(db, req)
+
+
+@router.post("/calculate", response_model=ShippingRateQuoteResponse)
+def calculate_shipping_rate(
+    req: ShippingRateQuoteRequest,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.quote_shipping_rate(db, req)
+
+
+@router.post("/labels", response_model=ShipmentOut, status_code=status.HTTP_201_CREATED)
+def generate_shipping_label(
+    data: ShipmentCreate,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "create")),
+    db: Session = Depends(get_db),
+):
+    return service.create_shipment(db, data)

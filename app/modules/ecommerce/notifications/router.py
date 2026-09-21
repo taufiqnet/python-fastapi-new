@@ -11,6 +11,9 @@ from app.modules.ecommerce.notifications.schemas import (
     NotificationOut,
     NotificationPreferenceCreate,
     NotificationPreferenceOut,
+    NotificationTemplateCreate,
+    NotificationTemplateOut,
+    NotificationTemplateUpdate,
 )
 from app.modules.ecommerce.notifications.service import NotificationService
 
@@ -75,3 +78,45 @@ def get_notification_preferences(
     db: Session = Depends(get_db),
 ):
     return service.get_user_preferences(db, user_id=user_id)
+
+
+@router.get("/templates", response_model=list[NotificationTemplateOut])
+def get_templates(
+    business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_templates(db, business_id=business_id)
+
+
+@router.post("/templates", response_model=NotificationTemplateOut, status_code=status.HTTP_201_CREATED)
+def upsert_template(
+    data: NotificationTemplateCreate,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "update")),
+    db: Session = Depends(get_db),
+):
+    return service.upsert_template(db, data)
+
+
+@router.put("/templates/{template_id}", response_model=NotificationTemplateOut)
+def update_template(
+    template_id: uuid.UUID,
+    data: NotificationTemplateUpdate,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "update")),
+    db: Session = Depends(get_db),
+):
+    return service.update_template(db, template_id=template_id, data=data)
+
+
+@router.get("/logs", response_model=list[NotificationOut])
+def get_notification_logs(
+    business_id: int | None = Query(None),
+    event_type: str | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_business_notifications(
+        db, business_id=business_id, event_type=event_type, skip=skip, limit=limit
+    )

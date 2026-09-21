@@ -9,6 +9,9 @@ from app.modules.ecommerce.notifications.schemas import (
     NotificationOut,
     NotificationPreferenceCreate,
     NotificationPreferenceOut,
+    NotificationTemplateCreate,
+    NotificationTemplateOut,
+    NotificationTemplateUpdate,
 )
 
 
@@ -57,3 +60,39 @@ class NotificationService:
     ) -> list[NotificationPreferenceOut]:
         prefs = self.repository.get_user_preferences(db, user_id)
         return [NotificationPreferenceOut.model_validate(p) for p in prefs]
+
+    def get_business_notifications(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        event_type: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[NotificationOut]:
+        notifications = self.repository.get_notifications_by_business(
+            db, business_id=business_id, event_type=event_type, skip=skip, limit=limit
+        )
+        return [NotificationOut.model_validate(n) for n in notifications]
+
+    def get_templates(
+        self, db: Session, business_id: int | None = None
+    ) -> list[NotificationTemplateOut]:
+        templates = self.repository.get_templates_by_business(db, business_id=business_id)
+        return [NotificationTemplateOut.model_validate(t) for t in templates]
+
+    def upsert_template(
+        self, db: Session, data: NotificationTemplateCreate
+    ) -> NotificationTemplateOut:
+        tmpl = self.repository.upsert_template(db, data)
+        return NotificationTemplateOut.model_validate(tmpl)
+
+    def update_template(
+        self, db: Session, template_id: uuid.UUID, data: NotificationTemplateUpdate
+    ) -> NotificationTemplateOut:
+        tmpl = self.repository.get_template_by_id(db, template_id)
+        if not tmpl:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Notification template not found"
+            )
+        updated = self.repository.update_template(db, tmpl, data)
+        return NotificationTemplateOut.model_validate(updated)

@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Store Notifications & Customer Alerts - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+    <!-- Header Title & Controls -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 fs-7">
+                    <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Ecommerce</a></li>
+                    <li class="breadcrumb-item active">Store Notifications</li>
+                </ol>
+            </nav>
+            <h1 class="h3 fw-bold mb-0">Store Notifications & Automated Alerts</h1>
+            <p class="text-muted fs-7 mb-0">Manage automated email/SMS templates and inspect customer delivery audit logs.</p>
+        </div>
+        <div class="d-flex gap-2">
+            {% if current_user.is_superuser and businesses %}
+            <form method="get" class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0 fs-7 text-muted fw-semibold">Business:</label>
+                <select name="business_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if b.id == business_id %}selected{% endif %}>{{ b.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#testNotificationModal">
+                <i class="fas fa-paper-plane me-1"></i> Send Test Alert
+            </button>
+        </div>
+    </div>
+
+    <!-- Stat Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="rounded-3 bg-primary bg-opacity-10 text-primary p-3 me-3">
+                        <i class="fas fa-sliders-h fa-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted fs-7 fw-semibold">Active Templates</div>
+                        <div class="fs-4 fw-bold text-dark">{{ notification_templates|length }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="rounded-3 bg-success bg-opacity-10 text-success p-3 me-3">
+                        <i class="fas fa-paper-plane fa-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted fs-7 fw-semibold">Total Dispatched</div>
+                        <div class="fs-4 fw-bold text-dark">{{ notification_logs|length }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="rounded-3 bg-info bg-opacity-10 text-info p-3 me-3">
+                        <i class="fas fa-envelope-open fa-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted fs-7 fw-semibold">Read Count</div>
+                        <div class="fs-4 fw-bold text-dark">
+                            {% set read_count = notification_logs | selectattr('is_read', 'equalto', True) | list | length %}
+                            {{ read_count }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-3 d-flex align-items-center">
+                    <div class="rounded-3 bg-warning bg-opacity-10 text-warning p-3 me-3">
+                        <i class="fas fa-bell fa-lg"></i>
+                    </div>
+                    <div>
+                        <div class="text-muted fs-7 fw-semibold">Delivery Rate</div>
+                        <div class="fs-4 fw-bold text-dark">100%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4 border-bottom-0" id="notificationTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active fw-semibold" id="templates-tab" data-bs-toggle="tab" data-bs-target="#templates-pane" type="button" role="tab">
+                <i class="fas fa-file-alt me-1"></i> Notification Templates
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link fw-semibold" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit-pane" type="button" role="tab">
+                <i class="fas fa-list-alt me-1"></i> Delivery Audit Log
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Contents -->
+    <div class="tab-content" id="notificationTabsContent">
+        <!-- Templates Tab -->
+        <div class="tab-pane fade show active" id="templates-pane" role="tabpanel">
+            <div class="row g-4">
+                {% for tmpl in notification_templates %}
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100 rounded-3">
+                        <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-primary bg-opacity-10 text-primary text-uppercase me-2" style="font-size:0.7rem;">
+                                    {{ tmpl.event_type }}
+                                </span>
+                                <span class="badge bg-secondary bg-opacity-10 text-secondary text-uppercase" style="font-size:0.7rem;">
+                                    {{ tmpl.channel }}
+                                </span>
+                                <h6 class="fw-bold mb-0 mt-2 text-dark">{{ tmpl.name }}</h6>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="switch-{{ tmpl.id }}" {% if tmpl.is_active %}checked{% endif %} onchange="toggleTemplateActive('{{ tmpl.id }}', this.checked)">
+                            </div>
+                        </div>
+                        <div class="card-body pt-0">
+                            <div class="mb-2">
+                                <label class="form-label text-muted fs-7 fw-semibold mb-1">Subject Line Template</label>
+                                <input type="text" class="form-control form-control-sm text-dark bg-light" id="subject-{{ tmpl.id }}" value="{{ tmpl.subject }}">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted fs-7 fw-semibold mb-1">Body Template (supports {order_id}, {customer_name}, {status}, {tracking_number})</label>
+                                <textarea class="form-control form-control-sm font-monospace bg-light" id="body-{{ tmpl.id }}" rows="4">{{ tmpl.body_template }}</textarea>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="saveTemplate('{{ tmpl.id }}')">
+                                    <i class="fas fa-save me-1"></i> Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12 text-center py-5">
+                    <p class="text-muted">No notification templates found for this business.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Audit Log Tab -->
+        <div class="tab-pane fade" id="audit-pane" role="tabpanel">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" id="auditLogsTable">
+                            <thead class="bg-light fs-7 text-muted">
+                                <tr>
+                                    <th class="ps-3">Sent Timestamp</th>
+                                    <th>Event Type</th>
+                                    <th>Recipient User ID</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th class="text-end pe-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="fs-7">
+                                {% for log in notification_logs %}
+                                <tr>
+                                    <td class="ps-3 text-muted">
+                                        {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') if log.created_at else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info bg-opacity-10 text-info fw-semibold">
+                                            {{ log.type }}
+                                        </span>
+                                    </td>
+                                    <td class="font-monospace text-muted">{{ log.user_id }}</td>
+                                    <td class="fw-semibold text-dark">{{ log.title }}</td>
+                                    <td>
+                                        {% if log.is_read %}
+                                        <span class="badge bg-success bg-opacity-10 text-success"><i class="fas fa-check-circle me-1"></i> Read</span>
+                                        {% else %}
+                                        <span class="badge bg-warning bg-opacity-10 text-warning"><i class="fas fa-clock me-1"></i> Unread / Sent</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <button class="btn btn-sm btn-light border" onclick="viewLogDetail('{{ log.id }}', '{{ log.title|e }}', '{{ log.body|e }}', '{{ log.created_at }}')">
+                                            <i class="fas fa-eye me-1"></i> Payload
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No notification delivery logs recorded.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Notification Modal -->
+<div class="modal fade" id="testNotificationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Dispatch Test Customer Notification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="testNotificationForm">
+                    <div class="mb-3">
+                        <label class="form-label fs-7 fw-semibold">Recipient User ID (UUID)</label>
+                        <input type="text" class="form-control form-control-sm" id="testUserId" value="{{ current_user.id }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fs-7 fw-semibold">Event / Alert Type</label>
+                        <select class="form-select form-select-sm" id="testEventType">
+                            <option value="order_status">order_status (Order Status Update)</option>
+                            <option value="shipping_dispatches">shipping_dispatches (Shipping Alert)</option>
+                            <option value="payment_receipts">payment_receipts (Payment Receipt)</option>
+                            <option value="low_stock_alerts">low_stock_alerts (Low Stock Warning)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fs-7 fw-semibold">Notification Title</label>
+                        <input type="text" class="form-control form-control-sm" id="testTitle" value="Test Alert: Order #1002 Dispatch" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fs-7 fw-semibold">Body Content</label>
+                        <textarea class="form-control form-control-sm" id="testBody" rows="3" required>Your order #1002 has been shipped with tracking number TRK998231.</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="sendTestNotification()">Dispatch Notification</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="logDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="logDetailTitle">Notification Log Payload</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="fs-7 text-muted mb-2" id="logDetailDate"></p>
+                <div class="p-3 bg-light rounded-3 text-dark fs-7 font-monospace" id="logDetailBody" style="white-space: pre-wrap;"></div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function saveTemplate(templateId) {
+    const subject = document.getElementById(`subject-${templateId}`).value;
+    const body_template = document.getElementById(`body-${templateId}`).value;
+
+    try {
+        const response = await fetch(`/notifications/templates/${templateId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subject, body_template })
+        });
+        if (response.ok) {
+            Swal.fire({ icon: 'success', title: 'Saved!', text: 'Notification template updated successfully.', timer: 1500, showConfirmButton: false });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update notification template.' });
+        }
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+}
+
+async function toggleTemplateActive(templateId, isActive) {
+    try {
+        await fetch(`/notifications/templates/${templateId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_active: isActive })
+        });
+    } catch (err) {
+        console.error("Failed to toggle template active state", err);
+    }
+}
+
+async function sendTestNotification() {
+    const user_id = document.getElementById('testUserId').value;
+    const type = document.getElementById('testEventType').value;
+    const title = document.getElementById('testTitle').value;
+    const body = document.getElementById('testBody').value;
+
+    try {
+        const response = await fetch('/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                business_id: {{ business_id if business_id else 1 }},
+                user_id: user_id,
+                type: type,
+                title: title,
+                body: body
+            })
+        });
+        if (response.ok) {
+            const modalElem = document.getElementById('testNotificationModal');
+            const modal = bootstrap.Modal.getInstance(modalElem);
+            if (modal) modal.hide();
+            Swal.fire({ icon: 'success', title: 'Dispatched!', text: 'Test notification created successfully.', timer: 1500, showConfirmButton: false })
+                .then(() => location.reload());
+        } else {
+            const errData = await response.json();
+            Swal.fire({ icon: 'error', title: 'Failed', text: errData.detail || 'Failed to dispatch notification.' });
+        }
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+}
+
+function viewLogDetail(id, title, body, date) {
+    document.getElementById('logDetailTitle').innerText = title;
+    document.getElementById('logDetailDate').innerText = 'Timestamp: ' + date;
+    document.getElementById('logDetailBody').innerText = body;
+    new bootstrap.Modal(document.getElementById('logDetailModal')).show();
+}
+</script>
+{% endblock %}

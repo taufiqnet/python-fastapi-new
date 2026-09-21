@@ -51,6 +51,38 @@ class ReviewService:
             )
         return ReviewOut.model_validate(review)
 
+    def get_all_reviews(
+        self,
+        db: Session,
+        business_id: int | None = 1,
+        status: str | None = None,
+        rating: int | None = None,
+        product_id: uuid.UUID | None = None,
+        skip: int = 0,
+        limit: int = 500,
+    ) -> list[ReviewOut]:
+        reviews = self.repository.get_all_reviews(
+            db,
+            business_id=business_id,
+            status=status,
+            rating=rating,
+            product_id=product_id,
+            skip=skip,
+            limit=limit,
+        )
+        return [ReviewOut.model_validate(r) for r in reviews]
+
+    def update_review_status(
+        self, db: Session, review_id: uuid.UUID, status: str
+    ) -> ReviewOut:
+        review = self.repository.get_review_by_id(db, review_id)
+        if not review:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Review not found"
+            )
+        updated = self.repository.update_review_status(db, review, status)
+        return ReviewOut.model_validate(updated)
+
     def get_reviews_by_product(
         self,
         db: Session,

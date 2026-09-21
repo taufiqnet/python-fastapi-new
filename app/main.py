@@ -85,6 +85,7 @@ from app.routers import (
     brand_views,
     business,
     business_views,
+    catalog_views,
     category_views,
     certificate_views,
     compensation_views,
@@ -95,6 +96,7 @@ from app.routers import (
     leave_views,
     model_views,
     notice_views,
+    notification_views,
     offer_letter_views,
     order_views,
     organization_views,
@@ -102,7 +104,9 @@ from app.routers import (
     pricing_views,
     product_views,
     recruitment_views,
+    review_views,
     role_views,
+    shipping_views,
     subscription_plan_views,
     user_views,
     mcp_views,
@@ -248,6 +252,9 @@ app.include_router(brand_views.router)
 app.include_router(model_views.router)
 app.include_router(product_views.router)
 app.include_router(pricing_views.router)
+app.include_router(shipping_views.router)
+app.include_router(review_views.router)
+app.include_router(catalog_views.router)
 app.include_router(order_views.router)
 app.include_router(inventory_views.router)
 app.include_router(organization_views.router)
@@ -276,6 +283,7 @@ app.include_router(products_router)
 app.include_router(inventory_router)
 app.include_router(pricing_router)
 app.include_router(cart_router)
+app.include_router(notification_views.router)
 app.include_router(orders_router)
 app.include_router(payments_router)
 app.include_router(shipping_router)

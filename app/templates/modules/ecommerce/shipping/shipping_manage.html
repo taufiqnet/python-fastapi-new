@@ -1,0 +1,762 @@
+{% extends "base.html" %}
+
+{% block title %}Shipping, Carriers & Delivery Management - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    Ecommerce Store Operations
+                </span>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 mt-1">Shipping & Carrier Management</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Configure shipping zones, weight bracket rates, dynamic rate calculator, and shipment fulfillment tracking.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Business Profile Filter -->
+            <div class="flex items-center space-x-2">
+                <label for="filterBusiness" class="text-xs font-medium text-gray-600">Business:</label>
+                <select id="filterBusiness" onchange="onBusinessFilterChange(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 text-xs rounded-xl px-3 py-2 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all font-medium"
+                    {% if current_user and not current_user.is_superuser %}disabled{% endif %}>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Header Action Buttons -->
+            <button type="button" onclick="openZoneModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center space-x-1.5">
+                <i class="fas fa-plus text-xs"></i>
+                <span>Add Shipping Zone</span>
+            </button>
+            <button type="button" onclick="openLabelModal()" class="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors flex items-center space-x-1.5 shadow-xs">
+                <i class="fas fa-shipping-fast text-xs text-indigo-600"></i>
+                <span>Create Shipment / Label</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stat Summary Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Shipping Zones</p>
+                <h3 class="text-xl font-bold text-gray-900 mt-1">{{ total_zones }}</h3>
+                <p class="text-[10px] text-gray-500 mt-0.5">Active regional coverage</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                <i class="fas fa-map-marked-alt text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Shipments</p>
+                <h3 class="text-xl font-bold text-gray-900 mt-1">{{ total_shipments }}</h3>
+                <p class="text-[10px] text-gray-500 mt-0.5">All time fulfilled shipments</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                <i class="fas fa-boxes text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">In Transit</p>
+                <h3 class="text-xl font-bold text-amber-600 mt-1">{{ in_transit_count }}</h3>
+                <p class="text-[10px] text-amber-500 mt-0.5">Carrier package dispatching</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                <i class="fas fa-truck text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Delivered</p>
+                <h3 class="text-xl font-bold text-emerald-600 mt-1">{{ delivered_count }}</h3>
+                <p class="text-[10px] text-emerald-500 mt-0.5">Successfully completed</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <i class="fas fa-check-circle text-base"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid Section: Zones & Rates + Rate Calculator -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Shipping Zones & Rates List (2 cols) -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <i class="fas fa-globe-americas text-sm"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold text-gray-900">Shipping Zones & Weight Brackets</h2>
+                        <p class="text-[11px] text-gray-500">Configure regions and weight-based rate pricing rules.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="openZoneModal()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center space-x-1">
+                    <i class="fas fa-plus text-[10px]"></i>
+                    <span>New Zone</span>
+                </button>
+            </div>
+
+            {% if not zones %}
+            <div class="text-center py-8 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+                <i class="fas fa-map-marked-alt text-2xl text-gray-300 mb-2"></i>
+                <p class="text-xs font-semibold text-gray-600">No Shipping Zones Defined</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">Click 'Add Shipping Zone' to define regional shipping brackets.</p>
+            </div>
+            {% else %}
+            <div class="space-y-4 max-h-[380px] overflow-y-auto pr-1 custom-scrollbar">
+                {% for z in zones %}
+                <div class="bg-gray-50/70 border border-gray-200/80 rounded-xl p-4 transition-all hover:border-indigo-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-xs text-gray-900">{{ z.name }}</span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-indigo-100/70 text-indigo-800 uppercase tracking-wider">{{ z.region }}</span>
+                        </div>
+                        <span class="text-[10px] text-gray-400 font-mono">ID: {{ z.id }}</span>
+                    </div>
+
+                    {% if z.rates %}
+                    <div class="overflow-x-auto mt-2">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="text-[10px] uppercase font-bold text-gray-400 border-b border-gray-200/60 pb-1">
+                                    <th class="py-1">Min Weight (kg)</th>
+                                    <th class="py-1">Max Weight (kg)</th>
+                                    <th class="py-1 text-right">Base Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200/40 text-gray-700">
+                                {% for r in z.rates %}
+                                <tr>
+                                    <td class="py-1.5 font-medium">{{ r.min_weight }} kg</td>
+                                    <td class="py-1.5 font-medium">{{ r.max_weight }} kg</td>
+                                    <td class="py-1.5 font-bold text-emerald-600 text-right">${{ "%.2f"|format(r.base_cost) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-[11px] text-gray-400 italic mt-1">No specific weight rates configured for this zone (fallback flat rate applies).</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Dynamic Shipping Rate Calculator Tool (1 col) -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center space-x-2 border-b border-gray-100 pb-3 mb-4">
+                    <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                        <i class="fas fa-calculator text-sm"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold text-gray-900">Dynamic Rate Calculator</h2>
+                        <p class="text-[11px] text-gray-500">Test shipping cost calculations.</p>
+                    </div>
+                </div>
+
+                <form id="calc-rate-form" onsubmit="calculateRate(event)" class="space-y-3">
+                    <div>
+                        <label for="calc_region" class="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">Destination Region / Country Code</label>
+                        <input type="text" id="calc_region" required placeholder="e.g. USA, EUR, CA"
+                            class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                    </div>
+
+                    <div>
+                        <label for="calc_weight" class="block text-[11px] font-semibold text-gray-700 uppercase tracking-wider mb-1">Package Weight (kg)</label>
+                        <input type="number" step="0.01" min="0" id="calc_weight" required placeholder="e.g. 2.5"
+                            class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                    </div>
+
+                    <button type="submit" id="btn-calc-rate" class="w-full py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-2">
+                        <i class="fas fa-play text-xs"></i>
+                        <span>Calculate Rate Quote</span>
+                    </button>
+                </form>
+            </div>
+
+            <div id="calc-result-box" class="mt-4 p-4 rounded-xl border border-gray-100 bg-gray-50/80 hidden transition-all">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] uppercase font-bold text-gray-400">Quote Result</span>
+                    <span id="calc-carrier-tag" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700">Standard Express</span>
+                </div>
+                <div class="flex items-baseline justify-between mt-2">
+                    <span class="text-xs text-gray-600 font-medium">Estimated Base Cost:</span>
+                    <span id="calc-cost-display" class="text-xl font-extrabold text-emerald-600">$0.00</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Shipments & Fulfillment Tracking Section -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <i class="fas fa-shipping-fast text-sm"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900">Shipment Fulfillment & Carrier Tracking</h2>
+                    <p class="text-[11px] text-gray-500">Track package carrier status, tracking numbers, and delivery lifecycle.</p>
+                </div>
+            </div>
+
+            <!-- Toolbar Search / Filters -->
+            <div class="flex items-center space-x-2">
+                <div class="relative">
+                    <input type="text" id="shipmentSearchInput" onkeyup="filterShipmentTable()" placeholder="Search shipments..."
+                        class="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                    <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                </div>
+
+                <select id="statusFilter" onchange="filterShipmentTable()" class="bg-gray-50 border border-gray-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors font-medium">
+                    <option value="">All Statuses</option>
+                    {% for st in shipment_statuses %}
+                    <option value="{{ st }}">{{ st|replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% if not shipments %}
+        <div class="text-center py-12 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+            <i class="fas fa-box-open text-3xl text-gray-300 mb-2"></i>
+            <p class="text-xs font-semibold text-gray-600">No Shipments Generated Yet</p>
+            <p class="text-[11px] text-gray-400 mt-0.5">Click 'Create Shipment / Label' to fulfill orders and track packages.</p>
+        </div>
+        {% else %}
+        <div class="overflow-x-auto">
+            <table id="shipmentsTable" class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50/70 border-b border-gray-200/80 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        <th class="py-2.5 px-3">Order ID</th>
+                        <th class="py-2.5 px-3">Carrier</th>
+                        <th class="py-2.5 px-3">Tracking Number</th>
+                        <th class="py-2.5 px-3">Status</th>
+                        <th class="py-2.5 px-3">Shipped At</th>
+                        <th class="py-2.5 px-3">Delivered At</th>
+                        <th class="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                    {% for s in shipments %}
+                    <tr class="hover:bg-gray-50/80 transition-colors shipment-row"
+                        data-status="{{ getattr(s.status, 'value', s.status) }}"
+                        data-search="{{ s.carrier }} {{ s.tracking_number or '' }} {{ s.order_id }}">
+                        <td class="py-3 px-3 font-mono text-[11px] font-semibold text-indigo-600">
+                            <a href="/orders/detail/{{ s.order_id }}" class="hover:underline" title="View Order Details">
+                                #{{ s.order_id|string|truncate(8, True, '') }}
+                            </a>
+                        </td>
+                        <td class="py-3 px-3 font-medium text-gray-900">{{ s.carrier }}</td>
+                        <td class="py-3 px-3 font-mono text-gray-600">
+                            {% if s.tracking_number %}
+                            <span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded-md text-[11px] font-medium">{{ s.tracking_number }}</span>
+                            {% else %}
+                            <span class="text-gray-400 italic text-[11px]">Unassigned</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3">
+                            {% set st = getattr(s.status, 'value', s.status) %}
+                            {% if st == 'delivered' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Delivered</span>
+                            {% elif st == 'shipped' or st == 'in_transit' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">{{ st|replace('_', ' ')|title }}</span>
+                            {% elif st == 'label_created' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Label Created</span>
+                            {% elif st == 'failed' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Failed</span>
+                            {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3 text-gray-500 text-[11px]">
+                            {{ s.shipped_at.strftime('%Y-%m-%d %H:%M') if s.shipped_at else '-' }}
+                        </td>
+                        <td class="py-3 px-3 text-gray-500 text-[11px]">
+                            {{ s.delivered_at.strftime('%Y-%m-%d %H:%M') if s.delivered_at else '-' }}
+                        </td>
+                        <td class="py-3 px-3 text-right space-x-1.5">
+                            <button type="button" onclick="openTrackingModal('{{ s.id }}', '{{ getattr(s.status, 'value', s.status) }}', '{{ s.tracking_number or '' }}')"
+                                class="p-1.5 text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors" title="Update Tracking Status">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button type="button" onclick="previewLabel('{{ s.id }}', '{{ s.carrier }}', '{{ s.tracking_number or 'N/A' }}', '{{ s.order_id }}', '{{ getattr(s.status, 'value', s.status) }}')"
+                                class="p-1.5 text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors" title="Print Shipping Label">
+                                <i class="fas fa-print text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Modal: Add Shipping Zone & Weight Rates -->
+<div id="zoneModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-map-marked-alt text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Add Shipping Zone</h3>
+            </div>
+            <button type="button" onclick="closeZoneModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="zoneForm" onsubmit="submitZoneForm(event)" class="p-6 space-y-4">
+            <div>
+                <label for="zone_name" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Zone Name</label>
+                <input type="text" id="zone_name" required placeholder="e.g. North America Express, EU Central"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+            </div>
+
+            <div>
+                <label for="zone_region" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Region / Country Code</label>
+                <input type="text" id="zone_region" required placeholder="e.g. USA, EUR, CA, Global"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+            </div>
+
+            <!-- Dynamic Weight Rate Brackets -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wider">Weight Bracket Rates</label>
+                    <button type="button" onclick="addRateRow()" class="text-xs text-indigo-600 font-semibold hover:text-indigo-800">
+                        <i class="fas fa-plus text-[10px]"></i> Add Rate Bracket
+                    </button>
+                </div>
+                <div id="rateRowsContainer" class="space-y-2">
+                    <div class="rate-row grid grid-cols-3 gap-2 items-center">
+                        <input type="number" step="0.01" min="0" placeholder="Min (kg)" required class="min-weight px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500" value="0.00" />
+                        <input type="number" step="0.01" min="0.01" placeholder="Max (kg)" required class="max-weight px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500" value="10.00" />
+                        <div class="flex items-center space-x-1">
+                            <input type="number" step="0.01" min="0" placeholder="Cost ($)" required class="base-cost px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 w-full" value="15.00" />
+                            <button type="button" onclick="removeRateRow(this)" class="p-1 text-gray-400 hover:text-rose-600"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeZoneModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSaveZone" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Save Shipping Zone</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create Shipment / Label -->
+<div id="labelModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-shipping-fast text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Create Shipment & Label</h3>
+            </div>
+            <button type="button" onclick="closeLabelModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="labelForm" onsubmit="submitLabelForm(event)" class="p-6 space-y-4">
+            <div>
+                <label for="shipment_order_id" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Select Order</label>
+                <select id="shipment_order_id" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                    <option value="">-- Choose Order --</option>
+                    {% for o in orders %}
+                    <option value="{{ o.id }}">Order #{{ o.id|string|truncate(8, True, '') }} - Total: ${{ "%.2f"|format(o.total_amount) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="shipment_carrier" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Shipping Carrier</label>
+                <select id="shipment_carrier" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                    <option value="FedEx">FedEx Express</option>
+                    <option value="DHL">DHL Express</option>
+                    <option value="UPS">UPS Ground</option>
+                    <option value="USPS">USPS Priority</option>
+                    <option value="Standard Express">Standard Express</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="shipment_tracking_number" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Tracking Number (Optional)</label>
+                <input type="text" id="shipment_tracking_number" placeholder="Leave empty to auto-assign"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeLabelModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSaveLabel" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Generate Label & Fulfill</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Update Carrier Tracking Status -->
+<div id="trackingModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-truck text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Update Tracking Status</h3>
+            </div>
+            <button type="button" onclick="closeTrackingModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="trackingForm" onsubmit="submitTrackingForm(event)" class="p-6 space-y-4">
+            <input type="hidden" id="edit_shipment_id" />
+
+            <div>
+                <label for="edit_shipment_status" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Package Status</label>
+                <select id="edit_shipment_status" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                    {% for st in shipment_statuses %}
+                    <option value="{{ st }}">{{ st|replace('_', ' ')|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="edit_tracking_number" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Tracking Number</label>
+                <input type="text" id="edit_tracking_number" placeholder="Enter tracking code"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeTrackingModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSaveTracking" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Update Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Printable Shipping Label Preview -->
+<div id="printLabelModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+            <span class="text-xs font-bold text-gray-800 uppercase tracking-wider">Official Shipping Label</span>
+            <button type="button" onclick="closePrintModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div id="printableLabelCard" class="p-6 space-y-4 font-sans bg-white">
+            <div class="border-4 border-black p-4 space-y-3">
+                <div class="flex items-center justify-between border-b-2 border-black pb-2">
+                    <span id="printCarrier" class="text-xl font-black uppercase tracking-wider">FEDEX</span>
+                    <span class="text-xs font-bold border border-black px-2 py-0.5 uppercase">PRIORITY</span>
+                </div>
+
+                <div class="text-[10px] space-y-0.5">
+                    <p class="font-bold">FROM:</p>
+                    <p class="font-semibold">SaaS Platform Commerce Warehouse</p>
+                    <p>100 Logistics Way, Bldg 4</p>
+                    <p>San Francisco, CA 94105</p>
+                </div>
+
+                <div class="text-xs border-t border-b border-black py-2 space-y-0.5">
+                    <p class="font-bold text-[10px]">SHIP TO:</p>
+                    <p class="font-bold text-sm" id="printOrderId">ORDER #12345678</p>
+                    <p>Customer Order Delivery Address</p>
+                </div>
+
+                <div class="text-center pt-2 space-y-1">
+                    <p class="text-[10px] font-bold uppercase tracking-widest">Tracking Number</p>
+                    <p id="printTracking" class="font-mono text-base font-extrabold tracking-widest">TRK9988776655</p>
+                    <div class="h-10 bg-black w-full flex items-center justify-center text-white text-[10px] tracking-widest font-mono">
+                        ||||| ||| ||||||| |||| ||| |||||||||||
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-end space-x-2">
+            <button type="button" onclick="closePrintModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-xl">Close</button>
+            <button type="button" onclick="executePrint()" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs flex items-center space-x-1.5">
+                <i class="fas fa-print text-xs"></i>
+                <span>Print Label</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const currentBusinessId = parseInt("{{ selected_business_id }}");
+
+    function onBusinessFilterChange(val) {
+        window.location.href = `/shipping/manage?business_id=${val}`;
+    }
+
+    // Rate Bracket Rows Logic
+    function addRateRow() {
+        const container = document.getElementById('rateRowsContainer');
+        const row = document.createElement('div');
+        row.className = 'rate-row grid grid-cols-3 gap-2 items-center';
+        row.innerHTML = `
+            <input type="number" step="0.01" min="0" placeholder="Min (kg)" required class="min-weight px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500" value="0.00" />
+            <input type="number" step="0.01" min="0.01" placeholder="Max (kg)" required class="max-weight px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500" value="10.00" />
+            <div class="flex items-center space-x-1">
+                <input type="number" step="0.01" min="0" placeholder="Cost ($)" required class="base-cost px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 w-full" value="15.00" />
+                <button type="button" onclick="removeRateRow(this)" class="p-1 text-gray-400 hover:text-rose-600"><i class="fas fa-trash text-xs"></i></button>
+            </div>
+        `;
+        container.appendChild(row);
+    }
+
+    function removeRateRow(btn) {
+        const container = document.getElementById('rateRowsContainer');
+        if (container.querySelectorAll('.rate-row').length > 1) {
+            btn.closest('.rate-row').remove();
+        } else {
+            window.showWarningAlert('Action Restricted', 'At least one rate bracket is required per zone.');
+        }
+    }
+
+    // Zone Modal Handlers
+    function openZoneModal() {
+        document.getElementById('zoneForm').reset();
+        document.getElementById('zoneModal').classList.remove('hidden');
+    }
+    function closeZoneModal() {
+        document.getElementById('zoneModal').classList.add('hidden');
+    }
+
+    async function submitZoneForm(e) {
+        e.preventDefault();
+        const name = document.getElementById('zone_name').value.trim();
+        const region = document.getElementById('zone_region').value.trim();
+
+        const rateRows = document.querySelectorAll('.rate-row');
+        const rates = [];
+        rateRows.forEach(row => {
+            rates.push({
+                min_weight: parseFloat(row.querySelector('.min-weight').value),
+                max_weight: parseFloat(row.querySelector('.max-weight').value),
+                base_cost: parseFloat(row.querySelector('.base-cost').value)
+            });
+        });
+
+        const btn = document.getElementById('btnSaveZone');
+        btn.disabled = true;
+        btn.textContent = 'Saving...';
+
+        try {
+            const res = await fetch('/shipping/zones', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: currentBusinessId,
+                    name: name,
+                    region: region,
+                    rates: rates
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Shipping Zone Added', 'New shipping region and rates configured successfully.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Error', err.detail || 'Failed to save shipping zone.');
+            }
+        } catch (error) {
+            console.error(error);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Save Shipping Zone';
+        }
+    }
+
+    // Calculate Rate Tool
+    async function calculateRate(e) {
+        e.preventDefault();
+        const region = document.getElementById('calc_region').value.trim();
+        const weight = parseFloat(document.getElementById('calc_weight').value);
+
+        const btn = document.getElementById('btn-calc-rate');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/shipping/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: currentBusinessId,
+                    region: region,
+                    weight: weight
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('calc-carrier-tag').textContent = data.carrier || 'Standard Express';
+                document.getElementById('calc-cost-display').textContent = `$${parseFloat(data.base_cost).toFixed(2)}`;
+                document.getElementById('calc-result-box').classList.remove('hidden');
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Calculation Failed', err.detail || 'Unable to quote rate.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'Failed to calculate rate quote.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Label Modal Handlers
+    function openLabelModal() {
+        document.getElementById('labelForm').reset();
+        document.getElementById('labelModal').classList.remove('hidden');
+    }
+    function closeLabelModal() {
+        document.getElementById('labelModal').classList.add('hidden');
+    }
+
+    async function submitLabelForm(e) {
+        e.preventDefault();
+        const orderId = document.getElementById('shipment_order_id').value;
+        const carrier = document.getElementById('shipment_carrier').value;
+        const trackingNum = document.getElementById('shipment_tracking_number').value.trim() || `TRK${Math.floor(10000000 + Math.random() * 90000000)}`;
+
+        const btn = document.getElementById('btnSaveLabel');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/shipping/labels', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: currentBusinessId,
+                    order_id: orderId,
+                    carrier: carrier,
+                    tracking_number: trackingNum
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Shipment Created', 'Shipping label generated and tracking assigned.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Creation Failed', err.detail || 'Could not generate shipment label.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Tracking Modal Handlers
+    function openTrackingModal(shipmentId, status, trackingNumber) {
+        document.getElementById('edit_shipment_id').value = shipmentId;
+        document.getElementById('edit_shipment_status').value = status;
+        document.getElementById('edit_tracking_number').value = trackingNumber;
+        document.getElementById('trackingModal').classList.remove('hidden');
+    }
+    function closeTrackingModal() {
+        document.getElementById('trackingModal').classList.add('hidden');
+    }
+
+    async function submitTrackingForm(e) {
+        e.preventDefault();
+        const shipmentId = document.getElementById('edit_shipment_id').value;
+        const status = document.getElementById('edit_shipment_status').value;
+        const trackingNumber = document.getElementById('edit_tracking_number').value.trim();
+
+        const btn = document.getElementById('btnSaveTracking');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`/shipping/shipments/${shipmentId}/tracking?business_id=${currentBusinessId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: status,
+                    tracking_number: trackingNumber || null
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Tracking Updated', 'Carrier status updated successfully.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Update Failed', err.detail || 'Failed to update tracking status.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Print Label Preview
+    function previewLabel(id, carrier, tracking, orderId, status) {
+        document.getElementById('printCarrier').textContent = carrier.toUpperCase();
+        document.getElementById('printOrderId').textContent = `ORDER #${orderId.substring(0, 8)}`;
+        document.getElementById('printTracking').textContent = tracking;
+        document.getElementById('printLabelModal').classList.remove('hidden');
+    }
+
+    function closePrintModal() {
+        document.getElementById('printLabelModal').classList.add('hidden');
+    }
+
+    function executePrint() {
+        window.print();
+    }
+
+    // Search and Status Filter for Shipments
+    function filterShipmentTable() {
+        const search = document.getElementById('shipmentSearchInput').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('.shipment-row');
+
+        rows.forEach(row => {
+            const rowSearch = row.getAttribute('data-search').toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+
+            const matchesSearch = !search || rowSearch.includes(search);
+            const matchesStatus = !status || rowStatus === status;
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

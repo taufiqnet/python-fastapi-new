@@ -3,10 +3,16 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.modules.ecommerce.notifications.models import Notification, NotificationPreference
+from app.modules.ecommerce.notifications.models import (
+    Notification,
+    NotificationPreference,
+    NotificationTemplate,
+)
 from app.modules.ecommerce.notifications.schemas import (
     NotificationCreate,
     NotificationPreferenceCreate,
+    NotificationTemplateCreate,
+    NotificationTemplateUpdate,
 )
 
 
@@ -102,3 +108,78 @@ class NotificationRepository:
             .filter(NotificationPreference.user_id == user_id)
             .all()
         )
+
+    def get_notifications_by_business(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        event_type: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> list[Notification]:
+        query = db.query(Notification)
+        if business_id is not None:
+            query = query.filter(Notification.business_id == business_id)
+        if event_type:
+            query = query.filter(Notification.type == event_type)
+        return query.order_by(Notification.created_at.desc()).offset(skip).limit(limit).all()
+
+    def get_templates_by_business(
+        self, db: Session, business_id: int | None = None
+    ) -> list[NotificationTemplate]:
+        query = db.query(NotificationTemplate)
+        if business_id is not None:
+            query = query.filter(NotificationTemplate.business_id == business_id)
+        return query.all()
+
+    def upsert_template(
+        self, db: Session, data: NotificationTemplateCreate
+    ) -> NotificationTemplate:
+        tmpl = (
+            db.query(NotificationTemplate)
+            .filter(
+                NotificationTemplate.business_id == data.business_id,
+                NotificationTemplate.event_type == data.event_type,
+                NotificationTemplate.channel == data.channel,
+            )
+            .first()
+        )
+        if tmpl:
+            tmpl.name = data.name
+            tmpl.subject = data.subject
+            tmpl.body_template = data.body_template
+            tmpl.is_active = data.is_active
+        else:
+            tmpl = NotificationTemplate(
+                business_id=data.business_id,
+                event_type=data.event_type,
+                channel=data.channel,
+                name=data.name,
+                subject=data.subject,
+                body_template=data.body_template,
+                is_active=data.is_active,
+            )
+            db.add(tmpl)
+        db.commit()
+        db.refresh(tmpl)
+        return tmpl
+
+    def get_template_by_id(
+        self, db: Session, template_id: uuid.UUID
+    ) -> NotificationTemplate | None:
+        return db.query(NotificationTemplate).filter(NotificationTemplate.id == template_id).first()
+
+    def update_template(
+        self, db: Session, tmpl: NotificationTemplate, data: NotificationTemplateUpdate
+    ) -> NotificationTemplate:
+        if data.name is not None:
+            tmpl.name = data.name
+        if data.subject is not None:
+            tmpl.subject = data.subject
+        if data.body_template is not None:
+            tmpl.body_template = data.body_template
+        if data.is_active is not None:
+            tmpl.is_active = data.is_active
+        db.commit()
+        db.refresh(tmpl)
+        return tmpl

@@ -53,6 +53,17 @@ class FacetOut(BaseModel):
     values: list[FacetValueOut]
 
 
+class SuggestItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str
+    slug: str
+    brand: str | None = None
+    min_price: float | None = None
+    primary_image_url: str | None = None
+
+
 class SearchResult(BaseModel):
     query: str | None = None
     items: list[SearchResultItem]

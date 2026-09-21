@@ -44,6 +44,7 @@ from app.modules.ecommerce.inventory.models import (  # noqa: F401
 from app.modules.ecommerce.notifications.models import (  # noqa: F401
     Notification,
     NotificationPreference,
+    NotificationTemplate,
 )
 from app.modules.ecommerce.orders.models import (  # noqa: F401
     Order,

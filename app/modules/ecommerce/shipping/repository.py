@@ -42,6 +42,16 @@ class ShippingRepository:
             .first()
         )
 
+    def get_shipments(
+        self, db: Session, business_id: int = 1
+    ) -> list[Shipment]:
+        return (
+            db.query(Shipment)
+            .filter(Shipment.business_id == business_id)
+            .order_by(Shipment.created_at.desc())
+            .all()
+        )
+
     def update_tracking(
         self, db: Session, shipment: Shipment, update: TrackingUpdate
     ) -> Shipment:
