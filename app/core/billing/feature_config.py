@@ -464,6 +464,16 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "description": "Schedule physical stock counts and reconcile inventory variances.",
                 "active_page": "inventory_counts",
             },
+            {
+                "key": "ecommerce_reports",
+                "title": "Reports & Analytics",
+                "icon": "fas fa-chart-line",
+                "url": "/reports/manage",
+                "permission_code": "ecommerce:orders:view",
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "description": "Comprehensive sales financials, FIFO stock valuation, and fulfillment SLA analytics.",
+                "active_page": "ecommerce_reports",
+            },
         ],
     },
 ]
