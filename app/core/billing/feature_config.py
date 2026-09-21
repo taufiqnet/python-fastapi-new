@@ -335,6 +335,16 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "active_page": "coupons",
             },
             {
+                "key": "payments",
+                "title": "Payment Gateways & Refunds",
+                "icon": "fas fa-credit-card",
+                "url": "/payments/manage",
+                "permission_code": "ecommerce:orders:view",
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "description": "Configure payment gateways (bKash, SSLCommerz, Stripe), transaction tracking, customer refunds, and webhooks.",
+                "active_page": "payments",
+            },
+            {
                 "key": "shipping",
                 "title": "Shipping & Fulfillment",
                 "icon": "fas fa-shipping-fast",

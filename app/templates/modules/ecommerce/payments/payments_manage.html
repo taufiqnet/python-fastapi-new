@@ -1,0 +1,888 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Gateways & Refunds Management - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                    Ecommerce Payment Operations
+                </span>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 mt-1">Payment Gateways & Refunds Console</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Configure payment providers (bKash, SSLCommerz, Stripe), track transactions, process customer refunds, and manage IPN webhooks.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Business Profile Filter -->
+            <div class="flex items-center space-x-2">
+                <label for="filterBusiness" class="text-xs font-medium text-gray-600">Business:</label>
+                <select id="filterBusiness" onchange="onBusinessFilterChange(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 text-xs rounded-xl px-3 py-2 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all font-medium"
+                    {% if current_user and not current_user.is_superuser %}disabled{% endif %}>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Header Action Buttons -->
+            <button type="button" onclick="openPaymentIntentModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center space-x-1.5">
+                <i class="fas fa-plus text-xs"></i>
+                <span>Create Payment Intent</span>
+            </button>
+            <button type="button" onclick="openWebhookSimModal()" class="px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors flex items-center space-x-1.5 shadow-xs">
+                <i class="fas fa-bolt text-xs text-amber-500"></i>
+                <span>Simulate IPN Webhook</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stat Summary Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Transactions</p>
+                <h3 class="text-xl font-bold text-gray-900 mt-1">{{ total_transactions }}</h3>
+                <p class="text-[10px] text-gray-500 mt-0.5">Recorded payment attempts</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                <i class="fas fa-credit-card text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Captured Revenue</p>
+                <h3 class="text-xl font-bold text-emerald-600 mt-1">৳{{ "%.2f"|format(captured_amount) }}</h3>
+                <p class="text-[10px] text-emerald-500 mt-0.5">Successfully captured funds</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <i class="fas fa-wallet text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Refunded</p>
+                <h3 class="text-xl font-bold text-rose-600 mt-1">৳{{ "%.2f"|format(refunded_amount) }}</h3>
+                <p class="text-[10px] text-rose-500 mt-0.5">Returned to customers</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 shrink-0">
+                <i class="fas fa-undo text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Active Gateways</p>
+                <h3 class="text-xl font-bold text-blue-600 mt-1">{{ active_gateways }}</h3>
+                <p class="text-[10px] text-blue-500 mt-0.5">Configured payment channels</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                <i class="fas fa-plug text-base"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+            <button type="button" onclick="switchTab('gateways')" id="tab-btn-gateways" class="tab-btn pb-3 px-1 border-b-2 font-bold text-xs border-indigo-600 text-indigo-600 flex items-center space-x-2">
+                <i class="fas fa-sliders-h"></i>
+                <span>Payment Gateways Setup</span>
+            </button>
+            <button type="button" onclick="switchTab('transactions')" id="tab-btn-transactions" class="tab-btn pb-3 px-1 border-b-2 font-medium text-xs border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center space-x-2">
+                <i class="fas fa-list"></i>
+                <span>Transaction Tracking</span>
+            </button>
+            <button type="button" onclick="switchTab('refunds')" id="tab-btn-refunds" class="tab-btn pb-3 px-1 border-b-2 font-medium text-xs border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 flex items-center space-x-2">
+                <i class="fas fa-undo-alt"></i>
+                <span>Refund Processing</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- TAB 1: Payment Gateways Configuration -->
+    <div id="tab-content-gateways" class="tab-content space-y-6">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- bKash Gateway Card -->
+            {% set bkash = config_map.get('bkash') %}
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-pink-600 font-extrabold text-sm">
+                                bKash
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900">bKash Payment Gateway</h3>
+                                <p class="text-[11px] text-gray-500">Bangladesh Mobile Financial Service (MFS)</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if bkash and bkash.is_enabled %}bg-emerald-100 text-emerald-800{% else %}bg-gray-100 text-gray-500{% endif %}">
+                            {% if bkash and bkash.is_enabled %}Active{% else %}Disabled{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="space-y-2 text-xs text-gray-600">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">App Key / Merchant ID:</span>
+                            <span class="font-mono font-semibold">{{ bkash.merchant_id or 'Not Configured' if bkash else 'Not Configured' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">Environment Mode:</span>
+                            <span class="uppercase font-bold text-indigo-600">{{ bkash.mode or 'sandbox' if bkash else 'sandbox' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">Currency:</span>
+                            <span class="font-bold">{{ bkash.currency or 'BDT' if bkash else 'BDT' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="openGatewayModal('bkash', 'bKash Payment Gateway', '{{ bkash.merchant_id or '' if bkash else '' }}', '{{ bkash.api_key or '' if bkash else '' }}', '{{ bkash.api_secret or '' if bkash else '' }}', '{{ bkash.mode or 'sandbox' if bkash else 'sandbox' }}', {{ 'true' if bkash and bkash.is_enabled else 'false' }})"
+                    class="w-full py-2 text-xs font-semibold text-pink-700 bg-pink-50 hover:bg-pink-100 rounded-xl transition-colors flex items-center justify-center space-x-1.5">
+                    <i class="fas fa-cog text-xs"></i>
+                    <span>Configure bKash Settings</span>
+                </button>
+            </div>
+
+            <!-- SSLCommerz Gateway Card -->
+            {% set ssl = config_map.get('sslcommerz') %}
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-extrabold text-sm">
+                                SSL
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900">SSLCommerz Gateway</h3>
+                                <p class="text-[11px] text-gray-500">Cards, NetBanking & MFS aggregator in BD</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if ssl and ssl.is_enabled %}bg-emerald-100 text-emerald-800{% else %}bg-gray-100 text-gray-500{% endif %}">
+                            {% if ssl and ssl.is_enabled %}Active{% else %}Disabled{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="space-y-2 text-xs text-gray-600">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">Store ID:</span>
+                            <span class="font-mono font-semibold">{{ ssl.merchant_id or 'Not Configured' if ssl else 'Not Configured' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">Environment Mode:</span>
+                            <span class="uppercase font-bold text-indigo-600">{{ ssl.mode or 'sandbox' if ssl else 'sandbox' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">Currency:</span>
+                            <span class="font-bold">{{ ssl.currency or 'BDT' if ssl else 'BDT' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="openGatewayModal('sslcommerz', 'SSLCommerz Gateway', '{{ ssl.merchant_id or '' if ssl else '' }}', '{{ ssl.api_key or '' if ssl else '' }}', '{{ ssl.api_secret or '' if ssl else '' }}', '{{ ssl.mode or 'sandbox' if ssl else 'sandbox' }}', {{ 'true' if ssl and ssl.is_enabled else 'false' }})"
+                    class="w-full py-2 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors flex items-center justify-center space-x-1.5">
+                    <i class="fas fa-cog text-xs"></i>
+                    <span>Configure SSLCommerz Settings</span>
+                </button>
+            </div>
+
+            <!-- Stripe Gateway Card -->
+            {% set stripe = config_map.get('stripe') %}
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-3">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 font-extrabold text-sm">
+                                Stripe
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900">Stripe Payments</h3>
+                                <p class="text-[11px] text-gray-500">Global Credit/Debit Cards & Digital Wallets</p>
+                            </div>
+                        </div>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if stripe and stripe.is_enabled %}bg-emerald-100 text-emerald-800{% else %}bg-gray-100 text-gray-500{% endif %}">
+                            {% if stripe and stripe.is_enabled %}Active{% else %}Disabled{% endif %}
+                        </span>
+                    </div>
+
+                    <div class="space-y-2 text-xs text-gray-600">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">Publishable Key / ID:</span>
+                            <span class="font-mono font-semibold">{{ stripe.merchant_id or 'Not Configured' if stripe else 'Not Configured' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">Environment Mode:</span>
+                            <span class="uppercase font-bold text-indigo-600">{{ stripe.mode or 'sandbox' if stripe else 'sandbox' }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400 font-medium">Currency:</span>
+                            <span class="font-bold">{{ stripe.currency or 'USD' if stripe else 'USD' }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="openGatewayModal('stripe', 'Stripe Payments', '{{ stripe.merchant_id or '' if stripe else '' }}', '{{ stripe.api_key or '' if stripe else '' }}', '{{ stripe.api_secret or '' if stripe else '' }}', '{{ stripe.mode or 'sandbox' if stripe else 'sandbox' }}', {{ 'true' if stripe and stripe.is_enabled else 'false' }})"
+                    class="w-full py-2 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors flex items-center justify-center space-x-1.5">
+                    <i class="fas fa-cog text-xs"></i>
+                    <span>Configure Stripe Settings</span>
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- TAB 2: Transaction Tracking Console -->
+    <div id="tab-content-transactions" class="tab-content space-y-4 hidden">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <i class="fas fa-exchange-alt text-sm"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-sm font-bold text-gray-900">Payment Transaction Ledger</h2>
+                        <p class="text-[11px] text-gray-500">Track all payment authorizations, captures, and status updates.</p>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="txSearchInput" onkeyup="filterTxTable()" placeholder="Search transactions..."
+                        class="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors relative" />
+
+                    <select id="txProviderFilter" onchange="filterTxTable()" class="bg-gray-50 border border-gray-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors font-medium">
+                        <option value="">All Providers</option>
+                        <option value="bkash">bKash</option>
+                        <option value="sslcommerz">SSLCommerz</option>
+                        <option value="stripe">Stripe</option>
+                    </select>
+
+                    <select id="txStatusFilter" onchange="filterTxTable()" class="bg-gray-50 border border-gray-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors font-medium">
+                        <option value="">All Statuses</option>
+                        {% for st in payment_statuses %}
+                        <option value="{{ st }}">{{ st|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            {% if not payments %}
+            <div class="text-center py-12 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                <i class="fas fa-credit-card text-3xl text-gray-300 mb-2"></i>
+                <p class="text-xs font-semibold text-gray-600">No Payment Transactions Found</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">Click 'Create Payment Intent' to initiate a checkout transaction.</p>
+            </div>
+            {% else %}
+            <div class="overflow-x-auto">
+                <table id="paymentsTable" class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/70 border-b border-gray-200/80 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <th class="py-2.5 px-3">Tx ID</th>
+                            <th class="py-2.5 px-3">Order ID</th>
+                            <th class="py-2.5 px-3">Provider</th>
+                            <th class="py-2.5 px-3">Amount</th>
+                            <th class="py-2.5 px-3">Status</th>
+                            <th class="py-2.5 px-3">Created At</th>
+                            <th class="py-2.5 px-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                        {% for p in payments %}
+                        <tr class="hover:bg-gray-50/80 transition-colors tx-row"
+                            data-provider="{{ p.provider }}"
+                            data-status="{{ getattr(p.status, 'value', p.status) }}"
+                            data-search="{{ p.transaction_id or '' }} {{ p.order_id }} {{ p.provider }}">
+                            <td class="py-3 px-3 font-mono text-[11px] font-semibold text-indigo-600">
+                                {{ p.transaction_id or 'N/A' }}
+                            </td>
+                            <td class="py-3 px-3 font-mono text-[11px] text-gray-800">
+                                <a href="/orders/detail/{{ p.order_id }}" class="hover:underline text-indigo-600 font-semibold">
+                                    #{{ p.order_id|string|truncate(8, True, '') }}
+                                </a>
+                            </td>
+                            <td class="py-3 px-3 font-bold text-gray-800 uppercase">
+                                {% if p.provider == 'bkash' %}
+                                <span class="px-2 py-0.5 rounded-md text-[10px] bg-pink-100 text-pink-800">bKash</span>
+                                {% elif p.provider == 'sslcommerz' %}
+                                <span class="px-2 py-0.5 rounded-md text-[10px] bg-blue-100 text-blue-800">SSLCommerz</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 rounded-md text-[10px] bg-purple-100 text-purple-800">{{ p.provider }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-3 font-extrabold text-gray-900">
+                                {{ p.currency }} {{ "%.2f"|format(p.amount) }}
+                            </td>
+                            <td class="py-3 px-3">
+                                {% set st = getattr(p.status, 'value', p.status) %}
+                                {% if st == 'captured' %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Captured</span>
+                                {% elif st == 'authorized' %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">Authorized</span>
+                                {% elif st == 'refunded' %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Refunded</span>
+                                {% elif st == 'failed' %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-200 text-gray-700">Failed</span>
+                                {% else %}
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-3 text-gray-500 text-[11px]">
+                                {{ p.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                            <td class="py-3 px-3 text-right space-x-1.5">
+                                {% if st == 'pending' or st == 'authorized' %}
+                                <button type="button" onclick="capturePayment('{{ p.id }}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold rounded-lg text-[11px] transition-colors">
+                                    <i class="fas fa-check text-[10px]"></i> Capture
+                                </button>
+                                {% endif %}
+
+                                {% if st == 'captured' %}
+                                <button type="button" onclick="openRefundModal('{{ p.id }}', '{{ p.amount }}', '{{ p.currency }}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold rounded-lg text-[11px] transition-colors">
+                                    <i class="fas fa-undo text-[10px]"></i> Refund
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- TAB 3: Refunds Processing Console -->
+    <div id="tab-content-refunds" class="tab-content space-y-4 hidden">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
+            <div class="flex items-center space-x-2 border-b border-gray-100 pb-3">
+                <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
+                    <i class="fas fa-undo-alt text-sm"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900">Customer Refund Ledger</h2>
+                    <p class="text-[11px] text-gray-500">View processed and pending customer refund requests across payment gateways.</p>
+                </div>
+            </div>
+
+            {% if not refunds %}
+            <div class="text-center py-12 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                <i class="fas fa-hand-holding-usd text-3xl text-gray-300 mb-2"></i>
+                <p class="text-xs font-semibold text-gray-600">No Refunds Processed</p>
+                <p class="text-[11px] text-gray-400 mt-0.5">Refunds issued against captured transactions will appear here.</p>
+            </div>
+            {% else %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50/70 border-b border-gray-200/80 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                            <th class="py-2.5 px-3">Refund ID</th>
+                            <th class="py-2.5 px-3">Payment ID</th>
+                            <th class="py-2.5 px-3">Refund Amount</th>
+                            <th class="py-2.5 px-3">Reason</th>
+                            <th class="py-2.5 px-3">Status</th>
+                            <th class="py-2.5 px-3">Processed At</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                        {% for r in refunds %}
+                        <tr class="hover:bg-gray-50/80 transition-colors">
+                            <td class="py-3 px-3 font-mono text-[11px] font-semibold text-gray-800">
+                                #{{ r.id|string|truncate(8, True, '') }}
+                            </td>
+                            <td class="py-3 px-3 font-mono text-[11px] text-indigo-600">
+                                #{{ r.payment_id|string|truncate(8, True, '') }}
+                            </td>
+                            <td class="py-3 px-3 font-extrabold text-rose-600">
+                                ৳{{ "%.2f"|format(r.amount) }}
+                            </td>
+                            <td class="py-3 px-3 text-gray-600 italic">
+                                {{ r.reason or 'Customer request' }}
+                            </td>
+                            <td class="py-3 px-3">
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 uppercase">
+                                    {{ r.status }}
+                                </span>
+                            </td>
+                            <td class="py-3 px-3 text-gray-500 text-[11px]">
+                                {{ r.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Configure Payment Gateway -->
+<div id="gatewayModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-sliders-h text-sm"></i>
+                </div>
+                <h3 id="gatewayModalTitle" class="text-base font-semibold text-gray-900">Configure Gateway</h3>
+            </div>
+            <button type="button" onclick="closeGatewayModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="gatewayForm" onsubmit="submitGatewayForm(event)" class="p-6 space-y-4">
+            <input type="hidden" id="gw_provider" />
+
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <span class="text-xs font-bold text-gray-700">Enable Provider</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="gw_is_enabled" class="sr-only peer" />
+                    <div class="w-9 h-5 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+            </div>
+
+            <div>
+                <label for="gw_merchant_id" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Merchant ID / Store ID / App Key</label>
+                <input type="text" id="gw_merchant_id" placeholder="Enter Merchant or Store ID"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-mono transition-colors" />
+            </div>
+
+            <div>
+                <label for="gw_api_key" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">API Public Key / Username</label>
+                <input type="text" id="gw_api_key" placeholder="Enter Public Key or Username"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-mono transition-colors" />
+            </div>
+
+            <div>
+                <label for="gw_api_secret" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">API Secret Key / Password</label>
+                <input type="password" id="gw_api_secret" placeholder="••••••••••••••••"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-mono transition-colors" />
+            </div>
+
+            <div>
+                <label for="gw_mode" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Environment Mode</label>
+                <select id="gw_mode" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                    <option value="sandbox">Sandbox (Testing)</option>
+                    <option value="live">Live (Production)</option>
+                </select>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeGatewayModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSaveGateway" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Save Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Create Payment Intent -->
+<div id="paymentIntentModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-credit-card text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Create Payment Intent</h3>
+            </div>
+            <button type="button" onclick="closePaymentIntentModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="paymentIntentForm" onsubmit="submitPaymentIntent(event)" class="p-6 space-y-4">
+            <div>
+                <label for="pi_order_id" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Select Order</label>
+                <select id="pi_order_id" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                    <option value="">-- Select Customer Order --</option>
+                    {% for o in orders %}
+                    <option value="{{ o.id }}">Order #{{ o.id|string|truncate(8, True, '') }} - Total: ৳{{ "%.2f"|format(o.total_amount) }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label for="pi_provider" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Payment Provider</label>
+                <select id="pi_provider" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                    <option value="bkash">bKash (MFS BD)</option>
+                    <option value="sslcommerz">SSLCommerz (Cards/MFS BD)</option>
+                    <option value="stripe">Stripe (Global Credit Card)</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="pi_amount" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Amount</label>
+                    <input type="number" step="0.01" min="1" id="pi_amount" required placeholder="e.g. 1200"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium" />
+                </div>
+                <div>
+                    <label for="pi_currency" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Currency</label>
+                    <select id="pi_currency" class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                        <option value="BDT">BDT (৳)</option>
+                        <option value="USD">USD ($)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closePaymentIntentModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSavePI" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Initiate Payment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Process Customer Refund -->
+<div id="refundModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center text-rose-600">
+                    <i class="fas fa-undo text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Process Customer Refund</h3>
+            </div>
+            <button type="button" onclick="closeRefundModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="refundForm" onsubmit="submitRefund(event)" class="p-6 space-y-4">
+            <input type="hidden" id="rf_payment_id" />
+
+            <div>
+                <label for="rf_amount" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Refund Amount</label>
+                <input type="number" step="0.01" min="0.01" id="rf_amount" required placeholder="0.00"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-semibold" />
+            </div>
+
+            <div>
+                <label for="rf_reason" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Refund Reason</label>
+                <textarea id="rf_reason" rows="3" placeholder="Enter reason for customer refund..."
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors"></textarea>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeRefundModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSaveRefund" class="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-xs">Process Refund</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Simulate IPN Webhook -->
+<div id="webhookSimModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                    <i class="fas fa-bolt text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Simulate Provider IPN Webhook</h3>
+            </div>
+            <button type="button" onclick="closeWebhookSimModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="webhookSimForm" onsubmit="submitWebhookSim(event)" class="p-6 space-y-4">
+            <div>
+                <label for="wh_provider" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Gateway Provider</label>
+                <select id="wh_provider" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                    <option value="bkash">bKash IPN Callback</option>
+                    <option value="sslcommerz">SSLCommerz IPN Callback</option>
+                    <option value="stripe">Stripe Webhook Event</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="wh_tx_id" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Transaction ID</label>
+                <input type="text" id="wh_tx_id" required placeholder="e.g. tx_123456789"
+                    class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-mono transition-colors" />
+            </div>
+
+            <div>
+                <label for="wh_status" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Event Payment Status</label>
+                <select id="wh_status" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 font-medium">
+                    <option value="captured">Captured / Success</option>
+                    <option value="failed">Failed / Cancelled</option>
+                    <option value="refunded">Refunded</option>
+                </select>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeWebhookSimModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSimWebhook" class="px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs">Fire Webhook Callback</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const currentBusinessId = parseInt("{{ selected_business_id }}");
+
+    function onBusinessFilterChange(val) {
+        window.location.href = `/payments/manage?business_id=${val}`;
+    }
+
+    // Tab Switching
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.remove('border-indigo-600', 'text-indigo-600', 'font-bold');
+            btn.classList.add('border-transparent', 'text-gray-500', 'font-medium');
+        });
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+
+        document.getElementById(`tab-btn-${tabName}`).classList.add('border-indigo-600', 'text-indigo-600', 'font-bold');
+        document.getElementById(`tab-btn-${tabName}`).classList.remove('border-transparent', 'text-gray-500', 'font-medium');
+        document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
+    }
+
+    // Gateway Modal
+    function openGatewayModal(provider, title, merchantId, apiKey, apiSecret, mode, isEnabled) {
+        document.getElementById('gw_provider').value = provider;
+        document.getElementById('gatewayModalTitle').textContent = `Configure ${title}`;
+        document.getElementById('gw_merchant_id').value = merchantId;
+        document.getElementById('gw_api_key').value = apiKey;
+        document.getElementById('gw_api_secret').value = apiSecret;
+        document.getElementById('gw_mode').value = mode;
+        document.getElementById('gw_is_enabled').checked = isEnabled;
+        document.getElementById('gatewayModal').classList.remove('hidden');
+    }
+    function closeGatewayModal() {
+        document.getElementById('gatewayModal').classList.add('hidden');
+    }
+
+    async function submitGatewayForm(e) {
+        e.preventDefault();
+        const provider = document.getElementById('gw_provider').value;
+        const merchantId = document.getElementById('gw_merchant_id').value.trim();
+        const apiKey = document.getElementById('gw_api_key').value.trim();
+        const apiSecret = document.getElementById('gw_api_secret').value.trim();
+        const mode = document.getElementById('gw_mode').value;
+        const isEnabled = document.getElementById('gw_is_enabled').checked;
+
+        const btn = document.getElementById('btnSaveGateway');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/payments/gateways/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: currentBusinessId,
+                    provider: provider,
+                    merchant_id: merchantId || null,
+                    api_key: apiKey || null,
+                    api_secret: apiSecret || null,
+                    mode: mode,
+                    is_enabled: isEnabled,
+                    currency: provider === 'stripe' ? 'USD' : 'BDT'
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Gateway Saved', 'Payment provider configuration updated successfully.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Save Failed', err.detail || 'Could not update gateway settings.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Payment Intent Modal
+    function openPaymentIntentModal() {
+        document.getElementById('paymentIntentForm').reset();
+        document.getElementById('paymentIntentModal').classList.remove('hidden');
+    }
+    function closePaymentIntentModal() {
+        document.getElementById('paymentIntentModal').classList.add('hidden');
+    }
+
+    async function submitPaymentIntent(e) {
+        e.preventDefault();
+        const orderId = document.getElementById('pi_order_id').value;
+        const provider = document.getElementById('pi_provider').value;
+        const amount = parseFloat(document.getElementById('pi_amount').value);
+        const currency = document.getElementById('pi_currency').value;
+
+        const btn = document.getElementById('btnSavePI');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch('/payments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: currentBusinessId,
+                    order_id: orderId,
+                    provider: provider,
+                    amount: amount,
+                    currency: currency
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Payment Intent Created', 'Transaction registered and ready for checkout capture.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Creation Failed', err.detail || 'Could not create payment intent.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Capture Payment
+    async function capturePayment(paymentId) {
+        try {
+            const res = await fetch(`/payments/${paymentId}/capture?business_id=${currentBusinessId}`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Payment Captured', 'Transaction status set to CAPTURED.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Capture Failed', err.detail || 'Could not capture payment.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        }
+    }
+
+    // Refund Modal
+    function openRefundModal(paymentId, amount, currency) {
+        document.getElementById('rf_payment_id').value = paymentId;
+        document.getElementById('rf_amount').value = amount;
+        document.getElementById('refundModal').classList.remove('hidden');
+    }
+    function closeRefundModal() {
+        document.getElementById('refundModal').classList.add('hidden');
+    }
+
+    async function submitRefund(e) {
+        e.preventDefault();
+        const paymentId = document.getElementById('rf_payment_id').value;
+        const amount = parseFloat(document.getElementById('rf_amount').value);
+        const reason = document.getElementById('rf_reason').value.trim();
+
+        const btn = document.getElementById('btnSaveRefund');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`/payments/${paymentId}/refund?business_id=${currentBusinessId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    amount: amount,
+                    reason: reason || null
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Refund Processed', 'Customer refund generated and payment status updated.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Refund Failed', err.detail || 'Could not process refund.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Webhook Simulation Modal
+    function openWebhookSimModal() {
+        document.getElementById('webhookSimForm').reset();
+        document.getElementById('webhookSimModal').classList.remove('hidden');
+    }
+    function closeWebhookSimModal() {
+        document.getElementById('webhookSimModal').classList.add('hidden');
+    }
+
+    async function submitWebhookSim(e) {
+        e.preventDefault();
+        const provider = document.getElementById('wh_provider').value;
+        const txId = document.getElementById('wh_tx_id').value.trim();
+        const status = document.getElementById('wh_status').value;
+
+        const btn = document.getElementById('btnSimWebhook');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`/payments/webhook/${provider}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    transaction_id: txId,
+                    status: status
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Webhook Executed', `IPN callback for '${txId}' processed successfully.`);
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Webhook Failed', err.detail || 'Callback processing failed.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Table Filtering
+    function filterTxTable() {
+        const search = document.getElementById('txSearchInput').value.toLowerCase();
+        const provider = document.getElementById('txProviderFilter').value.toLowerCase();
+        const status = document.getElementById('txStatusFilter').value.toLowerCase();
+
+        const rows = document.querySelectorAll('.tx-row');
+        rows.forEach(row => {
+            const rowSearch = row.getAttribute('data-search').toLowerCase();
+            const rowProvider = row.getAttribute('data-provider').toLowerCase();
+            const rowStatus = row.getAttribute('data-status').toLowerCase();
+
+            const matchesSearch = !search || rowSearch.includes(search);
+            const matchesProvider = !provider || rowProvider === provider;
+            const matchesStatus = !status || rowStatus === status;
+
+            if (matchesSearch && matchesProvider && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

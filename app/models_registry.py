@@ -54,6 +54,7 @@ from app.modules.ecommerce.orders.models import (  # noqa: F401
 )
 from app.modules.ecommerce.payments.models import (  # noqa: F401
     Payment,
+    PaymentGatewayConfig,
     PaymentMethod,
     Refund,
 )

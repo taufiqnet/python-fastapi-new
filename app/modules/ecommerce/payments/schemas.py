@@ -6,12 +6,31 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.modules.ecommerce.payments.models import PaymentStatus
 
 
+class PaymentGatewayConfigCreate(BaseModel):
+    business_id: int = Field(1)
+    provider: str = Field(..., max_length=50)  # bkash, sslcommerz, stripe
+    is_enabled: bool = True
+    merchant_id: str | None = None
+    api_key: str | None = None
+    api_secret: str | None = None
+    mode: str = Field("sandbox", max_length=20)
+    currency: str = Field("BDT", max_length=3)
+
+
+class PaymentGatewayConfigOut(PaymentGatewayConfigCreate):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+
+
 class PaymentIntentCreate(BaseModel):
     business_id: int = Field(1)
     order_id: uuid.UUID
     provider: str = Field(..., max_length=50)
     amount: float = Field(..., gt=0)
-    currency: str = Field("USD", max_length=3)
+    currency: str = Field("BDT", max_length=3)
 
 
 class PaymentOut(BaseModel):
@@ -58,3 +77,11 @@ class PaymentMethodOut(PaymentMethodCreate):
 
     id: uuid.UUID
     created_at: datetime
+
+
+class PaymentWebhookPayload(BaseModel):
+    transaction_id: str
+    status: str  # e.g., captured, completed, failed, refunded
+    amount: float | None = None
+    order_id: str | None = None
+    reason: str | None = None

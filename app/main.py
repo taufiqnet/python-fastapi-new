@@ -101,6 +101,7 @@ from app.routers import (
     offer_letter_views,
     order_views,
     organization_views,
+    payment_views,
     payroll_views,
     pricing_views,
     product_views,
@@ -254,6 +255,7 @@ app.include_router(brand_views.router)
 app.include_router(model_views.router)
 app.include_router(product_views.router)
 app.include_router(pricing_views.router)
+app.include_router(payment_views.router)
 app.include_router(shipping_views.router)
 app.include_router(review_views.router)
 app.include_router(seller_views.router)
