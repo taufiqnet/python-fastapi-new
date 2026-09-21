@@ -1,0 +1,1034 @@
+{% extends "base.html" %}
+
+{% block title %}Multi-Vendor / Seller Management - SaaS Platform{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-100 shadow-xs">
+        <div>
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    Ecommerce Store Operations
+                </span>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 mt-1">Multi-Vendor & Seller Management</h1>
+            <p class="text-xs text-gray-500 mt-0.5">Onboard vendors, configure commission structures, manage onboarding approvals, and associate products with sellers.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Business Profile Filter -->
+            <div class="flex items-center space-x-2">
+                <label for="filterBusiness" class="text-xs font-medium text-gray-600">Business:</label>
+                <select id="filterBusiness" onchange="onBusinessFilterChange(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 text-xs rounded-xl px-3 py-2 focus:outline-none focus:bg-white focus:border-indigo-500 transition-all font-medium"
+                    {% if current_user and not current_user.is_superuser %}disabled{% endif %}>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Header Action Button -->
+            <button type="button" onclick="openOnboardingModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center space-x-1.5">
+                <i class="fas fa-user-plus text-xs"></i>
+                <span>Onboard Vendor / Add Seller</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Stat Summary Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Sellers</p>
+                <h3 class="text-xl font-bold text-gray-900 mt-1">{{ stats.total_sellers }}</h3>
+                <p class="text-[10px] text-gray-500 mt-0.5">Registered marketplace vendors</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                <i class="fas fa-store text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Active Vendors</p>
+                <h3 class="text-xl font-bold text-emerald-600 mt-1">{{ stats.active_vendors }}</h3>
+                <p class="text-[10px] text-emerald-500 mt-0.5">Approved & selling</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <i class="fas fa-check-circle text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Pending Onboarding</p>
+                <h3 class="text-xl font-bold text-amber-600 mt-1">{{ stats.pending_onboarding }}</h3>
+                <p class="text-[10px] text-amber-500 mt-0.5">Awaiting review approval</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                <i class="fas fa-clock text-base"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Avg Commission Rate</p>
+                <h3 class="text-xl font-bold text-purple-600 mt-1">{{ "%.2f"|format(stats.avg_commission_rate) }}%</h3>
+                <p class="text-[10px] text-purple-500 mt-0.5">Platform commission fee</p>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                <i class="fas fa-percentage text-base"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Seller List & Management Table -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-user-shield text-sm"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900">Registered Sellers & Vendor Catalog</h2>
+                    <p class="text-[11px] text-gray-500">Manage vendor onboarding status, commissions, contact details, and product catalog linkages.</p>
+                </div>
+            </div>
+
+            <!-- Toolbar Filters -->
+            <div class="flex items-center space-x-2">
+                <div class="relative">
+                    <input type="text" id="sellerSearchInput" onkeyup="filterSellerTable()" placeholder="Search sellers..."
+                        class="pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                    <i class="fas fa-search absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                </div>
+
+                <select id="statusFilter" onchange="filterSellerTable()" class="bg-gray-50 border border-gray-200 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors font-medium">
+                    <option value="">All Statuses</option>
+                    {% for st in seller_statuses %}
+                    <option value="{{ st }}">{{ st|title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        {% if not sellers %}
+        <div class="text-center py-12 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+            <i class="fas fa-store-slash text-3xl text-gray-300 mb-2"></i>
+            <p class="text-xs font-semibold text-gray-600">No Sellers Registered Yet</p>
+            <p class="text-[11px] text-gray-400 mt-0.5">Click 'Onboard Vendor / Add Seller' to create your first multi-vendor marketplace seller.</p>
+        </div>
+        {% else %}
+        <div class="overflow-x-auto">
+            <table id="sellersTable" class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50/70 border-b border-gray-200/80 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        <th class="py-2.5 px-3">Store Name & Slug</th>
+                        <th class="py-2.5 px-3">Company & Contact</th>
+                        <th class="py-2.5 px-3">Status</th>
+                        <th class="py-2.5 px-3">Commission Structure</th>
+                        <th class="py-2.5 px-3">Verified</th>
+                        <th class="py-2.5 px-3">Products</th>
+                        <th class="py-2.5 px-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
+                    {% for s in sellers %}
+                    {% set st = s.status.value if s.status.value is defined else s.status %}
+                    {% set comm_type = s.commission_type.value if s.commission_type.value is defined else s.commission_type %}
+                    <tr class="hover:bg-gray-50/80 transition-colors seller-row"
+                        data-status="{{ st }}"
+                        data-search="{{ s.store_name }} {{ s.slug }} {{ s.company_name or '' }} {{ s.contact_email or '' }} {{ s.contact_phone or '' }}">
+                        <td class="py-3 px-3">
+                            <div class="flex items-center space-x-2.5">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">
+                                    {{ s.store_name[:2]|upper }}
+                                </div>
+                                <div>
+                                    <div class="font-bold text-gray-900 text-xs">{{ s.store_name }}</div>
+                                    <div class="text-[10px] text-gray-400 font-mono">/seller/{{ s.slug }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="font-medium text-gray-800">{{ s.company_name or 'Individual Seller' }}</div>
+                            <div class="text-[10px] text-gray-500">{{ s.contact_email or 'No email' }} | {{ s.contact_phone or 'No phone' }}</div>
+                        </td>
+                        <td class="py-3 px-3">
+                            {% if st == 'active' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">Active</span>
+                            {% elif st == 'pending' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Pending</span>
+                            {% elif st == 'suspended' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">Suspended</span>
+                            {% elif st == 'rejected' %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">Rejected</span>
+                            {% else %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-700">{{ st|title }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3 font-medium">
+                            {% if comm_type == 'percentage' %}
+                            <span class="text-indigo-700 font-bold">{{ "%.2f"|format(s.commission_rate) }}%</span>
+                            <span class="text-[10px] text-gray-400"> rate</span>
+                            {% else %}
+                            <span class="text-purple-700 font-bold">${{ "%.2f"|format(s.flat_fee) }}</span>
+                            <span class="text-[10px] text-gray-400"> flat fee</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3">
+                            {% if s.is_verified %}
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100 flex items-center space-x-1 w-max">
+                                <i class="fas fa-check-circle text-[10px]"></i>
+                                <span>Verified</span>
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400 text-[10px] italic">Unverified</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3 px-3 font-bold text-gray-900">
+                            {{ s.products|length if s.products else 0 }}
+                        </td>
+                        <td class="py-3 px-3 text-right space-x-1">
+                            <!-- View Detail -->
+                            <button type="button" class="btn-action-detail p-1.5 text-gray-600 hover:text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                                data-id="{{ s.id }}"
+                                data-name="{{ s.store_name|e }}"
+                                data-slug="{{ s.slug|e }}"
+                                data-company="{{ (s.company_name or '')|e }}"
+                                data-email="{{ (s.contact_email or '')|e }}"
+                                data-phone="{{ (s.contact_phone or '')|e }}"
+                                data-status="{{ st }}"
+                                data-rate="{{ s.commission_rate }}"
+                                data-type="{{ comm_type }}"
+                                data-flat="{{ s.flat_fee }}"
+                                data-tax="{{ (s.tax_id or '')|e }}"
+                                data-payout="{{ (s.payout_account or '')|e }}"
+                                data-address="{{ (s.address or '')|e }}"
+                                data-desc="{{ (s.description or '')|e }}"
+                                title="View Seller Profile">
+                                <i class="fas fa-eye text-xs"></i>
+                            </button>
+
+                            <!-- Edit Profile & Commission -->
+                            <button type="button" class="btn-action-edit p-1.5 text-indigo-600 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                                data-id="{{ s.id }}"
+                                data-name="{{ s.store_name|e }}"
+                                data-slug="{{ s.slug|e }}"
+                                data-company="{{ (s.company_name or '')|e }}"
+                                data-email="{{ (s.contact_email or '')|e }}"
+                                data-phone="{{ (s.contact_phone or '')|e }}"
+                                data-rate="{{ s.commission_rate }}"
+                                data-type="{{ comm_type }}"
+                                data-flat="{{ s.flat_fee }}"
+                                data-tax="{{ (s.tax_id or '')|e }}"
+                                data-payout="{{ (s.payout_account or '')|e }}"
+                                data-address="{{ (s.address or '')|e }}"
+                                data-desc="{{ (s.description or '')|e }}"
+                                title="Edit Profile & Commission">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+
+                            <!-- Status & Approval -->
+                            <button type="button" class="btn-action-status p-1.5 text-amber-600 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                                data-id="{{ s.id }}"
+                                data-status="{{ st }}"
+                                data-verified="{{ 'true' if s.is_verified else 'false' }}"
+                                title="Manage Approval & Status">
+                                <i class="fas fa-user-check text-xs"></i>
+                            </button>
+
+                            <!-- Products Association -->
+                            <button type="button" class="btn-action-products p-1.5 text-purple-600 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+                                data-id="{{ s.id }}"
+                                data-name="{{ s.store_name|e }}"
+                                title="Manage Seller Products">
+                                <i class="fas fa-box text-xs"></i>
+                            </button>
+
+                            <!-- Delete -->
+                            <button type="button" class="btn-action-delete p-1.5 text-rose-600 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
+                                data-id="{{ s.id }}"
+                                data-name="{{ s.store_name|e }}"
+                                title="Delete Seller">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Modal: Vendor Onboarding / Add Seller -->
+<div id="onboardingModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-store text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Vendor Onboarding / Add Seller</h3>
+            </div>
+            <button type="button" onclick="closeOnboardingModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="onboardingForm" onsubmit="submitOnboardingForm(event)" class="p-6 space-y-4 overflow-y-auto">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="onboard_store_name" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Store Name *</label>
+                    <input type="text" id="onboard_store_name" required placeholder="e.g. Apex Tech Store"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+
+                <div>
+                    <label for="onboard_company_name" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Company / Legal Name</label>
+                    <input type="text" id="onboard_company_name" placeholder="e.g. Apex Digital Ltd."
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="onboard_contact_email" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Contact Email *</label>
+                    <input type="email" id="onboard_contact_email" required placeholder="vendor@store.com"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+
+                <div>
+                    <label for="onboard_contact_phone" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Contact Phone</label>
+                    <input type="text" id="onboard_contact_phone" placeholder="+8801700000000"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            </div>
+
+            <!-- Commission Configuration Section -->
+            <div class="p-3.5 bg-indigo-50/50 rounded-xl border border-indigo-100/80 space-y-3">
+                <span class="block text-xs font-bold text-indigo-900 uppercase tracking-wider">Commission Structure</span>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label for="onboard_commission_type" class="block text-[11px] font-semibold text-gray-700 mb-1">Type</label>
+                        <select id="onboard_commission_type" class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:border-indigo-500">
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="flat">Flat Fee ($)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="onboard_commission_rate" class="block text-[11px] font-semibold text-gray-700 mb-1">Rate (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" id="onboard_commission_rate" value="10.00"
+                            class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500" />
+                    </div>
+
+                    <div>
+                        <label for="onboard_flat_fee" class="block text-[11px] font-semibold text-gray-700 mb-1">Flat Fee ($)</label>
+                        <input type="number" step="0.01" min="0" id="onboard_flat_fee" value="0.00"
+                            class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="onboard_tax_id" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Tax Registration / TIN</label>
+                    <input type="text" id="onboard_tax_id" placeholder="e.g. TAX-99887766"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+
+                <div>
+                    <label for="onboard_payout_account" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Payout Bank Account</label>
+                    <input type="text" id="onboard_payout_account" placeholder="Bank Name / AC 12345678"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            </div>
+
+            <div>
+                <label for="onboard_address" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Business Address</label>
+                <textarea id="onboard_address" rows="2" placeholder="Street, City, Country"
+                    class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors"></textarea>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3 shrink-0">
+                <button type="button" onclick="closeOnboardingModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSaveOnboarding" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Submit Vendor Application</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Seller Profile & Commission -->
+<div id="editSellerModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-edit text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Edit Seller Profile & Commission</h3>
+            </div>
+            <button type="button" onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="editSellerForm" onsubmit="submitEditForm(event)" class="p-6 space-y-4 overflow-y-auto">
+            <input type="hidden" id="edit_seller_id" />
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="edit_store_name" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Store Name *</label>
+                    <input type="text" id="edit_store_name" required
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+
+                <div>
+                    <label for="edit_company_name" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Company / Legal Name</label>
+                    <input type="text" id="edit_company_name"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="edit_contact_email" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Contact Email</label>
+                    <input type="email" id="edit_contact_email"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+
+                <div>
+                    <label for="edit_contact_phone" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Contact Phone</label>
+                    <input type="text" id="edit_contact_phone"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            </div>
+
+            <!-- Commission Structure -->
+            <div class="p-3.5 bg-indigo-50/50 rounded-xl border border-indigo-100/80 space-y-3">
+                <span class="block text-xs font-bold text-indigo-900 uppercase tracking-wider">Commission Structure</span>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label for="edit_commission_type" class="block text-[11px] font-semibold text-gray-700 mb-1">Type</label>
+                        <select id="edit_commission_type" class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:border-indigo-500">
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="flat">Flat Fee ($)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="edit_commission_rate" class="block text-[11px] font-semibold text-gray-700 mb-1">Rate (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" id="edit_commission_rate"
+                            class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500" />
+                    </div>
+
+                    <div>
+                        <label for="edit_flat_fee" class="block text-[11px] font-semibold text-gray-700 mb-1">Flat Fee ($)</label>
+                        <input type="number" step="0.01" min="0" id="edit_flat_fee"
+                            class="w-full px-2.5 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="edit_tax_id" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Tax Registration / TIN</label>
+                    <input type="text" id="edit_tax_id"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+
+                <div>
+                    <label for="edit_payout_account" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Payout Bank Account</label>
+                    <input type="text" id="edit_payout_account"
+                        class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors" />
+                </div>
+            </div>
+
+            <div>
+                <label for="edit_address" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Address</label>
+                <textarea id="edit_address" rows="2"
+                    class="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:outline-none focus:bg-white focus:border-indigo-500 transition-colors"></textarea>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3 shrink-0">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSaveEdit" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Status & Approval Review -->
+<div id="statusModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                    <i class="fas fa-user-check text-sm"></i>
+                </div>
+                <h3 class="text-base font-semibold text-gray-900">Manage Vendor Status</h3>
+            </div>
+            <button type="button" onclick="closeStatusModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <form id="statusForm" onsubmit="submitStatusForm(event)" class="p-6 space-y-4">
+            <input type="hidden" id="status_seller_id" />
+
+            <div>
+                <label for="status_select" class="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">Onboarding / Seller Status</label>
+                <select id="status_select" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:bg-white focus:border-indigo-500">
+                    <option value="active">Active (Approved)</option>
+                    <option value="pending">Pending Review</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+
+            <div class="flex items-center space-x-2 pt-1">
+                <input type="checkbox" id="status_is_verified" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4" />
+                <label for="status_is_verified" class="text-xs font-medium text-gray-700">Mark as Verified Vendor Badge</label>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end space-x-3">
+                <button type="button" onclick="closeStatusModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="btnSaveStatus" class="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Update Status</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Seller Products Association -->
+<div id="productsModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50 shrink-0">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
+                    <i class="fas fa-boxes text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">Manage Seller Products</h3>
+                    <p id="productsSellerTitle" class="text-[11px] text-gray-500">Store Catalog Linkages</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeProductsModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4 overflow-y-auto">
+            <!-- Add Product Section -->
+            <div class="p-3.5 bg-gray-50 rounded-xl border border-gray-200/80 space-y-2">
+                <label for="associate_product_id" class="block text-xs font-bold text-gray-800 uppercase tracking-wider">Associate Unassigned Product</label>
+                <div class="flex items-center space-x-2">
+                    <select id="associate_product_id" class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium focus:outline-none focus:border-indigo-500">
+                        <option value="">-- Choose Product --</option>
+                        {% for p in unassigned_products %}
+                        <option value="{{ p.id }}">{{ p.title }} ({{ p.brand or 'No Brand' }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" onclick="associateProduct()" class="px-3.5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shrink-0">
+                        Add
+                    </button>
+                </div>
+            </div>
+
+            <!-- Current Seller Products List -->
+            <div>
+                <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Currently Assigned Products</h4>
+                <div id="sellerProductsContainer" class="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    <p class="text-xs text-gray-400 italic py-2 text-center">Loading seller products...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end shrink-0">
+            <button type="button" onclick="closeProductsModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-xl">Done</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Seller Detail View -->
+<div id="sellerDetailModal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-lg mx-4 overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-store text-sm"></i>
+                </div>
+                <h3 id="detailStoreName" class="text-base font-bold text-gray-900">Seller Profile Details</h3>
+            </div>
+            <button type="button" onclick="closeDetailModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4 text-xs">
+            <div class="grid grid-cols-2 gap-3 bg-gray-50 p-3.5 rounded-xl border border-gray-100">
+                <div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase">Store Slug:</span>
+                    <p id="detailSlug" class="font-mono text-indigo-600 font-semibold mt-0.5">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase">Status:</span>
+                    <p id="detailStatus" class="font-semibold mt-0.5">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase">Company Name:</span>
+                    <p id="detailCompany" class="font-semibold text-gray-800 mt-0.5">-</p>
+                </div>
+                <div>
+                    <span class="text-[10px] text-gray-400 font-bold uppercase">Tax ID / TIN:</span>
+                    <p id="detailTaxId" class="font-semibold text-gray-800 mt-0.5">-</p>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <h4 class="font-bold text-gray-800 uppercase text-[11px] border-b pb-1">Contact & Financial</h4>
+                <div class="grid grid-cols-2 gap-2 text-gray-600">
+                    <p><strong>Email:</strong> <span id="detailEmail">-</span></p>
+                    <p><strong>Phone:</strong> <span id="detailPhone">-</span></p>
+                    <p class="col-span-2"><strong>Payout Account:</strong> <span id="detailPayout">-</span></p>
+                    <p class="col-span-2"><strong>Address:</strong> <span id="detailAddress">-</span></p>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <h4 class="font-bold text-gray-800 uppercase text-[11px] border-b pb-1">Commission Structure</h4>
+                <p class="text-gray-700"><strong>Fee Model:</strong> <span id="detailCommission" class="font-bold text-indigo-700">-</span></p>
+            </div>
+        </div>
+
+        <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+            <button type="button" onclick="closeDetailModal()" class="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-200 hover:bg-gray-300 rounded-xl">Close</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const currentBusinessId = parseInt("{{ selected_business_id }}");
+    let activeSellerForProducts = null;
+
+    function onBusinessFilterChange(val) {
+        window.location.href = `/sellers/manage?business_id=${val}`;
+    }
+
+    // Filter Table Search
+    function filterSellerTable() {
+        const search = document.getElementById('sellerSearchInput').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('.seller-row');
+
+        rows.forEach(row => {
+            const rowSearch = row.getAttribute('data-search').toLowerCase();
+            const rowStatus = row.getAttribute('data-status');
+
+            const matchesSearch = !search || rowSearch.includes(search);
+            const matchesStatus = !status || rowStatus === status;
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Attach Event Listeners for Action Buttons
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.btn-action-detail').forEach(btn => {
+            btn.addEventListener('click', () => {
+                openDetailModal(
+                    btn.dataset.id,
+                    btn.dataset.name,
+                    btn.dataset.slug,
+                    btn.dataset.company,
+                    btn.dataset.email,
+                    btn.dataset.phone,
+                    btn.dataset.status,
+                    btn.dataset.rate,
+                    btn.dataset.type,
+                    btn.dataset.flat,
+                    btn.dataset.tax,
+                    btn.dataset.payout,
+                    btn.dataset.address,
+                    btn.dataset.desc
+                );
+            });
+        });
+
+        document.querySelectorAll('.btn-action-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                openEditModal(
+                    btn.dataset.id,
+                    btn.dataset.name,
+                    btn.dataset.slug,
+                    btn.dataset.company,
+                    btn.dataset.email,
+                    btn.dataset.phone,
+                    btn.dataset.rate,
+                    btn.dataset.type,
+                    btn.dataset.flat,
+                    btn.dataset.tax,
+                    btn.dataset.payout,
+                    btn.dataset.address,
+                    btn.dataset.desc
+                );
+            });
+        });
+
+        document.querySelectorAll('.btn-action-status').forEach(btn => {
+            btn.addEventListener('click', () => {
+                openStatusModal(
+                    btn.dataset.id,
+                    btn.dataset.status,
+                    btn.dataset.verified === 'true'
+                );
+            });
+        });
+
+        document.querySelectorAll('.btn-action-products').forEach(btn => {
+            btn.addEventListener('click', () => {
+                openProductsModal(btn.dataset.id, btn.dataset.name);
+            });
+        });
+
+        document.querySelectorAll('.btn-action-delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                deleteSeller(btn.dataset.id, btn.dataset.name);
+            });
+        });
+    });
+
+    // Onboarding Modal Handlers
+    function openOnboardingModal() {
+        document.getElementById('onboardingForm').reset();
+        document.getElementById('onboardingModal').classList.remove('hidden');
+    }
+    function closeOnboardingModal() {
+        document.getElementById('onboardingModal').classList.add('hidden');
+    }
+
+    async function submitOnboardingForm(e) {
+        e.preventDefault();
+        const storeName = document.getElementById('onboard_store_name').value.trim();
+        const companyName = document.getElementById('onboard_company_name').value.trim();
+        const contactEmail = document.getElementById('onboard_contact_email').value.trim();
+        const contactPhone = document.getElementById('onboard_contact_phone').value.trim();
+        const commType = document.getElementById('onboard_commission_type').value;
+        const commRate = parseFloat(document.getElementById('onboard_commission_rate').value) || 0;
+        const flatFee = parseFloat(document.getElementById('onboard_flat_fee').value) || 0;
+        const taxId = document.getElementById('onboard_tax_id').value.trim();
+        const payoutAcc = document.getElementById('onboard_payout_account').value.trim();
+        const address = document.getElementById('onboard_address').value.trim();
+
+        const btn = document.getElementById('btnSaveOnboarding');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`/sellers?business_id=${currentBusinessId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: currentBusinessId,
+                    store_name: storeName,
+                    company_name: companyName || null,
+                    contact_email: contactEmail,
+                    contact_phone: contactPhone || null,
+                    commission_type: commType,
+                    commission_rate: commRate,
+                    flat_fee: flatFee,
+                    tax_id: taxId || null,
+                    payout_account: payoutAcc || null,
+                    address: address || null,
+                    status: 'pending'
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Vendor Onboarded', 'Seller application submitted and set to Pending status.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Error', err.detail || 'Failed to onboard vendor.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Edit Modal Handlers
+    function openEditModal(id, storeName, slug, company, email, phone, rate, commType, flatFee, taxId, payout, address, desc) {
+        document.getElementById('edit_seller_id').value = id;
+        document.getElementById('edit_store_name').value = storeName;
+        document.getElementById('edit_company_name').value = company;
+        document.getElementById('edit_contact_email').value = email;
+        document.getElementById('edit_contact_phone').value = phone;
+        document.getElementById('edit_commission_type').value = commType;
+        document.getElementById('edit_commission_rate').value = rate;
+        document.getElementById('edit_flat_fee').value = flatFee;
+        document.getElementById('edit_tax_id').value = taxId;
+        document.getElementById('edit_payout_account').value = payout;
+        document.getElementById('edit_address').value = address;
+
+        document.getElementById('editSellerModal').classList.remove('hidden');
+    }
+    function closeEditModal() {
+        document.getElementById('editSellerModal').classList.add('hidden');
+    }
+
+    async function submitEditForm(e) {
+        e.preventDefault();
+        const sellerId = document.getElementById('edit_seller_id').value;
+        const storeName = document.getElementById('edit_store_name').value.trim();
+        const companyName = document.getElementById('edit_company_name').value.trim();
+        const contactEmail = document.getElementById('edit_contact_email').value.trim();
+        const contactPhone = document.getElementById('edit_contact_phone').value.trim();
+        const commType = document.getElementById('edit_commission_type').value;
+        const commRate = parseFloat(document.getElementById('edit_commission_rate').value) || 0;
+        const flatFee = parseFloat(document.getElementById('edit_flat_fee').value) || 0;
+        const taxId = document.getElementById('edit_tax_id').value.trim();
+        const payoutAcc = document.getElementById('edit_payout_account').value.trim();
+        const address = document.getElementById('edit_address').value.trim();
+
+        const btn = document.getElementById('btnSaveEdit');
+        btn.disabled = true;
+
+        try {
+            // Update profile
+            const res1 = await fetch(`/sellers/${sellerId}?business_id=${currentBusinessId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_name: storeName,
+                    company_name: companyName || null,
+                    contact_email: contactEmail || null,
+                    contact_phone: contactPhone || null,
+                    tax_id: taxId || null,
+                    payout_account: payoutAcc || null,
+                    address: address || null
+                })
+            });
+
+            // Update commission
+            const res2 = await fetch(`/sellers/${sellerId}/commission?business_id=${currentBusinessId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    commission_type: commType,
+                    commission_rate: commRate,
+                    flat_fee: flatFee
+                })
+            });
+
+            if (res1.ok && res2.ok) {
+                window.showSuccessToast('Seller Updated', 'Vendor profile and commission structure saved.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                window.showErrorAlert('Update Failed', 'Failed to update seller profile.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Status Approval Modal Handlers
+    function openStatusModal(id, currentStatus, isVerified) {
+        document.getElementById('status_seller_id').value = id;
+        document.getElementById('status_select').value = currentStatus;
+        document.getElementById('status_is_verified').checked = isVerified;
+        document.getElementById('statusModal').classList.remove('hidden');
+    }
+    function closeStatusModal() {
+        document.getElementById('statusModal').classList.add('hidden');
+    }
+
+    async function submitStatusForm(e) {
+        e.preventDefault();
+        const sellerId = document.getElementById('status_seller_id').value;
+        const status = document.getElementById('status_select').value;
+        const isVerified = document.getElementById('status_is_verified').checked;
+
+        const btn = document.getElementById('btnSaveStatus');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`/sellers/${sellerId}/status?business_id=${currentBusinessId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: status,
+                    is_verified: isVerified
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Status Updated', 'Vendor status updated successfully.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Update Failed', err.detail || 'Could not update vendor status.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Products Modal Handlers
+    async function openProductsModal(sellerId, storeName) {
+        activeSellerForProducts = sellerId;
+        document.getElementById('productsSellerTitle').textContent = `Catalog Linkages for: ${storeName}`;
+        document.getElementById('productsModal').classList.remove('hidden');
+        await loadSellerProducts(sellerId);
+    }
+    function closeProductsModal() {
+        document.getElementById('productsModal').classList.add('hidden');
+        activeSellerForProducts = null;
+    }
+
+    async function loadSellerProducts(sellerId) {
+        const container = document.getElementById('sellerProductsContainer');
+        container.innerHTML = `<p class="text-xs text-gray-400 italic py-2 text-center">Loading seller products...</p>`;
+
+        try {
+            const res = await fetch(`/sellers/${sellerId}/products?business_id=${currentBusinessId}`);
+            if (res.ok) {
+                const products = await res.json();
+                if (!products.length) {
+                    container.innerHTML = `<p class="text-xs text-gray-400 italic py-2 text-center">No products associated with this seller yet.</p>`;
+                    return;
+                }
+                let html = '';
+                products.forEach(p => {
+                    html += `
+                        <div class="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-200/80">
+                            <div>
+                                <span class="font-bold text-gray-800 text-xs">${p.title}</span>
+                                <span class="text-[10px] text-gray-400 block">${p.brand || 'No Brand'} | Price: $${p.price || '0.00'}</span>
+                            </div>
+                            <button type="button" onclick="disassociateProduct('${sellerId}', '${p.id}')"
+                                class="px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors">
+                                Unlink
+                            </button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<p class="text-xs text-rose-500 italic py-2 text-center">Failed to load products.</p>`;
+            }
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<p class="text-xs text-rose-500 italic py-2 text-center">Error loading products.</p>`;
+        }
+    }
+
+    async function associateProduct() {
+        if (!activeSellerForProducts) return;
+        const productId = document.getElementById('associate_product_id').value;
+        if (!productId) {
+            window.showWarningAlert('Select Product', 'Please select a product from the unassigned list.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/sellers/${activeSellerForProducts}/products/${productId}?business_id=${currentBusinessId}`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Product Linked', 'Product associated with seller successfully.');
+                await loadSellerProducts(activeSellerForProducts);
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Link Failed', err.detail || 'Could not associate product.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        }
+    }
+
+    async function disassociateProduct(sellerId, productId) {
+        try {
+            const res = await fetch(`/sellers/${sellerId}/products/${productId}?business_id=${currentBusinessId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Product Unlinked', 'Product disassociated from seller.');
+                await loadSellerProducts(sellerId);
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                window.showErrorAlert('Error', 'Failed to unlink product.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        }
+    }
+
+    // Detail Modal
+    function openDetailModal(id, name, slug, company, email, phone, status, rate, commType, flatFee, taxId, payout, address, desc) {
+        document.getElementById('detailStoreName').textContent = name;
+        document.getElementById('detailSlug').textContent = `/seller/${slug}`;
+        document.getElementById('detailStatus').textContent = status.toUpperCase();
+        document.getElementById('detailCompany').textContent = company || 'Individual';
+        document.getElementById('detailTaxId').textContent = taxId || 'None';
+        document.getElementById('detailEmail').textContent = email || 'None';
+        document.getElementById('detailPhone').textContent = phone || 'None';
+        document.getElementById('detailPayout').textContent = payout || 'None';
+        document.getElementById('detailAddress').textContent = address || 'None';
+
+        let commStr = commType === 'percentage' ? `${parseFloat(rate).toFixed(2)}% Commission` : `$${parseFloat(flatFee).toFixed(2)} Flat Fee`;
+        document.getElementById('detailCommission').textContent = commStr;
+
+        document.getElementById('sellerDetailModal').classList.remove('hidden');
+    }
+    function closeDetailModal() {
+        document.getElementById('sellerDetailModal').classList.add('hidden');
+    }
+
+    // Delete Seller
+    async function deleteSeller(sellerId, name) {
+        const confirmed = await window.showConfirmDialog(
+            'Delete Vendor Profile',
+            `Are you sure you want to delete '${name}'? Associated products will be unlinked.`
+        );
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch(`/sellers/${sellerId}?business_id=${currentBusinessId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Seller Deleted', 'Vendor profile removed successfully.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                window.showErrorAlert('Error', 'Failed to delete seller.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        }
+    }
+</script>
+{% endblock %}

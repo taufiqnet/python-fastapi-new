@@ -182,6 +182,11 @@ class Product(Base, UUIDMixin, TimestampMixin):
         back_populates="products",
         lazy="selectin",
     )
+    seller: Mapped["Seller | None"] = relationship(  # noqa: F821
+        "Seller",
+        back_populates="products",
+        lazy="selectin",
+    )
     business_profile: Mapped["BusinessProfile | None"] = relationship(  # noqa: F821
         "BusinessProfile",
         lazy="selectin",

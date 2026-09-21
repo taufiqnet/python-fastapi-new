@@ -275,6 +275,16 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "active_page": "customers",
             },
             {
+                "key": "sellers",
+                "title": "Sellers & Vendors",
+                "icon": "fas fa-store",
+                "url": "/sellers/manage",
+                "permission_code": "ecommerce:products:view",
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "description": "Onboard multi-vendor marketplace sellers, configure commission structures, and manage seller catalog.",
+                "active_page": "sellers",
+            },
+            {
                 "key": "brands",
                 "title": "Brand",
                 "icon": "fas fa-copyright",

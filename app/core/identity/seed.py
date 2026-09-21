@@ -39,6 +39,7 @@ from app.modules.ecommerce.products.models import (
     ProductVariant,
     Status,
 )
+from app.modules.ecommerce.sellers.models import CommissionType, Seller, SellerStatus
 from app.modules.hr_payroll.compensation.models import EmployeeSalary
 from app.modules.hr_payroll.employees.models import (
     Employee,
@@ -835,6 +836,94 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
                 source_id="seed_initial",
             )
             db.add(cl_reg)
+
+    # 11b. Seed Marketplace Sellers under WBSOFT
+    sellers_def = [
+        {
+            "store_name": "TechGlobe Direct",
+            "slug": "techglobe-direct",
+            "company_name": "TechGlobe Corporation",
+            "contact_email": "vendor@techglobe.com",
+            "contact_phone": "+8801700111222",
+            "status": SellerStatus.ACTIVE,
+            "is_verified": True,
+            "commission_type": CommissionType.PERCENTAGE,
+            "commission_rate": Decimal("10.00"),
+            "flat_fee": Decimal("0.00"),
+            "tax_id": "TIN-TG-9900",
+            "payout_account": "TechGlobe Bank AC 1001-2200",
+        },
+        {
+            "store_name": "Apex Digital Outlet",
+            "slug": "apex-digital-outlet",
+            "company_name": "Apex Digital Ltd.",
+            "contact_email": "partner@apexdigital.com",
+            "contact_phone": "+8801700333444",
+            "status": SellerStatus.ACTIVE,
+            "is_verified": True,
+            "commission_type": CommissionType.PERCENTAGE,
+            "commission_rate": Decimal("12.50"),
+            "flat_fee": Decimal("0.00"),
+            "tax_id": "TIN-AD-4455",
+            "payout_account": "Apex Digital Bank AC 3003-4400",
+        },
+        {
+            "store_name": "MicroCraft Hardware",
+            "slug": "microcraft-hardware",
+            "company_name": "MicroCraft Innovations",
+            "contact_email": "seller@microcraft.io",
+            "contact_phone": "+8801700555666",
+            "status": SellerStatus.PENDING,
+            "is_verified": False,
+            "commission_type": CommissionType.FLAT,
+            "commission_rate": Decimal("0.00"),
+            "flat_fee": Decimal("5.00"),
+            "tax_id": "TIN-MC-7788",
+            "payout_account": "MicroCraft Bank AC 5005-6600",
+        },
+    ]
+
+    seller_objs = {}
+    for sdef in sellers_def:
+        s_obj = db.query(Seller).filter(Seller.slug == sdef["slug"]).first()
+        if not s_obj:
+            s_obj = Seller(
+                business_id=wbsoft.id,
+                store_name=sdef["store_name"],
+                slug=sdef["slug"],
+                company_name=sdef["company_name"],
+                contact_email=sdef["contact_email"],
+                contact_phone=sdef["contact_phone"],
+                status=sdef["status"],
+                is_verified=sdef["is_verified"],
+                commission_type=sdef["commission_type"],
+                commission_rate=sdef["commission_rate"],
+                flat_fee=sdef["flat_fee"],
+                tax_id=sdef["tax_id"],
+                payout_account=sdef["payout_account"],
+            )
+            db.add(s_obj)
+            db.flush()
+        seller_objs[sdef["slug"]] = s_obj
+
+    # Associate products with seeded sellers
+    p_tg1 = db.query(Product).filter(Product.slug == "techglobe-x1-pro-smartphone").first()
+    if p_tg1 and not p_tg1.seller_id:
+        p_tg1.seller_id = seller_objs["techglobe-direct"].id
+
+    p_tg2 = db.query(Product).filter(Product.slug == "techglobe-ultrabook-15-laptop").first()
+    if p_tg2 and not p_tg2.seller_id:
+        p_tg2.seller_id = seller_objs["techglobe-direct"].id
+
+    p_apex1 = db.query(Product).filter(Product.slug == "apex-printmax-laser-printer").first()
+    if p_apex1 and not p_apex1.seller_id:
+        p_apex1.seller_id = seller_objs["apex-digital-outlet"].id
+
+    p_apex2 = db.query(Product).filter(Product.slug == "apex-gigabit-router-8-port").first()
+    if p_apex2 and not p_apex2.seller_id:
+        p_apex2.seller_id = seller_objs["apex-digital-outlet"].id
+
+    db.flush()
 
     # 12. Seed Sample Stock Transfer for frontend testing
     transfer_no = "TR-2026-001"

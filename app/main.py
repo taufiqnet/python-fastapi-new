@@ -61,6 +61,7 @@ from app.modules.ecommerce.pricing.router import router as pricing_router
 from app.modules.ecommerce.products.router import router as products_router
 from app.modules.ecommerce.reviews.router import router as reviews_router
 from app.modules.ecommerce.search.router import router as search_router
+from app.modules.ecommerce.sellers.router import router as sellers_router
 from app.modules.ecommerce.shipping.router import router as shipping_router
 from app.modules.hr_payroll.organization.router import (
     router as organization_router,
@@ -106,6 +107,7 @@ from app.routers import (
     recruitment_views,
     review_views,
     role_views,
+    seller_views,
     shipping_views,
     subscription_plan_views,
     user_views,
@@ -254,6 +256,7 @@ app.include_router(product_views.router)
 app.include_router(pricing_views.router)
 app.include_router(shipping_views.router)
 app.include_router(review_views.router)
+app.include_router(seller_views.router)
 app.include_router(catalog_views.router)
 app.include_router(order_views.router)
 app.include_router(inventory_views.router)
@@ -288,6 +291,7 @@ app.include_router(orders_router)
 app.include_router(payments_router)
 app.include_router(shipping_router)
 app.include_router(reviews_router)
+app.include_router(sellers_router)
 app.include_router(notifications_router)
 app.include_router(search_router)
 

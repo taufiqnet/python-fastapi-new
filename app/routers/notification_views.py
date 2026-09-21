@@ -3,11 +3,14 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_permission
-from app.core.identity.models import BusinessProfile, User
+from app.core.identity.models import User
+from app.core.tenancy.models import BusinessProfile
 from app.core.tenancy import resolve_business_id
 from app.database import get_db
 from app.modules.ecommerce.notifications.service import NotificationService
-from app.templates import templates
+from fastapi.templating import Jinja2Templates
+
+templates = Jinja2Templates(directory="app/templates")
 
 router = APIRouter(tags=["Ecommerce Notifications Views"])
 service = NotificationService()
