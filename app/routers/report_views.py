@@ -51,7 +51,7 @@ async def manage_reports_page(
 
     return templates.TemplateResponse(
         request=request,
-        name="modules/ecommerce/reports/reports_manage.html",
+        name="modules/reports/reports_manage.html",
         context={
             "current_user": current_user,
             "selected_business_id": resolved_biz_id,

@@ -90,7 +90,7 @@ async def get_sales_report(
     if format == ReportFormat.PDF:
         rendered_html = templates.TemplateResponse(
             request=request,
-            name="modules/reports/invoice_summary.html",
+            name="modules/ecommerce/reports/invoice_summary.html",
             context={
                 "title": "Sales & Financial Summary Report",
                 "company_name": f"Business #{business_id}",
