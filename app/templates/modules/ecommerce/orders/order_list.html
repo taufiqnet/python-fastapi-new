@@ -141,6 +141,8 @@
         border: 1px solid #e5e7eb; background: #fff;
         cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none;
     }
+    .action-btn.print { color: #0284c7; }
+    .action-btn.print:hover { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
     .action-btn.view  { color: #10b981; }
     .action-btn.view:hover  { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
     .action-btn.edit  { color: #4f46e5; }
@@ -292,6 +294,9 @@
                     </td>
                     <td>
                         <div class="flex items-center gap-1.5">
+                            <a href="/orders/invoice/{{ o.id }}?business_id={{ o.business_id }}" class="action-btn print" title="Print Invoice" target="_blank">
+                                <i class="fas fa-file-invoice"></i>
+                            </a>
                             <a href="/orders/detail/{{ o.id }}?business_id={{ o.business_id }}" class="action-btn view" title="View Order Detail">
                                 <i class="fas fa-eye"></i>
                             </a>

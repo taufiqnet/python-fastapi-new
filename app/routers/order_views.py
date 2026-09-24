@@ -202,6 +202,45 @@ def order_detail_page(
     )
 
 
+@router.get("/orders/invoice/{order_id}", response_class=HTMLResponse)
+def order_invoice_page(
+    order_id: uuid.UUID,
+    request: Request,
+    business_id: int = 1,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    order = order_service.get_order(
+        db, order_id=order_id, business_id=resolved_business_id or business_id
+    )
+    verify_record_ownership(order, current_user)
+    business = (
+        business_service.get_business(db, order.business_id)
+        if order.business_id
+        else None
+    )
+
+    shipping_address = next(
+        (a for a in order.addresses if a.address_type == "shipping"), None
+    )
+    billing_address = next(
+        (a for a in order.addresses if a.address_type == "billing"), shipping_address
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/ecommerce/orders/order_invoice.html",
+        context={
+            "order": order,
+            "business": business,
+            "shipping_address": shipping_address,
+            "billing_address": billing_address,
+            "active_page": "orders",
+        },
+    )
+
+
 @router.get("/orders/edit/{order_id}", response_class=HTMLResponse)
 def order_edit_page(
     order_id: uuid.UUID,
