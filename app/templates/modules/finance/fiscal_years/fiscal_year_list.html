@@ -251,7 +251,7 @@ function closeFYModal() {
 
 function handleFYSubmit(e) {
     e.preventDefault();
-    var bizId = parseInt($('#fy_business_id').val());
+    var bizId = parseInt($('#fy_business_id').val() || '{{ selected_business_id }}');
     var payload = {
         business_id: bizId,
         name: $('#fy_name').val().trim(),
@@ -286,7 +286,7 @@ function handleFYSubmit(e) {
 }
 
 function togglePeriodLock(periodId, newStatus) {
-    var bizId = parseInt($('#fy_business_id').val() || '0');
+    var bizId = parseInt($('#fy_business_id').val() || '{{ selected_business_id }}');
     fetch('/finance/fiscal-periods/' + periodId + '/lock?business_id=' + bizId, {
         method: 'PUT',
         headers: {

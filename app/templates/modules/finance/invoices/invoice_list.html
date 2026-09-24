@@ -577,7 +577,7 @@ function calcLine(elem) {
 
 function handleInvoiceSubmit(e) {
     e.preventDefault();
-    var bizId = parseInt($('#inv_business_id').val());
+    var bizId = parseInt($('#inv_business_id').val() || '{{ selected_business_id }}');
 
     var lines = [];
     var slNo = 1;
@@ -645,7 +645,7 @@ function handleInvoiceSubmit(e) {
 }
 
 function postInvoice(invoiceId) {
-    var bizId = parseInt($('#inv_business_id').val() || '0');
+    var bizId = parseInt($('#inv_business_id').val() || '{{ selected_business_id }}');
     Swal.fire({
         title: 'Post Invoice?',
         text: 'Posting will issue invoice and post journal voucher.',
@@ -689,7 +689,7 @@ function closeImportModal() {
 function handleImportSubmit(e) {
     e.preventDefault();
     var fileInput = document.getElementById('import_file');
-    var bizId = parseInt($('#inv_business_id').val() || '0');
+    var bizId = parseInt($('#inv_business_id').val() || '{{ selected_business_id }}');
 
     if (!fileInput.files || fileInput.files.length === 0) return;
 
@@ -719,7 +719,7 @@ function handleImportSubmit(e) {
 
 function confirmBatchImport() {
     if (!currentBatchId) return;
-    var bizId = parseInt($('#inv_business_id').val() || '0');
+    var bizId = parseInt($('#inv_business_id').val() || '{{ selected_business_id }}');
 
     fetch('/finance/sales-import/' + currentBatchId + '/confirm?business_id=' + bizId, {
         method: 'POST'

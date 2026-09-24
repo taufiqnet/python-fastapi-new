@@ -49,10 +49,10 @@
 </div>
 
 <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchTab('trial_balance')"><i class="fas fa-scale-balanced"></i> Trial Balance</button>
-    <button class="nav-tab" onclick="switchTab('pnl')"><i class="fas fa-chart-line"></i> Profit & Loss</button>
-    <button class="nav-tab" onclick="switchTab('balance_sheet')"><i class="fas fa-landmark"></i> Balance Sheet</button>
-    <button class="nav-tab" onclick="switchTab('general_ledger')"><i class="fas fa-book-open"></i> General Ledger</button>
+    <button class="nav-tab active" onclick="switchTab(this, 'trial_balance')"><i class="fas fa-scale-balanced"></i> Trial Balance</button>
+    <button class="nav-tab" onclick="switchTab(this, 'pnl')"><i class="fas fa-chart-line"></i> Profit & Loss</button>
+    <button class="nav-tab" onclick="switchTab(this, 'balance_sheet')"><i class="fas fa-landmark"></i> Balance Sheet</button>
+    <button class="nav-tab" onclick="switchTab(this, 'general_ledger')"><i class="fas fa-book-open"></i> General Ledger</button>
 </div>
 
 <!-- Tab 1: Trial Balance -->
@@ -314,11 +314,11 @@ function filterByBusiness(bizId) {
     }
 }
 
-function switchTab(tabId) {
+function switchTab(btn, tabId) {
     $('.nav-tab').removeClass('active');
     $('.tab-content').addClass('hidden');
 
-    $(event.currentTarget).addClass('active');
+    $(btn).addClass('active');
     $('#tab-' + tabId).removeClass('hidden');
 }
 </script>

@@ -507,7 +507,7 @@ function closeAccountModal() {
 function handleAccountSubmit(e) {
     e.preventDefault();
     var accId = $('#account_id').val();
-    var bizId = parseInt($('#form_business_id').val());
+    var bizId = parseInt($('#form_business_id').val() || '{{ selected_business_id }}');
 
     var payload = {
         code: $('#account_code').val().trim(),
@@ -554,7 +554,7 @@ function handleAccountSubmit(e) {
 }
 
 function deleteAccount(id, name) {
-    var bizId = parseInt($('#form_business_id').val() || '0');
+    var bizId = parseInt($('#form_business_id').val() || '{{ selected_business_id }}');
     Swal.fire({
         title: 'Delete Account?',
         text: 'Are you sure you want to delete "' + name + '"? This action cannot be undone.',

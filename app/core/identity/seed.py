@@ -342,8 +342,9 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         if pro_plan:
             wbsoft.subscription_plan_id = pro_plan.id
 
-    # Seed Finance Chart of Accounts for WBSOFT
-    seed_default_chart_of_accounts_sync(db, wbsoft.id)
+    # Seed Finance Chart of Accounts & Sample Finance Data for WBSOFT
+    from app.modules.finance.seed import seed_wbsoft_finance_data_sync
+    seed_wbsoft_finance_data_sync(db, wbsoft.id)
 
     # 6. Seed User test@test.com
     test_user_email = "test@test.com"

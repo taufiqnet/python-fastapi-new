@@ -1,10 +1,22 @@
 """
-Default Chart of Accounts Seed for Bangladesh Context.
+Default Chart of Accounts & Sample Finance Data Seed for Bangladesh Context.
 """
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import date
+from decimal import Decimal
 from sqlalchemy import select
-from app.modules.finance.models import Account
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.modules.finance.models import (
+    Account,
+    Customer,
+    FiscalPeriod,
+    FiscalYear,
+    JournalEntry,
+    JournalVoucher,
+    SalesInvoice,
+    SalesInvoiceLine,
+)
 
 DEFAULT_BD_ACCOUNTS = [
     # ASSETS (1000s)
@@ -91,3 +103,140 @@ def seed_default_chart_of_accounts_sync(db, business_id: int) -> list[Account]:
     if created:
         db.commit()
     return created
+
+
+def seed_wbsoft_finance_data_sync(db, business_id: int) -> None:
+    """Seed comprehensive finance data (Chart of Accounts, Fiscal Year, Vouchers, Invoices) for WBSOFT."""
+    # 1. Chart of Accounts
+    seed_default_chart_of_accounts_sync(db, business_id)
+    acc_map = {acc.code: acc for acc in db.query(Account).filter(Account.business_id == business_id).all()}
+
+    # 2. Fiscal Year & 12 Periods
+    fy_name = "FY 2025-2026"
+    fy = db.query(FiscalYear).filter(FiscalYear.business_id == business_id, FiscalYear.name == fy_name).first()
+    if not fy:
+        fy = FiscalYear(
+            business_id=business_id,
+            name=fy_name,
+            start_date=date(2025, 7, 1),
+            end_date=date(2026, 6, 30),
+            status="open",
+            is_current=True,
+        )
+        db.add(fy)
+        db.flush()
+
+        months = [
+            ("July 2025", date(2025, 7, 1), date(2025, 7, 31)),
+            ("August 2025", date(2025, 8, 1), date(2025, 8, 31)),
+            ("September 2025", date(2025, 9, 1), date(2025, 9, 30)),
+            ("October 2025", date(2025, 10, 1), date(2025, 10, 31)),
+            ("November 2025", date(2025, 11, 1), date(2025, 11, 30)),
+            ("December 2025", date(2025, 12, 1), date(2025, 12, 31)),
+            ("January 2026", date(2026, 1, 1), date(2026, 1, 31)),
+            ("February 2026", date(2026, 2, 1), date(2026, 2, 28)),
+            ("March 2026", date(2026, 3, 1), date(2026, 3, 31)),
+            ("April 2026", date(2026, 4, 1), date(2026, 4, 30)),
+            ("May 2026", date(2026, 5, 1), date(2026, 5, 31)),
+            ("June 2026", date(2026, 6, 1), date(2026, 6, 30)),
+        ]
+        for pnum, (mname, sdate, edate) in enumerate(months, 1):
+            fp = FiscalPeriod(
+                fiscal_year_id=fy.id,
+                business_id=business_id,
+                period_number=pnum,
+                name=mname,
+                start_date=sdate,
+                end_date=edate,
+                status="open",
+            )
+            db.add(fp)
+        db.flush()
+
+    # 3. Sample Journal Vouchers
+    jv_num = "JV-2025-001"
+    jv = db.query(JournalVoucher).filter(JournalVoucher.business_id == business_id, JournalVoucher.voucher_number == jv_num).first()
+    if not jv:
+        cash_acc = acc_map.get("1010")
+        cap_acc = acc_map.get("3010")
+        if cash_acc and cap_acc:
+            jv = JournalVoucher(
+                business_id=business_id,
+                voucher_number=jv_num,
+                voucher_type="journal",
+                entry_date=date(2025, 7, 1),
+                status="posted",
+                reference="INIT-CAPITAL",
+                notes="Initial capital injection for WBSOFT operations",
+            )
+            db.add(jv)
+            db.flush()
+
+            e1 = JournalEntry(
+                voucher_id=jv.id,
+                account_id=cash_acc.id,
+                debit=Decimal("500000.00"),
+                credit=Decimal("0.00"),
+                narration="Capital cash deposit",
+            )
+            e2 = JournalEntry(
+                voucher_id=jv.id,
+                account_id=cap_acc.id,
+                debit=Decimal("0.00"),
+                credit=Decimal("500000.00"),
+                narration="Owner capital contribution",
+            )
+            db.add_all([e1, e2])
+
+    # 4. Sample Customer & Sales Invoice
+    cust = db.query(Customer).filter(Customer.business_id == business_id, Customer.name == "Apex Solutions Bangladesh").first()
+    if not cust:
+        cust = Customer(
+            business_id=business_id,
+            name="Apex Solutions Bangladesh",
+            bin="001234567-0101",
+            address="Plot 12, Road 4, Gulshan-1, Dhaka 1212",
+            phone="+8801711223344",
+            email="accounts@apexsolutions.bd",
+            is_active=True,
+        )
+        db.add(cust)
+        db.flush()
+
+    inv_num = "INV-2025-001"
+    inv = db.query(SalesInvoice).filter(SalesInvoice.business_id == business_id, SalesInvoice.invoice_number == inv_num).first()
+    if not inv:
+        inv = SalesInvoice(
+            business_id=business_id,
+            invoice_number=inv_num,
+            issue_date=date(2025, 7, 15),
+            customer_id=cust.id if cust else None,
+            buyer_name="Apex Solutions Bangladesh",
+            buyer_bin="001234567-0101",
+            buyer_address="Plot 12, Road 4, Gulshan-1, Dhaka 1212",
+            total_subtotal=Decimal("100000.00"),
+            total_sd=Decimal("0.00"),
+            total_vat=Decimal("15000.00"),
+            total_payable=Decimal("115000.00"),
+            status="posted",
+        )
+        db.add(inv)
+        db.flush()
+
+        line1 = SalesInvoiceLine(
+            invoice_id=inv.id,
+            sl_no=1,
+            description="Enterprise Software License & Setup",
+            uom="PCS",
+            quantity=Decimal("1.0000"),
+            unit_price=Decimal("100000.00"),
+            total_price=Decimal("100000.00"),
+            sd_rate=Decimal("0.00"),
+            sd_amount=Decimal("0.00"),
+            vat_rate=Decimal("15.00"),
+            vat_amount=Decimal("15000.00"),
+            price_incl_duties_taxes=Decimal("115000.00"),
+        )
+        db.add(line1)
+
+    db.commit()

@@ -20,18 +20,35 @@ _original_template_response = Jinja2Templates.TemplateResponse
 
 
 def _custom_template_response(self, *args, **kwargs):
-    request = kwargs.get("request")
-    if not request and args:
-        request = args[0]
+    name = kwargs.get("name")
+    if not name and args:
+        if isinstance(args[0], str):
+            name = args[0]
+        elif len(args) > 1 and isinstance(args[1], str):
+            name = args[1]
+
     context = kwargs.get("context")
-    if not context and len(args) >= 3:
-        context = args[2]
+    if not context:
+        for arg in args:
+            if isinstance(arg, dict):
+                context = arg
+                break
+    if context is None:
+        context = {}
+
+    request = kwargs.get("request")
+    if not request:
+        if args and hasattr(args[0], "state"):
+            request = args[0]
+        elif isinstance(context, dict) and "request" in context:
+            request = context["request"]
 
     if request and isinstance(context, dict):
+        if "request" not in context:
+            context["request"] = request
         user = getattr(request.state, "user", None)
-        if "current_user" not in context:
-            if user:
-                context["current_user"] = user
+        if "current_user" not in context and user:
+            context["current_user"] = user
 
         current_user = context.get("current_user") or user
         if "nav_menu" not in context:
@@ -39,6 +56,10 @@ def _custom_template_response(self, *args, **kwargs):
 
         if "settings" not in context:
             context["settings"] = settings
+
+    if request and name:
+        new_kwargs = {k: v for k, v in kwargs.items() if k not in ("request", "name", "context")}
+        return _original_template_response(self, request=request, name=name, context=context, **new_kwargs)
 
     return _original_template_response(self, *args, **kwargs)
 
