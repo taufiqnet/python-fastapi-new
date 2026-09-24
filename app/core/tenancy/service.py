@@ -30,8 +30,13 @@ class BusinessService:
             dump["subscription_plan_id"] = free_plan.id if free_plan else 1
 
         business = BusinessProfile(**dump)
+        created_business = self.repository.create(db, business)
 
-        return self.repository.create(db, business)
+        # Seed default chart of accounts for the newly created business profile
+        from app.modules.finance.seed import seed_default_chart_of_accounts_sync
+        seed_default_chart_of_accounts_sync(db, created_business.id)
+
+        return created_business
 
     def get_business(self, db: Session, business_id: int):
         business = self.repository.get_by_id(db, business_id)

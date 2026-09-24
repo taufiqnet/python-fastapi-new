@@ -2,6 +2,14 @@
 Default Chart of Accounts & Sample Finance Data Seed for Bangladesh Context.
 """
 
+import sys
+from pathlib import Path
+
+# Ensure project root is in sys.path when script is executed directly
+repo_root = Path(__file__).resolve().parent.parent.parent.parent
+if str(repo_root) not in sys.path:
+    sys.path.insert(0, str(repo_root))
+
 from datetime import date
 from decimal import Decimal
 from sqlalchemy import select
@@ -103,6 +111,146 @@ def seed_default_chart_of_accounts_sync(db, business_id: int) -> list[Account]:
     if created:
         db.commit()
     return created
+
+
+async def seed_wbsoft_finance_data(db: AsyncSession, business_id: int) -> None:
+    """Async version of finance data seeder for WBSOFT."""
+    await seed_default_chart_of_accounts(db, business_id)
+
+    res_acc = await db.execute(select(Account).where(Account.business_id == business_id))
+    accounts = res_acc.scalars().all()
+    acc_map = {acc.code: acc for acc in accounts}
+
+    fy_name = "FY 2025-2026"
+    res_fy = await db.execute(select(FiscalYear).where(FiscalYear.business_id == business_id, FiscalYear.name == fy_name))
+    fy = res_fy.scalars().first()
+    if not fy:
+        fy = FiscalYear(
+            business_id=business_id,
+            name=fy_name,
+            start_date=date(2025, 7, 1),
+            end_date=date(2026, 6, 30),
+            status="open",
+            is_current=True,
+        )
+        db.add(fy)
+        await db.flush()
+
+        months = [
+            ("July 2025", date(2025, 7, 1), date(2025, 7, 31)),
+            ("August 2025", date(2025, 8, 1), date(2025, 8, 31)),
+            ("September 2025", date(2025, 9, 1), date(2025, 9, 30)),
+            ("October 2025", date(2025, 10, 1), date(2025, 10, 31)),
+            ("November 2025", date(2025, 11, 1), date(2025, 11, 30)),
+            ("December 2025", date(2025, 12, 1), date(2025, 12, 31)),
+            ("January 2026", date(2026, 1, 1), date(2026, 1, 31)),
+            ("February 2026", date(2026, 2, 1), date(2026, 2, 28)),
+            ("March 2026", date(2026, 3, 1), date(2026, 3, 31)),
+            ("April 2026", date(2026, 4, 1), date(2026, 4, 30)),
+            ("May 2026", date(2026, 5, 1), date(2026, 5, 31)),
+            ("June 2026", date(2026, 6, 1), date(2026, 6, 30)),
+        ]
+        for pnum, (mname, sdate, edate) in enumerate(months, 1):
+            fp = FiscalPeriod(
+                fiscal_year_id=fy.id,
+                business_id=business_id,
+                period_number=pnum,
+                name=mname,
+                start_date=sdate,
+                end_date=edate,
+                status="open",
+            )
+            db.add(fp)
+        await db.flush()
+
+    jv_num = "JV-2025-001"
+    res_jv = await db.execute(select(JournalVoucher).where(JournalVoucher.business_id == business_id, JournalVoucher.voucher_number == jv_num))
+    jv = res_jv.scalars().first()
+    if not jv:
+        cash_acc = acc_map.get("1010")
+        cap_acc = acc_map.get("3010")
+        if cash_acc and cap_acc:
+            jv = JournalVoucher(
+                business_id=business_id,
+                voucher_number=jv_num,
+                voucher_type="journal",
+                entry_date=date(2025, 7, 1),
+                status="posted",
+                reference="INIT-CAPITAL",
+                notes="Initial capital injection for WBSOFT operations",
+            )
+            db.add(jv)
+            await db.flush()
+
+            e1 = JournalEntry(
+                voucher_id=jv.id,
+                account_id=cash_acc.id,
+                debit=Decimal("500000.00"),
+                credit=Decimal("0.00"),
+                narration="Capital cash deposit",
+            )
+            e2 = JournalEntry(
+                voucher_id=jv.id,
+                account_id=cap_acc.id,
+                debit=Decimal("0.00"),
+                credit=Decimal("500000.00"),
+                narration="Owner capital contribution",
+            )
+            db.add_all([e1, e2])
+
+    res_cust = await db.execute(select(Customer).where(Customer.business_id == business_id, Customer.name == "Apex Solutions Bangladesh"))
+    cust = res_cust.scalars().first()
+    if not cust:
+        cust = Customer(
+            business_id=business_id,
+            name="Apex Solutions Bangladesh",
+            bin="001234567-0101",
+            address="Plot 12, Road 4, Gulshan-1, Dhaka 1212",
+            phone="+8801711223344",
+            email="accounts@apexsolutions.bd",
+            is_active=True,
+        )
+        db.add(cust)
+        await db.flush()
+
+    inv_num = "INV-2025-001"
+    res_inv = await db.execute(select(SalesInvoice).where(SalesInvoice.business_id == business_id, SalesInvoice.invoice_number == inv_num))
+    inv = res_inv.scalars().first()
+    if not inv:
+        inv = SalesInvoice(
+            business_id=business_id,
+            invoice_number=inv_num,
+            issue_date=date(2025, 7, 15),
+            customer_id=cust.id if cust else None,
+            buyer_name="Apex Solutions Bangladesh",
+            buyer_bin="001234567-0101",
+            buyer_address="Plot 12, Road 4, Gulshan-1, Dhaka 1212",
+            total_subtotal=Decimal("100000.00"),
+            total_sd=Decimal("0.00"),
+            total_vat=Decimal("15000.00"),
+            total_payable=Decimal("115000.00"),
+            status="posted",
+        )
+        db.add(inv)
+        await db.flush()
+
+        line1 = SalesInvoiceLine(
+            invoice_id=inv.id,
+            sl_no=1,
+            description="Enterprise Software License & Setup",
+            uom="PCS",
+            quantity=Decimal("1.0000"),
+            unit_price=Decimal("100000.00"),
+            total_price=Decimal("100000.00"),
+            sd_rate=Decimal("0.00"),
+            sd_amount=Decimal("0.00"),
+            vat_rate=Decimal("15.00"),
+            vat_amount=Decimal("15000.00"),
+            price_incl_duties_taxes=Decimal("115000.00"),
+        )
+        db.add(line1)
+
+    await db.commit()
 
 
 def seed_wbsoft_finance_data_sync(db, business_id: int) -> None:
@@ -240,3 +388,32 @@ def seed_wbsoft_finance_data_sync(db, business_id: int) -> None:
         db.add(line1)
 
     db.commit()
+
+
+if __name__ == "__main__":
+    from app import models_registry  # noqa: F401
+    from app.database import Base, SessionLocal, engine
+    from app.core.identity.seed import seed_system_admin_and_permissions_sync
+    from app.core.tenancy.models import BusinessProfile
+
+    print("Ensuring database tables are created...")
+    Base.metadata.create_all(bind=engine)
+
+    print("Running standalone finance seed.py...")
+    db = SessionLocal()
+    try:
+        seed_system_admin_and_permissions_sync(db)
+
+        businesses = db.query(BusinessProfile).filter(BusinessProfile.is_active == True).all()
+        for b in businesses:
+            if b.name_en == "WBSOFT":
+                seed_wbsoft_finance_data_sync(db, b.id)
+            else:
+                seed_default_chart_of_accounts_sync(db, b.id)
+
+        print("Finance seeding completed successfully!")
+    except Exception as e:
+        print(f"Finance seeding failed: {e}")
+        raise
+    finally:
+        db.close()
