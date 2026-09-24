@@ -42,11 +42,16 @@ class OrderRepository:
         shipping = Decimal(str(data.shipping_amount))
         tax = Decimal(str(data.tax_amount))
         discount = Decimal(str(data.discount_amount))
-        total = max(Decimal("0.00"), calculated_total + shipping + tax - discount)
+        other_charges = Decimal(str(data.other_charges or 0.0))
+        total = max(
+            Decimal("0.00"),
+            calculated_total + shipping + tax + other_charges - discount,
+        )
 
         order = Order(
             business_id=data.business_id,
             user_id=data.user_id,
+            guest_email=data.guest_email,
             order_number=order_num,
             payment_status=OrderPaymentStatus.UNPAID,
             fulfillment_status=OrderFulfillmentStatus.PENDING,
@@ -54,9 +59,15 @@ class OrderRepository:
             shipping_amount=shipping,
             tax_amount=tax,
             discount_amount=discount,
+            other_charges=other_charges,
             total_amount=total,
             currency=data.currency,
             customer_note=data.customer_note,
+            payment_method=data.payment_method,
+            payment_channel=data.payment_channel,
+            delivery_method=data.delivery_method,
+            courier_company=data.courier_company,
+            tracking_id=data.tracking_id,
         )
         db.add(order)
         db.flush()
@@ -150,8 +161,20 @@ class OrderRepository:
             order.tax_amount = Decimal(str(data.tax_amount))
         if data.discount_amount is not None:
             order.discount_amount = Decimal(str(data.discount_amount))
+        if data.other_charges is not None:
+            order.other_charges = Decimal(str(data.other_charges))
         if data.customer_note is not None:
             order.customer_note = data.customer_note
+        if data.payment_method is not None:
+            order.payment_method = data.payment_method
+        if data.payment_channel is not None:
+            order.payment_channel = data.payment_channel
+        if data.delivery_method is not None:
+            order.delivery_method = data.delivery_method
+        if data.courier_company is not None:
+            order.courier_company = data.courier_company
+        if data.tracking_id is not None:
+            order.tracking_id = data.tracking_id
         if data.payment_status is not None and data.payment_status != order.payment_status:
             order.payment_status = data.payment_status
             history = OrderStatusHistory(
@@ -200,7 +223,7 @@ class OrderRepository:
 
         order.total_amount = max(
             Decimal("0.00"),
-            order.subtotal_amount + order.shipping_amount + order.tax_amount - order.discount_amount
+            order.subtotal_amount + order.shipping_amount + order.tax_amount + order.other_charges - order.discount_amount
         )
 
         if data.shipping_address:

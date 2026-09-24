@@ -277,12 +277,15 @@ class OrderService:
         ws = wb.active
         ws.title = "Orders"
         ws.append([
-            "Recipient Name", "Street", "City", "State", "Zip Code", "Country",
-            "Product SKU", "Quantity", "Currency", "Payment Status", "Fulfillment Status"
+            "Recipient Name", "Phone", "Email", "Street", "City", "State", "Zip Code", "Country",
+            "Product SKU", "Quantity", "Currency", "Shipping Fee", "Tax Amount", "Discount Amount",
+            "Other Charges", "Payment Method", "Payment Channel", "Delivery Method", "Courier Company",
+            "Tracking ID", "Customer Note", "Payment Status", "Fulfillment Status"
         ])
         ws.append([
-            "Sample Customer", "123 Main St", "Sample City", "NY", "10001", "USA",
-            "SKU-12345", 2, "USD", "unpaid", "pending"
+            "Sample Customer", "+8801700000000", "customer@example.com", "123 Main St", "Dhaka", "Dhaka", "1205", "Bangladesh",
+            "SKU-12345", 2, "BDT", 60.0, 0.0, 0.0, 0.0, "cash_on_delivery", "Bkash", "Inside Dhaka", "Pathao",
+            "TRACK-12345", "Please call before delivery", "unpaid", "pending"
         ])
         excel_file = io.BytesIO()
         wb.save(excel_file)
@@ -302,39 +305,171 @@ class OrderService:
         if not rows or len(rows) < 2:
             return {"imported_count": 0, "errors": ["Excel file is empty or missing headers"]}
 
+        # Dynamic header-based column mapping
+        header_map = {}
+        header_row = rows[0]
+        if header_row:
+            for c_idx, cell in enumerate(header_row):
+                if cell is None:
+                    continue
+                clean_h = str(cell).strip().lower().replace("_", " ").replace("-", " ")
+                if clean_h in ("recipient name", "recipient", "customer name", "customer"):
+                    header_map["recipient_name"] = c_idx
+                elif clean_h in ("phone", "phone number", "mobile"):
+                    header_map["phone"] = c_idx
+                elif clean_h in ("email", "email address"):
+                    header_map["email"] = c_idx
+                elif clean_h in ("street", "street address", "address"):
+                    header_map["street"] = c_idx
+                elif clean_h == "city":
+                    header_map["city"] = c_idx
+                elif clean_h in ("state", "province"):
+                    header_map["state"] = c_idx
+                elif clean_h in ("zip code", "zip", "postal code", "zipcode"):
+                    header_map["zip_code"] = c_idx
+                elif clean_h == "country":
+                    header_map["country"] = c_idx
+                elif clean_h in ("product sku", "sku", "variant sku", "item sku"):
+                    header_map["sku"] = c_idx
+                elif clean_h in ("quantity", "qty", "count"):
+                    header_map["quantity"] = c_idx
+                elif clean_h == "currency":
+                    header_map["currency"] = c_idx
+                elif clean_h in ("shipping fee", "shipping amount", "shipping"):
+                    header_map["shipping_fee"] = c_idx
+                elif clean_h in ("tax amount", "tax"):
+                    header_map["tax_amount"] = c_idx
+                elif clean_h in ("discount amount", "discount", "campaign discount"):
+                    header_map["discount_amount"] = c_idx
+                elif clean_h in ("other charges", "other charge", "charges"):
+                    header_map["other_charges"] = c_idx
+                elif clean_h == "payment method":
+                    header_map["payment_method"] = c_idx
+                elif clean_h == "payment channel":
+                    header_map["payment_channel"] = c_idx
+                elif clean_h == "delivery method":
+                    header_map["delivery_method"] = c_idx
+                elif clean_h in ("courier company", "courier"):
+                    header_map["courier_company"] = c_idx
+                elif clean_h in ("tracking id", "tracking number"):
+                    header_map["tracking_id"] = c_idx
+                elif clean_h in ("customer note", "note", "notes", "instructions"):
+                    header_map["customer_note"] = c_idx
+                elif clean_h == "payment status":
+                    header_map["payment_status"] = c_idx
+                elif clean_h == "fulfillment status":
+                    header_map["fulfillment_status"] = c_idx
+
+        def get_val(r_cells, field_key, pos_fallback=None):
+            if field_key in header_map and header_map[field_key] < len(r_cells):
+                val = r_cells[header_map[field_key]]
+                if val is not None:
+                    return val
+            if pos_fallback is not None and pos_fallback < len(r_cells):
+                return r_cells[pos_fallback]
+            return None
+
         for idx, row in enumerate(rows[1:], start=2):
             if not row or not any(row):
                 continue
             try:
-                rec_name, street, city, state, zip_code, country, sku, qty, currency, p_stat, f_stat = row[:11]
-                if not rec_name or not street or not city or not sku:
+                rec_name = get_val(row, "recipient_name", 0)
+                phone = get_val(row, "phone", 1)
+                email = get_val(row, "email", 2)
+                street = get_val(row, "street", 3)
+                city = get_val(row, "city", 4)
+                state = get_val(row, "state", 5)
+                zip_code = get_val(row, "zip_code", 6)
+                country = get_val(row, "country", 7)
+                sku = get_val(row, "sku", 8)
+                qty = get_val(row, "quantity", 9)
+                currency = get_val(row, "currency", 10)
+                shipping_fee = get_val(row, "shipping_fee", 11)
+                tax_amount = get_val(row, "tax_amount", 12)
+                discount_amount = get_val(row, "discount_amount", 13)
+                other_charges = get_val(row, "other_charges", 14)
+                payment_method = get_val(row, "payment_method", 15)
+                payment_channel = get_val(row, "payment_channel", 16)
+                delivery_method = get_val(row, "delivery_method", 17)
+                courier_company = get_val(row, "courier_company", 18)
+                tracking_id = get_val(row, "tracking_id", 19)
+                customer_note = get_val(row, "customer_note", 20)
+                p_stat = get_val(row, "payment_status", 21)
+                f_stat = get_val(row, "fulfillment_status", 22)
+
+                rec_name_str = str(rec_name).strip() if rec_name is not None else ""
+                street_str = str(street).strip() if street is not None else ""
+                city_str = str(city).strip() if city is not None else ""
+                sku_str = str(sku).strip() if sku is not None else ""
+
+                if not rec_name_str or not street_str or not city_str or not sku_str:
                     errors.append(f"Row {idx}: Missing required fields (Recipient Name, Street, City, SKU)")
                     continue
 
-                variant = db.query(ProductVariant).filter(ProductVariant.sku == str(sku).strip()).first()
+                variant = db.query(ProductVariant).filter(ProductVariant.sku == sku_str).first()
                 if not variant:
-                    errors.append(f"Row {idx}: Product SKU '{sku}' not found")
+                    errors.append(f"Row {idx}: Product SKU '{sku_str}' not found")
                     continue
+
+                try:
+                    qty_val = int(float(qty)) if qty is not None and str(qty).strip() != "" else 1
+                except (ValueError, TypeError):
+                    qty_val = 1
+
+                try:
+                    ship_val = float(shipping_fee) if shipping_fee is not None and str(shipping_fee).strip() != "" else 0.0
+                except (ValueError, TypeError):
+                    ship_val = 0.0
+
+                try:
+                    tax_val = float(tax_amount) if tax_amount is not None and str(tax_amount).strip() != "" else 0.0
+                except (ValueError, TypeError):
+                    tax_val = 0.0
+
+                try:
+                    disc_val = float(discount_amount) if discount_amount is not None and str(discount_amount).strip() != "" else 0.0
+                except (ValueError, TypeError):
+                    disc_val = 0.0
+
+                try:
+                    other_val = float(other_charges) if other_charges is not None and str(other_charges).strip() != "" else 0.0
+                except (ValueError, TypeError):
+                    other_val = 0.0
 
                 order_create = OrderCreate(
                     business_id=business_id,
                     user_id=uuid.uuid4(),
-                    currency=str(currency).strip() if currency else "USD",
-                    items=[{"variant_id": variant.id, "quantity": int(qty or 1)}],
+                    guest_email=str(email).strip() if email is not None and str(email).strip() else None,
+                    currency=str(currency).strip() if currency is not None and str(currency).strip() else "BDT",
+                    items=[{"variant_id": variant.id, "quantity": qty_val}],
+                    shipping_amount=ship_val,
+                    tax_amount=tax_val,
+                    discount_amount=disc_val,
+                    other_charges=other_val,
+                    customer_note=str(customer_note).strip() if customer_note is not None and str(customer_note).strip() else None,
+                    payment_method=str(payment_method).strip() if payment_method is not None and str(payment_method).strip() else None,
+                    payment_channel=str(payment_channel).strip() if payment_channel is not None and str(payment_channel).strip() else None,
+                    delivery_method=str(delivery_method).strip() if delivery_method is not None and str(delivery_method).strip() else None,
+                    courier_company=str(courier_company).strip() if courier_company is not None and str(courier_company).strip() else None,
+                    tracking_id=str(tracking_id).strip() if tracking_id is not None and str(tracking_id).strip() else None,
                     shipping_address={
                         "address_type": "shipping",
-                        "recipient_name": str(rec_name).strip(),
-                        "street": str(street).strip(),
-                        "city": str(city).strip(),
-                        "state": str(state).strip() if state else None,
-                        "zip_code": str(zip_code).strip() if zip_code else None,
-                        "country": str(country).strip() if country else "USA",
+                        "recipient_name": rec_name_str,
+                        "phone": str(phone).strip() if phone is not None and str(phone).strip() else None,
+                        "street": street_str,
+                        "city": city_str,
+                        "state": str(state).strip() if state is not None and str(state).strip() else None,
+                        "zip_code": str(zip_code).strip() if zip_code is not None and str(zip_code).strip() else None,
+                        "country": str(country).strip() if country is not None and str(country).strip() else "Bangladesh",
                     }
                 )
                 created_order = self.create_order(db, order_create)
 
-                p_enum = OrderPaymentStatus(str(p_stat).strip().lower()) if p_stat and str(p_stat).strip().lower() in [s.value for s in OrderPaymentStatus] else None
-                f_enum = OrderFulfillmentStatus(str(f_stat).strip().lower()) if f_stat and str(f_stat).strip().lower() in [s.value for s in OrderFulfillmentStatus] else None
+                p_str = str(p_stat).strip().lower() if p_stat is not None else ""
+                f_str = str(f_stat).strip().lower() if f_stat is not None else ""
+
+                p_enum = OrderPaymentStatus(p_str) if p_str in [s.value for s in OrderPaymentStatus] else None
+                f_enum = OrderFulfillmentStatus(f_str) if f_str in [s.value for s in OrderFulfillmentStatus] else None
 
                 if p_enum or f_enum:
                     self.update_order_status(

@@ -28,6 +28,7 @@ class OrderAddressCreate(BaseModel):
 class OrderCreate(BaseModel):
     business_id: int = Field(1)
     user_id: uuid.UUID
+    guest_email: str | None = Field(None, max_length=255)
     items: list[OrderItemCreate] = Field(..., min_length=1)
     shipping_address: OrderAddressCreate
     billing_address: OrderAddressCreate | None = None
