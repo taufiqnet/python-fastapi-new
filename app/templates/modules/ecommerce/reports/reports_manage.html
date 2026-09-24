@@ -272,13 +272,13 @@
 {% block extra_js %}
 <script>
     let activeTab = 'tabSales';
-    let currentBusinessId = {{ selected_business_id }};
+    let currentBusinessId = {{ selected_business_id if selected_business_id is not none else 'null' }};
 
     $(document).ready(function() {
         // Initialize DataTables
-        $('#salesTable').DataTable({ pageLength: 10, order: [[0, 'desc']] });
-        $('#inventoryTable').DataTable({ pageLength: 10 });
-        $('#fulfillmentTable').DataTable({ pageLength: 10 });
+        const salesDT = $('#salesTable').DataTable({ pageLength: 10, order: [[0, 'desc']] });
+        const inventoryDT = $('#inventoryTable').DataTable({ pageLength: 10 });
+        const fulfillmentDT = $('#fulfillmentTable').DataTable({ pageLength: 10 });
 
         // Tab Switching
         $('.tab-btn').on('click', function() {
@@ -288,6 +288,14 @@
             activeTab = $(this).data('tab');
             $('.tab-pane').addClass('hidden');
             $('#' + activeTab).removeClass('hidden');
+
+            if (activeTab === 'tabInventory') {
+                inventoryDT.columns.adjust().draw();
+            } else if (activeTab === 'tabFulfillment') {
+                fulfillmentDT.columns.adjust().draw();
+            } else if (activeTab === 'tabSales') {
+                salesDT.columns.adjust().draw();
+            }
         });
 
         // Initialize Revenue Chart

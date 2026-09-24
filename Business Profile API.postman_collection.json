@@ -8062,6 +8062,452 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "Finance & Accounting (Bangladesh)",
+            "item": [
+                {
+                    "name": "Chart of Accounts",
+                    "item": [
+                        {
+                            "name": "List Chart of Accounts",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/accounts?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "accounts"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Account Hierarchy Tree",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/accounts/tree?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "accounts",
+                                        "tree"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Create Account",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"code\": \"5990\",\n  \"name\": \"Miscellaneous Expenses\",\n  \"account_type\": \"expense\",\n  \"description\": \"Other administrative costs\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/finance/accounts",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "accounts"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Fiscal Years & Periods",
+                    "item": [
+                        {
+                            "name": "List Fiscal Years",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/fiscal-years?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "fiscal-years"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Create Fiscal Year",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"name\": \"FY 2025-2026\",\n  \"start_date\": \"2025-07-01\",\n  \"end_date\": \"2026-06-30\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/finance/fiscal-years",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "fiscal-years"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Journal Vouchers",
+                    "item": [
+                        {
+                            "name": "List Journal Vouchers",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/vouchers?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "vouchers"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Create Draft Journal Voucher",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"voucher_type\": \"journal\",\n  \"entry_date\": \"2025-01-15\",\n  \"reference\": \"REF-001\",\n  \"notes\": \"Office rent payment\",\n  \"entries\": [\n    {\n      \"account_id\": \"00000000-0000-0000-0000-000000000000\",\n      \"debit\": 50000.0,\n      \"credit\": 0.0,\n      \"narration\": \"Rent expense\"\n    },\n    {\n      \"account_id\": \"00000000-0000-0000-0000-000000000000\",\n      \"debit\": 0.0,\n      \"credit\": 50000.0,\n      \"narration\": \"Cash payment\"\n    }\n  ]\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/finance/vouchers",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "vouchers"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Sales Invoices & Mushak 6.3",
+                    "item": [
+                        {
+                            "name": "List Sales Invoices",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/invoices?business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "invoices"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Create Sales Invoice",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    },
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"business_id\": 1,\n  \"issue_date\": \"2025-01-15\",\n  \"buyer_name\": \"Dhaka Trading Co\",\n  \"buyer_bin\": \"BD987654321\",\n  \"buyer_address\": \"Motijheel, Dhaka\",\n  \"delivery_destination\": \"Tejgaon, Dhaka\",\n  \"lines\": [\n    {\n      \"description\": \"Industrial Equipment A\",\n      \"uom\": \"Pcs\",\n      \"quantity\": 10,\n      \"unit_price\": 1000.0,\n      \"sd_rate\": 0.0,\n      \"vat_rate\": 15.0\n    }\n  ]\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/finance/invoices",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "invoices"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Generate Mushak 6.3 Tax Invoice (JSON)",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/invoices/{{invoice_id}}/mushak-6-3",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "invoices",
+                                        "{{invoice_id}}",
+                                        "mushak-6-3"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Sales Sheet Excel Import",
+                    "item": [
+                        {
+                            "name": "Download Import Excel Template",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/sales-import/template",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "sales-import",
+                                        "template"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Financial Reports",
+                    "item": [
+                        {
+                            "name": "Trial Balance Report",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/reports/trial-balance?as_of_date=2025-12-31&business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "reports",
+                                        "trial-balance"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "as_of_date",
+                                            "value": "2025-12-31"
+                                        },
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Profit and Loss Statement",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/reports/profit-and-loss?start_date=2025-01-01&end_date=2025-12-31&business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "reports",
+                                        "profit-and-loss"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "start_date",
+                                            "value": "2025-01-01"
+                                        },
+                                        {
+                                            "key": "end_date",
+                                            "value": "2025-12-31"
+                                        },
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Balance Sheet Statement",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/finance/reports/balance-sheet?as_of_date=2025-12-31&business_id={{business_id}}",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "finance",
+                                        "reports",
+                                        "balance-sheet"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "as_of_date",
+                                            "value": "2025-12-31"
+                                        },
+                                        {
+                                            "key": "business_id",
+                                            "value": "{{business_id}}"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
         }
     ],
     "variable": [

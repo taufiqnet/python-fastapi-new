@@ -109,3 +109,17 @@ from app.modules.hr_payroll.recruitment.models import (  # noqa: F401
     InterviewEvaluation,
 )
 from app.services.ai.models import AIConversation  # noqa: F401
+from app.modules.finance.models import (  # noqa: F401
+    Account,
+    AuditLog,
+    CreditDebitNote,
+    Customer,
+    FiscalPeriod,
+    FiscalYear,
+    JournalEntry,
+    JournalVoucher,
+    MushakChallan,
+    SalesImportBatch,
+    SalesInvoice,
+    SalesInvoiceLine,
+)

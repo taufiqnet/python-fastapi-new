@@ -47,3 +47,11 @@ notepad (Get-PSReadLineOption).HistorySavePath
 
 **generate a secret key**
 python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+
+git status
+
+git restore app/core/billing/feature_config.py
+
+git status
+

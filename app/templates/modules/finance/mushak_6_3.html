@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mushak 6.3 - Tax Invoice</title>
+    <style>
+        body {
+            font-family: Arial, "Helvetica Neue", sans-serif;
+            font-size: 11pt;
+            color: #000;
+            margin: 20px;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-bold { font-weight: bold; }
+        .header-table, .info-table, .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        .items-table th, .items-table td {
+            border: 1px solid #000;
+            padding: 5px 8px;
+            font-size: 10pt;
+        }
+        .items-table th {
+            background-color: #f2f2f2;
+        }
+        .border-none { border: none !important; }
+        .footer-section {
+            margin-top: 40px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="text-center font-bold" style="font-size: 13pt;">
+        Government of the People's Republic of Bangladesh<br>
+        National Board of Revenue
+    </div>
+    <div class="text-center font-bold" style="margin-top: 5px;">
+        Tax Invoice [Musak-6.3]
+    </div>
+    <div class="text-center" style="font-size: 9pt; margin-bottom: 15px;">
+        [See clauses (c) and (f) of sub-rule (1) of rule 40]
+    </div>
+
+    <!-- Registered Person Details -->
+    <table class="header-table" style="border: 1px solid #000; padding: 8px;">
+        <tr>
+            <td width="60%">
+                <strong>Name of Registered Person:</strong> {{ registered_person.name }}<br>
+                <strong>BIN of Registered Person:</strong> {{ registered_person.bin }}<br>
+                <strong>Address:</strong> {{ registered_person.address }}
+            </td>
+            <td width="40%" class="text-right" style="vertical-align: top;">
+                <strong>Challan No:</strong> {{ header.mushak_number }}<br>
+                <strong>Issue Date:</strong> {{ header.issue_date }}<br>
+                <strong>Issue Time:</strong> {{ header.issue_time }}
+            </td>
+        </tr>
+    </table>
+
+    <!-- Buyer Details -->
+    <table class="info-table" style="border: 1px solid #000; padding: 8px;">
+        <tr>
+            <td width="50%">
+                <strong>Name of Purchaser:</strong> {{ buyer.name }}<br>
+                <strong>BIN of Purchaser:</strong> {{ buyer.bin or 'N/A' }}<br>
+                <strong>Address:</strong> {{ buyer.address or 'N/A' }}
+            </td>
+            <td width="50%">
+                <strong>Delivery Destination:</strong> {{ buyer.delivery_destination or 'N/A' }}<br>
+                <strong>Vehicle Nature & Number:</strong> {{ buyer.vehicle_nature_number or 'N/A' }}<br>
+                <strong>Invoice / SO No:</strong> {{ header.invoice_number }}
+            </td>
+        </tr>
+    </table>
+
+    <!-- Items Table -->
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th width="5%">SL</th>
+                <th width="25%">Item Description</th>
+                <th width="8%">UOM</th>
+                <th width="8%">Qty</th>
+                <th width="10%">Unit Price (BDT)</th>
+                <th width="12%">Total Price (BDT)</th>
+                <th width="10%">SD (BDT)</th>
+                <th width="10%">VAT (BDT)</th>
+                <th width="12%">Total Payable incl. Tax</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in lines %}
+            <tr>
+                <td class="text-center">{{ item.sl_no }}</td>
+                <td>{{ item.description }}</td>
+                <td class="text-center">{{ item.uom }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.quantity) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.unit_price) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.total_price) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.sd_amount) }}</td>
+                <td class="text-right">{{ "%.2f"|format(item.vat_amount) }} ({{ item.vat_rate }}%)</td>
+                <td class="text-right">{{ "%.2f"|format(item.price_incl_duties_taxes) }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="font-bold">
+                <td colspan="5" class="text-right">Total:</td>
+                <td class="text-right">{{ "%.2f"|format(summary.total_price) }}</td>
+                <td class="text-right">{{ "%.2f"|format(summary.total_sd) }}</td>
+                <td class="text-right">{{ "%.2f"|format(summary.total_vat) }}</td>
+                <td class="text-right">{{ "%.2f"|format(summary.total_payable) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Amount in Words -->
+    <div style="margin-top: 10px; margin-bottom: 20px;">
+        <strong>Total Amount in Words:</strong> {{ summary.total_in_words }}
+    </div>
+
+    <!-- Footer Signatures -->
+    <table class="footer-section">
+        <tr>
+            <td width="50%">
+                <br><br>
+                ------------------------------------------<br>
+                <strong>Authorized Person Name:</strong> {{ footer.authorized_person_name }}<br>
+                <strong>Designation:</strong> {{ footer.designation }}
+            </td>
+            <td width="50%" class="text-right">
+                <br><br>
+                ------------------------------------------<br>
+                <strong>Authorized Signature & Official Seal</strong>
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>

@@ -101,6 +101,17 @@ SYSTEM_MODULES = {
             ("customers", "Customers"),
         ],
     },
+    "finance": {
+        "title": "FINANCE & ACCOUNTING",
+        "icon": "fas fa-calculator",
+        "features": [
+            ("accounts", "Chart of Accounts"),
+            ("vouchers", "Journal Vouchers"),
+            ("invoices", "Sales Invoices"),
+            ("mushak", "Mushak 6.3 Tax Invoice"),
+            ("reports", "Financial Statements"),
+        ],
+    },
 }
 
 ACTIONS = ["view", "create", "update", "delete"]
@@ -278,6 +289,7 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
     db.flush()
 
     # 5. Seed Business WBSOFT
+    from app.modules.finance.seed import seed_default_chart_of_accounts_sync
     wbsoft = db.query(BusinessProfile).filter(BusinessProfile.name_en == "WBSOFT").first()
     if not wbsoft:
         wbsoft = BusinessProfile(
@@ -329,6 +341,9 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         wbsoft.logo = None
         if pro_plan:
             wbsoft.subscription_plan_id = pro_plan.id
+
+    # Seed Finance Chart of Accounts for WBSOFT
+    seed_default_chart_of_accounts_sync(db, wbsoft.id)
 
     # 6. Seed User test@test.com
     test_user_email = "test@test.com"

@@ -13,9 +13,9 @@ from app.core.identity.models import User
 from app.core.tenancy.models import BusinessProfile
 from app.core.deps import get_current_user, get_current_user_optional
 from app.modules.ecommerce.orders.models import Order, OrderPaymentStatus, OrderFulfillmentStatus
-from app.modules.reports.exporters import ExcelExporter, PdfExporter
-from app.modules.reports.schemas import SalesReportFilter, InventoryReportFilter, FulfillmentReportFilter
-from app.modules.reports.services import ReportAggregationService
+from app.modules.ecommerce.reports.exporters import ExcelExporter, PdfExporter
+from app.modules.ecommerce.reports.schemas import SalesReportFilter, InventoryReportFilter, FulfillmentReportFilter
+from app.modules.ecommerce.reports.services import ReportAggregationService
 
 sync_engine = create_engine(
     "sqlite:///:memory:",

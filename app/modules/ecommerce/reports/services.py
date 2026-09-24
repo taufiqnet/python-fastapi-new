@@ -16,7 +16,7 @@ from app.modules.ecommerce.inventory.models import (
 )
 from app.modules.ecommerce.orders.models import Order, OrderFulfillmentStatus, OrderItem
 from app.modules.ecommerce.products.models import ProductVariant
-from app.modules.reports.schemas import (
+from app.modules.ecommerce.reports.schemas import (
     FulfillmentReportFilter,
     FulfillmentSLAMetric,
     FulfillmentSLAReport,

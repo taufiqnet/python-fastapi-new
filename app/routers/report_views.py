@@ -11,8 +11,8 @@ from app.database import get_async_db, get_db
 from app.core.identity.models import User
 from app.core.tenancy.models import BusinessProfile
 from app.core.tenancy.scoping import resolve_business_id
-from app.modules.reports.schemas import FulfillmentReportFilter, InventoryReportFilter, SalesReportFilter
-from app.modules.reports.services import ReportAggregationService
+from app.modules.ecommerce.reports.schemas import FulfillmentReportFilter, InventoryReportFilter, SalesReportFilter
+from app.modules.ecommerce.reports.services import ReportAggregationService
 
 router = APIRouter(prefix="/reports", tags=["Report Views"])
 templates = Jinja2Templates(directory="app/templates")
@@ -51,7 +51,7 @@ async def manage_reports_page(
 
     return templates.TemplateResponse(
         request=request,
-        name="modules/reports/reports_manage.html",
+        name="modules/ecommerce/reports/reports_manage.html",
         context={
             "current_user": current_user,
             "selected_business_id": resolved_biz_id,

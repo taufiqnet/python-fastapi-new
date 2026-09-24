@@ -63,7 +63,8 @@ from app.modules.ecommerce.reviews.router import router as reviews_router
 from app.modules.ecommerce.search.router import router as search_router
 from app.modules.ecommerce.sellers.router import router as sellers_router
 from app.modules.ecommerce.shipping.router import router as shipping_router
-from app.modules.reports.router import router as reports_router
+from app.modules.ecommerce.reports.router import router as reports_router
+from app.modules.finance.router import router as finance_router
 from app.modules.hr_payroll.organization.router import (
     router as organization_router,
 )
@@ -300,6 +301,7 @@ app.include_router(sellers_router)
 app.include_router(notifications_router)
 app.include_router(search_router)
 app.include_router(reports_router)
+app.include_router(finance_router)
 
 # hr payroll router
 app.include_router(organization_router)

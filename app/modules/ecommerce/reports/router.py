@@ -11,8 +11,8 @@ from app.core.deps import get_current_user, require_permission
 from app.database import get_async_db, get_db
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id
-from app.modules.reports.exporters import ExcelExporter, PdfExporter
-from app.modules.reports.schemas import (
+from app.modules.ecommerce.reports.exporters import ExcelExporter, PdfExporter
+from app.modules.ecommerce.reports.schemas import (
     AsyncReportTaskResponse,
     FulfillmentReportFilter,
     InventoryReportFilter,
@@ -20,7 +20,7 @@ from app.modules.reports.schemas import (
     SalesReportFilter,
     StandardReportEnvelope,
 )
-from app.modules.reports.services import ReportAggregationService
+from app.modules.ecommerce.reports.services import ReportAggregationService
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 templates = Jinja2Templates(directory="app/templates")
