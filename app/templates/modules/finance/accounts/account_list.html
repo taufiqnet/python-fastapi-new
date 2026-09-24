@@ -1,0 +1,588 @@
+{% extends "base.html" %}
+
+{% block title %}Chart of Accounts | Finance & Accounting{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<style>
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .stat-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: justify; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green   { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.yellow  { background: #fefce8; color: #ca8a04; }
+    .stat-icon.sky     { background: #f0f9ff; color: #0284c7; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar {
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px; margin-bottom: 12px;
+    }
+    .toolbar-search {
+        position: relative; flex: 1; min-width: 200px;
+    }
+    .toolbar-search i {
+        position: absolute; left: 10px; top: 50%;
+        transform: translateY(-50%); color: #9ca3af; font-size: 13px;
+    }
+    .toolbar-search input {
+        width: 100%; padding: 7px 12px 7px 30px;
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        background: #f9fafb; color: #374151; font-size: 13px; outline: none;
+        transition: border-color .15s, background .15s;
+    }
+    .toolbar-search input:focus {
+        border-color: var(--indigo);
+        box-shadow: 0 0 0 2px rgba(79,70,229,.08);
+        background: #fff;
+    }
+    .toolbar select {
+        padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb;
+        border-radius: 8px; background: #f9fafb; color: #374151;
+        font-size: 13px; cursor: pointer; outline: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .toolbar select:focus { border-color: var(--indigo); background-color: #fff; }
+
+    .table-card {
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 12px; overflow: hidden;
+    }
+
+    table.dataTable { border-collapse: collapse !important; }
+    table.dataTable thead tr th {
+        background: #f9fafb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        font-size: 10px !important; font-weight: 700 !important;
+        text-transform: uppercase; letter-spacing: .6px;
+        color: #6b7280 !important; padding: 10px 14px !important;
+        white-space: nowrap;
+    }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+    table.dataTable tbody tr:hover td { background: #f9fafb !important; }
+    table.dataTable.no-footer { border-bottom: 1px solid #f3f4f6 !important; }
+
+    .dataTables_filter, .dataTables_length { display: none !important; }
+    .dataTables_wrapper .dataTables_paginate { padding: 10px 14px !important; }
+
+    .dt-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 14px; border-top: 1px solid #f3f4f6;
+        background: #fafafa; flex-wrap: wrap; gap: 8px;
+    }
+    .dt-footer .dt-info { font-size: 12px; color: #9ca3af; }
+    .dt-footer .dt-perpage {
+        display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+    }
+    .dt-perpage select {
+        padding: 3px 22px 3px 8px; border: 1px solid #e5e7eb;
+        border-radius: 6px; background: #fff; color: #374151;
+        font-size: 12px; cursor: pointer; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 6px center;
+    }
+
+    .title-name { font-weight: 600; font-size: 13px; color: #111827; }
+    .code-badge { font-size: 11px; font-family: monospace; font-weight: 600; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #374151; }
+
+    .badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase;
+    }
+    .badge-asset     { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .badge-liability { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+    .badge-equity    { background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; }
+    .badge-income    { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+    .badge-expense   { background: #faf5ff; color: #9333ea; border: 1px solid #e9d5ff; }
+
+    .badge-active   { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-inactive { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+
+    .action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 6px;
+        border: 1px solid #e5e7eb; background: #fff;
+        cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none;
+    }
+    .action-btn.edit  { color: #4f46e5; }
+    .action-btn.edit:hover  { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
+    .action-btn.delete { color: #ef4444; }
+    .action-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Chart of Accounts</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Manage general ledger accounts structure and hierarchy</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
+            <i class="fas fa-sliders-h text-sm"></i>
+        </button>
+
+        <button type="button" onclick="openCreateAccountModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-plus"></i> Create Account
+        </button>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-book"></i></div>
+        <div>
+            <div class="stat-label">Total Accounts</div>
+            <div class="stat-value">{{ total_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-wallet"></i></div>
+        <div>
+            <div class="stat-label">Asset Accounts</div>
+            <div class="stat-value">{{ asset_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-balance-scale"></i></div>
+        <div>
+            <div class="stat-label">Liability & Equity</div>
+            <div class="stat-value">{{ liability_equity_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon sky"><i class="fas fa-chart-line"></i></div>
+        <div>
+            <div class="stat-label">Income & Expense</div>
+            <div class="stat-value">{{ income_expense_count }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by account code, name, description...">
+    </div>
+
+    <select id="filterType">
+        <option value="">All Account Types</option>
+        <option value="Asset">Asset</option>
+        <option value="Liability">Liability</option>
+        <option value="Equity">Equity</option>
+        <option value="Income">Income</option>
+        <option value="Expense">Expense</option>
+    </select>
+
+    {% if current_user and current_user.is_superuser %}
+    <select id="filterBusiness" onchange="filterByBusiness(this.value)">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.id }}" {% if selected_business_id == b.id %}selected{% endif %}>{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+
+    <button type="button" id="btnClearFilters" 
+            class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+        <i class="fas fa-times-circle text-xs"></i> Clear Filters
+    </button>
+</div>
+
+<div class="table-card">
+    <div class="overflow-x-auto">
+        <table id="accountTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Account Code</th>
+                    <th>Account Name</th>
+                    <th>Type</th>
+                    <th>Parent Account</th>
+                    <th>System / Custom</th>
+                    <th>Status</th>
+                    <th style="width:90px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in accounts %}
+                <tr id="account-row-{{ a.id }}">
+                    <td>
+                        <span class="code-badge">{{ a.code }}</span>
+                    </td>
+                    <td>
+                        <span class="title-name">{{ a.name }}</span>
+                        {% if a.description %}
+                        <p class="text-[11px] text-gray-400 mt-0.5 truncate max-w-xs">{{ a.description }}</p>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ a.account_type }}">
+                            {{ a.account_type }}
+                        </span>
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {% if a.parent_id and account_map.get(a.parent_id) %}
+                        {{ account_map.get(a.parent_id) }}
+                        {% else %}
+                        <span class="text-gray-400">— Root —</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-xs">
+                        {% if a.is_system %}
+                        <span class="px-2 py-0.5 rounded bg-gray-100 text-gray-600 font-medium text-[11px]">System</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-medium text-[11px]">Custom</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if a.is_active %}
+                        <span class="badge badge-active"><i class="fas fa-circle text-[6px] mr-1"></i> Active</span>
+                        {% else %}
+                        <span class="badge badge-inactive"><i class="fas fa-circle text-[6px] mr-1"></i> Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" class="action-btn edit" onclick="openEditAccountModal('{{ a.id }}', '{{ a.code|e }}', '{{ a.name|e }}', '{{ a.account_type }}', '{{ a.parent_id or '' }}', '{{ a.description|e or '' }}', {{ 'true' if a.is_active else 'false' }})" title="Edit Account">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            {% if not a.is_system %}
+                            <button type="button" class="action-btn delete" onclick="deleteAccount('{{ a.id }}', '{{ a.name|e }}')" title="Delete Account">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="dt-footer">
+        <div class="dt-info" id="dtInfo"></div>
+        <div class="flex items-center gap-4 flex-wrap">
+            <div class="dt-perpage">
+                Show
+                <select id="dtPerPage">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+                entries
+            </div>
+            <div id="dtPagination"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Account Form Modal -->
+<div id="account-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 id="modal-title" class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-book text-indigo-600"></i> Create Account
+            </h3>
+            <button type="button" onclick="closeAccountModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="account-form" class="p-6 space-y-4" onsubmit="handleAccountSubmit(event)">
+            <input type="hidden" id="account_id" value="">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Business Profile <span class="text-rose-500">*</span></label>
+                {% if current_user and current_user.is_superuser %}
+                <select id="form_business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if selected_business_id == b.id %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                <select id="form_business_id" required disabled class="w-full text-xs border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none cursor-not-allowed">
+                    {% for b in businesses %}
+                    {% if selected_business_id == b.id %}
+                    <option value="{{ b.id }}" selected>{{ b.name_en }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Account Code <span class="text-rose-500">*</span></label>
+                    <input type="text" id="account_code" required placeholder="e.g. 1001" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Account Type <span class="text-rose-500">*</span></label>
+                    <select id="account_type" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+                        <option value="asset">Asset</option>
+                        <option value="liability">Liability</option>
+                        <option value="equity">Equity</option>
+                        <option value="income">Income</option>
+                        <option value="expense">Expense</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Account Name <span class="text-rose-500">*</span></label>
+                <input type="text" id="account_name" required placeholder="e.g. Petty Cash" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Parent Account (Optional)</label>
+                <select id="account_parent_id" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+                    <option value="">-- None (Root Account) --</option>
+                    {% for parent_acc in accounts %}
+                    <option value="{{ parent_acc.id }}">{{ parent_acc.code }} - {{ parent_acc.name }} ({{ parent_acc.account_type }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Description</label>
+                <textarea id="account_description" rows="2" placeholder="Optional notes about this account..." class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none"></textarea>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <input type="checkbox" id="account_is_active" checked class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                <label for="account_is_active" class="text-xs font-medium text-gray-700">Account is Active</label>
+            </div>
+
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeAccountModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-save text-[10px]"></i> Save Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    var table = $('#accountTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        dom: 'rt',
+        order: [],
+        language: { emptyTable: "No accounts found." },
+        drawCallback: function () { updateFooter(this.api()); }
+    });
+
+    $('#customSearch').on('input', function () { table.search(this.value).draw(); });
+    $('#filterType').on('change', function () { table.column(2).search(this.value).draw(); });
+    $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
+
+    $('#btnToggleFilters').on('click', function() {
+        $('.toolbar').slideToggle(200);
+    });
+
+    $('#btnClearFilters').on('click', function() {
+        $('#customSearch').val('');
+        table.search('');
+        $('#filterType').val('');
+        table.columns().search('').draw();
+    });
+
+    function updateFooter(api) {
+        var info = api.page.info();
+        var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
+        var end   = Math.min(info.end, info.recordsDisplay);
+        var total = info.recordsDisplay;
+        var overall = info.recordsTotal;
+
+        if (total === 0) {
+            $('#dtInfo').text('No entries found');
+        } else if (total < overall) {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' filtered (total ' + overall + ')');
+        } else {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' entries');
+        }
+
+        var pages = info.pages;
+        var current = info.page;
+        var html = '';
+        var btnClass = 'inline-flex items-center justify-center w-7 h-7 rounded text-xs border transition-colors ';
+        var base   = btnClass + 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer';
+        var active = btnClass + 'border-indigo-600 bg-indigo-600 text-white font-semibold cursor-default';
+        var disabled = btnClass + 'border-gray-100 bg-white text-gray-300 cursor-default';
+
+        if (current === 0) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        }
+
+        var start_p = Math.max(0, current - 2);
+        var end_p   = Math.min(pages - 1, current + 2);
+        if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
+        if (start_p > 1) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        for (var i = start_p; i <= end_p; i++) {
+            html += '<button class="' + (i === current ? active : base) + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
+        }
+        if (end_p < pages - 2) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
+
+        if (current >= pages - 1) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        }
+
+        $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
+    }
+    window._dtTable = table;
+});
+
+function movePage(p) { window._dtTable.page(p).draw('page'); }
+
+function filterByBusiness(bizId) {
+    if (bizId) {
+        window.location.href = '/finance/accounts/manage?business_id=' + bizId;
+    } else {
+        window.location.href = '/finance/accounts/manage';
+    }
+}
+
+function openCreateAccountModal() {
+    $('#modal-title').html('<i class="fas fa-book text-indigo-600"></i> Create Account');
+    $('#account_id').val('');
+    $('#account_code').val('');
+    $('#account_name').val('');
+    $('#account_type').val('asset').prop('disabled', false);
+    $('#account_parent_id').val('');
+    $('#account_description').val('');
+    $('#account_is_active').prop('checked', true);
+    $('#account-modal').removeClass('hidden');
+}
+
+function openEditAccountModal(id, code, name, type, parentId, desc, isActive) {
+    $('#modal-title').html('<i class="fas fa-edit text-indigo-600"></i> Edit Account');
+    $('#account_id').val(id);
+    $('#account_code').val(code);
+    $('#account_name').val(name);
+    $('#account_type').val(type);
+    $('#account_parent_id').val(parentId);
+    $('#account_description').val(desc);
+    $('#account_is_active').prop('checked', isActive);
+    $('#account-modal').removeClass('hidden');
+}
+
+function closeAccountModal() {
+    $('#account-modal').addClass('hidden');
+}
+
+function handleAccountSubmit(e) {
+    e.preventDefault();
+    var accId = $('#account_id').val();
+    var bizId = parseInt($('#form_business_id').val());
+
+    var payload = {
+        code: $('#account_code').val().trim(),
+        name: $('#account_name').val().trim(),
+        account_type: $('#account_type').val(),
+        parent_id: $('#account_parent_id').val() || null,
+        description: $('#account_description').val().trim() || null,
+        is_active: $('#account_is_active').is(':checked')
+    };
+
+    var url = '/finance/accounts';
+    var method = 'POST';
+
+    if (accId) {
+        url = '/finance/accounts/' + accId + '?business_id=' + bizId;
+        method = 'PUT';
+    } else {
+        payload.business_id = bizId;
+    }
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async res => {
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to save account');
+        }
+        return res.json();
+    })
+    .then(() => {
+        closeAccountModal();
+        showSuccessToast('Account Saved', 'General ledger account saved successfully.');
+        setTimeout(() => window.location.reload(), 1000);
+    })
+    .catch(err => {
+        showErrorAlert('Save Failed', err.message);
+    });
+}
+
+function deleteAccount(id, name) {
+    var bizId = parseInt($('#form_business_id').val() || '0');
+    Swal.fire({
+        title: 'Delete Account?',
+        text: 'Are you sure you want to delete "' + name + '"? This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch('/finance/accounts/' + id + '?business_id=' + bizId, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json' }
+            }).then(response => {
+                if (response.ok || response.status === 204) {
+                    showSuccessToast('Account Deleted', '"' + name + '" has been removed.');
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    return response.json().then(err => {
+                        throw new Error(err.detail || 'Failed to delete account');
+                    });
+                }
+            }).catch(err => {
+                showErrorAlert('Delete Failed', err.message);
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

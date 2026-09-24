@@ -249,6 +249,63 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
             },
         ],
     },
+    # --- FINANCE & ACCOUNTING MODULES ---
+    {
+        "category": "Accounting & General Ledger",
+        "module_group": "finance",
+        "items": [
+            {
+                "key": "finance_accounts",
+                "title": "Chart of Accounts",
+                "icon": "fas fa-book",
+                "url": "/finance/accounts/manage",
+                "permission_code": "finance:accounts:view",
+                "plans": ["Basic", "Pro", "Enterprise"],
+                "description": "Manage hierarchical general ledger accounts and chart of accounts.",
+                "active_page": "finance_accounts",
+            },
+            {
+                "key": "finance_fiscal_years",
+                "title": "Fiscal Years & Periods",
+                "icon": "fas fa-calendar-alt",
+                "url": "/finance/fiscal-years/manage",
+                "permission_code": "finance:vouchers:view",
+                "plans": ["Basic", "Pro", "Enterprise"],
+                "description": "Manage accounting fiscal calendars and monthly period locking.",
+                "active_page": "finance_fiscal_years",
+            },
+            {
+                "key": "finance_vouchers",
+                "title": "Journal Vouchers",
+                "icon": "fas fa-file-invoice-dollar",
+                "url": "/finance/vouchers/manage",
+                "permission_code": "finance:vouchers:view",
+                "plans": ["Basic", "Pro", "Enterprise"],
+                "description": "Create, balance, post, and cancel double-entry journal vouchers.",
+                "active_page": "finance_vouchers",
+            },
+            {
+                "key": "finance_invoices",
+                "title": "Sales Invoices & VAT",
+                "icon": "fas fa-receipt",
+                "url": "/finance/invoices/manage",
+                "permission_code": "finance:invoices:view",
+                "plans": ["Basic", "Pro", "Enterprise"],
+                "description": "Issue sales invoices, import Excel sales batches, and print Mushak 6.3 tax invoices.",
+                "active_page": "finance_invoices",
+            },
+            {
+                "key": "finance_reports",
+                "title": "Financial Reports",
+                "icon": "fas fa-chart-pie",
+                "url": "/finance/reports/manage",
+                "permission_code": "finance:reports:view",
+                "plans": ["Basic", "Pro", "Enterprise"],
+                "description": "Generate Trial Balance, Profit & Loss, Balance Sheet, and General Ledger statements.",
+                "active_page": "finance_reports",
+            },
+        ],
+    },
     # --- ECOMMERCE MODULES ---
     {
         "category": "Store Operations",
@@ -487,7 +544,7 @@ def resolve_menu_for_user(user: Any) -> Dict[str, Any]:
     from app.core.config import settings
 
     if not user:
-        return {"hr_payroll_categories": [], "ecommerce_categories": [], "user_plan_name": "Free"}
+        return {"hr_payroll_categories": [], "ecommerce_categories": [], "finance_categories": [], "user_plan_name": "Free"}
 
     is_superuser = getattr(user, "is_superuser", False)
     biz_profile = getattr(user, "business_profile", None)
@@ -502,6 +559,7 @@ def resolve_menu_for_user(user: Any) -> Dict[str, Any]:
 
     hr_payroll_categories = []
     ecommerce_categories = []
+    finance_categories = []
 
     for section in FEATURE_CONFIG:
         group = section["module_group"]
@@ -563,10 +621,13 @@ def resolve_menu_for_user(user: Any) -> Dict[str, Any]:
                 hr_payroll_categories.append(category_data)
             elif group == "ecommerce":
                 ecommerce_categories.append(category_data)
+            elif group == "finance":
+                finance_categories.append(category_data)
 
     return {
         "hr_payroll_categories": hr_payroll_categories,
         "ecommerce_categories": ecommerce_categories,
+        "finance_categories": finance_categories,
         "user_plan_name": current_plan_name,
     }
 

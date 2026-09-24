@@ -96,6 +96,7 @@ from app.routers import (
     experience_letter_views,
     customer_views,
     employee_views,
+    finance_views,
     inventory_views,
     leave_views,
     model_views,
@@ -263,6 +264,7 @@ app.include_router(shipping_views.router)
 app.include_router(review_views.router)
 app.include_router(seller_views.router)
 app.include_router(report_views.router)
+app.include_router(finance_views.router)
 app.include_router(catalog_views.router)
 app.include_router(order_views.router)
 app.include_router(inventory_views.router)

@@ -1,0 +1,742 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Invoices | Finance & Accounting{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<style>
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .stat-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green   { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.yellow  { background: #fefce8; color: #ca8a04; }
+    .stat-icon.sky     { background: #f0f9ff; color: #0284c7; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar {
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px; margin-bottom: 12px;
+    }
+    .toolbar-search {
+        position: relative; flex: 1; min-width: 200px;
+    }
+    .toolbar-search i {
+        position: absolute; left: 10px; top: 50%;
+        transform: translateY(-50%); color: #9ca3af; font-size: 13px;
+    }
+    .toolbar-search input {
+        width: 100%; padding: 7px 12px 7px 30px;
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        background: #f9fafb; color: #374151; font-size: 13px; outline: none;
+        transition: border-color .15s, background .15s;
+    }
+    .toolbar-search input:focus {
+        border-color: var(--indigo);
+        box-shadow: 0 0 0 2px rgba(79,70,229,.08);
+        background: #fff;
+    }
+    .toolbar select {
+        padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb;
+        border-radius: 8px; background: #f9fafb; color: #374151;
+        font-size: 13px; cursor: pointer; outline: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .toolbar select:focus { border-color: var(--indigo); background-color: #fff; }
+
+    .table-card {
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 12px; overflow: hidden;
+    }
+
+    table.dataTable { border-collapse: collapse !important; }
+    table.dataTable thead tr th {
+        background: #f9fafb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        font-size: 10px !important; font-weight: 700 !important;
+        text-transform: uppercase; letter-spacing: .6px;
+        color: #6b7280 !important; padding: 10px 14px !important;
+        white-space: nowrap;
+    }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+    table.dataTable tbody tr:hover td { background: #f9fafb !important; }
+    table.dataTable.no-footer { border-bottom: 1px solid #f3f4f6 !important; }
+
+    .dataTables_filter, .dataTables_length { display: none !important; }
+    .dataTables_wrapper .dataTables_paginate { padding: 10px 14px !important; }
+
+    .dt-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 14px; border-top: 1px solid #f3f4f6;
+        background: #fafafa; flex-wrap: wrap; gap: 8px;
+    }
+    .dt-footer .dt-info { font-size: 12px; color: #9ca3af; }
+    .dt-footer .dt-perpage {
+        display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+    }
+    .dt-perpage select {
+        padding: 3px 22px 3px 8px; border: 1px solid #e5e7eb;
+        border-radius: 6px; background: #fff; color: #374151;
+        font-size: 12px; cursor: pointer; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 6px center;
+    }
+
+    .title-name { font-weight: 600; font-size: 13px; color: #111827; }
+    .num-badge { font-size: 11px; font-family: monospace; font-weight: 600; color: #4f46e5; }
+
+    .badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase;
+    }
+    .badge-draft     { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+    .badge-posted    { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-cancelled { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+
+    .action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        padding: 4px 8px; border-radius: 6px; border: 1px solid #e5e7eb;
+        background: #fff; cursor: pointer; transition: all .15s; font-size: 11px; font-weight: 600; text-decoration: none;
+    }
+    .action-btn.post   { color: #16a34a; }
+    .action-btn.post:hover   { background: #dcfce7; border-color: #bbf7d0; }
+    .action-btn.mushak { color: #0284c7; }
+    .action-btn.mushak:hover { background: #f0f9ff; border-color: #bae6fd; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Sales Invoices & VAT</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Issue sales invoices, import sales Excel batches, and generate Mushak 6.3 VAT tax invoices</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
+            <i class="fas fa-sliders-h text-sm"></i>
+        </button>
+
+        <button type="button" onclick="openImportModal()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
+            <i class="fas fa-file-excel"></i> Sales Import
+        </button>
+
+        <button type="button" onclick="openCreateInvoiceModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-plus"></i> New Sales Invoice
+        </button>
+    </div>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-file-invoice"></i></div>
+        <div>
+            <div class="stat-label">Total Invoices</div>
+            <div class="stat-value">{{ total_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-edit"></i></div>
+        <div>
+            <div class="stat-label">Draft Invoices</div>
+            <div class="stat-value">{{ draft_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+        <div>
+            <div class="stat-label">Posted Invoices</div>
+            <div class="stat-value">{{ posted_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon sky"><i class="fas fa-receipt"></i></div>
+        <div>
+            <div class="stat-label">Total Payable</div>
+            <div class="stat-value text-base font-bold">{{ "%.2f"|format(total_payable) }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by invoice #, buyer name, BIN, SO #...">
+    </div>
+
+    <select id="filterStatus">
+        <option value="">All Statuses</option>
+        <option value="DRAFT">Draft</option>
+        <option value="POSTED">Posted</option>
+        <option value="CANCELLED">Cancelled</option>
+    </select>
+
+    {% if current_user and current_user.is_superuser %}
+    <select id="filterBusiness" onchange="filterByBusiness(this.value)">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.id }}" {% if selected_business_id == b.id %}selected{% endif %}>{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+
+    <button type="button" id="btnClearFilters" 
+            class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+        <i class="fas fa-times-circle text-xs"></i> Clear Filters
+    </button>
+</div>
+
+<div class="table-card">
+    <div class="overflow-x-auto">
+        <table id="invoiceTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Invoice #</th>
+                    <th>Issue Date</th>
+                    <th>Buyer Details</th>
+                    <th>Subtotal</th>
+                    <th>VAT (15%)</th>
+                    <th>Total Payable</th>
+                    <th>Status</th>
+                    <th style="width:140px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr id="invoice-row-{{ inv.id }}">
+                    <td>
+                        <span class="num-badge">{{ inv.invoice_number }}</span>
+                    </td>
+                    <td class="text-xs text-gray-600 font-medium">
+                        {{ inv.issue_date }}
+                    </td>
+                    <td>
+                        <span class="title-name">{{ inv.buyer_name }}</span>
+                        {% if inv.buyer_bin %}
+                        <p class="text-[11px] font-mono text-gray-500">BIN: {{ inv.buyer_bin }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="text-xs font-mono font-medium text-gray-700">
+                        {{ "%.2f"|format(inv.total_subtotal) }}
+                    </td>
+                    <td class="text-xs font-mono font-medium text-emerald-600">
+                        {{ "%.2f"|format(inv.total_vat) }}
+                    </td>
+                    <td class="text-xs font-mono font-bold text-gray-900">
+                        {{ "%.2f"|format(inv.total_payable) }}
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ inv.status }}">
+                            {{ inv.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            {% if inv.status == 'draft' %}
+                            <button type="button" class="action-btn post" onclick="postInvoice('{{ inv.id }}')" title="Post Invoice">
+                                <i class="fas fa-check-circle mr-1"></i> Post
+                            </button>
+                            {% else %}
+                            <a href="/finance/invoices/{{ inv.id }}/mushak-6-3/pdf" target="_blank" class="action-btn mushak" title="View Mushak 6.3">
+                                <i class="fas fa-file-pdf mr-1"></i> Mushak 6.3
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="dt-footer">
+        <div class="dt-info" id="dtInfo"></div>
+        <div class="flex items-center gap-4 flex-wrap">
+            <div class="dt-perpage">
+                Show
+                <select id="dtPerPage">
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+                entries
+            </div>
+            <div id="dtPagination"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Invoice Form Modal -->
+<div id="invoice-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-file-invoice text-indigo-600"></i> New Sales Invoice
+            </h3>
+            <button type="button" onclick="closeInvoiceModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="invoice-form" class="p-6 space-y-4" onsubmit="handleInvoiceSubmit(event)">
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Business Profile <span class="text-rose-500">*</span></label>
+                    {% if current_user and current_user.is_superuser %}
+                    <select id="inv_business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                        {% for b in businesses %}
+                        <option value="{{ b.id }}" {% if selected_business_id == b.id %}selected{% endif %}>{{ b.name_en }}</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <select id="inv_business_id" required disabled class="w-full text-xs border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none cursor-not-allowed">
+                        {% for b in businesses %}
+                        {% if selected_business_id == b.id %}
+                        <option value="{{ b.id }}" selected>{{ b.name_en }}</option>
+                        {% endif %}
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Invoice # <span class="text-rose-500">*</span></label>
+                    <input type="text" id="inv_number" required placeholder="e.g. INV-2025-001" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Issue Date <span class="text-rose-500">*</span></label>
+                    <input type="date" id="inv_date" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Buyer Name <span class="text-rose-500">*</span></label>
+                    <input type="text" id="inv_buyer_name" required placeholder="e.g. Acme Corporation" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Buyer BIN</label>
+                    <input type="text" id="inv_buyer_bin" placeholder="e.g. 001234567-0101" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Buyer Address</label>
+                <input type="text" id="inv_buyer_address" placeholder="e.g. Dhaka, Bangladesh" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none">
+            </div>
+
+            <!-- Invoice Item Lines Table -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="text-xs font-bold text-gray-800">Invoice Items</label>
+                    <button type="button" onclick="addInvoiceLine()" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs font-semibold rounded-lg transition-colors">
+                        <i class="fas fa-plus text-[10px]"></i> Add Item Line
+                    </button>
+                </div>
+                <table class="w-full text-left text-xs border border-gray-200 rounded-lg overflow-hidden">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="p-2">Description</th>
+                            <th class="p-2 w-16">UoM</th>
+                            <th class="p-2 w-20">Qty</th>
+                            <th class="p-2 w-24">Unit Price</th>
+                            <th class="p-2 w-20">VAT Rate %</th>
+                            <th class="p-2 w-24">Total Incl Tax</th>
+                            <th class="p-2 w-8"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="inv-lines-body" class="divide-y divide-gray-200">
+                        <!-- Dynamic item lines -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeInvoiceModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-save text-[10px]"></i> Create Sales Invoice
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Sales Import Modal -->
+<div id="import-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-file-excel text-emerald-600"></i> Import Sales Excel
+            </h3>
+            <button type="button" onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="import-form" class="p-6 space-y-4" onsubmit="handleImportSubmit(event)">
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-semibold text-gray-700">Excel File (.xlsx) <span class="text-rose-500">*</span></label>
+                    <a href="/finance/sales-import/template" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium underline">
+                        <i class="fas fa-download text-[10px]"></i> Sample Template
+                    </a>
+                </div>
+                <input type="file" id="import_file" accept=".xlsx, .xls" required class="w-full text-xs border border-gray-200 rounded-lg p-2 focus:ring-1 focus:ring-indigo-500 outline-none">
+            </div>
+
+            <div id="import-summary" class="hidden p-3 bg-indigo-50 border border-indigo-100 rounded-lg text-xs text-indigo-900 space-y-1">
+                <p class="font-bold">Batch Validated:</p>
+                <p>Total Rows: <span id="summary-total">0</span> | Valid Invoices: <span id="summary-valid">0</span></p>
+                <button type="button" id="btnConfirmBatch" onclick="confirmBatchImport()" class="w-full mt-2 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-xs transition-colors">
+                    Confirm & Process Invoices
+                </button>
+            </div>
+
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="btnUploadBatch" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-upload text-[10px]"></i> Upload & Validate
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+<script>
+var currentBatchId = null;
+
+$(document).ready(function () {
+    var table = $('#invoiceTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        dom: 'rt',
+        order: [],
+        language: { emptyTable: "No sales invoices found." },
+        drawCallback: function () { updateFooter(this.api()); }
+    });
+
+    $('#customSearch').on('input', function () { table.search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(6).search(this.value).draw(); });
+    $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
+
+    $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });
+    $('#btnClearFilters').on('click', function() {
+        $('#customSearch').val('');
+        table.search('');
+        $('#filterStatus').val('');
+        table.columns().search('').draw();
+    });
+
+    function updateFooter(api) {
+        var info = api.page.info();
+        var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
+        var end   = Math.min(info.end, info.recordsDisplay);
+        var total = info.recordsDisplay;
+        var overall = info.recordsTotal;
+
+        if (total === 0) {
+            $('#dtInfo').text('No entries found');
+        } else if (total < overall) {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' filtered (total ' + overall + ')');
+        } else {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' entries');
+        }
+
+        var pages = info.pages;
+        var current = info.page;
+        var html = '';
+        var btnClass = 'inline-flex items-center justify-center w-7 h-7 rounded text-xs border transition-colors ';
+        var base   = btnClass + 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer';
+        var active = btnClass + 'border-indigo-600 bg-indigo-600 text-white font-semibold cursor-default';
+        var disabled = btnClass + 'border-gray-100 bg-white text-gray-300 cursor-default';
+
+        if (current === 0) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        }
+
+        var start_p = Math.max(0, current - 2);
+        var end_p   = Math.min(pages - 1, current + 2);
+        if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
+        if (start_p > 1) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        for (var i = start_p; i <= end_p; i++) {
+            html += '<button class="' + (i === current ? active : base) + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
+        }
+        if (end_p < pages - 2) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
+
+        if (current >= pages - 1) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        }
+
+        $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
+    }
+    window._dtTable = table;
+});
+
+function movePage(p) { window._dtTable.page(p).draw('page'); }
+
+function filterByBusiness(bizId) {
+    if (bizId) {
+        window.location.href = '/finance/invoices/manage?business_id=' + bizId;
+    } else {
+        window.location.href = '/finance/invoices/manage';
+    }
+}
+
+function openCreateInvoiceModal() {
+    $('#inv_number').val('INV-' + Math.floor(1000 + Math.random() * 9000));
+    $('#inv_date').val(new Date().toISOString().split('T')[0]);
+    $('#inv_buyer_name').val('');
+    $('#inv_buyer_bin').val('');
+    $('#inv_buyer_address').val('');
+    $('#inv-lines-body').empty();
+    addInvoiceLine();
+    $('#invoice-modal').removeClass('hidden');
+}
+
+function closeInvoiceModal() {
+    $('#invoice-modal').addClass('hidden');
+}
+
+function addInvoiceLine() {
+    var slNo = $('#inv-lines-body tr').length + 1;
+    var row = `
+        <tr class="inv-line">
+            <td class="p-2">
+                <input type="text" placeholder="Item description" class="line-desc w-full text-xs border border-gray-200 rounded p-1.5 outline-none" required>
+            </td>
+            <td class="p-2">
+                <input type="text" value="PCS" class="line-uom w-full text-xs border border-gray-200 rounded p-1.5 outline-none" required>
+            </td>
+            <td class="p-2">
+                <input type="number" step="0.01" min="0.01" value="1.00" class="line-qty w-full text-xs border border-gray-200 rounded p-1.5 outline-none" oninput="calcLine(this)" required>
+            </td>
+            <td class="p-2">
+                <input type="number" step="0.01" min="0" value="100.00" class="line-price w-full text-xs border border-gray-200 rounded p-1.5 outline-none" oninput="calcLine(this)" required>
+            </td>
+            <td class="p-2">
+                <input type="number" step="0.01" min="0" value="15.00" class="line-vat-rate w-full text-xs border border-gray-200 rounded p-1.5 outline-none" oninput="calcLine(this)" required>
+            </td>
+            <td class="p-2">
+                <input type="number" step="0.01" readonly class="line-total-incl w-full text-xs border border-gray-200 bg-gray-50 rounded p-1.5 outline-none font-bold" value="115.00">
+            </td>
+            <td class="p-2 text-center">
+                <button type="button" onclick="$(this).closest('tr').remove();" class="text-rose-500 hover:text-rose-700">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            </td>
+        </tr>
+    `;
+    $('#inv-lines-body').append(row);
+}
+
+function calcLine(elem) {
+    var tr = $(elem).closest('tr');
+    var qty = parseFloat(tr.find('.line-qty').val()) || 0;
+    var price = parseFloat(tr.find('.line-price').val()) || 0;
+    var vatRate = parseFloat(tr.find('.line-vat-rate').val()) || 0;
+
+    var subtotal = qty * price;
+    var vatAmt = subtotal * (vatRate / 100);
+    var totalIncl = subtotal + vatAmt;
+
+    tr.find('.line-total-incl').val(totalIncl.toFixed(2));
+}
+
+function handleInvoiceSubmit(e) {
+    e.preventDefault();
+    var bizId = parseInt($('#inv_business_id').val());
+
+    var lines = [];
+    var slNo = 1;
+    $('.inv-line').each(function() {
+        var desc = $(this).find('.line-desc').val().trim();
+        var uom = $(this).find('.line-uom').val().trim();
+        var qty = parseFloat($(this).find('.line-qty').val()) || 0;
+        var price = parseFloat($(this).find('.line-price').val()) || 0;
+        var vatRate = parseFloat($(this).find('.line-vat-rate').val()) || 0;
+
+        var subtotal = qty * price;
+        var vatAmt = subtotal * (vatRate / 100);
+
+        if (desc) {
+            lines.push({
+                sl_no: slNo++,
+                description: desc,
+                uom: uom,
+                quantity: qty,
+                unit_price: price,
+                total_price: subtotal,
+                vat_rate: vatRate,
+                vat_amount: vatAmt,
+                price_incl_duties_taxes: subtotal + vatAmt
+            });
+        }
+    });
+
+    if (lines.length === 0) {
+        showWarningAlert('Min 1 Item Required', 'Invoice requires at least one product line.');
+        return;
+    }
+
+    var payload = {
+        business_id: bizId,
+        invoice_number: $('#inv_number').val().trim(),
+        issue_date: $('#inv_date').val(),
+        buyer_name: $('#inv_buyer_name').val().trim(),
+        buyer_bin: $('#inv_buyer_bin').val().trim() || null,
+        buyer_address: $('#inv_buyer_address').val().trim() || null,
+        lines: lines
+    };
+
+    fetch('/finance/invoices', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async res => {
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to create sales invoice');
+        }
+        return res.json();
+    })
+    .then(() => {
+        closeInvoiceModal();
+        showSuccessToast('Invoice Created', 'Sales invoice created in draft.');
+        setTimeout(() => window.location.reload(), 1000);
+    })
+    .catch(err => showErrorAlert('Creation Failed', err.message));
+}
+
+function postInvoice(invoiceId) {
+    var bizId = parseInt($('#inv_business_id').val() || '0');
+    Swal.fire({
+        title: 'Post Invoice?',
+        text: 'Posting will issue invoice and post journal voucher.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        confirmButtonText: 'Yes, Post Invoice'
+    }).then((res) => {
+        if (res.isConfirmed) {
+            fetch('/finance/invoices/' + invoiceId + '/post?business_id=' + bizId, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(async r => {
+                if (!r.ok) {
+                    const err = await r.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to post invoice');
+                }
+                return r.json();
+            })
+            .then(() => {
+                showSuccessToast('Invoice Posted', 'Invoice posted successfully.');
+                setTimeout(() => window.location.reload(), 800);
+            })
+            .catch(err => showErrorAlert('Post Failed', err.message));
+        }
+    });
+}
+
+function openImportModal() {
+    $('#import-summary').addClass('hidden');
+    $('#btnUploadBatch').removeClass('hidden');
+    $('#import_file').val('');
+    $('#import-modal').removeClass('hidden');
+}
+
+function closeImportModal() {
+    $('#import-modal').addClass('hidden');
+}
+
+function handleImportSubmit(e) {
+    e.preventDefault();
+    var fileInput = document.getElementById('import_file');
+    var bizId = parseInt($('#inv_business_id').val() || '0');
+
+    if (!fileInput.files || fileInput.files.length === 0) return;
+
+    var formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    fetch('/finance/sales-import/upload?business_id=' + bizId, {
+        method: 'POST',
+        body: formData
+    })
+    .then(async res => {
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Upload failed');
+        }
+        return res.json();
+    })
+    .then(data => {
+        currentBatchId = data.batch_id;
+        $('#summary-total').text(data.total_rows);
+        $('#summary-valid').text(data.valid_rows);
+        $('#import-summary').removeClass('hidden');
+        $('#btnUploadBatch').addClass('hidden');
+    })
+    .catch(err => showErrorAlert('Import Failed', err.message));
+}
+
+function confirmBatchImport() {
+    if (!currentBatchId) return;
+    var bizId = parseInt($('#inv_business_id').val() || '0');
+
+    fetch('/finance/sales-import/' + currentBatchId + '/confirm?business_id=' + bizId, {
+        method: 'POST'
+    })
+    .then(async res => {
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Batch confirmation failed');
+        }
+        return res.json();
+    })
+    .then(() => {
+        closeImportModal();
+        showSuccessToast('Batch Processed', 'Invoices imported successfully.');
+        setTimeout(() => window.location.reload(), 1000);
+    })
+    .catch(err => showErrorAlert('Confirmation Failed', err.message));
+}
+</script>
+{% endblock %}

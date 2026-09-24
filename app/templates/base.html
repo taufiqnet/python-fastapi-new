@@ -587,6 +587,48 @@
                 </div>
                 {% endif %}
 
+                <!-- DYNAMIC FINANCE MODULE -->
+                {% if nav_menu and nav_menu.finance_categories %}
+                <div class="sidebar-dropdown {% if active_page in ['finance_accounts', 'finance_fiscal_years', 'finance_vouchers', 'finance_invoices', 'finance_reports'] %}expanded{% endif %}" data-module="finance">
+                    <button type="button" class="sidebar-dropdown-toggle {% if active_page in ['finance_accounts', 'finance_fiscal_years', 'finance_vouchers', 'finance_invoices', 'finance_reports'] %}active{% endif %}">
+                        <span class="flex items-center">
+                            <i class="fas fa-calculator w-4 text-sm shrink-0"></i>
+                            <span class="ml-3 text-[13px] font-medium sidebar-text">Finance & Accounting</span>
+                        </span>
+                        <i class="fas fa-chevron-right text-[10px] dropdown-arrow"></i>
+                    </button>
+
+                    <div class="sidebar-dropdown-menu space-y-1">
+                        {% for cat in nav_menu.finance_categories %}
+                            <p class="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 sidebar-text first:pt-1">{{ cat.category }}</p>
+                            {% for item in cat['items'] %}
+                                {% if item.user_has_rbac %}
+                                <a href="{% if item.is_locked %}javascript:void(0);{% else %}{{ item.url }}{% endif %}"
+                                   class="sidebar-link relative flex items-center px-3 py-2 rounded-lg transition-all duration-200 {% if item.is_locked %}is-locked text-gray-500{% elif active_page == item.active_page %}bg-indigo-50 text-indigo-700{% else %}text-gray-700 hover:bg-gray-100{% endif %}"
+                                   {% if item.is_locked %}
+                                   data-upsell="true"
+                                   data-title="{{ item.title }}"
+                                   data-description="{{ item.description }}"
+                                   data-tier="{{ item.required_tier_text }}"
+                                   {% endif %}>
+                                    <i class="{{ item.icon }} w-4 text-sm shrink-0"></i>
+                                    <span class="ml-3 text-[13px] font-medium sidebar-text transition-opacity duration-300">
+                                        {{ item.title }}
+                                    </span>
+                                    {% if item.is_locked %}
+                                    <i class="fas fa-lock text-amber-500 text-xs ml-auto shrink-0 sidebar-text" title="Locked — requires {{ item.required_tier_text }} plan"></i>
+                                    {% endif %}
+                                    <span class="sidebar-tooltip">
+                                        {{ item.title }}{% if item.is_locked %} (Locked — {{ item.required_tier_text }}){% endif %}
+                                    </span>
+                                </a>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- DYNAMIC ECOMMERCE MODULE -->
                 {% if nav_menu and nav_menu.ecommerce_categories %}
                 <div class="sidebar-dropdown {% if active_page in ['categories', 'customers', 'sellers', 'brands', 'models', 'products', 'pricing', 'coupons', 'payments', 'shipping', 'reviews', 'orders', 'inventory', 'inventory_uom', 'items_master', 'inventory_valuation', 'lots_serials', 'inventory_transfers', 'inventory_counts', 'ecommerce_reports'] %}expanded{% endif %}" data-module="ecommerce">
