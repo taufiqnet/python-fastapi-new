@@ -192,6 +192,23 @@
             transform: translateY(1px);
         }
 
+        .signup-note {
+            margin: 18px 0 0;
+            text-align: center;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .signup-note a {
+            color: #4f46e5;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .signup-note a:hover {
+            text-decoration: underline;
+        }
+
         .secure-note {
             margin: 24px 0 0;
             text-align: center;
@@ -289,6 +306,10 @@
             <button type="submit" class="submit-button">
                 Sign In
             </button>
+
+            <p class="signup-note">
+                Don't have an account? <a href="/auth/register">Sign Up</a>
+            </p>
         </form>
 
         <p class="secure-note">
