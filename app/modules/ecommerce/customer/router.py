@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_permission
@@ -17,6 +17,46 @@ from app.modules.ecommerce.customer.service import CustomerService
 
 router = APIRouter(prefix="/customers", tags=["Customers"])
 service = CustomerService()
+
+
+@router.get("/template-excel")
+def download_customers_excel_template(
+    business_id: int = Query(...),
+    current_user: User = Depends(require_permission("ecommerce", "customers", "view")),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if resolved_business_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business ID is required to download Excel template",
+        )
+    excel_data = service.generate_excel_template(db, business_id=resolved_business_id)
+    filename = f"customer_template_business_{resolved_business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/import-excel")
+async def import_customers_excel(
+    business_id: int = Query(...),
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_permission("ecommerce", "customers", "create")),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if resolved_business_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business ID is required to import customers",
+        )
+    contents = await file.read()
+    return service.import_customers_excel(
+        db, business_id=resolved_business_id, file_bytes=contents
+    )
 
 
 @router.get("/", response_model=list[CustomerOut])

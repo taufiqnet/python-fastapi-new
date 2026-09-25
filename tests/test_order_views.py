@@ -28,9 +28,19 @@ SyncTestingSessionLocal = sessionmaker(
 def sync_db():
     Base.metadata.create_all(bind=sync_engine)
     db = SyncTestingSessionLocal()
-    # Seed business profile with id=1
+    # Seed business profile with id=1 and admin user
     biz = BusinessProfile(id=1, name_en="Test Business", is_active=True)
     db.add(biz)
+    admin_user = User(
+        id=1,
+        username="admin",
+        email="admin@example.com",
+        password_hash="secret_hash",
+        is_superuser=True,
+        is_active=True,
+        business_id=1
+    )
+    db.add(admin_user)
     db.commit()
     try:
         yield db
@@ -44,16 +54,9 @@ async def client(sync_db):
     def _override_get_db():
         yield sync_db
 
-    admin_user = User(
-        id="00000000-0000-0000-0000-000000000001",
-        username="admin",
-        email="admin@example.com",
-        is_superuser=True,
-        is_active=True,
-        business_id=1
-    )
+    admin_user = sync_db.query(User).filter(User.username == "admin").first()
 
-    def _override_get_current_user():
+    def _override_get_current_user(*args, **kwargs):
         return admin_user
 
     app.dependency_overrides[get_db] = _override_get_db
