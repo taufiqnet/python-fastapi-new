@@ -305,6 +305,7 @@ class Mushak63LineItem(BaseModel):
 
 
 class Mushak63Summary(BaseModel):
+    total_quantity: Decimal = Decimal("0")
     total_price: Decimal
     total_sd: Decimal
     total_vat: Decimal

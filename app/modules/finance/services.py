@@ -1047,17 +1047,20 @@ class InvoiceService:
 
     @staticmethod
     async def get_invoice(
-        db: AsyncSession, business_id: int, invoice_id: uuid.UUID
+        db: AsyncSession, business_id: int | None, invoice_id: uuid.UUID
     ) -> SalesInvoice:
-        res = await db.execute(
+        query = (
             select(SalesInvoice)
             .options(
                 selectinload(SalesInvoice.lines),
                 selectinload(SalesInvoice.mushak_challan),
             )
-            .where(SalesInvoice.business_id == business_id)
             .where(SalesInvoice.id == invoice_id)
         )
+        if business_id is not None:
+            query = query.where(SalesInvoice.business_id == business_id)
+
+        res = await db.execute(query)
         invoice = res.scalar_one_or_none()
         if not invoice:
             raise HTTPException(
@@ -1113,10 +1116,88 @@ class Mushak63Service:
         return f"{start_y}-{end_y}"
 
     @staticmethod
+    async def resolve_sales_invoice(
+        db: AsyncSession, business_id: int | None, record_id: uuid.UUID, user: Any = None
+    ) -> SalesInvoice:
+        """
+        Resolves a SalesInvoice from record_id, which can be a SalesInvoice ID,
+        a MushakChallan ID, or an Order ID.
+        """
+        # 1. Try finding SalesInvoice by ID
+        query = (
+            select(SalesInvoice)
+            .options(
+                selectinload(SalesInvoice.lines),
+                selectinload(SalesInvoice.mushak_challan),
+            )
+            .where(SalesInvoice.id == record_id)
+        )
+        if business_id is not None:
+            query = query.where(SalesInvoice.business_id == business_id)
+
+        res = await db.execute(query)
+        invoice = res.scalar_one_or_none()
+
+        # 2. If not found, check if record_id is a MushakChallan ID
+        if not invoice:
+            mushak_query = select(MushakChallan).where(MushakChallan.id == record_id)
+            if business_id is not None:
+                mushak_query = mushak_query.where(MushakChallan.business_id == business_id)
+            m_res = await db.execute(mushak_query)
+            mushak = m_res.scalar_one_or_none()
+            if mushak:
+                inv_query = (
+                    select(SalesInvoice)
+                    .options(
+                        selectinload(SalesInvoice.lines),
+                        selectinload(SalesInvoice.mushak_challan),
+                    )
+                    .where(SalesInvoice.id == mushak.invoice_id)
+                )
+                inv_res = await db.execute(inv_query)
+                invoice = inv_res.scalar_one_or_none()
+
+        # 3. If still not found, check if record_id is an Order ID
+        if not invoice:
+            from app.modules.ecommerce.orders.models import Order
+            order_query = select(Order).where(Order.id == record_id)
+            if business_id is not None:
+                order_query = order_query.where(Order.business_id == business_id)
+            o_res = await db.execute(order_query)
+            order = o_res.scalar_one_or_none()
+            if order:
+                user_id = getattr(user, "id", None)
+                mushak = await Mushak63Service.generate_mushak_from_order(
+                    db, order.business_id, user_id, order.id
+                )
+                inv_query = (
+                    select(SalesInvoice)
+                    .options(
+                        selectinload(SalesInvoice.lines),
+                        selectinload(SalesInvoice.mushak_challan),
+                    )
+                    .where(SalesInvoice.id == mushak.invoice_id)
+                )
+                inv_res = await db.execute(inv_query)
+                invoice = inv_res.scalar_one_or_none()
+
+        if not invoice:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Sales invoice not found."
+            )
+
+        if user:
+            from app.core.tenancy.scoping import verify_record_ownership
+            verify_record_ownership(invoice, user)
+
+        return invoice
+
+    @staticmethod
     async def issue_mushak_challan(
-        db: AsyncSession, business_id: int, user_id: int | None, invoice_id: uuid.UUID
+        db: AsyncSession, business_id: int | None, user_id: int | None, invoice_id: uuid.UUID, user: Any = None
     ) -> MushakChallan:
-        invoice = await InvoiceService.get_invoice(db, business_id, invoice_id)
+        invoice = await Mushak63Service.resolve_sales_invoice(db, business_id, invoice_id, user)
+        effective_business_id = invoice.business_id
 
         if invoice.status != "posted":
             raise HTTPException(
@@ -1129,17 +1210,17 @@ class Mushak63Service:
 
         # Get business BIN / VAT Number
         biz_res = await db.execute(
-            select(BusinessProfile).where(BusinessProfile.id == business_id)
+            select(BusinessProfile).where(BusinessProfile.id == effective_business_id)
         )
         biz = biz_res.scalar_one_or_none()
         issuer_bin = (biz.vat_number if biz and biz.vat_number else "BD123456789").strip()
 
         fy_label = Mushak63Service._get_fiscal_year_label(invoice.issue_date)
 
-        # Get next serial for (business_id, bin, fy)
+        # Get next serial for (effective_business_id, bin, fy)
         max_sl_res = await db.execute(
             select(func.max(MushakChallan.serial_number))
-            .where(MushakChallan.business_id == business_id)
+            .where(MushakChallan.business_id == effective_business_id)
             .where(MushakChallan.bin == issuer_bin)
             .where(MushakChallan.fiscal_year == fy_label)
         )
@@ -1150,7 +1231,7 @@ class Mushak63Service:
         mushak_num = f"M6.3-{issuer_bin}-{fy_compact}-{next_sl:06d}"
 
         mushak = MushakChallan(
-            business_id=business_id,
+            business_id=effective_business_id,
             invoice_id=invoice.id,
             mushak_number=mushak_num,
             serial_number=next_sl,
@@ -1164,36 +1245,36 @@ class Mushak63Service:
         await db.refresh(mushak)
 
         await log_audit(
-            db, business_id, user_id, "MUSHAK_ISSUED", "MushakChallan", str(mushak.id), f"Issued Mushak 6.3 Challan {mushak.mushak_number} for Invoice {invoice.invoice_number}"
+            db, effective_business_id, user_id, "MUSHAK_ISSUED", "MushakChallan", str(mushak.id), f"Issued Mushak 6.3 Challan {mushak.mushak_number} for Invoice {invoice.invoice_number}"
         )
         return mushak
 
     @staticmethod
     async def generate_mushak_json(
-        db: AsyncSession, business_id: int, invoice_id: uuid.UUID
+        db: AsyncSession, business_id: int | None, invoice_id: uuid.UUID, user: Any = None
     ) -> Mushak63JSONView:
-        mushak = await Mushak63Service.issue_mushak_challan(db, business_id, None, invoice_id)
-        invoice = await InvoiceService.get_invoice(db, business_id, invoice_id)
+        invoice = await Mushak63Service.resolve_sales_invoice(db, business_id, invoice_id, user)
+        mushak = await Mushak63Service.issue_mushak_challan(db, invoice.business_id, None, invoice.id, user)
 
         biz_res = await db.execute(
-            select(BusinessProfile).where(BusinessProfile.id == business_id)
+            select(BusinessProfile).where(BusinessProfile.id == invoice.business_id)
         )
         biz = biz_res.scalar_one_or_none()
 
         registered_person = Mushak63RegisteredPerson(
-            name=biz.legal_name or biz.name_en if biz else "Business Entity",
+            name=biz.legal_name or biz.name_en if biz else "WBSOFT",
             bin=mushak.bin,
-            address=f"{biz.city or ''}, {biz.country or 'Bangladesh'}".strip(", "),
+            address=biz.address_en if biz and biz.address_en else (f"{biz.city or ''}, {biz.country or 'Bangladesh'}".strip(", ") if biz else "WBSOFT"),
             issue_venue=biz.city if biz else "Dhaka",
         )
 
         header = Mushak63Header(
             mushak_number=mushak.mushak_number,
             invoice_number=invoice.invoice_number,
-            issue_date=invoice.issue_date.strftime("%Y-%m-%d"),
-            issue_time=mushak.issued_at.strftime("%H:%M:%S UTC"),
+            issue_date=invoice.issue_date.strftime("%d.%m.%Y"),
+            issue_time=mushak.issued_at.strftime("%I:%M %p") if mushak.issued_at else "12:00 PM",
             so_number=invoice.so_number,
-            bill_number=invoice.bill_number,
+            bill_number=invoice.bill_number or invoice.so_number,
         )
 
         buyer = Mushak63Buyer(
@@ -1221,7 +1302,9 @@ class Mushak63Service:
             for l in invoice.lines
         ]
 
+        total_quantity = sum((l.quantity for l in invoice.lines), Decimal("0"))
         summary = Mushak63Summary(
+            total_quantity=total_quantity,
             total_price=invoice.total_subtotal,
             total_sd=invoice.total_sd,
             total_vat=invoice.total_vat,
@@ -1230,8 +1313,8 @@ class Mushak63Service:
         )
 
         footer = Mushak63Footer(
-            authorized_person_name="Manager (Finance & VAT)",
-            designation="Authorized Officer",
+            authorized_person_name="System Administrator",
+            designation="Executive",
         )
 
         return Mushak63JSONView(
@@ -1526,9 +1609,9 @@ class Mushak63Service:
 
     @staticmethod
     async def generate_mushak_html(
-        db: AsyncSession, business_id: int, invoice_id: uuid.UUID
+        db: AsyncSession, business_id: int | None, invoice_id: uuid.UUID, user: Any = None
     ) -> str:
-        json_view = await Mushak63Service.generate_mushak_json(db, business_id, invoice_id)
+        json_view = await Mushak63Service.generate_mushak_json(db, business_id, invoice_id, user)
 
         import os
         from jinja2 import Environment, FileSystemLoader

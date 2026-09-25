@@ -340,7 +340,7 @@ async def generate_mushak_63(
     current_user: User = Depends(get_current_user),
 ) -> Any:
     resolved_biz = resolve_business_id(current_user, business_id)
-    return await Mushak63Service.generate_mushak_json(db, resolved_biz, invoice_id)
+    return await Mushak63Service.generate_mushak_json(db, resolved_biz, invoice_id, current_user)
 
 
 @router.post(
@@ -372,7 +372,7 @@ async def download_mushak_63_pdf(
     current_user: User = Depends(get_current_user),
 ) -> Any:
     resolved_biz = resolve_business_id(current_user, business_id)
-    html_content = await Mushak63Service.generate_mushak_html(db, resolved_biz, invoice_id)
+    html_content = await Mushak63Service.generate_mushak_html(db, resolved_biz, invoice_id, current_user)
 
     return HTMLResponse(content=html_content)
 
