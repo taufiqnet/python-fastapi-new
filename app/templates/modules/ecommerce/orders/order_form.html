@@ -65,9 +65,9 @@
         </div>
 
         <div class="flex items-center gap-3">
-            <button type="submit" class="px-4 py-2.5 bg-[#1d4ed8] hover:bg-blue-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm flex items-center gap-2">
+            <button type="submit" id="header-submit-btn" class="px-4 py-2.5 bg-[#1d4ed8] hover:bg-blue-800 text-white text-xs font-semibold rounded-lg transition-colors shadow-sm flex items-center gap-2">
                 <i class="fas fa-save text-xs"></i>
-                <span>{% if is_edit %}Save Order{% else %}Create Order{% endif %}</span>
+                <span>Save Order</span>
             </button>
             <button type="button" id="save-draft-btn" class="px-4 py-2.5 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg transition-colors shadow-sm flex items-center gap-2">
                 <i class="fas fa-file-alt text-xs"></i>
@@ -80,11 +80,11 @@
         </div>
     </div>
 
-    <!-- Main Grid Layout: Left Cards (8/12) + Right Sidebar Summary (4/12) -->
+    <!-- Main Grid Layout: Left Cards (9/12) + Right Sidebar Summary (3/12) -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         <!-- LEFT COLUMN -->
-        <div class="lg:col-span-8 space-y-6">
+        <div class="lg:col-span-9 space-y-6">
 
             <!-- Card 1: CUSTOMER & PRODUCTS INFORMATION -->
             <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
@@ -356,7 +356,7 @@
         </div>
 
         <!-- RIGHT SIDEBAR: ORDER SUMMARY -->
-        <div class="lg:col-span-4">
+        <div class="lg:col-span-3">
             <div class="bg-white border border-gray-200 rounded-xl shadow-sm sticky top-6 overflow-hidden">
                 <div class="p-5 border-b border-gray-100 flex items-center gap-2">
                     <i class="fas fa-file-alt text-gray-700 text-sm"></i>
@@ -410,8 +410,8 @@
                     </div>
 
                     <div class="pt-2">
-                        <button type="submit" class="w-full py-3 bg-[#1d4ed8] hover:bg-blue-800 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors shadow-md flex items-center justify-center gap-2">
-                            <span>{% if is_edit %}Save Order{% else %}Create Order{% endif %}</span>
+                        <button type="submit" id="summary-submit-btn" class="w-full py-3 bg-[#1d4ed8] hover:bg-blue-800 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-colors shadow-md flex items-center justify-center gap-2">
+                            <span>Save Order</span>
                         </button>
                     </div>
                 </div>
@@ -833,23 +833,51 @@ document.addEventListener('DOMContentLoaded', function() {
     const otherChargesInput = document.getElementById('other_charges');
     const discountAmountInput = document.getElementById('discount_amount');
 
+    function updateSubmitButtonsState(hasSelectedItem) {
+        const headerBtn = document.getElementById('header-submit-btn');
+        const summaryBtn = document.getElementById('summary-submit-btn');
+
+        [headerBtn, summaryBtn].forEach(btn => {
+            if (!btn) return;
+            if (hasSelectedItem) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'pointer-events-none');
+            }
+        });
+    }
+
     function calculateOrderTotals() {
         let itemsSubtotal = 0;
+        let hasSelectedItem = false;
+
         document.querySelectorAll('.item-row').forEach(row => {
-            const unitPrice = parseFloat(row.querySelector('.unit-price-input').value || 0);
-            const qty = parseInt(row.querySelector('.qty-input').value || 1, 10);
+            const variantSelect = row.querySelector('.variant-select');
+            const variantId = variantSelect ? variantSelect.value : '';
+            if (variantId && variantId.trim() !== '') {
+                hasSelectedItem = true;
+            }
+            const unitPrice = parseFloat(row.querySelector('.unit-price-input')?.value || 0);
+            const qty = parseInt(row.querySelector('.qty-input')?.value || 1, 10);
             itemsSubtotal += (unitPrice * qty);
         });
 
-        const shipping = parseFloat(shippingFeeInput.value || 0);
-        const tax = parseFloat(taxAmountInput.value || 0);
-        const other = parseFloat(otherChargesInput.value || 0);
-        const discount = parseFloat(discountAmountInput.value || 0);
+        const shipping = parseFloat(shippingFeeInput?.value || 0);
+        const tax = parseFloat(taxAmountInput?.value || 0);
+        const other = parseFloat(otherChargesInput?.value || 0);
+        const discount = parseFloat(discountAmountInput?.value || 0);
 
         const grandTotal = Math.max(0, itemsSubtotal + shipping + tax + other - discount);
 
-        document.getElementById('summary-subtotal').textContent = '৳' + itemsSubtotal.toFixed(2);
-        document.getElementById('summary-grand-total').textContent = '৳' + grandTotal.toFixed(2);
+        const subtotalEl = document.getElementById('summary-subtotal');
+        const grandTotalEl = document.getElementById('summary-grand-total');
+
+        if (subtotalEl) subtotalEl.textContent = '৳' + itemsSubtotal.toFixed(2);
+        if (grandTotalEl) grandTotalEl.textContent = '৳' + grandTotal.toFixed(2);
+
+        updateSubmitButtonsState(hasSelectedItem);
     }
 
     [shippingFeeInput, taxAmountInput, otherChargesInput, discountAmountInput].forEach(inp => {
