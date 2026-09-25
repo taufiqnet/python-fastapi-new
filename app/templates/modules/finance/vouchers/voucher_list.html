@@ -221,7 +221,12 @@
                 {% for v in vouchers %}
                 <tr id="voucher-row-{{ v.id }}">
                     <td>
-                        <span class="num-badge">{{ v.voucher_number }}</span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="num-badge">{{ v.voucher_number }}</span>
+                            {% if v.is_testing %}
+                            <span class="badge bg-warning text-dark"><i class="fas fa-vial"></i> Testing</span>
+                            {% endif %}
+                        </div>
                     </td>
                     <td class="text-xs text-gray-600 font-medium">
                         {{ v.entry_date }}

@@ -479,7 +479,59 @@ async def create_credit_debit_note(
 
 
 # -----------------------------------------------------------------------------
-# 7. Financial Reports
+# 7. Seed Finance Data Endpoints (System Admin Only)
+# -----------------------------------------------------------------------------
+
+@router.post(
+    "/seed-data/seed",
+    status_code=status.HTTP_200_OK,
+)
+async def seed_finance_testing_data(
+    business_id: int | None = Query(None),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only system administrators can access Seed Finance Data operations.",
+        )
+    resolved_biz = resolve_business_id(current_user, business_id)
+    from app.modules.finance.seed import seed_finance_test_data
+    result = await seed_finance_test_data(db, resolved_biz)
+    return {
+        "message": f"Successfully seeded testing finance data for business ID {resolved_biz}.",
+        "business_id": resolved_biz,
+        "details": result,
+    }
+
+
+@router.delete(
+    "/seed-data/clear",
+    status_code=status.HTTP_200_OK,
+)
+async def clear_finance_testing_data(
+    business_id: int | None = Query(None),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    if not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only system administrators can access Seed Finance Data operations.",
+        )
+    resolved_biz = resolve_business_id(current_user, business_id) if business_id else None
+    from app.modules.finance.seed import delete_finance_test_data
+    result = await delete_finance_test_data(db, resolved_biz)
+    return {
+        "message": "Successfully cleared testing finance data.",
+        "business_id": resolved_biz,
+        "details": result,
+    }
+
+
+# -----------------------------------------------------------------------------
+# 8. Financial Reports
 # -----------------------------------------------------------------------------
 
 @router.get(

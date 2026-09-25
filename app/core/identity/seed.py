@@ -941,6 +941,122 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
 
     db.flush()
 
+    # 11c. Seed Sample E-Commerce Orders under WBSOFT (Paid/Delivered, COD Unpaid, Shipped)
+    from app.modules.ecommerce.orders.models import Order, OrderItem, OrderAddress, OrderPaymentStatus, OrderFulfillmentStatus
+    from app.modules.finance.services import generateMushak63
+
+    sample_orders_def = [
+        {
+            "order_number": "ORD-2026-000101",
+            "payment_status": OrderPaymentStatus.PAID,
+            "fulfillment_status": OrderFulfillmentStatus.DELIVERED,
+            "recipient_name": "Rahim Chowdhury",
+            "phone": "+8801700111999",
+            "street": "House 45, Road 12, Block Block B",
+            "city": "Dhaka",
+            "country": "Bangladesh",
+            "sku": "SKU-ITEM-101",
+            "title": "TechGlobe X1 Pro Smartphone",
+            "qty": 1,
+            "price": Decimal("699.00"),
+            "shipping": Decimal("50.00"),
+            "tax": Decimal("104.85"),
+            "total": Decimal("853.85"),
+        },
+        {
+            "order_number": "ORD-2026-000102",
+            "payment_status": OrderPaymentStatus.UNPAID,
+            "fulfillment_status": OrderFulfillmentStatus.SHIPPED,
+            "recipient_name": "Karim Uddin",
+            "phone": "+8801700222888",
+            "street": "Plot 12, Station Road",
+            "city": "Chittagong",
+            "country": "Bangladesh",
+            "sku": "SKU-ITEM-103",
+            "title": "Apex PrintMax Laser Printer",
+            "qty": 1,
+            "price": Decimal("350.00"),
+            "shipping": Decimal("60.00"),
+            "tax": Decimal("52.50"),
+            "total": Decimal("462.50"),
+        },
+        {
+            "order_number": "ORD-2026-000103",
+            "payment_status": OrderPaymentStatus.UNPAID,
+            "fulfillment_status": OrderFulfillmentStatus.PENDING,
+            "recipient_name": "Anisur Rahman",
+            "phone": "+8801700333777",
+            "street": "78 College Road",
+            "city": "Sylhet",
+            "country": "Bangladesh",
+            "sku": "SKU-ITEM-105",
+            "title": "MicroCraft IoT Sensor Kit",
+            "qty": 2,
+            "price": Decimal("85.00"),
+            "shipping": Decimal("40.00"),
+            "tax": Decimal("25.50"),
+            "total": Decimal("235.50"),
+        },
+    ]
+
+    for odef in sample_orders_def:
+        ord_obj = db.query(Order).filter(
+            Order.business_id == wbsoft.id,
+            Order.order_number == odef["order_number"],
+        ).first()
+
+        if not ord_obj:
+            variant_obj = db.query(ProductVariant).filter(ProductVariant.sku == odef["sku"]).first()
+            ord_obj = Order(
+                id=uuid.uuid4(),
+                business_id=wbsoft.id,
+                order_number=odef["order_number"],
+                user_id=uuid.uuid4(),
+                guest_email="customer@example.com",
+                payment_status=odef["payment_status"],
+                fulfillment_status=odef["fulfillment_status"],
+                subtotal_amount=odef["price"] * odef["qty"],
+                tax_amount=odef["tax"],
+                shipping_amount=odef["shipping"],
+                discount_amount=Decimal("0.00"),
+                total_amount=odef["total"],
+                currency="BDT",
+            )
+            db.add(ord_obj)
+            db.flush()
+
+            if variant_obj:
+                oitem = OrderItem(
+                    id=uuid.uuid4(),
+                    order_id=ord_obj.id,
+                    variant_id=variant_obj.id,
+                    product_title=odef["title"],
+                    product_sku=odef["sku"],
+                    quantity=odef["qty"],
+                    unit_price=odef["price"],
+                    subtotal=odef["price"] * odef["qty"],
+                )
+                db.add(oitem)
+
+            oaddr = OrderAddress(
+                id=uuid.uuid4(),
+                order_id=ord_obj.id,
+                address_type="shipping",
+                recipient_name=odef["recipient_name"],
+                phone=odef["phone"],
+                street=odef["street"],
+                city=odef["city"],
+                country=odef["country"],
+            )
+            db.add(oaddr)
+            db.flush()
+
+            # Auto-generate Mushak 6.3 if Time of Supply rules are met
+            if odef["payment_status"] == OrderPaymentStatus.PAID or odef["fulfillment_status"] in (OrderFulfillmentStatus.SHIPPED, OrderFulfillmentStatus.DELIVERED):
+                generateMushak63(ord_obj.id, db=db, business_id=wbsoft.id)
+
+    db.flush()
+
     # 12. Seed Sample Stock Transfer for frontend testing
     transfer_no = "TR-2026-001"
     stock_transfer = db.query(StockTransfer).filter(

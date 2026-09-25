@@ -348,6 +348,13 @@ class SalesImportService:
             invoice = await InvoiceService.create_invoice(db, business_id, user_id, inv_data)
             # Auto-post invoice journal entry
             posted_inv = await InvoiceService.post_invoice(db, business_id, user_id, invoice.id)
+
+            # Issue Mushak 6.3 Tax Invoice so imported sales invoices immediately appear in the Mushak list
+            try:
+                await Mushak63Service.issue_mushak_challan(db, business_id, user_id, posted_inv.id)
+            except Exception:
+                pass
+
             created_invoices.append(posted_inv)
 
         batch.status = "confirmed"

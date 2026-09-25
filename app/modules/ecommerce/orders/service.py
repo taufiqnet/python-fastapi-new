@@ -185,6 +185,16 @@ class OrderService:
         if new_f_status in ("delivered", "completed") and prev_f_status not in ("delivered", "completed"):
             self._process_inventory_deduction_for_order(db, updated)
 
+        # Trigger automatic Mushak 6.3 generation if Time of Supply rules are met
+        try:
+            from app.modules.finance.services import generateMushak63, Mushak63Service
+            eligible, _ = Mushak63Service.is_order_mushak_eligible(updated, db_sync=db)
+            if eligible:
+                generateMushak63(updated.id, db=db, business_id=updated.business_id)
+        except Exception as e:
+            # Non-blocking log or pass if finance module isn't configured or errors
+            pass
+
         return OrderDetail.model_validate(updated)
 
     def update_order(
@@ -252,6 +262,15 @@ class OrderService:
         # Trigger inventory deduction if status transitions to completed or delivered
         if new_f_status in ("delivered", "completed") and prev_f_status not in ("delivered", "completed"):
             self._process_inventory_deduction_for_order(db, updated)
+
+        # Trigger automatic Mushak 6.3 generation if Time of Supply rules are met
+        try:
+            from app.modules.finance.services import generateMushak63, Mushak63Service
+            eligible, _ = Mushak63Service.is_order_mushak_eligible(updated, db_sync=db)
+            if eligible:
+                generateMushak63(updated.id, db=db, business_id=updated.business_id)
+        except Exception as e:
+            pass
 
         return OrderDetail.model_validate(updated)
 

@@ -126,6 +126,19 @@
         text-transform: capitalize;
     }
     .badge-issued { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-ready { background: #f0f9ff; color: #0284c7; border: 1px solid #bae6fd; }
+    .badge-pending { background: #fffbebfb; color: #b45309; border: 1px solid #fde68a; }
+
+    /* ── Tab Bar ── */
+    .tab-bar {
+        display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px;
+    }
+    .tab-btn {
+        padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #6b7280;
+        background: #f9fafb; border: 1px solid #e5e7eb; cursor: pointer; transition: all .15s;
+    }
+    .tab-btn:hover { background: #f3f4f6; color: #374151; }
+    .tab-btn.active { background: var(--indigo); color: #fff; border-color: var(--indigo); }
 
     .action-btn {
         display: inline-flex; align-items: center; justify-content: center;
@@ -169,26 +182,36 @@
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon green"><i class="fas fa-money-bill-wave"></i></div>
+        <div class="stat-icon sky"><i class="fas fa-check-circle"></i></div>
         <div>
-            <div class="stat-label">Taxable Subtotal</div>
-            <div class="stat-value">BDT {{ "%.2f"|format(total_taxable_val) }}</div>
+            <div class="stat-label">Ready to Generate</div>
+            <div class="stat-value">{{ ready_to_generate_count }}</div>
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon yellow"><i class="fas fa-percent"></i></div>
+        <div class="stat-icon yellow"><i class="fas fa-clock"></i></div>
+        <div>
+            <div class="stat-label">Pending Trigger</div>
+            <div class="stat-value">{{ pending_trigger_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-percent"></i></div>
         <div>
             <div class="stat-label">Total Output VAT (15%)</div>
             <div class="stat-value">BDT {{ "%.2f"|format(total_vat_amount) }}</div>
         </div>
     </div>
-    <div class="stat-card">
-        <div class="stat-icon sky"><i class="fas fa-calculator"></i></div>
-        <div>
-            <div class="stat-label">Total Payable</div>
-            <div class="stat-value">BDT {{ "%.2f"|format(total_payable_val) }}</div>
-        </div>
-    </div>
+</div>
+
+<!-- ── Navigation Tabs ── -->
+<div class="tab-bar">
+    <button type="button" class="tab-btn active" id="tab-issued" onclick="switchTab('issued')">
+        <i class="fas fa-file-invoice mr-1.5"></i> Issued Mushak 6.3 Tax Invoices ({{ total_mushak_count }})
+    </button>
+    <button type="button" class="tab-btn" id="tab-orders" onclick="switchTab('orders')">
+        <i class="fas fa-shopping-cart mr-1.5"></i> Order Mushak Status & Time of Supply ({{ orders_with_mushak_status|length }})
+    </button>
 </div>
 
 <!-- ── Toolbar ── -->
@@ -201,7 +224,7 @@
     <select id="filterBusiness">
         <option value="">All Businesses</option>
         {% for b in businesses %}
-        <option value="{{ b.name_en }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+        <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
         {% endfor %}
     </select>
 
@@ -211,8 +234,8 @@
     </button>
 </div>
 
-<!-- ── Table card ── -->
-<div class="table-card">
+<!-- ── Issued Mushak Table Card ── -->
+<div id="issued-table-container" class="table-card">
     <div class="overflow-x-auto">
         <table id="mushakTable" class="w-full text-left display">
             <thead>
@@ -315,6 +338,93 @@
     </div>
 </div>
 
+<!-- ── Order Time of Supply Status Table Card ── -->
+<div id="orders-table-container" class="table-card hidden">
+    <div class="overflow-x-auto">
+        <table id="ordersStatusTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Order Number</th>
+                    <th>Order Date</th>
+                    <th>Payment Status</th>
+                    <th>Fulfillment Status</th>
+                    <th>Total Amount</th>
+                    <th>Mushak Status</th>
+                    <th>Time of Supply Trigger</th>
+                    <th style="width:120px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in orders_with_mushak_status %}
+                {% set o = item.order %}
+                <tr>
+                    <td class="text-xs font-semibold text-gray-900">
+                        <a href="/orders/manage" class="text-indigo-600 hover:underline">
+                            {{ o.order_number }}
+                        </a>
+                    </td>
+                    <td class="text-xs text-gray-600 whitespace-nowrap">
+                        {{ o.created_at.strftime('%Y-%m-%d %H:%M') if o.created_at else 'N/A' }}
+                    </td>
+                    <td class="text-xs">
+                        {% set p_stat = o.payment_status.value if o.payment_status.value is defined else o.payment_status %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium uppercase tracking-wide
+                            {% if p_stat in ['paid'] %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                            {% elif p_stat in ['partially_paid'] %}bg-sky-50 text-sky-700 border border-sky-200
+                            {% else %}bg-amber-50 text-amber-700 border border-amber-200{% endif %}">
+                            {{ p_stat }}
+                        </span>
+                    </td>
+                    <td class="text-xs">
+                        {% set f_stat = o.fulfillment_status.value if o.fulfillment_status.value is defined else o.fulfillment_status %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium uppercase tracking-wide
+                            {% if f_stat in ['shipped', 'delivered'] %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                            {% elif f_stat in ['partially_shipped', 'processing'] %}bg-sky-50 text-sky-700 border border-sky-200
+                            {% else %}bg-gray-100 text-gray-700 border border-gray-200{% endif %}">
+                            {{ f_stat }}
+                        </span>
+                    </td>
+                    <td class="text-xs font-bold text-gray-900">
+                        {{ o.currency }} {{ "%.2f"|format(o.total_amount) }}
+                    </td>
+                    <td>
+                        {% if item.mushak_status == 'Generated' %}
+                        <span class="badge badge-issued">
+                            <i class="fas fa-check-circle text-[8px] mr-1"></i> Generated
+                        </span>
+                        {% elif item.mushak_status == 'Ready to Generate' %}
+                        <span class="badge badge-ready">
+                            <i class="fas fa-bolt text-[8px] mr-1"></i> Ready to Generate
+                        </span>
+                        {% else %}
+                        <span class="badge badge-pending">
+                            <i class="fas fa-clock text-[8px] mr-1"></i> Pending Trigger
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {{ item.trigger_reason }}
+                    </td>
+                    <td>
+                        {% if item.can_generate %}
+                        <button type="button" onclick="quickGenerateMushak('{{ o.id }}', '{{ o.business_id }}')" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded text-[11px] transition-colors flex items-center gap-1 shadow-sm">
+                            <i class="fas fa-plus-circle"></i> Generate
+                        </button>
+                        {% elif item.mushak_challan %}
+                        <a href="/finance/invoices/{{ item.mushak_challan.invoice_id }}/mushak-6-3/pdf" target="_blank" class="action-btn pdf" title="View Mushak 6.3 PDF">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                        {% else %}
+                        <span class="text-gray-400 text-xs italic">Waiting</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <!-- Generate Mushak 6.3 Modal -->
 <div id="generate-mushak-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden">
@@ -356,9 +466,10 @@
                 </div>
                 <select id="modal_order_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
                     <option value="">-- Select Order from E-Commerce Order List --</option>
-                    {% for o in orders %}
-                    <option value="{{ o.id }}">
-                        {{ o.order_number }} - Total: {{ o.currency }} {{ "%.2f"|format(o.total_amount) }} ({{ o.created_at.strftime('%Y-%m-%d') if o.created_at else '' }})
+                    {% for item in orders_with_mushak_status %}
+                    {% set o = item.order %}
+                    <option value="{{ o.id }}" data-business-id="{{ o.business_id }}" {% if not item.can_generate and item.mushak_status == 'Generated' %}disabled{% endif %}>
+                        {{ o.order_number }} - Status: [{{ item.mushak_status }}] - Total: {{ o.currency }} {{ "%.2f"|format(o.total_amount) }}
                     </option>
                     {% endfor %}
                 </select>
@@ -421,6 +532,59 @@ $(document).ready(function () {
         table.columns().search('').draw();
     });
 
+function switchTab(tab) {
+    if (tab === 'issued') {
+        $('#tab-issued').addClass('active');
+        $('#tab-orders').removeClass('active');
+        $('#issued-table-container').removeClass('hidden');
+        $('#orders-table-container').addClass('hidden');
+    } else {
+        $('#tab-orders').addClass('active');
+        $('#tab-issued').removeClass('active');
+        $('#orders-table-container').removeClass('hidden');
+        $('#issued-table-container').addClass('hidden');
+    }
+}
+
+function quickGenerateMushak(orderId, bizId) {
+    Swal.fire({
+        title: 'Generate Mushak 6.3?',
+        text: 'Time of Supply conditions met. Proceed to generate official Mushak 6.3 Tax Invoice?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        confirmButtonText: 'Yes, Generate'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.showLoading();
+            fetch(`/finance/mushak-6-3/generate-from-order/${orderId}?business_id=${bizId}`, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json' }
+            })
+            .then(async res => {
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to generate Mushak 6.3 tax invoice.');
+                }
+                return res.json();
+            })
+            .then(data => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Mushak 6.3 Generated',
+                    html: `Successfully generated Mushak 6.3 Challan: <strong>${data.mushak_number}</strong>`,
+                    confirmButtonColor: '#4f46e5'
+                }).then(() => {
+                    window.location.reload();
+                });
+            })
+            .catch(err => {
+                showErrorAlert('Generation Failed', err.message);
+            });
+        }
+    });
+}
+
     function updateFooter(api) {
         var info = api.page.info();
         var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
@@ -473,9 +637,29 @@ $(document).ready(function () {
 
 function movePage(p) { window._dtTable.page(p).draw('page'); }
 
+function filterModalOrders() {
+    const selectedBizId = $('#modal_business_id').val();
+    $('#modal_order_id option').each(function() {
+        const optionBizId = $(this).attr('data-business-id');
+        if (!optionBizId) {
+            $(this).show(); // Default header option
+        } else if (!selectedBizId || optionBizId == selectedBizId) {
+            $(this).show().prop('disabled', $(this).data('was-disabled') || false);
+        } else {
+            $(this).hide();
+        }
+    });
+    $('#modal_order_id').val('');
+}
+
 function openGenerateModal() {
+    filterModalOrders();
     document.getElementById('generate-mushak-modal').classList.remove('hidden');
 }
+
+$('#modal_business_id').on('change', function() {
+    filterModalOrders();
+});
 
 function closeGenerateModal() {
     document.getElementById('generate-mushak-modal').classList.add('hidden');

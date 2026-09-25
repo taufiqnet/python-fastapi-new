@@ -48,6 +48,7 @@ class Account(Base, UUIDMixin, TimestampMixin):
     )
     is_system: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     parent: Mapped["Account | None"] = relationship(
@@ -80,6 +81,7 @@ class FiscalYear(Base, UUIDMixin, TimestampMixin):
         String(20), default="open", nullable=False
     )  # open, closed, locked
     is_current: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     periods: Mapped[list["FiscalPeriod"]] = relationship(
         "FiscalPeriod", back_populates="fiscal_year", cascade="all, delete-orphan"
@@ -113,6 +115,7 @@ class FiscalPeriod(Base, UUIDMixin, TimestampMixin):
     status: Mapped[str] = mapped_column(
         String(20), default="open", nullable=False
     )  # open, locked
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     fiscal_year: Mapped["FiscalYear"] = relationship("FiscalYear", back_populates="periods")
 
@@ -139,6 +142,7 @@ class JournalVoucher(Base, UUIDMixin, TimestampMixin):
     status: Mapped[str] = mapped_column(
         String(20), default="draft", nullable=False
     )  # draft, posted, cancelled
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -211,6 +215,7 @@ class Customer(Base, UUIDMixin, TimestampMixin):
     phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class SalesInvoice(Base, UUIDMixin, TimestampMixin):
@@ -260,6 +265,7 @@ class SalesInvoice(Base, UUIDMixin, TimestampMixin):
     status: Mapped[str] = mapped_column(
         String(20), default="draft", nullable=False
     )  # draft, posted, cancelled
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     voucher_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -340,6 +346,7 @@ class MushakChallan(Base, UUIDMixin, TimestampMixin):
     fiscal_year: Mapped[str] = mapped_column(String(50), nullable=False)
     bin: Mapped[str] = mapped_column(String(50), nullable=False)
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     issued_by_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("users.id", ondelete="SET NULL"),
@@ -379,6 +386,7 @@ class CreditDebitNote(Base, UUIDMixin, TimestampMixin):
     status: Mapped[str] = mapped_column(
         String(20), default="draft", nullable=False
     )  # draft, posted, cancelled
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     voucher_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -408,6 +416,7 @@ class SalesImportBatch(Base, UUIDMixin, TimestampMixin):
     error_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error_summary: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     raw_data: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_by_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("users.id", ondelete="SET NULL"),

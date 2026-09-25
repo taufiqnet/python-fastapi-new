@@ -56,6 +56,20 @@ class ShippingService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Shipment not found"
             )
         updated = self.repository.update_tracking(db, shipment, update)
+        if updated.status.lower() in ("shipped", "in_transit", "delivered", "out_for_delivery"):
+            try:
+                from app.modules.ecommerce.orders.models import Order, OrderFulfillmentStatus
+                from app.modules.ecommerce.orders.schemas import OrderStatusUpdate
+                from app.modules.ecommerce.orders.service import OrderService
+                order = db.query(Order).filter(Order.id == updated.order_id).first()
+                if order:
+                    new_f = OrderFulfillmentStatus.SHIPPED if updated.status.lower() in ("shipped", "in_transit", "out_for_delivery") else OrderFulfillmentStatus.DELIVERED
+                    if order.fulfillment_status != new_f:
+                        OrderService().update_order_status(
+                            db, order.id, OrderStatusUpdate(fulfillment_status=new_f), business_id=business_id
+                        )
+            except Exception:
+                pass
         return ShipmentOut.model_validate(updated)
 
     def create_shipping_zone(

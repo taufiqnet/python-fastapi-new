@@ -314,6 +314,16 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "description": "Generate Trial Balance, Profit & Loss, Balance Sheet, and General Ledger statements.",
                 "active_page": "finance_reports",
             },
+            {
+                "key": "finance_seed_data",
+                "title": "Seed Finance Data",
+                "icon": "fas fa-database",
+                "url": "/finance/seed-data/manage",
+                "permission_code": "finance:seed_data:view",
+                "plans": ["Free", "Basic", "Pro", "Enterprise"],
+                "description": "System Admin tool to seed or clear finance testing data.",
+                "active_page": "finance_seed_data",
+            },
         ],
     },
     # --- ECOMMERCE MODULES ---
@@ -580,6 +590,10 @@ def resolve_menu_for_user(user: Any) -> Dict[str, Any]:
             perm_code = item["permission_code"]
             allowed_plans = item["plans"]
 
+            # System admin restricted menu items check
+            if item["key"] == "finance_seed_data" and not is_superuser:
+                continue
+
             # User level check (RBAC role/user permission check)
             # If user has individual/role permission, check if plan includes it
             user_has_rbac = is_superuser or (
@@ -679,6 +693,9 @@ def resolve_features_plans_for_user(user: Any) -> Dict[str, Any]:
         items = []
 
         for item in section["items"]:
+            if item["key"] == "finance_seed_data" and not is_superuser:
+                continue
+
             perm_code = item["permission_code"]
             allowed_plans = item["plans"]
 

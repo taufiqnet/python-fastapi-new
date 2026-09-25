@@ -232,7 +232,12 @@
                         <span class="code-badge">{{ a.code }}</span>
                     </td>
                     <td>
-                        <span class="title-name">{{ a.name }}</span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="title-name">{{ a.name }}</span>
+                            {% if a.is_testing %}
+                            <span class="badge bg-warning text-dark"><i class="fas fa-vial"></i> Testing</span>
+                            {% endif %}
+                        </div>
                         {% if a.description %}
                         <p class="text-[11px] text-gray-400 mt-0.5 truncate max-w-xs">{{ a.description }}</p>
                         {% endif %}

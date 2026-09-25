@@ -226,7 +226,12 @@
                 {% for inv in invoices %}
                 <tr id="invoice-row-{{ inv.id }}">
                     <td>
-                        <span class="num-badge">{{ inv.invoice_number }}</span>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="num-badge">{{ inv.invoice_number }}</span>
+                            {% if inv.is_testing %}
+                            <span class="badge bg-warning text-dark"><i class="fas fa-vial"></i> Testing</span>
+                            {% endif %}
+                        </div>
                     </td>
                     <td class="text-xs text-gray-600 font-medium">
                         {{ inv.issue_date }}

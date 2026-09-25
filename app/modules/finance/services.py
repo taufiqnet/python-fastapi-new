@@ -1244,6 +1244,193 @@ class Mushak63Service:
         )
 
     @staticmethod
+    def is_order_mushak_eligible(order, db_sync=None) -> tuple[bool, str]:
+        """
+        Determines if an order is eligible for Mushak 6.3 generation based on Time of Supply rules:
+        1. Payment Received: payment_status in ('paid', 'partially_paid')
+        2. Goods Dispatched: fulfillment_status in ('shipped', 'partially_shipped', 'delivered', 'dispatched', 'out_for_delivery')
+        3. Invoice Issued: Commercial invoice created and posted for order.
+        """
+        p_stat = str(getattr(order.payment_status, "value", order.payment_status)).lower()
+        f_stat = str(getattr(order.fulfillment_status, "value", order.fulfillment_status)).lower()
+
+        is_paid = p_stat in ("paid", "partially_paid")
+        is_dispatched = f_stat in ("shipped", "partially_shipped", "delivered", "dispatched", "out_for_delivery")
+
+        has_posted_invoice = False
+        if db_sync is not None:
+            inv = db_sync.query(SalesInvoice).filter(
+                SalesInvoice.business_id == order.business_id,
+                SalesInvoice.so_number == order.order_number,
+                SalesInvoice.status == "posted"
+            ).first()
+            if inv:
+                has_posted_invoice = True
+
+        if is_paid or is_dispatched or has_posted_invoice:
+            reasons = []
+            if is_paid:
+                reasons.append(f"Payment Received ({p_stat})")
+            if is_dispatched:
+                reasons.append(f"Goods Dispatched ({f_stat})")
+            if has_posted_invoice:
+                reasons.append("Invoice Issued")
+            return True, ", ".join(reasons)
+
+        return False, "Pending Trigger (Unpaid, Unshipped, No Invoice)"
+
+    @staticmethod
+    def generate_mushak_from_order_sync(
+        db, business_id: int, user_id: int | None, order_id: uuid.UUID
+    ) -> MushakChallan:
+        """Synchronous version for sync DB sessions (ORM Session)."""
+        from app.modules.ecommerce.orders.models import Order
+
+        if isinstance(order_id, str):
+            order_id = uuid.UUID(order_id)
+
+        order = db.query(Order).filter(Order.id == order_id, Order.business_id == business_id).first()
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found for this business profile.",
+            )
+
+        # Check eligibility under Time of Supply rules
+        eligible, reason = Mushak63Service.is_order_mushak_eligible(order, db_sync=db)
+        if not eligible:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Order {order.order_number} is not yet eligible for Mushak 6.3 generation ({reason}).",
+            )
+
+        # Check if invoice already exists for this order SO number
+        existing_inv = db.query(SalesInvoice).filter(
+            SalesInvoice.business_id == business_id,
+            SalesInvoice.so_number == order.order_number,
+        ).first()
+
+        if existing_inv and existing_inv.mushak_challan:
+            return existing_inv.mushak_challan
+
+        if not existing_inv:
+            shipping_addr = next(
+                (a for a in order.addresses if a.address_type == "shipping"),
+                order.addresses[0] if order.addresses else None,
+            )
+            buyer_name = shipping_addr.recipient_name if shipping_addr else (order.guest_email or f"Customer #{order.user_id}")
+            buyer_addr = (
+                f"{shipping_addr.street}, {shipping_addr.city}, {shipping_addr.country}".strip(", ")
+                if shipping_addr
+                else ""
+            )
+
+            # Generate Sales Invoice Number
+            fy_str = (order.created_at.date() if hasattr(order.created_at, "date") else date.today()).strftime("%Y%m")
+            cnt = db.query(SalesInvoice).filter(
+                SalesInvoice.business_id == business_id,
+                SalesInvoice.invoice_number.like(f"INV-{fy_str}-%"),
+            ).count()
+            inv_number = f"INV-{fy_str}-{(cnt + 1):05d}"
+
+            tot_subtotal = Decimal("0.00")
+            tot_sd = Decimal("0.00")
+            tot_vat = Decimal("0.00")
+            tot_payable = Decimal("0.00")
+            lines_to_add = []
+
+            for idx, item in enumerate(order.items, start=1):
+                qty = Decimal(str(item.quantity))
+                uprice = Decimal(str(item.unit_price))
+                tot_price = round(qty * uprice, 2)
+                sd_rate = Decimal("0.00")
+                sd_amt = Decimal("0.00")
+                vat_rate = Decimal("15.00")
+                vat_amt = round(tot_price * (vat_rate / Decimal("100.00")), 2)
+                line_payable = tot_price + sd_amt + vat_amt
+
+                tot_subtotal += tot_price
+                tot_sd += sd_amt
+                tot_vat += vat_amt
+                tot_payable += line_payable
+
+                lines_to_add.append(
+                    SalesInvoiceLine(
+                        sl_no=idx,
+                        description=f"{item.product_title} ({item.product_sku})",
+                        uom="Pcs",
+                        quantity=qty,
+                        unit_price=uprice,
+                        total_price=tot_price,
+                        sd_rate=sd_rate,
+                        sd_amount=sd_amt,
+                        vat_rate=vat_rate,
+                        vat_amount=vat_amt,
+                        price_incl_duties_taxes=line_payable,
+                    )
+                )
+
+            issue_dt = order.created_at.date() if hasattr(order.created_at, "date") else date.today()
+            existing_inv = SalesInvoice(
+                business_id=business_id,
+                invoice_number=inv_number,
+                issue_date=issue_dt,
+                buyer_name=buyer_name,
+                buyer_address=buyer_addr,
+                so_number=order.order_number,
+                total_subtotal=tot_subtotal,
+                total_sd=tot_sd,
+                total_vat=tot_vat,
+                total_payable=tot_payable,
+                status="posted",
+            )
+            db.add(existing_inv)
+            db.flush()
+
+            for line in lines_to_add:
+                line.invoice_id = existing_inv.id
+                db.add(line)
+            db.flush()
+        elif existing_inv.status != "posted":
+            existing_inv.status = "posted"
+            db.flush()
+
+        # Check again if mushak_challan exists for existing_inv
+        mushak = db.query(MushakChallan).filter(MushakChallan.invoice_id == existing_inv.id).first()
+        if mushak:
+            return mushak
+
+        # Issue Mushak Challan
+        biz = db.query(BusinessProfile).filter(BusinessProfile.id == business_id).first()
+        issuer_bin = (biz.vat_number if biz and biz.vat_number else "BD123456789").strip()
+        fy_label = Mushak63Service._get_fiscal_year_label(existing_inv.issue_date)
+
+        max_sl = db.query(func.max(MushakChallan.serial_number)).filter(
+            MushakChallan.business_id == business_id,
+            MushakChallan.bin == issuer_bin,
+            MushakChallan.fiscal_year == fy_label,
+        ).scalar() or 0
+        next_sl = max_sl + 1
+
+        fy_compact = fy_label.replace("-", "")
+        mushak_num = f"M6.3-{issuer_bin}-{fy_compact}-{next_sl:06d}"
+
+        mushak = MushakChallan(
+            business_id=business_id,
+            invoice_id=existing_inv.id,
+            mushak_number=mushak_num,
+            serial_number=next_sl,
+            fiscal_year=fy_label,
+            bin=issuer_bin,
+            issued_at=datetime.now(timezone.utc),
+            issued_by_id=user_id,
+        )
+        db.add(mushak)
+        db.commit()
+        db.refresh(mushak)
+        return mushak
+
+    @staticmethod
     async def generate_mushak_from_order(
         db: AsyncSession, business_id: int, user_id: int | None, order_id: uuid.UUID
     ) -> MushakChallan:
@@ -1262,7 +1449,12 @@ class Mushak63Service:
                 detail="Order not found for this business profile.",
             )
 
-        # Check if invoice already exists for this order SO number
+        # Check eligibility under Time of Supply rules
+        p_stat = str(getattr(order.payment_status, "value", order.payment_status)).lower()
+        f_stat = str(getattr(order.fulfillment_status, "value", order.fulfillment_status)).lower()
+        is_paid = p_stat in ("paid", "partially_paid")
+        is_dispatched = f_stat in ("shipped", "partially_shipped", "delivered", "dispatched", "out_for_delivery")
+
         existing_inv_res = await db.execute(
             select(SalesInvoice)
             .options(selectinload(SalesInvoice.mushak_challan))
@@ -1272,6 +1464,16 @@ class Mushak63Service:
             )
         )
         invoice = existing_inv_res.scalar_one_or_none()
+        has_posted_invoice = (invoice is not None and invoice.status == "posted")
+
+        if not (is_paid or is_dispatched or has_posted_invoice):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Order {order.order_number} is not eligible for Mushak 6.3 generation (unpaid, unshipped, no posted invoice).",
+            )
+
+        if invoice and invoice.mushak_challan:
+            return invoice.mushak_challan
 
         if not invoice:
             # Extract buyer shipping address
@@ -1288,8 +1490,6 @@ class Mushak63Service:
 
             lines_create = []
             for item in order.items:
-                # Calculate VAT percentage from item tax amount if available
-                # NBR standard is 15% VAT
                 vat_pct = Decimal("15.00")
                 lines_create.append(
                     SalesInvoiceLineCreate(
@@ -1323,6 +1523,7 @@ class Mushak63Service:
 
         return await Mushak63Service.issue_mushak_challan(db, business_id, user_id, invoice.id)
 
+
     @staticmethod
     async def generate_mushak_html(
         db: AsyncSession, business_id: int, invoice_id: uuid.UUID
@@ -1337,6 +1538,43 @@ class Mushak63Service:
         template = env.get_template("mushak_6_3.html")
 
         return template.render(**json_view.model_dump())
+
+
+def generateMushak63(order_id: uuid.UUID | str, db=None, business_id: int | None = None, user_id: int | None = None):
+    """
+    Service function generateMushak63(orderId) that executes when any Time of Supply conditions are met.
+    Works with both synchronous and asynchronous DB sessions.
+    """
+    if isinstance(order_id, str):
+        order_id = uuid.UUID(order_id)
+
+    if db is None:
+        from app.database import SessionLocal
+        db_sess = SessionLocal()
+        try:
+            from app.modules.ecommerce.orders.models import Order
+            ord_obj = db_sess.query(Order).filter(Order.id == order_id).first()
+            if not ord_obj:
+                return None
+            biz_id = business_id or ord_obj.business_id
+            mushak = Mushak63Service.generate_mushak_from_order_sync(db_sess, biz_id, user_id, order_id)
+            return mushak
+        finally:
+            db_sess.close()
+
+    # Check if db is sync or async session
+    if hasattr(db, "query"):
+        from app.modules.ecommerce.orders.models import Order
+        ord_obj = db.query(Order).filter(Order.id == order_id).first()
+        if not ord_obj:
+            return None
+        biz_id = business_id or ord_obj.business_id
+        return Mushak63Service.generate_mushak_from_order_sync(db, biz_id, user_id, order_id)
+    else:
+        # Async session
+        if business_id is None:
+            raise ValueError("business_id is required for async session execution without order pre-fetch")
+        return Mushak63Service.generate_mushak_from_order(db, business_id, user_id, order_id)
 
 
 class CreditDebitNoteService:

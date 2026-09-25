@@ -16,7 +16,8 @@ from app.core.tenancy.scoping import resolve_business_id, verify_record_ownershi
 from sqlalchemy.orm import selectinload
 
 from app.modules.ecommerce.orders.models import Order
-from app.modules.finance.models import Account, FiscalYear, MushakChallan, SalesInvoice
+from fastapi import HTTPException, status
+from app.modules.finance.models import Account, Customer, FiscalYear, JournalVoucher, MushakChallan, SalesInvoice
 from app.modules.finance.services import (
     AccountService,
     FinanceReportService,
@@ -34,7 +35,7 @@ templates = Jinja2Templates(directory="app/templates")
 # -----------------------------------------------------------------------------
 async def _get_business_profiles(
     db: AsyncSession, current_user: User, requested_business_id: int | None
-) -> tuple[int, list[BusinessProfile], dict[int, str]]:
+) -> tuple[int | None, list[BusinessProfile], dict[int, str]]:
     resolved_biz_id = resolve_business_id(current_user, requested_business_id)
 
     stmt = select(BusinessProfile)
@@ -43,6 +44,9 @@ async def _get_business_profiles(
     res = await db.execute(stmt)
     businesses = list(res.scalars().all())
     biz_map = {b.id: b.name_en for b in businesses}
+
+    if resolved_biz_id is None and businesses:
+        resolved_biz_id = businesses[0].id
 
     return resolved_biz_id, businesses, biz_map
 
@@ -259,14 +263,67 @@ async def manage_mushak_63_view(
     mushak_res = await db.execute(mushak_stmt)
     mushaks = list(mushak_res.scalars().all())
 
-    # Fetch available e-commerce orders for business profile to select in modal
+    # Fetch all SalesInvoices with mushak_challan for business profile
+    inv_stmt = (
+        select(SalesInvoice)
+        .options(selectinload(SalesInvoice.mushak_challan))
+        .where(SalesInvoice.business_id == resolved_biz_id)
+    )
+    inv_res = await db.execute(inv_stmt)
+    invoices = list(inv_res.scalars().all())
+    inv_map = {inv.so_number: inv for inv in invoices if inv.so_number}
+
+    # Fetch available e-commerce orders for business profile
     order_stmt = (
         select(Order)
+        .options(selectinload(Order.items), selectinload(Order.addresses))
         .where(Order.business_id == resolved_biz_id)
         .order_by(Order.created_at.desc())
     )
     order_res = await db.execute(order_stmt)
     orders = list(order_res.scalars().all())
+
+    orders_with_mushak_status = []
+    ready_to_generate_count = 0
+    pending_trigger_count = 0
+
+    for o in orders:
+        inv = inv_map.get(o.order_number)
+        has_mushak = (inv is not None and inv.mushak_challan is not None)
+
+        p_stat = str(getattr(o.payment_status, "value", o.payment_status)).lower()
+        f_stat = str(getattr(o.fulfillment_status, "value", o.fulfillment_status)).lower()
+        is_paid = p_stat in ("paid", "partially_paid")
+        is_dispatched = f_stat in ("shipped", "partially_shipped", "delivered", "dispatched", "out_for_delivery")
+        has_posted_inv = (inv is not None and inv.status == "posted")
+
+        if has_mushak:
+            m_status = "Generated"
+            reason = "Mushak 6.3 Tax Invoice Issued"
+            can_gen = False
+        elif is_paid or is_dispatched or has_posted_inv:
+            m_status = "Ready to Generate"
+            reasons = []
+            if is_paid: reasons.append(f"Payment Received ({p_stat})")
+            if is_dispatched: reasons.append(f"Goods Dispatched ({f_stat})")
+            if has_posted_inv: reasons.append("Invoice Issued")
+            reason = ", ".join(reasons)
+            can_gen = True
+            ready_to_generate_count += 1
+        else:
+            m_status = "Pending Trigger"
+            reason = "Pending Trigger (Unpaid, Unshipped, No Invoice)"
+            can_gen = False
+            pending_trigger_count += 1
+
+        orders_with_mushak_status.append({
+            "order": o,
+            "mushak_status": m_status,
+            "mushak_challan": inv.mushak_challan if (inv and inv.mushak_challan) else None,
+            "invoice": inv,
+            "trigger_reason": reason,
+            "can_generate": can_gen,
+        })
 
     total_mushak_count = len(mushaks)
     total_taxable_val = sum(m.invoice.total_subtotal for m in mushaks if m.invoice)
@@ -281,6 +338,9 @@ async def manage_mushak_63_view(
             "active_page": "finance_mushak",
             "mushaks": mushaks,
             "orders": orders,
+            "orders_with_mushak_status": orders_with_mushak_status,
+            "ready_to_generate_count": ready_to_generate_count,
+            "pending_trigger_count": pending_trigger_count,
             "businesses": businesses,
             "biz_map": biz_map,
             "selected_business_id": resolved_biz_id,
@@ -293,7 +353,75 @@ async def manage_mushak_63_view(
 
 
 # -----------------------------------------------------------------------------
-# 6. Financial Reports Management
+# 6. Seed Finance Data Management (System Admin Only)
+# -----------------------------------------------------------------------------
+@router.get(
+    "/seed-data/manage",
+    response_class=HTMLResponse,
+)
+async def manage_seed_data_view(
+    request: Request,
+    business_id: int | None = Query(None),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    if not current_user or not current_user.is_superuser:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only system administrators can access Seed Finance Data operations.",
+        )
+
+    resolved_biz_id, businesses, biz_map = await _get_business_profiles(
+        db, current_user, business_id
+    )
+
+    # Fetch testing metrics for selected business profile
+    acc_res = await db.execute(select(Account).where(Account.business_id == resolved_biz_id))
+    accounts = list(acc_res.scalars().all())
+    test_accounts_count = sum(1 for a in accounts if a.is_testing)
+
+    fy_res = await db.execute(select(FiscalYear).where(FiscalYear.business_id == resolved_biz_id))
+    fiscal_years = list(fy_res.scalars().all())
+    test_fy_count = sum(1 for fy in fiscal_years if fy.is_testing)
+
+    jv_res = await db.execute(select(JournalVoucher).where(JournalVoucher.business_id == resolved_biz_id))
+    vouchers = list(jv_res.scalars().all())
+    test_vouchers_count = sum(1 for v in vouchers if v.is_testing)
+
+    cust_res = await db.execute(select(Customer).where(Customer.business_id == resolved_biz_id))
+    customers = list(cust_res.scalars().all())
+    test_customers_count = sum(1 for c in customers if c.is_testing)
+
+    inv_res = await db.execute(select(SalesInvoice).where(SalesInvoice.business_id == resolved_biz_id))
+    invoices = list(inv_res.scalars().all())
+    test_invoices_count = sum(1 for inv in invoices if inv.is_testing)
+
+    mc_res = await db.execute(select(MushakChallan).where(MushakChallan.business_id == resolved_biz_id))
+    mushaks = list(mc_res.scalars().all())
+    test_mushaks_count = sum(1 for m in mushaks if m.is_testing)
+
+    return templates.TemplateResponse(
+        "modules/finance/seed_data/seed_manage.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "active_page": "finance_seed_data",
+            "businesses": businesses,
+            "biz_map": biz_map,
+            "selected_business_id": resolved_biz_id,
+            "test_accounts_count": test_accounts_count,
+            "test_fy_count": test_fy_count,
+            "test_vouchers_count": test_vouchers_count,
+            "test_customers_count": test_customers_count,
+            "test_invoices_count": test_invoices_count,
+            "test_mushaks_count": test_mushaks_count,
+            "total_test_records": test_accounts_count + test_fy_count + test_vouchers_count + test_customers_count + test_invoices_count + test_mushaks_count,
+        },
+    )
+
+
+# -----------------------------------------------------------------------------
+# 7. Financial Reports Management
 # -----------------------------------------------------------------------------
 @router.get(
     "/reports/manage",

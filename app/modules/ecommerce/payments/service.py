@@ -84,6 +84,18 @@ class PaymentService:
         updated = self.repository.update_payment_status(
             db, payment, PaymentStatus.CAPTURED
         )
+        if payment.order_id:
+            try:
+                from app.modules.ecommerce.orders.models import Order, OrderPaymentStatus
+                from app.modules.ecommerce.orders.schemas import OrderStatusUpdate
+                from app.modules.ecommerce.orders.service import OrderService
+                order = db.query(Order).filter(Order.id == payment.order_id).first()
+                if order and order.payment_status != OrderPaymentStatus.PAID:
+                    OrderService().update_order_status(
+                        db, order.id, OrderStatusUpdate(payment_status=OrderPaymentStatus.PAID), business_id=payment.business_id
+                    )
+            except Exception:
+                pass
         return PaymentOut.model_validate(updated)
 
     def refund_payment(
@@ -143,6 +155,18 @@ class PaymentService:
             new_status = PaymentStatus.PENDING
 
         updated = self.repository.update_payment_status(db, payment, new_status)
+        if new_status == PaymentStatus.CAPTURED and payment.order_id:
+            try:
+                from app.modules.ecommerce.orders.models import Order, OrderPaymentStatus
+                from app.modules.ecommerce.orders.schemas import OrderStatusUpdate
+                from app.modules.ecommerce.orders.service import OrderService
+                order = db.query(Order).filter(Order.id == payment.order_id).first()
+                if order and order.payment_status != OrderPaymentStatus.PAID:
+                    OrderService().update_order_status(
+                        db, order.id, OrderStatusUpdate(payment_status=OrderPaymentStatus.PAID), business_id=payment.business_id
+                    )
+            except Exception:
+                pass
         return PaymentOut.model_validate(updated)
 
     def create_payment_method(
