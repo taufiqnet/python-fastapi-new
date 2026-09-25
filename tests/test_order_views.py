@@ -11,6 +11,8 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base, get_db
 from app.main import app
 from app.core.tenancy.models import BusinessProfile
+from app.core.identity.models import User
+from app.core.deps import get_current_user, get_current_user_optional
 
 sync_engine = create_engine(
     "sqlite:///:memory:",
@@ -42,7 +44,21 @@ async def client(sync_db):
     def _override_get_db():
         yield sync_db
 
+    admin_user = User(
+        id="00000000-0000-0000-0000-000000000001",
+        username="admin",
+        email="admin@example.com",
+        is_superuser=True,
+        is_active=True,
+        business_id=1
+    )
+
+    def _override_get_current_user():
+        return admin_user
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_current_user] = _override_get_current_user
+    app.dependency_overrides[get_current_user_optional] = _override_get_current_user
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

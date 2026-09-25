@@ -243,7 +243,7 @@
                         <div class="cust-id">#{{ c.id }}</div>
                         <div class="flex items-center gap-2 mt-0.5">
                             <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">
-                                {{ c.first_name[0]|upper }}{{ c.last_name[0]|upper }}
+                                {{ c.first_name[0]|upper }}{% if c.last_name %}{{ c.last_name[0]|upper }}{% endif %}
                             </div>
                             <span class="title-name">{{ c.full_name }}</span>
                         </div>

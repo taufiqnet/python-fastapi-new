@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import require_permission
+from app.core.security import get_current_user_optional
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
 from app.database import get_db
@@ -31,6 +32,23 @@ def get_customers(
     return service.get_customers(
         db, skip=skip, limit=limit, business_id=resolved_business_id, is_active=is_active
     )
+
+
+@router.get("/check-phone")
+def check_phone(
+    phone: str = Query(...),
+    business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "customers", "view")),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    existing = service.repository.get_by_phone(db, phone.strip(), business_id=resolved_business_id)
+    if existing:
+        return {
+            "exists": True,
+            "message": "A customer with this phone number already exists."
+        }
+    return {"exists": False, "message": None}
 
 
 @router.get("/{customer_id}", response_model=CustomerOut)

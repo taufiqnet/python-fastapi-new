@@ -32,7 +32,7 @@
         <!-- Top banner block -->
         <div class="p-6 md:p-8 bg-gradient-to-r from-indigo-50 to-white border-b border-gray-100 flex items-center gap-4">
             <div class="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl font-bold shadow-md shrink-0">
-                {{ customer.first_name[0]|upper }}{{ customer.last_name[0]|upper }}
+                {{ customer.first_name[0]|upper }}{% if customer.last_name %}{{ customer.last_name[0]|upper }}{% endif %}
             </div>
             <div>
                 <div class="flex items-center gap-3">
@@ -60,7 +60,9 @@
 
             <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
                 <span class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-1">Last Name</span>
-                <span class="text-sm font-semibold text-gray-900">{{ customer.last_name }}</span>
+                <span class="text-sm font-semibold text-gray-900">
+                    {% if customer.last_name %}{{ customer.last_name }}{% else %}<span class="text-gray-400 italic font-normal">— Not provided —</span>{% endif %}
+                </span>
             </div>
 
             <div class="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
