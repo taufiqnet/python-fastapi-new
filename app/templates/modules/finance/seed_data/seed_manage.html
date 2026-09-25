@@ -178,9 +178,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     didOpen: () => { Swal.showLoading(); }
                 });
 
+                const token = localStorage.getItem('access_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = token.startsWith('Bearer ') ? token : 'Bearer ' + token;
+                }
+
                 fetch(`/finance/seed-data/seed?business_id=${bizId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: headers
                 })
                 .then(res => {
                     if (!res.ok) throw new Error('Failed to seed finance testing data.');
@@ -225,9 +231,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     didOpen: () => { Swal.showLoading(); }
                 });
 
+                const token = localStorage.getItem('access_token');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Authorization'] = token.startsWith('Bearer ') ? token : 'Bearer ' + token;
+                }
+
                 fetch(`/finance/seed-data/clear?business_id=${bizId}`, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: headers
                 })
                 .then(res => {
                     if (!res.ok) throw new Error('Failed to clear finance testing data.');
