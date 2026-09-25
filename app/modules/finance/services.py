@@ -1244,6 +1244,86 @@ class Mushak63Service:
         )
 
     @staticmethod
+    async def generate_mushak_from_order(
+        db: AsyncSession, business_id: int, user_id: int | None, order_id: uuid.UUID
+    ) -> MushakChallan:
+        from app.modules.ecommerce.orders.models import Order
+        from app.modules.finance.schemas import SalesInvoiceCreate, SalesInvoiceLineCreate
+
+        order_res = await db.execute(
+            select(Order)
+            .options(selectinload(Order.items), selectinload(Order.addresses))
+            .where(Order.id == order_id, Order.business_id == business_id)
+        )
+        order = order_res.scalar_one_or_none()
+        if not order:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Order not found for this business profile.",
+            )
+
+        # Check if invoice already exists for this order SO number
+        existing_inv_res = await db.execute(
+            select(SalesInvoice)
+            .options(selectinload(SalesInvoice.mushak_challan))
+            .where(
+                SalesInvoice.business_id == business_id,
+                SalesInvoice.so_number == order.order_number,
+            )
+        )
+        invoice = existing_inv_res.scalar_one_or_none()
+
+        if not invoice:
+            # Extract buyer shipping address
+            shipping_addr = next(
+                (a for a in order.addresses if a.address_type == "shipping"),
+                order.addresses[0] if order.addresses else None,
+            )
+            buyer_name = shipping_addr.recipient_name if shipping_addr else (order.guest_email or f"Customer #{order.user_id}")
+            buyer_addr = (
+                f"{shipping_addr.street}, {shipping_addr.city}, {shipping_addr.country}".strip(", ")
+                if shipping_addr
+                else ""
+            )
+
+            lines_create = []
+            for item in order.items:
+                # Calculate VAT percentage from item tax amount if available
+                # NBR standard is 15% VAT
+                vat_pct = Decimal("15.00")
+                lines_create.append(
+                    SalesInvoiceLineCreate(
+                        description=f"{item.product_title} ({item.product_sku})",
+                        uom="Pcs",
+                        quantity=Decimal(str(item.quantity)),
+                        unit_price=Decimal(str(item.unit_price)),
+                        sd_rate=Decimal("0.00"),
+                        vat_rate=vat_pct,
+                    )
+                )
+
+            issue_dt = order.created_at.date() if hasattr(order.created_at, "date") else date.today()
+
+            inv_data = SalesInvoiceCreate(
+                issue_date=issue_dt,
+                buyer_name=buyer_name,
+                buyer_address=buyer_addr,
+                so_number=order.order_number,
+                lines=lines_create,
+            )
+
+            invoice = await InvoiceService.create_invoice(db, business_id, user_id, inv_data)
+            invoice = await InvoiceService.post_invoice(db, business_id, user_id, invoice.id)
+
+        if invoice.status != "posted":
+            invoice = await InvoiceService.post_invoice(db, business_id, user_id, invoice.id)
+
+        if invoice.mushak_challan:
+            return invoice.mushak_challan
+
+        return await Mushak63Service.issue_mushak_challan(db, business_id, user_id, invoice.id)
+
+    @staticmethod
     async def generate_mushak_html(
         db: AsyncSession, business_id: int, invoice_id: uuid.UUID
     ) -> str:

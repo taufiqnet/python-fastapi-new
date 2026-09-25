@@ -27,6 +27,7 @@ from app.modules.finance.schemas import (
     JournalVoucherCreate,
     JournalVoucherResponse,
     Mushak63JSONView,
+    MushakChallanResponse,
     PeriodLockRequest,
     ProfitAndLossReport,
     SalesInvoiceCreate,
@@ -340,6 +341,24 @@ async def generate_mushak_63(
 ) -> Any:
     resolved_biz = resolve_business_id(current_user, business_id)
     return await Mushak63Service.generate_mushak_json(db, resolved_biz, invoice_id)
+
+
+@router.post(
+    "/mushak-6-3/generate-from-order/{order_id}",
+    response_model=MushakChallanResponse,
+    dependencies=[Depends(require_permission("finance", "mushak", "create"))],
+)
+async def generate_mushak_63_from_order(
+    order_id: uuid.UUID,
+    business_id: int | None = Query(None),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    resolved_biz = resolve_business_id(current_user, business_id)
+    mushak = await Mushak63Service.generate_mushak_from_order(
+        db, resolved_biz, current_user.id, order_id
+    )
+    return mushak
 
 
 @router.get(

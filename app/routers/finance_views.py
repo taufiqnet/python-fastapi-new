@@ -13,7 +13,10 @@ from app.database import get_async_db
 from app.core.identity.models import User
 from app.core.tenancy.models import BusinessProfile
 from app.core.tenancy.scoping import resolve_business_id, verify_record_ownership
-from app.modules.finance.models import Account, FiscalYear
+from sqlalchemy.orm import selectinload
+
+from app.modules.ecommerce.orders.models import Order
+from app.modules.finance.models import Account, FiscalYear, MushakChallan, SalesInvoice
 from app.modules.finance.services import (
     AccountService,
     FinanceReportService,
@@ -227,7 +230,70 @@ async def manage_invoices_view(
 
 
 # -----------------------------------------------------------------------------
-# 5. Financial Reports Management
+# 5. Mushak 6.3 Tax Invoice Management
+# -----------------------------------------------------------------------------
+@router.get(
+    "/mushak-6-3/manage",
+    response_class=HTMLResponse,
+    dependencies=[Depends(require_permission("finance", "mushak", "view"))],
+)
+async def manage_mushak_63_view(
+    request: Request,
+    business_id: int | None = Query(None),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(get_current_user),
+) -> Any:
+    resolved_biz_id, businesses, biz_map = await _get_business_profiles(
+        db, current_user, business_id
+    )
+
+    # Fetch all Mushak Challans for the business profile with invoice & line data
+    mushak_stmt = (
+        select(MushakChallan)
+        .options(
+            selectinload(MushakChallan.invoice).selectinload(SalesInvoice.lines)
+        )
+        .where(MushakChallan.business_id == resolved_biz_id)
+        .order_by(MushakChallan.issued_at.desc())
+    )
+    mushak_res = await db.execute(mushak_stmt)
+    mushaks = list(mushak_res.scalars().all())
+
+    # Fetch available e-commerce orders for business profile to select in modal
+    order_stmt = (
+        select(Order)
+        .where(Order.business_id == resolved_biz_id)
+        .order_by(Order.created_at.desc())
+    )
+    order_res = await db.execute(order_stmt)
+    orders = list(order_res.scalars().all())
+
+    total_mushak_count = len(mushaks)
+    total_taxable_val = sum(m.invoice.total_subtotal for m in mushaks if m.invoice)
+    total_vat_amount = sum(m.invoice.total_vat for m in mushaks if m.invoice)
+    total_payable_val = sum(m.invoice.total_payable for m in mushaks if m.invoice)
+
+    return templates.TemplateResponse(
+        "modules/finance/mushak_6_3_list.html",
+        {
+            "request": request,
+            "current_user": current_user,
+            "active_page": "finance_mushak",
+            "mushaks": mushaks,
+            "orders": orders,
+            "businesses": businesses,
+            "biz_map": biz_map,
+            "selected_business_id": resolved_biz_id,
+            "total_mushak_count": total_mushak_count,
+            "total_taxable_val": total_taxable_val,
+            "total_vat_amount": total_vat_amount,
+            "total_payable_val": total_payable_val,
+        },
+    )
+
+
+# -----------------------------------------------------------------------------
+# 6. Financial Reports Management
 # -----------------------------------------------------------------------------
 @router.get(
     "/reports/manage",

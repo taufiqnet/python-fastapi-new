@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+
+{% block title %}Mushak 6.3 VAT Invoices | Finance & Accounting{% endblock %}
+
+{% block head %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<style>
+    /* ── Brand token ── */
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    /* ── Stat cards ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .stat-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green   { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.yellow  { background: #fefce8; color: #ca8a04; }
+    .stat-icon.sky     { background: #f0f9ff; color: #0284c7; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 18px; font-weight: 700; color: #111827; line-height: 1; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px; margin-bottom: 12px;
+    }
+    .toolbar-search {
+        position: relative; flex: 1; min-width: 200px;
+    }
+    .toolbar-search i {
+        position: absolute; left: 10px; top: 50%;
+        transform: translateY(-50%); color: #9ca3af; font-size: 13px;
+    }
+    .toolbar-search input {
+        width: 100%; padding: 7px 12px 7px 30px;
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        background: #f9fafb; color: #374151; font-size: 13px; outline: none;
+        transition: border-color .15s, background .15s;
+    }
+    .toolbar-search input:focus {
+        border-color: var(--indigo);
+        box-shadow: 0 0 0 2px rgba(79,70,229,.08);
+        background: #fff;
+    }
+    .toolbar select {
+        padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb;
+        border-radius: 8px; background: #f9fafb; color: #374151;
+        font-size: 13px; cursor: pointer; outline: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .toolbar select:focus { border-color: var(--indigo); background-color: #fff; }
+
+    /* ── Table card ── */
+    .table-card {
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 12px; overflow: hidden;
+    }
+
+    /* ── DataTables overrides ── */
+    table.dataTable { border-collapse: collapse !important; }
+    table.dataTable thead tr th {
+        background: #f9fafb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        font-size: 10px !important; font-weight: 700 !important;
+        text-transform: uppercase; letter-spacing: .6px;
+        color: #6b7280 !important; padding: 10px 14px !important;
+        white-space: nowrap;
+    }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+    table.dataTable tbody tr:hover td { background: #f9fafb !important; }
+    table.dataTable.no-footer { border-bottom: 1px solid #f3f4f6 !important; }
+
+    .dataTables_filter,
+    .dataTables_length { display: none !important; }
+
+    .dataTables_wrapper .dataTables_paginate { padding: 10px 14px !important; }
+
+    /* info + per-page footer row */
+    .dt-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 14px; border-top: 1px solid #f3f4f6;
+        background: #fafafa; flex-wrap: wrap; gap: 8px;
+    }
+    .dt-footer .dt-info { font-size: 12px; color: #9ca3af; }
+    .dt-footer .dt-perpage {
+        display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+    }
+    .dt-perpage select {
+        padding: 3px 22px 3px 8px; border: 1px solid #e5e7eb;
+        border-radius: 6px; background: #fff; color: #374151;
+        font-size: 12px; cursor: pointer; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 6px center;
+    }
+
+    /* ── Cell helpers ── */
+    .mushak-num {
+        font-weight: 700;
+        font-size: 13px;
+        color: #4f46e5;
+        font-family: monospace;
+    }
+
+    .badge {
+        display: inline-flex; align-items: center; gap: 4px;
+        padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+        text-transform: capitalize;
+    }
+    .badge-issued { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+
+    .action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 6px;
+        border: 1px solid #e5e7eb; background: #fff;
+        cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none;
+    }
+    .action-btn.pdf { color: #dc2626; }
+    .action-btn.pdf:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+    .action-btn.view { color: #0284c7; }
+    .action-btn.view:hover { background: #f0f9ff; border-color: #bae6fd; color: #0369a1; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Page header ── -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Mushak 6.3 Tax Invoices</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Generate, inspect, and print NBR compliant Mushak 6.3 VAT tax invoices from e-commerce orders</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
+            <i class="fas fa-sliders-h text-sm"></i>
+        </button>
+        <button type="button" onclick="openGenerateModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
+            <i class="fas fa-plus"></i> Generate Mushak 6.3
+        </button>
+    </div>
+</div>
+
+<!-- ── Stat cards ── -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-file-invoice"></i></div>
+        <div>
+            <div class="stat-label">Total Mushak 6.3 Issued</div>
+            <div class="stat-value">{{ total_mushak_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-money-bill-wave"></i></div>
+        <div>
+            <div class="stat-label">Taxable Subtotal</div>
+            <div class="stat-value">BDT {{ "%.2f"|format(total_taxable_val) }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-percent"></i></div>
+        <div>
+            <div class="stat-label">Total Output VAT (15%)</div>
+            <div class="stat-value">BDT {{ "%.2f"|format(total_vat_amount) }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon sky"><i class="fas fa-calculator"></i></div>
+        <div>
+            <div class="stat-label">Total Payable</div>
+            <div class="stat-value">BDT {{ "%.2f"|format(total_payable_val) }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Toolbar ── -->
+<div class="toolbar">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by challan number, SO/order number, buyer, BIN...">
+    </div>
+
+    <select id="filterBusiness">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="button" id="btnClearFilters" 
+            class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+        <i class="fas fa-times-circle text-xs"></i> Clear Filters
+    </button>
+</div>
+
+<!-- ── Table card ── -->
+<div class="table-card">
+    <div class="overflow-x-auto">
+        <table id="mushakTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Challan No</th>
+                    <th>Order Reference / SO</th>
+                    <th>Issued At</th>
+                    <th>Buyer / Customer</th>
+                    <th>Business Profile</th>
+                    <th>Taxable Subtotal</th>
+                    <th>Output VAT</th>
+                    <th>Total Payable</th>
+                    <th>Status</th>
+                    <th style="width:100px">Actions</th>
+                    <th class="hidden"></th><!-- hidden business raw -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in mushaks %}
+                <tr id="mushak-row-{{ m.id }}">
+                    <td>
+                        <a href="/finance/invoices/{{ m.invoice_id }}/mushak-6-3/pdf" target="_blank" class="mushak-num hover:underline">
+                            {{ m.mushak_number }}
+                        </a>
+                        <div class="text-[11px] text-gray-400 font-mono mt-0.5">BIN: {{ m.bin }}</div>
+                    </td>
+                    <td class="text-xs text-gray-700 font-medium">
+                        {% if m.invoice and m.invoice.so_number %}
+                        <a href="/orders/manage" class="text-indigo-600 hover:underline">
+                            {{ m.invoice.so_number }}
+                        </a>
+                        {% else %}
+                        <span class="text-gray-400">N/A</span>
+                        {% endif %}
+                        <div class="text-[11px] text-gray-400">Inv: {{ m.invoice.invoice_number if m.invoice else 'N/A' }}</div>
+                    </td>
+                    <td class="text-xs text-gray-600 whitespace-nowrap">
+                        {{ m.issued_at.strftime('%Y-%m-%d %H:%M') if m.issued_at else 'N/A' }}
+                    </td>
+                    <td class="text-xs text-gray-800">
+                        <div class="font-semibold">{{ m.invoice.buyer_name if m.invoice else 'N/A' }}</div>
+                        {% if m.invoice and m.invoice.buyer_bin %}
+                        <div class="text-[11px] text-gray-400">Buyer BIN: {{ m.invoice.buyer_bin }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {% if m.business_id and biz_map.get(m.business_id) %}
+                        {{ biz_map.get(m.business_id) }}
+                        {% else %}
+                        <span class="text-gray-400">— Default —</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-xs font-medium text-gray-700">
+                        BDT {{ "%.2f"|format(m.invoice.total_subtotal) if m.invoice else '0.00' }}
+                    </td>
+                    <td class="text-xs font-medium text-amber-600">
+                        BDT {{ "%.2f"|format(m.invoice.total_vat) if m.invoice else '0.00' }}
+                    </td>
+                    <td class="text-xs font-bold text-gray-900">
+                        BDT {{ "%.2f"|format(m.invoice.total_payable) if m.invoice else '0.00' }}
+                    </td>
+                    <td>
+                        <span class="badge badge-issued">
+                            <i class="fas fa-check-circle text-[8px] mr-1"></i> Issued
+                        </span>
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <a href="/finance/invoices/{{ m.invoice_id }}/mushak-6-3/pdf" target="_blank" class="action-btn pdf" title="View / Print Mushak 6.3 PDF">
+                                <i class="fas fa-file-pdf"></i>
+                            </a>
+                            <a href="/finance/invoices/manage" class="action-btn view" title="View Sales Invoice">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                    <td class="hidden">{% if m.business_id and biz_map.get(m.business_id) %}{{ biz_map.get(m.business_id) }}{% else %}Default{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Custom footer -->
+    <div class="dt-footer">
+        <div class="dt-info" id="dtInfo"></div>
+        <div class="flex items-center gap-4 flex-wrap">
+            <div class="dt-perpage">
+                Show
+                <select id="dtPerPage">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+                entries
+            </div>
+            <div id="dtPagination"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Generate Mushak 6.3 Modal -->
+<div id="generate-mushak-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl max-w-lg w-full overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-file-invoice text-indigo-600"></i> Generate Mushak 6.3 Tax Invoice
+            </h3>
+            <button type="button" onclick="closeGenerateModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <form id="generate-mushak-form" class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Business Profile <span class="text-rose-500">*</span></label>
+                {% if current_user and current_user.is_superuser %}
+                <select id="modal_business_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+                    <option value="">-- Select Business --</option>
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if selected_business_id == b.id or (businesses|length == 1) %}selected{% endif %}>{{ b.name_en }}</option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                <select id="modal_business_id" required disabled class="w-full text-xs border border-gray-200 bg-gray-50 rounded-lg p-2.5 outline-none cursor-not-allowed">
+                    {% for b in businesses %}
+                    {% if current_user and current_user.business_id == b.id %}
+                    <option value="{{ b.id }}" selected>{{ b.name_en }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+                {% endif %}
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-semibold text-gray-700">Select E-Commerce Order <span class="text-rose-500">*</span></label>
+                    <a href="/orders/manage" target="_blank" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium underline">
+                        <i class="fas fa-external-link-alt text-[10px]"></i> Order List
+                    </a>
+                </div>
+                <select id="modal_order_id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none">
+                    <option value="">-- Select Order from E-Commerce Order List --</option>
+                    {% for o in orders %}
+                    <option value="{{ o.id }}">
+                        {{ o.order_number }} - Total: {{ o.currency }} {{ "%.2f"|format(o.total_amount) }} ({{ o.created_at.strftime('%Y-%m-%d') if o.created_at else '' }})
+                    </option>
+                    {% endfor %}
+                </select>
+                <p class="text-[11px] text-gray-400 mt-1">Select an order from http://127.0.0.1:8000/orders/manage to issue a Mushak 6.3 Challan.</p>
+            </div>
+
+            <div id="generate-loading" class="hidden p-3 bg-indigo-50 rounded-lg text-xs text-indigo-700 flex items-center gap-2">
+                <i class="fas fa-spinner fa-spin"></i> Generating Mushak 6.3 VAT Tax Invoice...
+            </div>
+
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeGenerateModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-check-circle text-[10px]"></i> Generate Mushak 6.3
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    var table = $('#mushakTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        dom: 'rt',
+        columnDefs: [{ targets: [10], visible: false, searchable: true }],
+        order: [],
+        language: { emptyTable: "No Mushak 6.3 tax invoices found." },
+        drawCallback: function () { updateFooter(this.api()); }
+    });
+
+    $('#customSearch').on('input', function () { table.search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { 
+        if (this.value) {
+            window.location.href = '/finance/mushak-6-3/manage?business_id=' + $(this).find(':selected').val();
+        } else {
+            table.column(10).search('').draw(); 
+        }
+    });
+    $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
+
+    $('#btnToggleFilters').on('click', function() {
+        $('.toolbar').slideToggle(200);
+    });
+
+    $('#btnClearFilters').on('click', function() {
+        $('#customSearch').val('');
+        table.search('');
+        $('#filterBusiness').val('');
+        table.columns().search('').draw();
+    });
+
+    function updateFooter(api) {
+        var info = api.page.info();
+        var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
+        var end   = Math.min(info.end, info.recordsDisplay);
+        var total = info.recordsDisplay;
+        var overall = info.recordsTotal;
+
+        if (total === 0) {
+            $('#dtInfo').text('No entries found');
+        } else if (total < overall) {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' filtered (total ' + overall + ')');
+        } else {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' entries');
+        }
+
+        var pages = info.pages;
+        var current = info.page;
+        var html = '';
+        var btnClass = 'inline-flex items-center justify-center w-7 h-7 rounded text-xs border transition-colors ';
+        var base   = btnClass + 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer';
+        var active = btnClass + 'border-indigo-600 bg-indigo-600 text-white font-semibold cursor-default';
+        var disabled = btnClass + 'border-gray-100 bg-white text-gray-300 cursor-default';
+
+        if (current === 0) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        }
+
+        var start_p = Math.max(0, current - 2);
+        var end_p   = Math.min(pages - 1, current + 2);
+        if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
+        if (start_p > 1) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        for (var i = start_p; i <= end_p; i++) {
+            html += '<button class="' + (i === current ? active : base) + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
+        }
+        if (end_p < pages - 2) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
+
+        if (current >= pages - 1) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        }
+
+        $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
+    }
+    window._dtTable = table;
+});
+
+function movePage(p) { window._dtTable.page(p).draw('page'); }
+
+function openGenerateModal() {
+    document.getElementById('generate-mushak-modal').classList.remove('hidden');
+}
+
+function closeGenerateModal() {
+    document.getElementById('generate-mushak-modal').classList.add('hidden');
+    document.getElementById('generate-mushak-form').reset();
+    document.getElementById('generate-loading').classList.add('hidden');
+}
+
+document.getElementById('generate-mushak-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const bizId = document.getElementById('modal_business_id').value;
+    const orderId = document.getElementById('modal_order_id').value;
+
+    if (!bizId) {
+        showWarningAlert('Business Required', 'Please select a business profile.');
+        return;
+    }
+    if (!orderId) {
+        showWarningAlert('Order Required', 'Please select an e-commerce order.');
+        return;
+    }
+
+    document.getElementById('generate-loading').classList.remove('hidden');
+
+    fetch(`/finance/mushak-6-3/generate-from-order/${orderId}?business_id=${bizId}`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' }
+    })
+    .then(async res => {
+        document.getElementById('generate-loading').classList.add('hidden');
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to generate Mushak 6.3 tax invoice.');
+        }
+        return res.json();
+    })
+    .then(data => {
+        closeGenerateModal();
+        Swal.fire({
+            icon: 'success',
+            title: 'Mushak 6.3 Generated',
+            html: `Successfully generated Mushak 6.3 Challan: <strong>${data.mushak_number}</strong>`,
+            confirmButtonColor: '#4f46e5'
+        }).then(() => {
+            window.location.reload();
+        });
+    })
+    .catch(err => {
+        document.getElementById('generate-loading').classList.add('hidden');
+        showErrorAlert('Generation Failed', err.message);
+    });
+});
+</script>
+{% endblock %}

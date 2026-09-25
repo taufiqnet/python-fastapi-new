@@ -295,6 +295,16 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "active_page": "finance_invoices",
             },
             {
+                "key": "finance_mushak",
+                "title": "Mushak 6.3",
+                "icon": "fas fa-file-alt",
+                "url": "/finance/mushak-6-3/manage",
+                "permission_code": "finance:mushak:view",
+                "plans": ["Basic", "Pro", "Enterprise"],
+                "description": "Generate and manage Mushak 6.3 VAT tax invoices from sales and e-commerce orders.",
+                "active_page": "finance_mushak",
+            },
+            {
                 "key": "finance_reports",
                 "title": "Financial Reports",
                 "icon": "fas fa-chart-pie",
