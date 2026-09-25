@@ -135,7 +135,7 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <button type="button" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 transition-colors flex items-center justify-center shrink-0" title="Add New Customer">
+                                <button type="button" id="btn-add-customer" class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 transition-colors flex items-center justify-center shrink-0" title="Add New Customer">
                                     <i class="fas fa-plus"></i>
                                 </button>
                             </div>
@@ -415,6 +415,107 @@
 
     </div>
 </form>
+
+<!-- Create Customer Modal -->
+<div id="create-customer-modal" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden transform transition-all">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                    <i class="fas fa-user-plus text-xs"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-gray-900">Create New Customer</h3>
+                    <p class="text-[11px] text-gray-500 font-medium">Add a new customer to your business directory</p>
+                </div>
+            </div>
+            <button type="button" id="btn-close-customer-modal" class="w-8 h-8 rounded-lg hover:bg-gray-200/60 text-gray-400 hover:text-gray-600 transition-colors flex items-center justify-center">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body / Form -->
+        <form id="modal-customer-form" class="p-6 space-y-4">
+            <!-- Inline Error Box -->
+            <div id="modal-customer-error" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+                <i class="fas fa-exclamation-circle shrink-0 text-sm"></i>
+                <span id="modal-customer-error-msg">An error occurred while creating customer.</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Business Profile (Read-only display for modal) -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        Business Profile <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" id="modal_customer_business_name" class="w-full text-xs border border-gray-200 rounded-xl p-2.5 bg-gray-100 text-gray-700 cursor-not-allowed font-medium outline-none" readonly disabled value="Selected Business">
+                    <input type="hidden" id="modal_customer_business_id" name="modal_customer_business_id" value="">
+                </div>
+
+                <!-- First Name -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        First Name <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" id="modal_first_name" required maxlength="100" placeholder="e.g. John" class="w-full text-xs border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+                </div>
+
+                <!-- Last Name -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        Last Name
+                    </label>
+                    <input type="text" id="modal_last_name" maxlength="100" placeholder="e.g. Doe" class="w-full text-xs border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+                </div>
+
+                <!-- Phone Number -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        Phone Number <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" id="modal_phone" required maxlength="50" placeholder="e.g. +8801700000000" class="w-full text-xs border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+                </div>
+
+                <!-- Email Address -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">
+                        Email Address <span class="text-gray-400 font-normal">(Optional)</span>
+                    </label>
+                    <input type="email" id="modal_email" maxlength="255" placeholder="e.g. john.doe@example.com" class="w-full text-xs border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+                </div>
+
+                <!-- Active Customer Toggle -->
+                <div class="flex items-center pt-2 md:col-span-2">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="modal_is_active" class="sr-only peer" checked>
+                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <span class="ml-2.5 text-xs font-semibold text-gray-700">Active Customer</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                    Address <span class="text-rose-500">*</span>
+                </label>
+                <textarea id="modal_address" rows="2" required placeholder="Street address, city, state, zip code, country..." class="w-full text-xs border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all"></textarea>
+            </div>
+
+            <!-- Modal Footer / Actions -->
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                <button type="button" id="btn-cancel-customer-modal" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" id="btn-save-customer-modal" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-save text-xs"></i>
+                    <span>Save Customer</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -834,6 +935,183 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(err => {
                 showErrorAlert(isEdit ? 'Update Failed' : 'Create Failed', err.message);
+            });
+        });
+    }
+
+    // ── Create Customer Modal Interactivity & AJAX Handler ──
+    const customerModal = document.getElementById('create-customer-modal');
+    const btnAddCustomer = document.getElementById('btn-add-customer');
+    const btnCloseCustomerModal = document.getElementById('btn-close-customer-modal');
+    const btnCancelCustomerModal = document.getElementById('btn-cancel-customer-modal');
+    const modalCustomerForm = document.getElementById('modal-customer-form');
+    const modalErrorBox = document.getElementById('modal-customer-error');
+    const modalErrorMsg = document.getElementById('modal-customer-error-msg');
+
+    function hideCustomerModalError() {
+        if (modalErrorBox) {
+            modalErrorBox.classList.add('hidden');
+        }
+    }
+
+    function showCustomerModalError(message) {
+        if (modalErrorBox && modalErrorMsg) {
+            modalErrorMsg.textContent = message || 'Failed to create customer.';
+            modalErrorBox.classList.remove('hidden');
+        }
+    }
+
+    function openCustomerModal() {
+        hideCustomerModalError();
+
+        // Resolve active business profile name & id
+        const bizSelect = document.getElementById('business_id');
+        let bizId = null;
+        let bizName = 'Selected Business';
+
+        if (bizSelect) {
+            bizId = bizSelect.value;
+            if (bizSelect.tagName === 'SELECT' && bizSelect.selectedIndex >= 0) {
+                const optText = bizSelect.options[bizSelect.selectedIndex].text.trim();
+                if (optText && !optText.startsWith('—')) {
+                    bizName = optText;
+                }
+            } else if (bizSelect.tagName === 'INPUT') {
+                const bizDisplayInput = document.querySelector('input[disabled][value]');
+                if (bizDisplayInput) {
+                    bizName = bizDisplayInput.value;
+                }
+            }
+        }
+
+        document.getElementById('modal_customer_business_id').value = bizId || '';
+        document.getElementById('modal_customer_business_name').value = bizName;
+
+        if (customerModal) {
+            customerModal.classList.remove('hidden');
+        }
+    }
+
+    function closeCustomerModal() {
+        if (customerModal) {
+            customerModal.classList.add('hidden');
+        }
+        if (modalCustomerForm) {
+            modalCustomerForm.reset();
+            document.getElementById('modal_is_active').checked = true;
+        }
+        hideCustomerModalError();
+    }
+
+    if (btnAddCustomer) {
+        btnAddCustomer.addEventListener('click', function(e) {
+            e.preventDefault();
+            openCustomerModal();
+        });
+    }
+
+    if (btnCloseCustomerModal) {
+        btnCloseCustomerModal.addEventListener('click', closeCustomerModal);
+    }
+
+    if (btnCancelCustomerModal) {
+        btnCancelCustomerModal.addEventListener('click', closeCustomerModal);
+    }
+
+    // Close on backdrop click or ESC key
+    if (customerModal) {
+        customerModal.addEventListener('click', function(e) {
+            if (e.target === customerModal) {
+                closeCustomerModal();
+            }
+        });
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && customerModal && !customerModal.classList.contains('hidden')) {
+            closeCustomerModal();
+        }
+    });
+
+    // AJAX Form Submission for Modal Customer Creation
+    if (modalCustomerForm) {
+        modalCustomerForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            hideCustomerModalError();
+
+            const firstName = document.getElementById('modal_first_name').value.trim();
+            const lastName = document.getElementById('modal_last_name').value.trim();
+            const phone = document.getElementById('modal_phone').value.trim();
+            const email = document.getElementById('modal_email').value.trim() || null;
+            const address = document.getElementById('modal_address').value.trim() || null;
+            const bizVal = document.getElementById('modal_customer_business_id').value || document.getElementById('business_id').value;
+            const businessId = bizVal ? parseInt(bizVal, 10) : null;
+            const isActive = document.getElementById('modal_is_active').checked;
+
+            if (!firstName || !phone || !address) {
+                showCustomerModalError('Please fill in all required fields (First Name, Phone Number, Address).');
+                return;
+            }
+
+            const payload = {
+                first_name: firstName,
+                last_name: lastName || null,
+                phone: phone,
+                email: email,
+                address: address,
+                business_id: businessId,
+                is_active: isActive
+            };
+
+            const btnSave = document.getElementById('btn-save-customer-modal');
+            if (btnSave) btnSave.disabled = true;
+
+            fetch('/customers/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(async res => {
+                if (btnSave) btnSave.disabled = false;
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    let errDetail = err.detail;
+                    if (Array.isArray(errDetail)) {
+                        errDetail = errDetail.map(e => e.msg || e.detail).join(', ');
+                    }
+                    throw new Error(errDetail || 'Failed to create customer.');
+                }
+                return res.json();
+            })
+            .then(newCustomer => {
+                const fullName = `${newCustomer.first_name || ''} ${newCustomer.last_name || ''}`.trim() || 'Customer';
+                const displayText = newCustomer.phone ? `${fullName} (${newCustomer.phone})` : fullName;
+
+                const customerSelectEl = $('#customer_id');
+
+                // Append option and auto-select
+                const newOption = new Option(displayText, newCustomer.id, true, true);
+                $(newOption).attr({
+                    'data-name': fullName,
+                    'data-email': newCustomer.email || '',
+                    'data-phone': newCustomer.phone || '',
+                    'data-city': 'Dhaka',
+                    'data-address': newCustomer.address || ''
+                });
+
+                customerSelectEl.append(newOption);
+                customerSelectEl.trigger('change.select2');
+                customerSelectEl.trigger('change');
+
+                closeCustomerModal();
+                showSuccessToast('Success', `Customer ${fullName} created and selected.`);
+            })
+            .catch(err => {
+                if (btnSave) btnSave.disabled = false;
+                showCustomerModalError(err.message);
             });
         });
     }

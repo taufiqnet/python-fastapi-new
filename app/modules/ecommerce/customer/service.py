@@ -51,6 +51,15 @@ class CustomerService:
                 detail="Full Address is required",
             )
 
+        existing_customer = self.repository.get_by_phone(
+            db, data.phone.strip(), business_id=data.business_id
+        )
+        if existing_customer:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A customer with this phone number already exists.",
+            )
+
         return self.repository.create(db, data)
 
     def update_customer(
