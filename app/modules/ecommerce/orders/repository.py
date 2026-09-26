@@ -261,25 +261,26 @@ class OrderRepository:
         db.commit()
 
     def get_order_by_id(
-        self, db: Session, order_id: uuid.UUID, business_id: int = 1
+        self, db: Session, order_id: uuid.UUID, business_id: int | None = None
     ) -> Order | None:
-        return (
-            db.query(Order)
-            .filter(Order.id == order_id, Order.business_id == business_id)
-            .first()
-        )
+        query = db.query(Order).filter(Order.id == order_id)
+        if business_id is not None:
+            query = query.filter(Order.business_id == business_id)
+        return query.first()
 
     def get_orders(
         self,
         db: Session,
-        business_id: int = 1,
+        business_id: int | None = None,
         user_id: uuid.UUID | None = None,
         payment_status: OrderPaymentStatus | None = None,
         fulfillment_status: OrderFulfillmentStatus | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[Order]:
-        query = db.query(Order).filter(Order.business_id == business_id)
+        query = db.query(Order)
+        if business_id is not None:
+            query = query.filter(Order.business_id == business_id)
         if user_id:
             query = query.filter(Order.user_id == user_id)
         if payment_status:

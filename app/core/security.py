@@ -113,7 +113,7 @@ async def get_current_admin(
 
 def require_permission(module: str, feature: str, action: str):
     async def permission_checker(current_user: User = Depends(get_current_user)) -> User:
-        if current_user.is_superuser:
+        if current_user.is_superuser or current_user.has_role("admin"):
             return current_user
         code = f"{module}:{feature}:{action}"
         if not current_user.has_permission(code):

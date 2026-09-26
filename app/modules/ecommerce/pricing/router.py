@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import require_permission
 from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
 from app.modules.ecommerce.pricing.schemas import (
     CartCalculationRequest,
@@ -44,18 +45,20 @@ def create_price_history(
     current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
+    data.business_id = resolve_business_id(current_user, data.business_id)
     return service.create_price_history(db, data)
 
 
 @router.get("/price-history", response_model=list[PriceHistoryOut])
 def get_price_histories(
     variant_id: uuid.UUID = Query(...),
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_price_histories(
-        db, variant_id=variant_id, business_id=business_id
+        db, variant_id=variant_id, business_id=resolved_business_id
     )
 
 
@@ -70,28 +73,31 @@ def create_tax_rule(
     current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
+    data.business_id = resolve_business_id(current_user, data.business_id)
     return service.create_tax_rule(db, data)
 
 
 @router.get("/tax-rules", response_model=list[TaxRuleOut])
 def get_tax_rules(
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.get_tax_rules(db, business_id=business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.get_tax_rules(db, business_id=resolved_business_id)
 
 
 @router.put("/tax-rules/{rule_id}", response_model=TaxRuleOut)
 def update_tax_rule(
     rule_id: uuid.UUID,
     data: TaxRuleUpdate,
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "update")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.update_tax_rule(
-        db, rule_id=rule_id, data=data, business_id=business_id
+        db, rule_id=rule_id, data=data, business_id=resolved_business_id
     )
 
 
@@ -115,16 +121,18 @@ def create_currency_rate(
     current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
+    data.business_id = resolve_business_id(current_user, data.business_id)
     return service.create_currency_rate(db, data)
 
 
 @router.get("/currency-rates", response_model=list[CurrencyRateOut])
 def get_currency_rates(
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.get_currency_rates(db, business_id=business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.get_currency_rates(db, business_id=resolved_business_id)
 
 
 # --- Discount Rule Endpoints ---
@@ -138,39 +146,43 @@ def create_discount_rule(
     current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
+    data.business_id = resolve_business_id(current_user, data.business_id)
     return service.create_discount_rule(db, data)
 
 
 @router.get("/discount-rules", response_model=list[DiscountRuleOut])
 def get_discount_rules(
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.get_discount_rules(db, business_id=business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.get_discount_rules(db, business_id=resolved_business_id)
 
 
 @router.put("/discount-rules/{rule_id}", response_model=DiscountRuleOut)
 def update_discount_rule(
     rule_id: uuid.UUID,
     data: DiscountRuleUpdate,
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "update")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.update_discount_rule(
-        db, rule_id=rule_id, data=data, business_id=business_id
+        db, rule_id=rule_id, data=data, business_id=resolved_business_id
     )
 
 
 @router.delete("/discount-rules/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_discount_rule(
     rule_id: uuid.UUID,
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "delete")),
     db: Session = Depends(get_db),
 ):
-    service.delete_discount_rule(db, rule_id=rule_id, business_id=business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    service.delete_discount_rule(db, rule_id=rule_id, business_id=resolved_business_id)
 
 
 # --- Coupon Endpoints ---
@@ -184,39 +196,43 @@ def create_coupon(
     current_user: User = Depends(require_permission("ecommerce", "products", "create")),
     db: Session = Depends(get_db),
 ):
+    data.business_id = resolve_business_id(current_user, data.business_id)
     return service.create_coupon(db, data)
 
 
 @router.get("/coupons", response_model=list[CouponOut])
 def get_coupons(
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.get_coupons(db, business_id=business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.get_coupons(db, business_id=resolved_business_id)
 
 
 @router.put("/coupons/{coupon_id}", response_model=CouponOut)
 def update_coupon(
     coupon_id: uuid.UUID,
     data: CouponUpdate,
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "update")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.update_coupon(
-        db, coupon_id=coupon_id, data=data, business_id=business_id
+        db, coupon_id=coupon_id, data=data, business_id=resolved_business_id
     )
 
 
 @router.delete("/coupons/{coupon_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_coupon(
     coupon_id: uuid.UUID,
-    business_id: int = Query(1),
+    business_id: int | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "products", "delete")),
     db: Session = Depends(get_db),
 ):
-    service.delete_coupon(db, coupon_id=coupon_id, business_id=business_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    service.delete_coupon(db, coupon_id=coupon_id, business_id=resolved_business_id)
 
 
 @router.post("/coupons/validate", response_model=CouponValidateResponse)

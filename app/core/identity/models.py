@@ -80,7 +80,7 @@ class User(Base):
         return any(r.name == role_name for r in self.roles)
 
     def get_all_permission_codes(self) -> set[str]:
-        if self.is_superuser:
+        if self.is_superuser or self.has_role("admin"):
             return {"*"}
         codes = {p.code for p in self.direct_permissions}
         for role in self.roles:
@@ -89,7 +89,7 @@ class User(Base):
         return codes
 
     def has_permission(self, permission_code: str) -> bool:
-        if self.is_superuser:
+        if self.is_superuser or self.has_role("admin"):
             return True
         all_codes = self.get_all_permission_codes()
         return permission_code in all_codes or "*" in all_codes

@@ -75,7 +75,7 @@ def get_orders(
     current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
     db: Session = Depends(get_db),
 ):
-    resolved_business_id = resolve_business_id(current_user, business_id) or 1
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_orders(
         db,
         business_id=resolved_business_id,
@@ -94,7 +94,7 @@ def get_order(
     current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
     db: Session = Depends(get_db),
 ):
-    resolved_business_id = resolve_business_id(current_user, business_id) or 1
+    resolved_business_id = resolve_business_id(current_user, business_id)
     order = service.get_order(db, order_id=order_id, business_id=resolved_business_id)
     verify_record_ownership(order, current_user)
     return order
@@ -108,7 +108,7 @@ def update_order_status(
     current_user: User = Depends(require_permission("ecommerce", "orders", "update")),
     db: Session = Depends(get_db),
 ):
-    resolved_business_id = resolve_business_id(current_user, business_id) or 1
+    resolved_business_id = resolve_business_id(current_user, business_id)
     order = service.get_order(db, order_id=order_id, business_id=resolved_business_id)
     verify_record_ownership(order, current_user)
     return service.update_order_status(
@@ -124,7 +124,7 @@ def update_order(
     current_user: User = Depends(require_permission("ecommerce", "orders", "update")),
     db: Session = Depends(get_db),
 ):
-    resolved_business_id = resolve_business_id(current_user, business_id) or 1
+    resolved_business_id = resolve_business_id(current_user, business_id)
     order = service.get_order(db, order_id=order_id, business_id=resolved_business_id)
     verify_record_ownership(order, current_user)
     return service.update_order(
@@ -139,7 +139,7 @@ def delete_order(
     current_user: User = Depends(require_permission("ecommerce", "orders", "delete")),
     db: Session = Depends(get_db),
 ):
-    resolved_business_id = resolve_business_id(current_user, business_id) or 1
+    resolved_business_id = resolve_business_id(current_user, business_id)
     order = service.get_order(db, order_id=order_id, business_id=resolved_business_id)
     verify_record_ownership(order, current_user)
     service.delete_order(db, order_id=order_id, business_id=resolved_business_id)

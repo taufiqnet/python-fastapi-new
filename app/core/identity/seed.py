@@ -260,10 +260,10 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
         db.add(hr_plan)
 
-    ecom_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "ecommerce module (free tire)").first()
+    ecom_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "ecommerce module (free tier)").first()
     if not ecom_plan:
         ecom_plan = SubscriptionPlan(
-            name="ecommerce module (free tire)",
+            name="ecommerce module (free tier)",
             description="Free tier with all Ecommerce permissions",
             is_active=True,
         )

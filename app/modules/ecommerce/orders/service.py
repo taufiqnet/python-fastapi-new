@@ -134,7 +134,7 @@ class OrderService:
         return OrderDetail.model_validate(order)
 
     def get_order(
-        self, db: Session, order_id: uuid.UUID, business_id: int = 1
+        self, db: Session, order_id: uuid.UUID, business_id: int | None = None
     ) -> OrderDetail:
         order = self.repository.get_order_by_id(db, order_id, business_id=business_id)
         if not order:
@@ -146,7 +146,7 @@ class OrderService:
     def get_orders(
         self,
         db: Session,
-        business_id: int = 1,
+        business_id: int | None = None,
         user_id: uuid.UUID | None = None,
         payment_status: OrderPaymentStatus | None = None,
         fulfillment_status: OrderFulfillmentStatus | None = None,
@@ -169,7 +169,7 @@ class OrderService:
         db: Session,
         order_id: uuid.UUID,
         update_data: OrderStatusUpdate,
-        business_id: int = 1,
+        business_id: int | None = None,
     ) -> OrderDetail:
         order = self.repository.get_order_by_id(db, order_id, business_id=business_id)
         if not order:
@@ -202,7 +202,7 @@ class OrderService:
         db: Session,
         order_id: uuid.UUID,
         data: OrderUpdate,
-        business_id: int = 1,
+        business_id: int | None = None,
     ) -> OrderDetail:
         order = self.repository.get_order_by_id(db, order_id, business_id=business_id)
         if not order:
@@ -278,7 +278,7 @@ class OrderService:
         self,
         db: Session,
         order_id: uuid.UUID,
-        business_id: int = 1,
+        business_id: int | None = None,
     ) -> None:
         order = self.repository.get_order_by_id(db, order_id, business_id=business_id)
         if not order:

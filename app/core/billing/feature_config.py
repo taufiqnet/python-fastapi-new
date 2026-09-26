@@ -337,7 +337,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-tags",
                 "url": "/categories/manage",
                 "permission_code": "ecommerce:categories:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Organize product catalogs with dynamic category hierarchies.",
                 "active_page": "categories",
             },
@@ -347,7 +347,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-users",
                 "url": "/customers/manage",
                 "permission_code": "ecommerce:customers:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Track customer profiles, purchase histories, and insights.",
                 "active_page": "customers",
             },
@@ -357,7 +357,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-store",
                 "url": "/sellers/manage",
                 "permission_code": "ecommerce:products:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Onboard multi-vendor marketplace sellers, configure commission structures, and manage seller catalog.",
                 "active_page": "sellers",
             },
@@ -367,7 +367,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-copyright",
                 "url": "/brands",
                 "permission_code": "ecommerce:brands:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Manage product brands and manufacturer relationships.",
                 "active_page": "brands",
             },
@@ -377,7 +377,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-cubes",
                 "url": "/brands/models",
                 "permission_code": "ecommerce:models:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Categorize product models and technical specifications.",
                 "active_page": "models",
             },
@@ -387,7 +387,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-box",
                 "url": "/products",
                 "permission_code": "ecommerce:products:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Publish products, SKUs, and pricing matrices.",
                 "active_page": "products",
             },
@@ -397,7 +397,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-tags",
                 "url": "/pricing/manage",
                 "permission_code": "ecommerce:products:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Configure tax rules, price histories, currency rates, and dynamic discount rules.",
                 "active_page": "pricing",
             },
@@ -407,7 +407,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-ticket-alt",
                 "url": "/coupons/manage",
                 "permission_code": "ecommerce:products:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Manage promotional discount coupons, usage limits, and promotional cart calculation.",
                 "active_page": "coupons",
             },
@@ -417,7 +417,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-credit-card",
                 "url": "/payments/manage",
                 "permission_code": "ecommerce:orders:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Configure payment gateways (bKash, SSLCommerz, Stripe), transaction tracking, customer refunds, and webhooks.",
                 "active_page": "payments",
             },
@@ -427,7 +427,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-shipping-fast",
                 "url": "/shipping/manage",
                 "permission_code": "ecommerce:orders:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Manage shipping zones, rates, label fulfillment, dynamic rate calculation, and carrier tracking.",
                 "active_page": "shipping",
             },
@@ -437,7 +437,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-search-plus",
                 "url": "/catalog/browse",
                 "permission_code": "ecommerce:products:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Explore product catalog with live auto-suggest search and multi-faceted filtering.",
                 "active_page": "catalog",
             },
@@ -447,7 +447,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-star",
                 "url": "/reviews/manage",
                 "permission_code": "ecommerce:products:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Moderate customer ratings, approve or reject reviews, and track product sentiment.",
                 "active_page": "reviews",
             },
@@ -457,7 +457,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-bell",
                 "url": "/notifications/manage",
                 "permission_code": "ecommerce:orders:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Configure automated store notification templates and view audit delivery logs.",
                 "active_page": "ecommerce_notifications",
             },
@@ -467,7 +467,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-receipt",
                 "url": "/orders/manage",
                 "permission_code": "ecommerce:orders:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Process multi-channel store orders and fulfillment.",
                 "active_page": "orders",
             },
@@ -477,7 +477,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-boxes",
                 "url": "/inventory/manage",
                 "permission_code": "ecommerce:inventory:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Monitor stock levels, multi-warehouse inventory, and alerts.",
                 "active_page": "inventory",
             },
@@ -487,7 +487,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-ruler-combined",
                 "url": "/inventory/uom/manage",
                 "permission_code": "ecommerce:inventory:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Manage units of measure, conversion rules, and unit calculation tool.",
                 "active_page": "inventory_uom",
             },
@@ -497,7 +497,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-cubes",
                 "url": "/inventory/items-master/manage",
                 "permission_code": "ecommerce:inventory:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Standalone item management supporting item types, tracking types, and costs.",
                 "active_page": "items_master",
             },
@@ -507,7 +507,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-calculator",
                 "url": "/inventory/valuation/manage",
                 "permission_code": "ecommerce:inventory:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Evaluate inventory assets with FIFO vs Weighted Average costing models.",
                 "active_page": "inventory_valuation",
             },
@@ -517,7 +517,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-barcode",
                 "url": "/inventory/lots-serials/manage",
                 "permission_code": "ecommerce:inventory:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Track batch lot expiry alerts and serial number status lifecycle.",
                 "active_page": "lots_serials",
             },
@@ -527,7 +527,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-exchange-alt",
                 "url": "/inventory/transfers/manage",
                 "permission_code": "ecommerce:inventory:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Manage multi-warehouse transfers and in-transit shipments.",
                 "active_page": "inventory_transfers",
             },
@@ -537,7 +537,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-clipboard-list",
                 "url": "/inventory/counts/manage",
                 "permission_code": "ecommerce:inventory:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Schedule physical stock counts and reconcile inventory variances.",
                 "active_page": "inventory_counts",
             },
@@ -547,7 +547,7 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "icon": "fas fa-chart-line",
                 "url": "/reports/manage",
                 "permission_code": "ecommerce:orders:view",
-                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tire)"],
+                "plans": ["Basic", "Pro", "Enterprise", "ecommerce module (free tier)"],
                 "description": "Comprehensive sales financials, FIFO stock valuation, and fulfillment SLA analytics.",
                 "active_page": "ecommerce_reports",
             },
@@ -567,6 +567,9 @@ def resolve_menu_for_user(user: Any) -> Dict[str, Any]:
         return {"hr_payroll_categories": [], "ecommerce_categories": [], "finance_categories": [], "user_plan_name": "Free"}
 
     is_superuser = getattr(user, "is_superuser", False)
+    is_admin = is_superuser or (
+        hasattr(user, "has_role") and user.has_role("admin")
+    )
     biz_profile = getattr(user, "business_profile", None)
 
     current_plan_name = "Free"
@@ -596,17 +599,17 @@ def resolve_menu_for_user(user: Any) -> Dict[str, Any]:
 
             # User level check (RBAC role/user permission check)
             # If user has individual/role permission, check if plan includes it
-            user_has_rbac = is_superuser or (
+            user_has_rbac = is_admin or (
                 hasattr(user, "has_permission") and user.has_permission(perm_code)
             )
             if not user_has_rbac:
                 continue
 
             # Plan level check
-            # Plan is considered included if superuser, OR subscription is not required,
+            # Plan is considered included if superuser/admin, OR subscription is not required,
             # OR plan permissions include perm_code/wildcard,
             # OR current plan name is explicitly listed in allowed_plans
-            if is_superuser or not settings.subscription_required:
+            if is_admin or not settings.subscription_required:
                 is_included_in_plan = True
             else:
                 is_included_in_plan = (
@@ -673,6 +676,9 @@ def resolve_features_plans_for_user(user: Any) -> Dict[str, Any]:
         }
 
     is_superuser = getattr(user, "is_superuser", False)
+    is_admin = is_superuser or (
+        hasattr(user, "has_role") and user.has_role("admin")
+    )
     biz_profile = getattr(user, "business_profile", None)
 
     current_plan_name = "Free"
@@ -699,7 +705,7 @@ def resolve_features_plans_for_user(user: Any) -> Dict[str, Any]:
             perm_code = item["permission_code"]
             allowed_plans = item["plans"]
 
-            if is_superuser or not settings.subscription_required:
+            if is_admin or not settings.subscription_required:
                 is_included = True
             else:
                 is_included = (

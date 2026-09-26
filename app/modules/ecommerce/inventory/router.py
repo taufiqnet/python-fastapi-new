@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import require_permission
 from app.core.identity.models import User
+from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
 from datetime import datetime
 
@@ -55,13 +56,14 @@ service = InventoryService()
 # --- Unit of Measure & Conversion Endpoints ---
 @router.get("/uom/units", response_model=list[UoMOut])
 def get_uoms(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.get_uoms(db, business_id=business_id, skip=skip, limit=limit)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.get_uoms(db, business_id=resolved_business_id, skip=skip, limit=limit)
 
 
 @router.get("/uom/units/{uom_id}", response_model=UoMOut)
@@ -113,15 +115,16 @@ def delete_uom(
 
 @router.get("/uom/conversions", response_model=list[UoMConversionOut])
 def get_conversions(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     item_id: uuid.UUID | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_conversions(
-        db, business_id=business_id, item_id=item_id, skip=skip, limit=limit
+        db, business_id=resolved_business_id, item_id=item_id, skip=skip, limit=limit
     )
 
 
@@ -176,7 +179,7 @@ def convert_quantity(
 # --- Item Master Endpoints ---
 @router.get("/items-master", response_model=list[ItemOut])
 def get_items(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     category_id: uuid.UUID | None = Query(None),
@@ -184,9 +187,10 @@ def get_items(
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_items(
         db,
-        business_id=business_id,
+        business_id=resolved_business_id,
         skip=skip,
         limit=limit,
         category_id=category_id,
@@ -301,17 +305,18 @@ def delete_warehouse(
 # --- Stock Count & Reorder Alert Endpoints ---
 @router.get("/reorder-alerts", response_model=list[ReorderAlertOut])
 def get_reorder_alerts(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     warehouse_id: uuid.UUID | None = Query(None),
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.get_reorder_alerts(db, business_id=business_id, warehouse_id=warehouse_id)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.get_reorder_alerts(db, business_id=resolved_business_id, warehouse_id=warehouse_id)
 
 
 @router.get("/counts", response_model=list[StockCountOut])
 def get_counts(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     warehouse_id: uuid.UUID | None = Query(None),
     status_filter: CountStatus | None = Query(None, alias="status"),
     skip: int = Query(0, ge=0),
@@ -319,9 +324,10 @@ def get_counts(
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_counts(
         db,
-        business_id=business_id,
+        business_id=resolved_business_id,
         warehouse_id=warehouse_id,
         status_filter=status_filter,
         skip=skip,
@@ -386,15 +392,16 @@ def complete_count(
 # --- Stock Transfer Endpoints ---
 @router.get("/transfers", response_model=list[StockTransferOut])
 def get_transfers(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     status_filter: TransferStatus | None = Query(None, alias="status"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_transfers(
-        db, business_id=business_id, status_filter=status_filter, skip=skip, limit=limit
+        db, business_id=resolved_business_id, status_filter=status_filter, skip=skip, limit=limit
     )
 
 
@@ -457,16 +464,17 @@ def cancel_transfer(
 # --- Valuation Endpoints ---
 @router.get("/valuation", response_model=InventoryValuationReportOut)
 def get_inventory_valuation(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     warehouse_id: uuid.UUID | None = Query(None),
     as_of: datetime | None = Query(None),
     costing_method: CostingMethod = Query(CostingMethod.FIFO),
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_valuation(
         db,
-        business_id=business_id,
+        business_id=resolved_business_id,
         warehouse_id=warehouse_id,
         as_of=as_of,
         costing_method=costing_method,
@@ -476,17 +484,18 @@ def get_inventory_valuation(
 # --- Lot, Serial & Expiry Alerts Endpoints ---
 @router.get("/lots/expiring", response_model=list[StockLotOut])
 def get_expiring_lots(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     days: int = Query(30, ge=1, le=365),
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
-    return service.get_expiring_lots(db, business_id=business_id, days=days)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.get_expiring_lots(db, business_id=resolved_business_id, days=days)
 
 
 @router.get("/lots", response_model=list[StockLotOut])
 def get_lots(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     item_id: uuid.UUID | None = Query(None),
     warehouse_id: uuid.UUID | None = Query(None),
     skip: int = Query(0, ge=0),
@@ -494,14 +503,15 @@ def get_lots(
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_lots(
-        db, business_id=business_id, item_id=item_id, warehouse_id=warehouse_id, skip=skip, limit=limit
+        db, business_id=resolved_business_id, item_id=item_id, warehouse_id=warehouse_id, skip=skip, limit=limit
     )
 
 
 @router.get("/serials", response_model=list[StockSerialOut])
 def get_serials(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     item_id: uuid.UUID | None = Query(None),
     warehouse_id: uuid.UUID | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
@@ -511,9 +521,10 @@ def get_serials(
     current_user: User = Depends(require_permission("ecommerce", "inventory", "view")),
     db: Session = Depends(get_db),
 ):
+    resolved_business_id = resolve_business_id(current_user, business_id)
     return service.get_serials(
         db,
-        business_id=business_id,
+        business_id=resolved_business_id,
         item_id=item_id,
         warehouse_id=warehouse_id,
         status_filter=status_filter,

@@ -58,7 +58,7 @@ class UserService:
             elif has_ecom and not has_hr:
                 res = await db.execute(
                     select(SubscriptionPlan).where(
-                        SubscriptionPlan.name == "ecommerce module (free tire)"
+                        SubscriptionPlan.name == "ecommerce module (free tier)"
                     )
                 )
                 selected_plan = res.scalars().first()
