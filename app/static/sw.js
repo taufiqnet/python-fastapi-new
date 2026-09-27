@@ -2,11 +2,11 @@ const CACHE_NAME = 'saas-pwa-v1';
 const STATIC_ASSETS = [
   '/',
   '/static/manifest.json',
-  'https://cdn.tailwindcss.com',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://code.jquery.com/jquery-3.7.0.min.js',
-  'https://cdn.jsdelivr.net/npm/sweetalert2@11',
-  'https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js'
+  '/static/vendor/tailwindcss.js',
+  '/static/vendor/fontawesome/css/all.min.css',
+  '/static/vendor/jquery.min.js',
+  '/static/vendor/sweetalert2.all.min.js',
+  '/static/vendor/dexie.min.js'
 ];
 
 self.addEventListener('install', (event) => {

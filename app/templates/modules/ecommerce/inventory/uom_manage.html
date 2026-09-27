@@ -3,7 +3,7 @@
 {% block title %}Unit of Measure & Conversion Manager | SaaS Platform{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="/static/vendor/datatables/jquery.dataTables.min.css">
 <style>
     .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.25rem; }
     @media (max-width: 768px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
@@ -421,8 +421,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+<script src="/static/vendor/jquery.min.js"></script>
+<script src="/static/vendor/datatables/jquery.dataTables.min.js"></script>
 
 <script>
 $(document).ready(function() {

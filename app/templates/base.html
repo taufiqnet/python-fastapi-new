@@ -7,14 +7,14 @@
     <title>{% block title %}SaaS Platform Admin{% endblock %}</title>
 
     <link rel="manifest" href="/static/manifest.json">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/static/vendor/tailwindcss.js"></script>
+    <link rel="stylesheet" href="/static/vendor/fontawesome/css/all.min.css">
 
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/static/vendor/jquery.min.js"></script>
+    <script src="/static/vendor/sweetalert2.all.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('/static/vendor/fonts/inter.css');
 
         body {
             font-family: 'Inter', sans-serif;
@@ -1423,7 +1423,7 @@
         })();
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.min.js"></script>
+    <script src="/static/vendor/dexie.min.js"></script>
     <script src="/static/js/offline_sync.js"></script>
     {% block extra_js %}{% endblock %}
 
