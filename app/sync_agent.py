@@ -46,17 +46,6 @@ def run_sync_cycle():
             changes = local_pull.json().get("changes", {})
             mutations = []
 
-            # Format local tasks as mutations
-            for task in changes.get("tasks", []):
-                if task.get("client_uuid"):
-                    mutations.append({
-                        "entity": "tasks",
-                        "action": "DELETE" if task.get("is_deleted") else "UPDATE",
-                        "client_uuid": task["client_uuid"],
-                        "client_updated_at": task.get("client_updated_at") or datetime.now(timezone.utc).isoformat(),
-                        "payload": task
-                    })
-
             # Format local orders as mutations
             for order in changes.get("orders", []):
                 if order.get("client_uuid"):
@@ -66,6 +55,17 @@ def run_sync_cycle():
                         "client_uuid": order["client_uuid"],
                         "client_updated_at": order.get("client_updated_at") or datetime.now(timezone.utc).isoformat(),
                         "payload": order
+                    })
+
+            # Format local invoices as mutations
+            for inv in changes.get("invoices", []):
+                if inv.get("client_uuid"):
+                    mutations.append({
+                        "entity": "invoices",
+                        "action": "DELETE" if inv.get("is_deleted") else "UPDATE",
+                        "client_uuid": inv["client_uuid"],
+                        "client_updated_at": inv.get("client_updated_at") or datetime.now(timezone.utc).isoformat(),
+                        "payload": inv
                     })
 
             if mutations:

@@ -26,6 +26,13 @@ from app.database import get_async_db
 router = APIRouter(tags=["Authentication"])
 
 service = UserService()
+
+
+@router.get("/auth", response_class=RedirectResponse, include_in_schema=False)
+@router.get("/auth/", response_class=RedirectResponse, include_in_schema=False)
+async def auth_root_redirect():
+    response = RedirectResponse(url="/auth/login", status_code=status.HTTP_302_FOUND)
+    return add_no_cache_headers(response)
 templates = Jinja2Templates(directory="app/templates")
 
 

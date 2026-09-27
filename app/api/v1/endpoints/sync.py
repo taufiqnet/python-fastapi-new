@@ -4,14 +4,13 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user
 from app.core.identity.models import User
 from app.database import get_async_db
-from app.models.task import Task
 from app.modules.ecommerce.orders.models import Order
 from app.modules.finance.models import SalesInvoice
 
@@ -21,7 +20,7 @@ router = APIRouter(prefix="/api/v1/sync", tags=["Offline Sync"])
 
 
 class SyncMutation(BaseModel):
-    entity: str  # "orders", "invoices", "tasks"
+    entity: str  # "orders", "invoices"
     action: str  # "CREATE", "UPDATE", "DELETE"
     client_uuid: uuid.UUID
     client_updated_at: datetime
@@ -76,9 +75,7 @@ async def sync_push(
             client_dt = client_dt.replace(tzinfo=timezone.utc)
 
         try:
-            if entity_name in ("tasks", "task"):
-                result = await _sync_task(db, current_user, m, client_dt)
-            elif entity_name in ("orders", "order"):
+            if entity_name in ("orders", "order"):
                 result = await _sync_order(db, current_user, m, client_dt)
             elif entity_name in ("invoices", "invoice", "sales_invoices"):
                 result = await _sync_invoice(db, current_user, m, client_dt)
@@ -105,88 +102,6 @@ async def sync_push(
 
     await db.commit()
     return SyncPushResponse(synced=results)
-
-
-async def _sync_task(
-    db: AsyncSession, current_user: User, m: SyncMutation, client_dt: datetime
-) -> SyncResultItem:
-    stmt = select(Task).where(Task.client_uuid == m.client_uuid)
-    existing = (await db.execute(stmt)).scalar_one_or_none()
-
-    if not existing and "id" in m.payload:
-        try:
-            task_id = int(m.payload["id"])
-            stmt_id = select(Task).where(Task.id == task_id)
-            existing = (await db.execute(stmt_id)).scalar_one_or_none()
-        except (ValueError, TypeError):
-            pass
-
-    if existing:
-        server_dt = existing.client_updated_at or existing.updated_at
-        if server_dt and server_dt.tzinfo is None:
-            server_dt = server_dt.replace(tzinfo=timezone.utc)
-
-        if server_dt and server_dt > client_dt:
-            return SyncResultItem(
-                client_uuid=m.client_uuid,
-                server_id=existing.id,
-                entity="tasks",
-                status="skipped",
-                detail="Server record is newer",
-            )
-
-        if m.action == "DELETE":
-            existing.is_deleted = True
-            existing.client_updated_at = client_dt
-            return SyncResultItem(
-                client_uuid=m.client_uuid,
-                server_id=existing.id,
-                entity="tasks",
-                status="deleted",
-            )
-        else:
-            p = m.payload
-            if "title" in p:
-                existing.title = p["title"]
-            if "description" in p:
-                existing.description = p["description"]
-            if "completed" in p:
-                existing.completed = bool(p["completed"])
-            existing.client_updated_at = client_dt
-            existing.is_deleted = False
-            return SyncResultItem(
-                client_uuid=m.client_uuid,
-                server_id=existing.id,
-                entity="tasks",
-                status="updated",
-            )
-    else:
-        if m.action == "DELETE":
-            return SyncResultItem(
-                client_uuid=m.client_uuid,
-                server_id=str(m.client_uuid),
-                entity="tasks",
-                status="skipped",
-                detail="Record to delete was not found",
-            )
-
-        p = m.payload
-        task = Task(
-            title=p.get("title", "Untitled Task"),
-            description=p.get("description"),
-            completed=bool(p.get("completed", False)),
-            client_uuid=m.client_uuid,
-            client_updated_at=client_dt,
-            is_deleted=False,
-        )
-        db.add(task)
-        await db.flush()
-        return SyncResultItem(
-            client_uuid=m.client_uuid,
-            server_id=task.id,
-            entity="tasks",
-            status="created",
-        )
 
 
 async def _sync_order(
@@ -330,7 +245,7 @@ async def _sync_invoice(
 
         p = m.payload
         inv_num = p.get("invoice_number") or f"INV-{uuid.uuid4().hex[:8].upper()}"
-        issue_date_val = datetime.utcnow().date()
+        issue_date_val = datetime.now(timezone.utc).date()
         if "issue_date" in p and isinstance(p["issue_date"], str):
             try:
                 issue_date_val = datetime.fromisoformat(p["issue_date"]).date()
@@ -376,12 +291,6 @@ async def sync_pull(
     elif since_dt.tzinfo is None:
         since_dt = since_dt.replace(tzinfo=timezone.utc)
 
-    # Pull tasks
-    tasks_stmt = select(Task).where(
-        (Task.updated_at >= since_dt) | (Task.client_updated_at >= since_dt)
-    )
-    tasks = (await db.execute(tasks_stmt)).scalars().all()
-
     # Pull orders for user business
     orders_stmt = select(Order).where(
         (Order.updated_at >= since_dt) | (Order.client_updated_at >= since_dt)
@@ -403,19 +312,6 @@ async def sync_pull(
     return {
         "timestamp": now_iso,
         "changes": {
-            "tasks": [
-                {
-                    "id": t.id,
-                    "title": t.title,
-                    "description": t.description,
-                    "completed": t.completed,
-                    "client_uuid": str(t.client_uuid) if t.client_uuid else None,
-                    "client_updated_at": t.client_updated_at.isoformat() if t.client_updated_at else None,
-                    "updated_at": t.updated_at.isoformat() if t.updated_at else None,
-                    "is_deleted": t.is_deleted,
-                }
-                for t in tasks
-            ],
             "orders": [
                 {
                     "id": str(o.id),

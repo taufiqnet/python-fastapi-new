@@ -59,7 +59,10 @@ def _custom_template_response(self, *args, **kwargs):
 
     if request and name:
         new_kwargs = {k: v for k, v in kwargs.items() if k not in ("request", "name", "context")}
-        return _original_template_response(self, request=request, name=name, context=context, **new_kwargs)
+        try:
+            return _original_template_response(self, request=request, name=name, context=context, **new_kwargs)
+        except TypeError:
+            return _original_template_response(self, name, context, **new_kwargs)
 
     return _original_template_response(self, *args, **kwargs)
 
@@ -164,25 +167,70 @@ app = FastAPI(
 templates = Jinja2Templates(directory="app/templates")
 
 
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
 @app.exception_handler(HTTPException)
-async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    # Check if request accepts HTML and is 403 Forbidden
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException | StarletteHTTPException):
     accept = request.headers.get("accept", "")
     is_html = "text/html" in accept and not (request.url.path.startswith("/api") or request.url.path.endswith("/api"))
 
-    if exc.status_code == 403 and is_html:
-        return templates.TemplateResponse(
-            request=request,
-            name="errors/403.html",
-            context={
-                "detail": exc.detail,
-                "current_user": getattr(request.state, "user", None),
-            },
-            status_code=403,
-        )
+    if is_html:
+        if exc.status_code == 403:
+            return templates.TemplateResponse(
+                request=request,
+                name="errors/403.html",
+                context={
+                    "detail": exc.detail,
+                    "current_user": getattr(request.state, "user", None),
+                },
+                status_code=403,
+            )
+        elif exc.status_code == 404:
+            return templates.TemplateResponse(
+                request=request,
+                name="errors/404.html",
+                context={
+                    "detail": exc.detail,
+                    "current_user": getattr(request.state, "user", None),
+                },
+                status_code=404,
+            )
+        elif exc.status_code >= 500:
+            return templates.TemplateResponse(
+                request=request,
+                name="errors/500.html",
+                context={
+                    "detail": exc.detail,
+                    "current_user": getattr(request.state, "user", None),
+                },
+                status_code=exc.status_code,
+            )
 
     from fastapi.responses import JSONResponse
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+
+@app.exception_handler(Exception)
+async def custom_general_exception_handler(request: Request, exc: Exception):
+    logger.exception(f"Unhandled exception on path {request.url.path}: {exc}")
+    accept = request.headers.get("accept", "")
+    is_html = "text/html" in accept and not (request.url.path.startswith("/api") or request.url.path.endswith("/api"))
+
+    if is_html:
+        return templates.TemplateResponse(
+            request=request,
+            name="errors/500.html",
+            context={
+                "detail": "An internal server error occurred.",
+                "current_user": getattr(request.state, "user", None),
+            },
+            status_code=500,
+        )
+
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
 @app.on_event("startup")
