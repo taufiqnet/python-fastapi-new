@@ -186,6 +186,9 @@ class UserService:
         if data.is_superuser is not None:
             user.is_superuser = data.is_superuser
 
+        if data.can_use_offline_mode is not None:
+            user.can_use_offline_mode = data.can_use_offline_mode
+
         if data.role_ids is not None:
             roles = []
             for r_id in data.role_ids:

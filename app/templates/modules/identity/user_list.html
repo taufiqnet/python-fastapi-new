@@ -200,6 +200,7 @@
                     <th>Email & Contact</th>
                     <th>Business Profile</th>
                     <th>Assigned Roles</th>
+                    <th>Offline Sync</th>
                     <th>Status</th>
                     <th style="width:100px">Actions</th>
                     <th class="hidden"></th>
@@ -216,7 +217,7 @@
                                 {{ u.username[:2] }}
                             </div>
                             <div>
-                                <div class="font-semibold text-gray-900 flex items-center gap-1.5">
+                                <div class="font-semibold text-gray-900 flex items-center gap-1.5 flex-wrap">
                                     {{ u.username }}
                                     {% if u.is_superuser %}
                                         <span class="badge badge-admin"><i class="fas fa-shield-alt text-[8px]"></i> System Admin</span>
@@ -253,6 +254,13 @@
                                 <span class="text-xs text-gray-400 font-medium">No roles</span>
                             {% endfor %}
                         </div>
+                    </td>
+                    <td>
+                        {% if u.can_use_offline_mode %}
+                            <span class="badge badge-active"><i class="fas fa-wifi text-[8px]"></i> Enabled</span>
+                        {% else %}
+                            <span class="badge badge-inactive"><i class="fas fa-ban text-[8px]"></i> Disabled</span>
+                        {% endif %}
                     </td>
                     <td>
                         {% if u.is_active %}
@@ -313,16 +321,16 @@ $(document).ready(function () {
         responsive: true,
         pageLength: 10,
         dom: 'rt',
-        columnDefs: [{ targets: [6, 7, 8], visible: false, searchable: true }],
+        columnDefs: [{ targets: [7, 8, 9], visible: false, searchable: true }],
         order: [],
         language: { emptyTable: "No user accounts found." },
         drawCallback: function () { updateFooter(this.api()); }
     });
 
     $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterStatus').on('change', function () { table.column(6).search(this.value).draw(); });
-    $('#filterBusiness').on('change', function () { table.column(7).search(this.value).draw(); });
-    $('#filterRole').on('change', function () { table.column(8).search(this.value).draw(); });
+    $('#filterStatus').on('change', function () { table.column(7).search(this.value).draw(); });
+    $('#filterBusiness').on('change', function () { table.column(8).search(this.value).draw(); });
+    $('#filterRole').on('change', function () { table.column(9).search(this.value).draw(); });
     $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
     $('#btnToggleFilters').on('click', function() { $('.toolbar').slideToggle(200); });
