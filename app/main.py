@@ -100,6 +100,7 @@ from app.modules.hr_payroll.experience_letters.router import router as experienc
 from app.modules.hr_payroll.appointments.router import router as appointments_router
 from app.modules.hr_payroll.notice_board.router import router as notices_router
 from app.modules.hr_payroll.recruitment.router import router as recruitment_router
+from app.api.v1.endpoints.sync import router as sync_router
 
 from app.routers import (
     ai_chat,
@@ -342,6 +343,18 @@ app.include_router(recruitment_router)
 
 # project management router
 app.include_router(tasks.router)
+app.include_router(sync_router)
+
+
+from fastapi.responses import FileResponse
+
+
+@app.get("/sw.js")
+def get_service_worker():
+    sw_path = "app/static/sw.js"
+    if not os.path.exists(sw_path):
+        return HTMLResponse(content="// Service worker placeholder", media_type="application/javascript")
+    return FileResponse(sw_path, media_type="application/javascript")
 
 
 @app.get("/health")

@@ -20,7 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import UUID
 
-from app.common.models import TimestampMixin, UUIDMixin
+from app.common.models import SyncMixin, TimestampMixin, UUIDMixin
 from app.database import Base
 
 
@@ -57,7 +57,7 @@ class OrderStatusType(str, enum.Enum):
     FULFILLMENT = "fulfillment"
 
 
-class Order(Base, UUIDMixin, TimestampMixin):
+class Order(Base, UUIDMixin, TimestampMixin, SyncMixin):
     __tablename__ = "orders"
     __table_args__ = (
         UniqueConstraint("order_number", name="uq_orders_order_number"),

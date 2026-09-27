@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  local_db:
+    image: postgres:15-alpine
+    container_name: saas_local_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: saas_local_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - local_pg_data:/var/lib/postgresql/data
+
+  local_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: saas_local_app
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@local_db:5432/saas_local_db
+      - SECRET_KEY=offline-node-secret-key-0123456789abcdef
+      - APP_ENV=production
+      - IS_OFFLINE_NODE=true
+      - CLOUD_API_URL=https://cloud.app.example.com
+    depends_on:
+      - local_db
+
+  sync_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: saas_sync_agent
+    restart: always
+    command: python sync_agent.py
+    environment:
+      - LOCAL_DATABASE_URL=postgresql://postgres:postgrespassword@local_db:5432/saas_local_db
+      - CLOUD_API_URL=${CLOUD_API_URL:-https://cloud.app.example.com}
+      - SYNC_INTERVAL_SECONDS=30
+    depends_on:
+      - local_db
+      - local_app
+
+volumes:
+  local_pg_data:

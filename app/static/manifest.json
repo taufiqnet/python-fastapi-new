@@ -1,0 +1,20 @@
+{
+  "short_name": "SaaS PWA",
+  "name": "Offline-First SaaS Platform",
+  "icons": [
+    {
+      "src": "/static/ecommerce/images/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/static/ecommerce/images/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "display": "standalone"
+}

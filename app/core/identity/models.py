@@ -50,6 +50,11 @@ class User(Base):
 
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_use_offline_mode: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    @property
+    def is_offline_sync_enabled(self) -> bool:
+        return self.can_use_offline_mode
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

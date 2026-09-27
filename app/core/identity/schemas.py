@@ -150,6 +150,7 @@ class UserUpdate(BaseModel):
     business_id: int | None = None
     is_active: bool | None = None
     is_superuser: bool | None = None
+    can_use_offline_mode: bool | None = None
     password: str | None = None
     role_ids: list[int] = []
     permission_ids: list[int] = []
@@ -166,6 +167,8 @@ class UserResponse(BaseModel):
     is_superuser: bool = False
     is_active: bool
     is_verified: bool
+    can_use_offline_mode: bool = False
+    is_offline_sync_enabled: bool = False
     created_at: datetime
 
     roles: list[RoleResponse] = []

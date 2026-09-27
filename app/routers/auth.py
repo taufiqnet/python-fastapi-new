@@ -112,10 +112,19 @@ async def login(
 
 
 @router.get("/auth/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_current_user_optional)):
+@router.get("/api/v1/users/me", response_model=UserResponse)
+@router.get("/users/me", response_model=UserResponse)
+async def get_me(
+    current_user: User = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_async_db),
+):
     if not current_user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
-    return current_user
+    try:
+        user = await service.get_user_by_id(db, current_user.id)
+        return user
+    except Exception:
+        return current_user
 
 
 @router.post(

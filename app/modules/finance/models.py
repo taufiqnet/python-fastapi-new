@@ -20,7 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import UUID
 
-from app.common.models import TimestampMixin, UUIDMixin
+from app.common.models import SyncMixin, TimestampMixin, UUIDMixin
 from app.database import Base
 
 
@@ -218,7 +218,7 @@ class Customer(Base, UUIDMixin, TimestampMixin):
     is_testing: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
-class SalesInvoice(Base, UUIDMixin, TimestampMixin):
+class SalesInvoice(Base, UUIDMixin, TimestampMixin, SyncMixin):
     __tablename__ = "finance_sales_invoices"
     __table_args__ = (
         UniqueConstraint(
