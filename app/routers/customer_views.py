@@ -31,8 +31,13 @@ def customer_list_page(
     customers = customer_service.get_customers(
         db, skip=skip, limit=limit, business_id=resolved_business_id
     )
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
-    biz_map = {b.id: b.name_en for b in businesses}
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    biz_map = {b.id: b.name_en for b in all_businesses}
 
     total_count = len(customers)
     active_count = sum(1 for c in customers if getattr(c, "is_active", True))
@@ -51,6 +56,7 @@ def customer_list_page(
             "inactive_count": inactive_count,
             "with_email_count": with_email_count,
             "active_page": "customers",
+            "current_user": current_user,
         },
     )
 
@@ -61,7 +67,11 @@ def customer_create_page(
     current_user: User = Depends(require_permission("ecommerce", "customers", "create")),
     db: Session = Depends(get_db),
 ):
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
 
     return templates.TemplateResponse(
         request=request,
@@ -71,6 +81,7 @@ def customer_create_page(
             "is_edit": False,
             "businesses": businesses,
             "active_page": "customers",
+            "current_user": current_user,
         },
     )
 
@@ -95,6 +106,7 @@ def customer_detail_page(
             "customer": customer,
             "business": business,
             "active_page": "customers",
+            "current_user": current_user,
         },
     )
 
@@ -108,7 +120,11 @@ def customer_edit_page(
 ):
     customer = customer_service.get_customer(db, customer_id)
     verify_record_ownership(customer, current_user)
-    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
 
     return templates.TemplateResponse(
         request=request,
@@ -118,5 +134,6 @@ def customer_edit_page(
             "is_edit": True,
             "businesses": businesses,
             "active_page": "customers",
+            "current_user": current_user,
         },
     )

@@ -2,47 +2,88 @@
 
 {% block title %}{% if is_edit %}Edit Customer{% else %}Create Customer{% endif %} | SaaS Platform{% endblock %}
 
+{% block head %}
+<style>
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+    }
+    .form-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #111827;
+        background-color: #fff;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-input:focus {
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    }
+    .form-checkbox {
+        width: 16px;
+        height: 16px;
+        accent-color: #4f46e5;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-4xl mx-auto space-y-6">
 
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <a href="/customers/manage" class="w-9 h-9 border border-gray-200 bg-white hover:bg-gray-50 rounded-xl flex items-center justify-center text-gray-500 transition-colors shadow-sm">
-                <i class="fas fa-arrow-left text-sm"></i>
+<!-- Page Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <a href="/customers/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                <i class="fas fa-arrow-left text-[10px]"></i> Back to Customers
             </a>
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
-                    {% if is_edit %}Edit Customer{% else %}Create Customer{% endif %}
-                </h1>
-                <p class="text-xs text-gray-500 font-medium">
-                    {% if is_edit %}Update customer profile and details{% else %}Add a new customer to the platform{% endif %}
-                </p>
-            </div>
         </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+            {% if is_edit %}Edit Customer{% else %}Create Customer{% endif %}
+        </h1>
+        <p class="text-xs text-gray-500 font-medium">
+            {% if is_edit %}Update customer profile, contact details, and address{% else %}Set up a new e-commerce customer profile{% endif %}
+        </p>
     </div>
+</div>
 
-    <!-- Form card -->
-    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <form id="customer-form" class="p-6 md:p-8 space-y-6">
-            {% if is_edit and customer %}
-            <input type="hidden" id="customer_id" value="{{ customer.id }}">
-            {% endif %}
+<form id="customerForm" class="space-y-6">
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+        
+        <!-- Card Header Banner -->
+        <div class="border-b border-gray-200 bg-gray-50/50 px-6 py-3.5 flex items-center justify-between">
+            <span class="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                <i class="fas fa-user-edit text-indigo-600"></i> Customer Profile Information
+            </span>
+            <span class="text-[11px] text-gray-500 font-medium">
+                Fields marked with <span class="text-red-500 font-bold">*</span> are required
+            </span>
+        </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="p-6 space-y-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Business Profile - First Field -->
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        Business Profile <span class="text-rose-500">*</span>
-                    </label>
+                <div class="form-group md:col-span-2">
+                    <label class="form-label" for="business_id">Business Profile <span class="text-red-500">*</span></label>
                     {% if current_user and not current_user.is_superuser %}
                     <input type="hidden" id="business_id" name="business_id" value="{{ current_user.business_id }}">
-                    <input type="text" class="w-full text-xs border border-gray-200 rounded-xl p-3 bg-gray-100 text-gray-700 cursor-not-allowed font-medium" 
+                    <input type="text" class="form-input bg-gray-100 text-gray-700 cursor-not-allowed font-medium" 
                            value="{% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en }}{% elif customer and customer.business_id %}{% for b in businesses %}{% if b.id == customer.business_id %}{{ b.name_en }}{% endif %}{% endfor %}{% else %}My Business{% endif %}" 
                            readonly disabled>
                     {% else %}
-                    <select id="business_id" class="w-full text-xs border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all bg-white">
-                        <option value="">-- Select Business --</option>
+                    <select id="business_id" name="business_id" class="form-input">
+                        <option value="">— Select Business —</option>
                         {% for b in businesses %}
                         <option value="{{ b.id }}" {% if customer and customer.business_id == b.id %}selected{% endif %}>
                             {{ b.name_en }}
@@ -53,101 +94,91 @@
                 </div>
 
                 <!-- First Name -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        First Name <span class="text-rose-500">*</span>
-                    </label>
-                    <input type="text" id="first_name" required max_length="100"
-                           value="{{ customer.first_name if customer else '' }}"
-                           placeholder="e.g. John"
-                           class="w-full text-xs border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+                <div class="form-group">
+                    <label class="form-label" for="first_name">First Name <span class="text-red-500">*</span></label>
+                    <input type="text" id="first_name" name="first_name" class="form-input" required maxlength="100" value="{{ customer.first_name if customer else '' }}" placeholder="e.g. John">
                 </div>
 
                 <!-- Last Name -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        Last Name
-                    </label>
-                    <input type="text" id="last_name" max_length="100"
-                           value="{{ customer.last_name if customer else '' }}"
-                           placeholder="e.g. Doe"
-                           class="w-full text-xs border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+                <div class="form-group">
+                    <label class="form-label" for="last_name">Last Name</label>
+                    <input type="text" id="last_name" name="last_name" class="form-input" maxlength="100" value="{{ customer.last_name if customer and customer.last_name else '' }}" placeholder="e.g. Doe">
                 </div>
 
-                <!-- Phone -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        Phone Number <span class="text-rose-500">*</span>
-                    </label>
-                    <input type="text" id="phone" required max_length="50"
-                           value="{{ customer.phone if customer else '' }}"
-                           placeholder="e.g. +1 (555) 123-4567"
-                           class="w-full text-xs border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+                <!-- Phone Number -->
+                <div class="form-group">
+                    <label class="form-label" for="phone">Phone Number <span class="text-red-500">*</span></label>
+                    <input type="tel" id="phone" name="phone" class="form-input" required maxlength="50" value="{{ customer.phone if customer else '' }}" placeholder="e.g. +880 1712-345678">
                 </div>
 
-                <!-- Email -->
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 mb-1">
-                        Email Address <span class="text-gray-400 font-normal">(Optional)</span>
-                    </label>
-                    <input type="email" id="email" max_length="255"
-                           value="{{ customer.email if customer and customer.email else '' }}"
-                           placeholder="e.g. john.doe@example.com"
-                           class="w-full text-xs border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">
+                <!-- Email Address -->
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address <span class="text-gray-400 font-normal">(Optional)</span></label>
+                    <input type="email" id="email" name="email" class="form-input" maxlength="255" value="{{ customer.email if customer and customer.email else '' }}" placeholder="e.g. john.doe@example.com">
                 </div>
 
-                <!-- Status -->
-                <div class="flex items-center pt-6">
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="is_active" class="sr-only peer" {% if not customer or customer.is_active %}checked{% endif %}>
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                        <span class="ml-3 text-xs font-semibold text-gray-700">Active Customer</span>
+                <!-- Address -->
+                <div class="form-group md:col-span-2">
+                    <label class="form-label" for="address">Address <span class="text-red-500">*</span></label>
+                    <textarea id="address" name="address" rows="3" class="form-input" required placeholder="Street address, apartment, city, state, postal code...">{{ customer.address if customer and customer.address else '' }}</textarea>
+                </div>
+
+                <!-- Customer Active Status -->
+                <div class="form-group md:col-span-2 pt-1">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="is_active" name="is_active" class="form-checkbox" {% if not customer or customer.is_active %}checked{% endif %}>
+                        <span class="text-xs font-semibold text-gray-700">Customer Active Status</span>
                     </label>
                 </div>
             </div>
+        </div>
 
-            <!-- Address -->
-            <div>
-                <label class="block text-xs font-semibold text-gray-700 mb-1">
-                    Address <span class="text-rose-500">*</span>
-                </label>
-                <textarea id="address" rows="3" placeholder="Street address, city, state, zip code, country..."
-                          class="w-full text-xs border border-gray-200 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none transition-all">{{ customer.address if customer and customer.address else '' }}</textarea>
-            </div>
-
-            <!-- Actions -->
-            <div class="pt-6 border-t border-gray-100 flex items-center justify-end gap-3">
-                <a href="/customers/manage" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors">
-                    Cancel
-                </a>
-                <button type="submit" id="btnSubmit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors flex items-center gap-2">
-                    <i class="fas fa-save"></i> {% if is_edit %}Save Changes{% else %}Create Customer{% endif %}
-                </button>
-            </div>
-        </form>
+        <!-- Form Actions Footer -->
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-end gap-3">
+            <a href="/customers/manage" class="px-4 py-2 border border-gray-200 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Cancel
+            </a>
+            <button type="submit" id="btnSubmit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-save"></i> {% if is_edit %}Update Customer{% else %}Save Customer{% endif %}
+            </button>
+        </div>
     </div>
-</div>
+</form>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.getElementById('customer-form').addEventListener('submit', function(e) {
+document.getElementById('customerForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
     const isEdit = {% if is_edit %}true{% else %}false{% endif %};
-    const customerId = isEdit ? document.getElementById('customer_id').value : null;
+    const customerId = "{% if customer %}{{ customer.id }}{% endif %}";
 
     const firstName = document.getElementById('first_name').value.trim();
     const lastName  = document.getElementById('last_name').value.trim();
     const phone     = document.getElementById('phone').value.trim();
-    const email     = document.getElementById('email').value.trim() || null;
-    const address   = document.getElementById('address').value.trim() || null;
+    const email     = document.getElementById('email').value.trim();
+    const address   = document.getElementById('address').value.trim();
     const bizVal    = document.getElementById('business_id').value;
     const businessId= bizVal ? parseInt(bizVal) : null;
     const isActive  = document.getElementById('is_active').checked;
 
-    if (!firstName || !phone) {
-        showWarningAlert('Required Fields Missing', 'Please fill in First Name and Phone Number.');
+    if (!firstName) {
+        document.getElementById('first_name').focus();
+        showWarningAlert('Required Field Missing', 'Please enter First Name.');
+        return;
+    }
+
+    if (!phone) {
+        document.getElementById('phone').focus();
+        showWarningAlert('Required Field Missing', 'Please enter Phone Number.');
+        return;
+    }
+
+    if (!address) {
+        document.getElementById('address').focus();
+        showWarningAlert('Required Field Missing', 'Please enter Address.');
         return;
     }
 
@@ -155,7 +186,7 @@ document.getElementById('customer-form').addEventListener('submit', function(e) 
         first_name: firstName,
         last_name: lastName || null,
         phone: phone,
-        email: email,
+        email: email || null,
         address: address,
         business_id: businessId,
         is_active: isActive
@@ -164,8 +195,9 @@ document.getElementById('customer-form').addEventListener('submit', function(e) 
     const url = isEdit ? '/customers/' + customerId : '/customers/';
     const method = isEdit ? 'PUT' : 'POST';
 
-    const btn = document.getElementById('btnSubmit');
-    btn.disabled = true;
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
     fetch(url, {
         method: method,
@@ -175,23 +207,28 @@ document.getElementById('customer-form').addEventListener('submit', function(e) 
         },
         body: JSON.stringify(payload)
     })
-    .then(async res => {
-        btn.disabled = false;
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || 'Failed to save customer');
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            let msg = data.detail || 'An error occurred while saving the customer.';
+            if (Array.isArray(data.detail)) {
+                msg = data.detail.map(e => e.msg || e.detail).join(', ');
+            }
+            throw new Error(msg);
         }
-        return res.json();
+        return data;
     })
     .then(data => {
-        showSuccessToast('Success', isEdit ? 'Customer updated successfully' : 'Customer created successfully');
-        setTimeout(() => {
-            window.location.href = '/customers/manage';
-        }, 1200);
+        showSuccessToast(
+            isEdit ? 'Customer Updated' : 'Customer Created',
+            isEdit ? 'Changes saved successfully.' : 'New customer added successfully.'
+        );
+        setTimeout(() => { window.location.href = '/customers/manage'; }, 1200);
     })
     .catch(err => {
-        btn.disabled = false;
-        showErrorAlert('Error', err.message);
+        showErrorAlert('Save Failed', err.message);
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-save"></i> ' + (isEdit ? 'Update Customer' : 'Save Customer');
     });
 });
 </script>
