@@ -1,11 +1,15 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.core.config import settings
 
-# --- Sync (existing, unchanged — used by all other modules) ---
-engine = create_engine(settings.database_url)
+# --- Sync ---
+engine = create_engine(
+    settings.database_url,
+    pool_pre_ping=True,
+)
 
 SessionLocal = sessionmaker(
     autocommit=False,
@@ -24,8 +28,13 @@ def get_db():
         db.close()
 
 
-# --- Async (used only by the user/auth flow) ---
-async_engine = create_async_engine(settings.async_database_url)
+# --- Async ---
+# NullPool prevents async drivers from deadlocking across a2wsgi worker threads/loops
+async_engine = create_async_engine(
+    settings.async_database_url,
+    poolclass=NullPool,
+    pool_pre_ping=True,
+)
 
 AsyncSessionLocal = async_sessionmaker(
     async_engine,
