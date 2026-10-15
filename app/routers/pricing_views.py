@@ -88,7 +88,7 @@ def coupon_manage_page(
     skip: int = 0,
     limit: int = 500,
     business_id: int | None = None,
-    current_user: User = Depends(require_permission("ecommerce", "products", "view")),
+    current_user: User = Depends(require_permission("ecommerce", "coupons", "view")),
     db: Session = Depends(get_db),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)

@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}Barcode Label Printing Workbench | Retail Inventory{% endblock %}
+
+{% block head %}
+<!-- JsBarcode for Vector Barcode Generation -->
+<script src="/static/vendor/jsbarcode/JsBarcode.all.min.js"></script>
+<script>
+    // Fallback if local vendor not present: load CDN or embedded SVG encoder
+    if (typeof JsBarcode === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+        document.head.appendChild(script);
+    }
+</script>
+
+<style>
+    /* Print Stylesheets for Sticker Sheets & Thermal Rolls */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #print-preview-container, #print-preview-container * {
+            visibility: visible;
+        }
+        #print-preview-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+
+        /* Continuous Thermal Roll (Single Label) */
+        body.mode-thermal @page {
+            size: auto;
+            margin: 0mm;
+        }
+        body.mode-thermal .barcode-sticker-item {
+            page-break-after: always;
+            break-after: page;
+        }
+
+        /* Sheet Pages */
+        body.mode-sheet @page {
+            margin: 5mm;
+        }
+    }
+
+    /* Sticker Layouts */
+    .sticker-grid-a4-24 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2mm;
+    }
+    .sticker-grid-letter-30 {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5mm;
+    }
+    .sticker-grid-thermal {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3mm;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Action Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 no-print">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="/inventory/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                    <i class="fas fa-boxes text-[10px]"></i> Inventory Stock
+                </a>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <i class="fas fa-barcode text-indigo-600"></i>
+                Barcode & Price Label Printing Workbench
+            </h1>
+            <p class="text-xs text-gray-500 mt-0.5">
+                Generate high-resolution Code 128 / EAN barcodes for product packaging, shelf labels, and thermal barcode printers.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2.5">
+            <button type="button" onclick="triggerPrintLabels()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-print"></i>
+                <span>Print Barcode Labels</span>
+            </button>
+            <a href="/pos/terminal" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-cash-register text-xs"></i>
+                <span>POS Terminal</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Workbench Grid: Left Config Panel (4/12) + Right Live Sheet Preview (8/12) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- ── LEFT CONTROLS: SELECTION & SETTINGS (4 Cols) ── -->
+        <div class="lg:col-span-4 space-y-5 no-print">
+            
+            <!-- Card 1: Add Products to Batch -->
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <i class="fas fa-plus-circle text-indigo-600"></i> Select Products
+                </h3>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Search & Pick Variant</label>
+                    <select id="select-add-product" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+                        <option value="">— Select an Item to add —</option>
+                        {% for item in flat_variants %}
+                        <option value="{{ item.variant_id }}" 
+                                data-title="{{ item.title }}" 
+                                data-sku="{{ item.sku }}" 
+                                data-barcode="{{ item.barcode }}" 
+                                data-price="{{ item.price }}" 
+                                data-stock="{{ item.stock_qty }}">
+                            {{ item.title }} ({{ item.sku }}) — ${{ item.price }} [Stock: {{ item.stock_qty }}]
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between pt-1">
+                    <button type="button" id="btn-add-all-stock" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold underline">
+                        + Add All In-Stock Items
+                    </button>
+                    <button type="button" id="btn-clear-selection" class="text-[11px] text-rose-600 hover:text-rose-800 font-bold">
+                        Clear Batch
+                    </button>
+                </div>
+
+                <!-- Selected Queue Container -->
+                <div id="selected-queue-list" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Card 2: Sheet & Paper Format Settings -->
+            <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm space-y-3">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-100">
+                    <i class="fas fa-sliders-h text-indigo-600"></i> Label Sheet & Format
+                </h3>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Target Printer / Sheet Type</label>
+                    <select id="cfg-sheet-type" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+                        <option value="a4-24" selected>A4 Sticker Sheet (3×8 = 24 labels / 70×37mm)</option>
+                        <option value="letter-30">US Letter / Avery 5160 (3×10 = 30 labels)</option>
+                        <option value="thermal-50x30">Thermal Roll (50mm × 30mm Zebra / TSC / Xprinter)</option>
+                        <option value="thermal-40x25">Thermal Roll Compact (40mm × 25mm)</option>
+                    </select>
+                </div>
+
+                <!-- Fields to Display Toggles -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-2">Sticker Visible Elements</label>
+                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="show-business" checked class="rounded text-indigo-600">
+                            <span>Store Name</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="show-title" checked class="rounded text-indigo-600">
+                            <span>Product Title</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="show-price" checked class="rounded text-indigo-600">
+                            <span>Retail Price</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="show-sku" checked class="rounded text-indigo-600">
+                            <span>SKU Code</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Currency Prefix</label>
+                    <input type="text" id="cfg-currency-symbol" value="$" class="w-20 text-xs border border-gray-200 rounded-lg p-2 text-center font-bold">
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ── RIGHT PREVIEW: LIVE SHEET & PRINT CANVAS (8 Cols) ── -->
+        <div class="lg:col-span-8 flex flex-col space-y-3">
+            <div class="flex items-center justify-between text-xs text-gray-500 no-print">
+                <span class="font-bold text-gray-700">Live Print Canvas Preview</span>
+                <span id="preview-labels-count" class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-600">0 Labels Queued</span>
+            </div>
+
+            <!-- Print Preview Container -->
+            <div class="bg-gray-200/80 p-6 rounded-xl border border-gray-300 min-h-[600px] overflow-auto flex justify-center">
+                <div id="print-preview-container" class="bg-white shadow-xl p-5 min-h-[700px] w-full max-w-[794px] text-gray-900 border border-gray-200 rounded">
+                    <!-- Injected dynamically based on format selection -->
+                    <div id="stickers-mount" class="sticker-grid-a4-24">
+                        <div class="col-span-full py-20 text-center text-gray-400">
+                            <i class="fas fa-barcode text-4xl mb-2 text-gray-300"></i>
+                            <p class="text-sm font-semibold text-gray-600">No Labels in Print Queue</p>
+                            <p class="text-xs text-gray-400 mt-1">Select items from the left panel to populate the barcode sheet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    // All available variants
+    const CATALOG = {{ flat_variants|tojson }};
+    const STORE_NAME = "{% if businesses %}{{ businesses[0].name_en }}{% else %}Retail Store{% endif %}";
+
+    // Selected Print Queue: [{ variant_id, title, sku, barcode, price, qty }]
+    let printQueue = [];
+
+    const selectProduct = document.getElementById('select-add-product');
+    const queueListEl = document.getElementById('selected-queue-list');
+    const stickersMount = document.getElementById('stickers-mount');
+    const previewLabelsCount = document.getElementById('preview-labels-count');
+
+    // Add selected product to queue
+    selectProduct.addEventListener('change', () => {
+        const variantId = selectProduct.value;
+        if (!variantId) return;
+
+        const item = CATALOG.find(c => c.variant_id === variantId);
+        if (!item) return;
+
+        const existing = printQueue.find(q => q.variant_id === variantId);
+        if (existing) {
+            existing.qty += 1;
+        } else {
+            printQueue.push({
+                variant_id: item.variant_id,
+                title: item.title,
+                sku: item.sku,
+                barcode: item.barcode || item.sku,
+                price: parseFloat(item.price),
+                qty: 1
+            });
+        }
+
+        selectProduct.value = "";
+        renderQueue();
+        renderPreview();
+    });
+
+    // Add all in-stock
+    document.getElementById('btn-add-all-stock').addEventListener('click', () => {
+        CATALOG.forEach(item => {
+            if (item.stock_qty > 0 && !printQueue.some(q => q.variant_id === item.variant_id)) {
+                printQueue.push({
+                    variant_id: item.variant_id,
+                    title: item.title,
+                    sku: item.sku,
+                    barcode: item.barcode || item.sku,
+                    price: parseFloat(item.price),
+                    qty: item.stock_qty
+                });
+            }
+        });
+        renderQueue();
+        renderPreview();
+    });
+
+    // Clear batch
+    document.getElementById('btn-clear-selection').addEventListener('click', () => {
+        printQueue = [];
+        renderQueue();
+        renderPreview();
+    });
+
+    function renderQueue() {
+        if (printQueue.length === 0) {
+            queueListEl.innerHTML = '<p class="text-[11px] text-gray-400 italic">No items selected.</p>';
+            return;
+        }
+
+        queueListEl.innerHTML = printQueue.map(item => `
+            <div class="flex items-center justify-between gap-2 p-2 bg-gray-50 border border-gray-200 rounded-lg text-xs">
+                <div class="flex-1 min-w-0">
+                    <strong class="text-gray-900 block truncate">${item.title}</strong>
+                    <span class="text-[10px] text-gray-500 font-mono">${item.sku} ($${item.price.toFixed(2)})</span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <input type="number" min="1" max="500" value="${item.qty}" 
+                           class="w-14 text-center border border-gray-300 rounded p-1 font-bold font-mono text-xs" 
+                           onchange="updateQueueQty('${item.variant_id}', this.value)">
+                    <button type="button" class="text-gray-400 hover:text-rose-600 p-1" onclick="removeQueueItem('${item.variant_id}')">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    window.updateQueueQty = function(variantId, newQty) {
+        const item = printQueue.find(q => q.variant_id === variantId);
+        if (item) {
+            item.qty = Math.max(1, parseInt(newQty || 1, 10));
+            renderPreview();
+        }
+    };
+
+    window.removeQueueItem = function(variantId) {
+        printQueue = printQueue.filter(q => q.variant_id !== variantId);
+        renderQueue();
+        renderPreview();
+    };
+
+    // Render Preview and Vector Barcodes
+    function renderPreview() {
+        const sheetType = document.getElementById('cfg-sheet-type').value;
+        const showBusiness = document.getElementById('show-business').checked;
+        const showTitle = document.getElementById('show-title').checked;
+        const showPrice = document.getElementById('show-price').checked;
+        const showSku = document.getElementById('show-sku').checked;
+        const currency = document.getElementById('cfg-currency-symbol').value || '$';
+
+        // Set Grid Layout Classes
+        stickersMount.className = "";
+        if (sheetType === 'a4-24') {
+            stickersMount.className = "sticker-grid-a4-24";
+            document.body.className = "mode-sheet";
+        } else if (sheetType === 'letter-30') {
+            stickersMount.className = "sticker-grid-letter-30";
+            document.body.className = "mode-sheet";
+        } else {
+            stickersMount.className = "sticker-grid-thermal";
+            document.body.className = "mode-thermal";
+        }
+
+        // Expand queue by quantity
+        const expandedList = [];
+        printQueue.forEach(item => {
+            for (let i = 0; i < item.qty; i++) {
+                expandedList.push(item);
+            }
+        });
+
+        previewLabelsCount.textContent = `${expandedList.length} Labels Queued`;
+
+        if (expandedList.length === 0) {
+            stickersMount.innerHTML = `
+                <div class="col-span-full py-20 text-center text-gray-400">
+                    <i class="fas fa-barcode text-4xl mb-2 text-gray-300"></i>
+                    <p class="text-sm font-semibold text-gray-600">No Labels in Print Queue</p>
+                    <p class="text-xs text-gray-400 mt-1">Select items from the left panel to populate the barcode sheet.</p>
+                </div>
+            `;
+            return;
+        }
+
+        stickersMount.innerHTML = expandedList.map((item, idx) => {
+            const svgId = `barcode-svg-${idx}`;
+            return `
+                <div class="barcode-sticker-item p-2 border border-dashed border-gray-300 rounded flex flex-col items-center justify-between text-center bg-white" style="min-height: 35mm; max-height: 40mm;">
+                    ${showBusiness ? `<div class="text-[9px] font-bold text-gray-500 uppercase tracking-wider truncate w-full">${STORE_NAME}</div>` : ''}
+                    ${showTitle ? `<div class="text-[10px] font-bold text-gray-900 leading-tight truncate w-full px-1">${item.title}</div>` : ''}
+                    
+                    <div class="py-0.5 flex justify-center w-full">
+                        <svg id="${svgId}" class="max-w-full h-8"></svg>
+                    </div>
+
+                    <div class="w-full flex items-center justify-between px-1 text-[10px] pt-0.5 border-t border-gray-100">
+                        ${showSku ? `<span class="font-mono text-gray-500">${item.sku}</span>` : '<span></span>'}
+                        ${showPrice ? `<span class="font-black text-gray-900 font-mono text-xs">${currency}${item.price.toFixed(2)}</span>` : '<span></span>'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        // Generate Barcodes with JsBarcode
+        setTimeout(() => {
+            expandedList.forEach((item, idx) => {
+                const el = document.getElementById(`barcode-svg-${idx}`);
+                if (el && typeof JsBarcode !== 'undefined') {
+                    try {
+                        JsBarcode(el, item.barcode, {
+                            format: "CODE128",
+                            width: 1.2,
+                            height: 25,
+                            displayValue: false,
+                            margin: 0
+                        });
+                    } catch (e) {
+                        console.warn("Barcode rendering fallback:", e);
+                    }
+                }
+            });
+        }, 50);
+    }
+
+    // Config change listeners
+    document.getElementById('cfg-sheet-type').addEventListener('change', renderPreview);
+    document.getElementById('show-business').addEventListener('change', renderPreview);
+    document.getElementById('show-title').addEventListener('change', renderPreview);
+    document.getElementById('show-price').addEventListener('change', renderPreview);
+    document.getElementById('show-sku').addEventListener('change', renderPreview);
+    document.getElementById('cfg-currency-symbol').addEventListener('input', renderPreview);
+
+    window.triggerPrintLabels = function() {
+        if (printQueue.length === 0) {
+            alert("Please select at least one item to print labels.");
+            return;
+        }
+        window.print();
+    };
+
+    // Auto-select first item on load
+    document.addEventListener('DOMContentLoaded', () => {
+        if (CATALOG.length > 0) {
+            printQueue.push({
+                variant_id: CATALOG[0].variant_id,
+                title: CATALOG[0].title,
+                sku: CATALOG[0].sku,
+                barcode: CATALOG[0].barcode || CATALOG[0].sku,
+                price: parseFloat(CATALOG[0].price),
+                qty: 4
+            });
+            renderQueue();
+            renderPreview();
+        }
+    });
+</script>
+{% endblock %}

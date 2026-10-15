@@ -58,6 +58,18 @@ from app.modules.ecommerce.payments.models import (  # noqa: F401
     PaymentMethod,
     Refund,
 )
+from app.modules.ecommerce.pos.models import (  # noqa: F401
+    POSPayment,
+    POSRegister,
+    POSSession,
+)
+from app.modules.ecommerce.procurement.models import (  # noqa: F401
+    GoodsReceivedNote,
+    GoodsReceivedNoteItem,
+    PurchaseOrder,
+    PurchaseOrderItem,
+    Supplier,
+)
 from app.modules.ecommerce.pricing.models import (  # noqa: F401
     Coupon,
     CurrencyRate,

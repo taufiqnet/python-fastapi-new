@@ -115,21 +115,31 @@ def require_permission(module: str, feature: str, action: str):
     async def permission_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.is_superuser or current_user.has_role("admin"):
             return current_user
-        code = f"{module}:{feature}:{action}"
-        if not current_user.has_permission(code):
+
+        candidate_codes = [f"{module}:{feature}:{action}"]
+        if feature in ("pos_terminal", "pos_registers"):
+            candidate_codes.extend([f"{module}:pos:{action}", f"{module}:orders:{action}"])
+        elif feature in ("procurement_po", "procurement_suppliers"):
+            candidate_codes.extend([f"{module}:procurement:{action}", f"{module}:inventory:{action}"])
+        elif feature in ("items_master", "inventory_uom", "inventory_valuation", "lots_serials", "inventory_transfers", "inventory_counts", "barcode_print"):
+            candidate_codes.append(f"{module}:inventory:{action}")
+        elif feature == "coupons":
+            candidate_codes.append(f"{module}:products:{action}")
+
+        has_any = any(current_user.has_permission(c) for c in candidate_codes)
+        if not has_any:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission denied. Required permission: {code}",
+                detail=f"Permission denied. Required permission: {candidate_codes[0]}",
             )
         if settings.subscription_required and current_user.business_id:
             from app.core.tenancy.models import BusinessProfile
             from app.core.billing.models import SubscriptionPlan
             from sqlalchemy import select
-            db = getattr(current_user, "_sa_instance_state", None)
-            # Re-fetch business profile with subscription_plan permissions if needed
             biz_profile = current_user.business_profile
             if biz_profile:
-                if not biz_profile.has_permission(code):
+                plan_has_any = any(biz_profile.has_permission(c) for c in candidate_codes)
+                if not plan_has_any:
                     if current_user.has_role("admin"):
                         plan_name = (
                             biz_profile.subscription_plan.name
@@ -138,7 +148,7 @@ def require_permission(module: str, feature: str, action: str):
                         )
                         raise HTTPException(
                             status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{code}'. Please upgrade your subscription.",
+                            detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{candidate_codes[0]}'. Please upgrade your subscription.",
                         )
                     else:
                         raise HTTPException(

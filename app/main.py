@@ -80,6 +80,8 @@ from app.modules.ecommerce.customer.router import router as customers_router
 from app.modules.ecommerce.inventory.router import router as inventory_router
 from app.modules.ecommerce.notifications.router import router as notifications_router
 from app.modules.ecommerce.orders.router import router as orders_router
+from app.modules.ecommerce.pos.router import router as pos_router
+from app.modules.ecommerce.procurement.router import router as procurement_router
 from app.modules.ecommerce.payments.router import router as payments_router
 from app.modules.ecommerce.pricing.router import router as pricing_router
 from app.modules.ecommerce.products.router import router as products_router
@@ -129,6 +131,8 @@ from app.routers import (
     notification_views,
     offer_letter_views,
     order_views,
+    pos_views,
+    procurement_views,
     organization_views,
     payment_views,
     payroll_views,
@@ -337,6 +341,8 @@ app.include_router(report_views.router)
 app.include_router(finance_views.router)
 app.include_router(catalog_views.router)
 app.include_router(order_views.router)
+app.include_router(pos_views.router)
+app.include_router(procurement_views.router)
 app.include_router(inventory_views.router)
 app.include_router(organization_views.router)
 app.include_router(employee_views.router)
@@ -366,6 +372,8 @@ app.include_router(pricing_router)
 app.include_router(cart_router)
 app.include_router(notification_views.router)
 app.include_router(orders_router)
+app.include_router(pos_router)
+app.include_router(procurement_router)
 app.include_router(payments_router)
 app.include_router(shipping_router)
 app.include_router(reviews_router)

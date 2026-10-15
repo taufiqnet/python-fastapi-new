@@ -572,3 +572,52 @@ def stock_reservations_page(
             "current_user": current_user,
         },
     )
+
+
+@router.get("/inventory/barcodes/print", response_class=HTMLResponse)
+def barcode_print_page(
+    request: Request,
+    business_id: int | None = None,
+    current_user: User = Depends(require_permission("ecommerce", "barcode_print", "view")),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    all_businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser and current_user.business_id:
+        businesses = [b for b in all_businesses if b.id == current_user.business_id]
+    else:
+        businesses = all_businesses
+
+    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+    warehouses = inventory_service.get_warehouses(db, business_id=selected_business_id, skip=0, limit=100)
+    products = product_service.get_products(db, business_id=selected_business_id, skip=0, limit=500)
+
+    # Flatten product variants for easy client-side selection
+    flat_variants = []
+    for p in products:
+        for v in p.variants:
+            flat_variants.append({
+                "variant_id": str(v.id),
+                "product_id": str(p.id),
+                "title": p.title,
+                "sku": v.sku,
+                "barcode": v.barcode or v.sku,
+                "price": float(v.price),
+                "stock_qty": v.stock_qty,
+                "category_name": p.category.name if p.category else "General"
+            })
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/ecommerce/inventory/barcode_print.html",
+        context={
+            "businesses": businesses,
+            "selected_business_id": selected_business_id,
+            "warehouses": warehouses,
+            "products": products,
+            "flat_variants": flat_variants,
+            "active_page": "barcode_print",
+            "current_user": current_user,
+        },
+    )
+

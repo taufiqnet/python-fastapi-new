@@ -54,73 +54,167 @@ from app.modules.hr_payroll.payroll.models import PayrollPeriod, PayrollSettings
 
 SYSTEM_MODULES = {
     "general": {
-        "title": "GENERAL PERMISSIONS",
-        "icon": "fas font-cog",
-        "features": [
-            ("business_profile", "Business Profile"),
-            ("users_permissions", "Users & Permissions"),
-            ("ai_assistant", "AI Chat Assistant"),
-            ("mcp_hub", "MCP Report Hub"),
-            ("maintenance_mode", "Maintenance Mode"),
+        "title": "General & Admin",
+        "icon": "fas fa-user-shield",
+        "categories": [
+            {
+                "category": "System & Access Administration",
+                "features": [
+                    ("business_profile", "Business Profiles"),
+                    ("users_permissions", "User Accounts"),
+                    ("roles", "Roles & Permissions"),
+                    ("subscription_plans", "Subscription Plans"),
+                    ("mcp_hub", "MCP Report Hub"),
+                    ("ai_assistant", "AI Chat Assistant"),
+                    ("maintenance_mode", "Maintenance Mode"),
+                ],
+            }
         ],
     },
     "hrm": {
-        "title": "HRM PERMISSIONS",
+        "title": "HR & Payroll",
         "icon": "fas fa-users-cog",
-        "features": [
-            ("departments", "Departments"),
-            ("job_titles", "Job Titles"),
-            ("employees", "Employees"),
-            ("leave_types", "Leave Types"),
-            ("leave_allocations", "Leave Allocations"),
-            ("leave_applications", "Leave Requests"),
-            ("attendance", "Attendance"),
-            ("compensation", "Compensation"),
-            ("holidays", "Holidays"),
-            ("payroll_periods", "Payroll Periods"),
-            ("payroll_records", "Payslips"),
-            ("payroll_settings", "Payroll Settings"),
-            ("offer_letters", "Offer Letters"),
-            ("appointment_letters", "Appointment Letters"),
-            ("salary_certificates", "Salary Certificates"),
-            ("experience_letters", "Experience Letters"),
-            ("notice_board", "Notice Board"),
-            ("recruitment", "Recruitment"),
-        ],
-    },
-    "ecommerce": {
-        "title": "ECOMMERCE PERMISSIONS",
-        "icon": "fas fa-shopping-cart",
-        "features": [
-            ("categories", "Categories"),
-            ("brands", "Brands"),
-            ("models", "Models"),
-            ("products", "Products"),
-            ("orders", "Orders"),
-            ("inventory", "Inventory"),
-            ("customers", "Customers"),
-            ("sellers", "Sellers & Vendors"),
-            ("pricing", "Pricing & Tax Rules"),
-            ("payments", "Payment Gateways & Refunds"),
-            ("shipping", "Shipping & Fulfillment"),
-            ("catalog", "Catalog Search & Filters"),
-            ("reviews", "Product Reviews"),
-            ("notifications", "Store Notifications"),
-            ("reports", "Reports & Analytics"),
+        "categories": [
+            {
+                "category": "Organization",
+                "features": [
+                    ("departments", "Departments"),
+                    ("job_titles", "Job Titles"),
+                    ("employees", "Employees"),
+                ],
+            },
+            {
+                "category": "Attendance & Leave",
+                "features": [
+                    ("attendance", "Attendance"),
+                    ("leave_types", "Leave Types"),
+                    ("leave_allocations", "Leave Allocations"),
+                    ("leave_applications", "Leave Requests"),
+                    ("holidays", "Holidays"),
+                ],
+            },
+            {
+                "category": "Payroll",
+                "features": [
+                    ("compensation", "Compensation"),
+                    ("payroll_settings", "Payroll Setup"),
+                    ("payroll_periods", "Payroll Periods"),
+                ],
+            },
+            {
+                "category": "Recruitment",
+                "features": [
+                    ("recruitment", "Candidates & Interviews"),
+                ],
+            },
+            {
+                "category": "Documents",
+                "features": [
+                    ("offer_letters", "Offer Letters"),
+                    ("appointment_letters", "Appointment Letters"),
+                    ("payroll_records", "Payslips"),
+                    ("salary_certificates", "Salary Certificates"),
+                    ("experience_letters", "Experience Letters"),
+                ],
+            },
+            {
+                "category": "Announcements",
+                "features": [
+                    ("notice_board", "Notice Board"),
+                ],
+            },
         ],
     },
     "finance": {
-        "title": "FINANCE & ACCOUNTING",
+        "title": "Finance & Accounting",
         "icon": "fas fa-calculator",
-        "features": [
-            ("accounts", "Chart of Accounts"),
-            ("vouchers", "Journal Vouchers"),
-            ("invoices", "Sales Invoices"),
-            ("mushak", "Mushak 6.3 Tax Invoice"),
-            ("reports", "Financial Statements"),
+        "categories": [
+            {
+                "category": "Accounting & General Ledger",
+                "features": [
+                    ("accounts", "Chart of Accounts"),
+                    ("fiscal_years", "Fiscal Years & Periods"),
+                    ("vouchers", "Journal Vouchers"),
+                    ("invoices", "Sales Invoices & VAT"),
+                    ("mushak", "Mushak 6.3"),
+                    ("reports", "Financial Reports"),
+                ],
+            }
+        ],
+    },
+    "ecommerce": {
+        "title": "Ecommerce, POS & Inventory",
+        "icon": "fas fa-shopping-cart",
+        "categories": [
+            {
+                "category": "Point of Sale (POS)",
+                "features": [
+                    ("pos_terminal", "POS Terminal"),
+                    ("pos_registers", "POS Registers"),
+                    ("pos", "Point of Sale (General)"),
+                ],
+            },
+            {
+                "category": "Procurement & Inbound",
+                "features": [
+                    ("procurement_po", "Purchase Orders (PO)"),
+                    ("procurement_suppliers", "Suppliers & Vendors"),
+                    ("procurement", "Procurement & Inbound (General)"),
+                ],
+            },
+            {
+                "category": "Inventory & Stock",
+                "features": [
+                    ("inventory", "Inventory Stock"),
+                    ("barcode_print", "Barcode Label Printing"),
+                    ("items_master", "Item Master Catalog"),
+                    ("inventory_uom", "UoM & Conversions"),
+                    ("inventory_valuation", "Valuation Reports"),
+                    ("lots_serials", "Lot & Serial Tracking"),
+                    ("inventory_transfers", "Stock Transfers"),
+                    ("inventory_counts", "Stock Counts & Audits"),
+                ],
+            },
+            {
+                "category": "Orders & Sales",
+                "features": [
+                    ("orders", "Orders"),
+                    ("shipping", "Shipping & Fulfillment"),
+                    ("payments", "Payment Gateways & Refunds"),
+                    ("notifications", "Store Notifications"),
+                ],
+            },
+            {
+                "category": "Catalog & Pricing",
+                "features": [
+                    ("products", "Product"),
+                    ("categories", "Category"),
+                    ("brands", "Brand"),
+                    ("models", "Model"),
+                    ("pricing", "Pricing & Tax Rules"),
+                    ("coupons", "Coupons & Discounts"),
+                    ("catalog", "Catalog Search & Filters"),
+                    ("reviews", "Product Reviews"),
+                ],
+            },
+            {
+                "category": "CRM & Marketplace",
+                "features": [
+                    ("customers", "Customers"),
+                    ("sellers", "Sellers & Vendors"),
+                    ("reports", "Reports & Analytics"),
+                ],
+            },
         ],
     },
 }
+
+for mod_key, mod_info in SYSTEM_MODULES.items():
+    mod_info["features"] = [
+        (f_key, f_name)
+        for cat in mod_info.get("categories", [])
+        for f_key, f_name in cat["features"]
+    ]
 
 ACTIONS = ["view", "create", "update", "delete"]
 
@@ -260,6 +354,9 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
         db.add(hr_plan)
 
+    else:
+        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
+
     ecom_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "ecommerce module (free tier)").first()
     if not ecom_plan:
         ecom_plan = SubscriptionPlan(
@@ -269,6 +366,8 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         )
         ecom_plan.permissions = [p for p in db_all_perms if p.module == "ecommerce"]
         db.add(ecom_plan)
+    else:
+        ecom_plan.permissions = [p for p in db_all_perms if p.module == "ecommerce"]
 
     pro_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "Pro").first()
     if not pro_plan:

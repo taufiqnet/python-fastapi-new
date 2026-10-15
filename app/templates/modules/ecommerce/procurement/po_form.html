@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}Create Purchase Order | Procurement{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="/procurement/purchase-orders/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                    <i class="fas fa-arrow-left text-[10px]"></i> Back to Purchase Orders
+                </a>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <i class="fas fa-file-invoice text-indigo-600"></i>
+                Create Purchase Order (PO)
+            </h1>
+            <p class="text-xs text-gray-500 mt-0.5">
+                Raise an inbound purchase order for inventory restocking.
+            </p>
+        </div>
+    </div>
+
+    <!-- PO Form Container -->
+    <form id="form-create-po" class="space-y-6">
+
+        <!-- Card 1: Supplier & Warehouse Setup -->
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+            <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2 pb-2 border-b border-gray-100">
+                <i class="fas fa-info-circle text-indigo-600"></i> General Information
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Supplier <span class="text-rose-500">*</span></label>
+                    <select id="po-supplier-id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+                        <option value="">— Select Supplier —</option>
+                        {% for s in suppliers %}
+                        <option value="{{ s.id }}">{{ s.name }} ({{ s.code }}) - {{ s.payment_terms }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Destination Warehouse <span class="text-rose-500">*</span></label>
+                    <select id="po-warehouse-id" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+                        <option value="">— Select Receiving Warehouse —</option>
+                        {% for w in warehouses %}
+                        <option value="{{ w.id }}">{{ w.name }} ({{ w.code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Expected Delivery Date</label>
+                    <input type="date" id="po-expected-date" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">PO Notes / Terms</label>
+                <input type="text" id="po-notes" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500" placeholder="e.g. Include Certificate of Analysis and Packing Slip">
+            </div>
+        </div>
+
+        <!-- Card 2: Purchase Line Items -->
+        <div class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fas fa-boxes text-indigo-600"></i> Order Line Items
+                </h2>
+                <button type="button" id="btn-add-line" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-lg border border-indigo-200 transition-colors flex items-center gap-1">
+                    <i class="fas fa-plus text-[10px]"></i> Add Product Line
+                </button>
+            </div>
+
+            <!-- Table Header -->
+            <div class="grid grid-cols-12 gap-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider px-2">
+                <div class="col-span-5">Product & Variant</div>
+                <div class="col-span-2 text-center">Unit Cost ($)</div>
+                <div class="col-span-2 text-center">Qty Ordered</div>
+                <div class="col-span-2 text-right">Line Total ($)</div>
+                <div class="col-span-1 text-center">Action</div>
+            </div>
+
+            <!-- Dynamic Lines Container -->
+            <div id="po-lines-container" class="space-y-2.5">
+                <!-- Injected via JavaScript -->
+            </div>
+
+            <!-- Financial Summary Box -->
+            <div class="pt-4 border-t border-gray-100 flex justify-end">
+                <div class="w-72 space-y-2 text-xs">
+                    <div class="flex justify-between text-gray-600">
+                        <span>Items Subtotal:</span>
+                        <span id="po-summary-subtotal" class="font-mono font-bold text-gray-900">$0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-gray-600">
+                        <span>Shipping / Freight:</span>
+                        <input type="number" step="0.01" min="0" id="po-shipping-amount" value="0.00" class="w-24 text-xs border border-gray-200 rounded p-1 text-right font-mono outline-none">
+                    </div>
+                    <div class="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-200">
+                        <span>Grand Total:</span>
+                        <span id="po-summary-grandtotal" class="font-mono text-indigo-600 text-base">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex items-center justify-end gap-3">
+            <a href="/procurement/purchase-orders/manage" class="px-5 py-2.5 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg shadow-sm">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+                <i class="fas fa-save"></i> Save Purchase Order (Draft)
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+<script>
+    // Flatten products and variants for selection
+    const ALL_VARIANTS = [];
+    {% for p in products %}
+        {% for v in p.variants %}
+        ALL_VARIANTS.push({
+            id: "{{ v.id }}",
+            title: "{{ p.title }}",
+            sku: "{{ v.sku }}",
+            cost_price: {{ v.cost_price or 0.00 }}
+        });
+        {% endfor %}
+    {% endfor %}
+
+    const linesContainer = document.getElementById('po-lines-container');
+    const shippingInput = document.getElementById('po-shipping-amount');
+
+    function createLineRow() {
+        const row = document.createElement('div');
+        row.className = 'po-item-row grid grid-cols-12 gap-3 items-center bg-gray-50/70 p-2.5 rounded-lg border border-gray-200';
+
+        let optionsHtml = '<option value="">— Select Product Variant —</option>';
+        ALL_VARIANTS.forEach(v => {
+            optionsHtml += `<option value="${v.id}" data-cost="${v.cost_price}">${v.title} (${v.sku})</option>`;
+        });
+
+        row.innerHTML = `
+            <div class="col-span-5">
+                <select class="variant-select w-full text-xs border border-gray-200 rounded-lg p-2 outline-none focus:ring-1 focus:ring-indigo-500 bg-white" required>
+                    ${optionsHtml}
+                </select>
+            </div>
+            <div class="col-span-2">
+                <input type="number" step="0.01" min="0" value="0.00" class="cost-input w-full text-xs border border-gray-200 rounded-lg p-2 text-center font-mono outline-none" required>
+            </div>
+            <div class="col-span-2">
+                <input type="number" min="1" value="10" class="qty-input w-full text-xs border border-gray-200 rounded-lg p-2 text-center font-mono outline-none" required>
+            </div>
+            <div class="col-span-2 text-right">
+                <span class="line-total font-mono font-bold text-gray-900 text-xs">$0.00</span>
+            </div>
+            <div class="col-span-1 text-center">
+                <button type="button" class="btn-remove-row text-gray-400 hover:text-rose-600 p-1">
+                    <i class="fas fa-trash-alt text-xs"></i>
+                </button>
+            </div>
+        `;
+
+        const variantSelect = row.querySelector('.variant-select');
+        const costInput = row.querySelector('.cost-input');
+        const qtyInput = row.querySelector('.qty-input');
+        const lineTotal = row.querySelector('.line-total');
+        const removeBtn = row.querySelector('.btn-remove-row');
+
+        variantSelect.addEventListener('change', () => {
+            const opt = variantSelect.options[variantSelect.selectedIndex];
+            if (opt && opt.getAttribute('data-cost')) {
+                costInput.value = parseFloat(opt.getAttribute('data-cost')).toFixed(2);
+            }
+            updateRowTotal();
+        });
+
+        costInput.addEventListener('input', updateRowTotal);
+        qtyInput.addEventListener('input', updateRowTotal);
+
+        function updateRowTotal() {
+            const cost = parseFloat(costInput.value || 0);
+            const qty = parseInt(qtyInput.value || 0, 10);
+            lineTotal.textContent = `$${(cost * qty).toFixed(2)}`;
+            calculateTotals();
+        }
+
+        removeBtn.addEventListener('click', () => {
+            if (linesContainer.querySelectorAll('.po-item-row').length > 1) {
+                row.remove();
+                calculateTotals();
+            } else {
+                alert("At least one line item is required.");
+            }
+        });
+
+        linesContainer.appendChild(row);
+        updateRowTotal();
+    }
+
+    function calculateTotals() {
+        let subtotal = 0;
+        linesContainer.querySelectorAll('.po-item-row').forEach(row => {
+            const cost = parseFloat(row.querySelector('.cost-input').value || 0);
+            const qty = parseInt(row.querySelector('.qty-input').value || 0, 10);
+            subtotal += (cost * qty);
+        });
+
+        const shipping = parseFloat(shippingInput.value || 0);
+        const grandTotal = subtotal + shipping;
+
+        document.getElementById('po-summary-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('po-summary-grandtotal').textContent = `$${grandTotal.toFixed(2)}`;
+    }
+
+    shippingInput.addEventListener('input', calculateTotals);
+    document.getElementById('btn-add-line').addEventListener('click', createLineRow);
+
+    // Initial line
+    createLineRow();
+
+    // Form Submit
+    document.getElementById('form-create-po').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const items = [];
+        let hasInvalid = false;
+        linesContainer.querySelectorAll('.po-item-row').forEach(row => {
+            const variantId = row.querySelector('.variant-select').value;
+            const cost = parseFloat(row.querySelector('.cost-input').value || 0);
+            const qty = parseInt(row.querySelector('.qty-input').value || 0, 10);
+
+            if (!variantId) hasInvalid = true;
+            items.push({
+                variant_id: variantId,
+                unit_cost: cost,
+                quantity_ordered: qty,
+                tax_amount: 0.00
+            });
+        });
+
+        if (hasInvalid || items.length === 0) {
+            alert("Please select a variant for each product line.");
+            return;
+        }
+
+        const payload = {
+            business_id: {{ selected_business_id }},
+            supplier_id: document.getElementById('po-supplier-id').value,
+            destination_warehouse_id: document.getElementById('po-warehouse-id').value,
+            expected_delivery_date: document.getElementById('po-expected-date').value || null,
+            notes: document.getElementById('po-notes').value || null,
+            shipping_amount: parseFloat(shippingInput.value || 0),
+            currency: "USD",
+            items: items
+        };
+
+        try {
+            const res = await fetch('/procurement/purchase-orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.detail || "Failed to create PO");
+            }
+
+            const created = await res.json();
+            window.location.href = `/procurement/purchase-orders/${created.id}`;
+        } catch (err) {
+            alert(err.message);
+        }
+    });
+</script>
+{% endblock %}

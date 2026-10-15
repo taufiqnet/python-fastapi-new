@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Purchase Orders | Inbound Procurement{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="/inventory/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
+                    <i class="fas fa-boxes text-[10px]"></i> Inventory Stock
+                </a>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+                <i class="fas fa-file-invoice text-indigo-600"></i>
+                Purchase Orders (Procurement)
+            </h1>
+            <p class="text-xs text-gray-500 mt-1">
+                Create supplier purchase orders, track inbound shipments, and receive goods to update warehouse inventory and FIFO cost layers.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <a href="/procurement/suppliers/manage" class="px-3.5 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-truck-loading text-gray-500"></i>
+                <span>Suppliers</span>
+            </a>
+            <a href="/procurement/purchase-orders/create" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <i class="fas fa-plus text-xs"></i>
+                <span>New Purchase Order</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="bg-white border border-gray-200 rounded-xl p-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-gray-500 font-semibold uppercase text-[10px]">Filter Status:</span>
+            <a href="/procurement/purchase-orders/manage" class="px-2.5 py-1 rounded-lg {% if not selected_status %}bg-indigo-600 text-white font-bold{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">All</a>
+            <a href="/procurement/purchase-orders/manage?status=draft" class="px-2.5 py-1 rounded-lg {% if selected_status == 'draft' %}bg-indigo-600 text-white font-bold{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Draft</a>
+            <a href="/procurement/purchase-orders/manage?status=sent" class="px-2.5 py-1 rounded-lg {% if selected_status == 'sent' %}bg-indigo-600 text-white font-bold{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Sent</a>
+            <a href="/procurement/purchase-orders/manage?status=partially_received" class="px-2.5 py-1 rounded-lg {% if selected_status == 'partially_received' %}bg-indigo-600 text-white font-bold{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Partially Received</a>
+            <a href="/procurement/purchase-orders/manage?status=received" class="px-2.5 py-1 rounded-lg {% if selected_status == 'received' %}bg-indigo-600 text-white font-bold{% else %}bg-gray-100 text-gray-600 hover:bg-gray-200{% endif %}">Received</a>
+        </div>
+        <div class="text-gray-500 text-xs">
+            Total Orders: <strong class="text-gray-900">{{ purchase_orders|length }}</strong>
+        </div>
+    </div>
+
+    <!-- Purchase Orders Table -->
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[10px]">
+                        <th class="py-3 px-4">PO Number</th>
+                        <th class="py-3 px-4">Supplier</th>
+                        <th class="py-3 px-4">Destination Warehouse</th>
+                        <th class="py-3 px-4">Order Date</th>
+                        <th class="py-3 px-4">Expected Date</th>
+                        <th class="py-3 px-4 text-right">Total Amount</th>
+                        <th class="py-3 px-4 text-center">Status</th>
+                        <th class="py-3 px-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for po in purchase_orders %}
+                    <tr class="hover:bg-gray-50/60 transition-colors">
+                        <td class="py-3.5 px-4 font-mono font-bold text-indigo-600">
+                            <a href="/procurement/purchase-orders/{{ po.id }}" class="hover:underline">
+                                {{ po.po_number }}
+                            </a>
+                        </td>
+                        <td class="py-3.5 px-4 font-semibold text-gray-900">{{ po.supplier_name }}</td>
+                        <td class="py-3.5 px-4 text-gray-600">
+                            <span class="inline-flex items-center gap-1">
+                                <i class="fas fa-warehouse text-gray-400 text-[10px]"></i> {{ po.warehouse_name }}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-gray-600">{{ po.order_date }}</td>
+                        <td class="py-3.5 px-4 text-gray-500">{{ po.expected_delivery_date or "—" }}</td>
+                        <td class="py-3.5 px-4 text-right font-mono font-bold text-gray-900">
+                            ${{ po.total_amount }}
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            {% if po.status.value == 'received' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Received</span>
+                            {% elif po.status.value == 'partially_received' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Partially Received</span>
+                            {% elif po.status.value == 'sent' or po.status.value == 'confirmed' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">{{ po.status.value|title }}</span>
+                            {% elif po.status.value == 'cancelled' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Cancelled</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200">Draft</span>
+                            {% endif %}
+                        </td>
+                        <td class="py-3.5 px-4 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <a href="/procurement/purchase-orders/{{ po.id }}" class="px-2.5 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded border border-gray-200 text-[11px] font-medium" title="View Details">
+                                    View
+                                </a>
+                                {% if po.status.value != 'received' and po.status.value != 'cancelled' %}
+                                <a href="/procurement/purchase-orders/{{ po.id }}" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[11px] font-semibold flex items-center gap-1" title="Receive Goods Note">
+                                    <i class="fas fa-truck-loading text-[10px]"></i> Receive
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-gray-500">
+                            <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center mx-auto mb-2 text-gray-400">
+                                <i class="fas fa-file-invoice text-xl"></i>
+                            </div>
+                            <p class="font-semibold text-gray-800">No Purchase Orders Found.</p>
+                            <p class="text-xs text-gray-500 mt-0.5">Click "New Purchase Order" to raise an order with a supplier.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
