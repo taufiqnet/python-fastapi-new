@@ -543,7 +543,7 @@ $(document).ready(function() {
     var table = $('#supplierTable').DataTable({
         responsive: true,
         pageLength: 10,
-        dom: 'tp',
+        dom: 'rt',
         ordering: true,
         order: [[0, 'asc']],
         columnDefs: [
@@ -553,37 +553,42 @@ $(document).ready(function() {
         language: {
             emptyTable: '<div class="py-8 text-center text-gray-400"><i class="fas fa-truck-loading text-3xl mb-2 block"></i>No suppliers found.</div>'
         },
-        drawCallback: function(settings) {
-            updateCustomPagination(settings);
+        drawCallback: function() {
+            updateFooter(this.api());
         }
     });
 
     // Custom search input
-    $('#customSearch').on('keyup', function() {
+    $('#customSearch').on('input', function() {
         table.search(this.value).draw();
     });
 
-    // Filter by Status (column index 9)
+    // Filter by Status (column index 9 - exact regex match)
     $('#filterStatus').on('change', function() {
-        table.column(9).search(this.value).draw();
+        var val = this.value;
+        table.column(9).search(val ? '^' + val + '$' : '', true, false).draw();
     });
 
     // Filter by Business (column index 10)
-    $('#filterBusiness').on('change', function() {
-        table.column(10).search(this.value).draw();
-    });
+    if ($('#filterBusiness').length) {
+        $('#filterBusiness').on('change', function() {
+            table.column(10).search(this.value).draw();
+        });
+    }
 
     // Clear filters
     $('#btnClearFilters').on('click', function() {
         $('#customSearch').val('');
         $('#filterStatus').val('');
-        $('#filterBusiness').val('');
+        if ($('#filterBusiness').length) {
+            $('#filterBusiness').val('');
+        }
         table.search('').columns().search('').draw();
     });
 
     // Toggle filters bar
     $('#btnToggleFilters').on('click', function() {
-        $('#toolbarContainer').slideToggle(150);
+        $('.toolbar').slideToggle(200);
     });
 
     // Per page select
@@ -591,63 +596,55 @@ $(document).ready(function() {
         table.page.len(parseInt(this.value)).draw();
     });
 
-    // Custom pagination renderer
-    function updateCustomPagination(settings) {
-        var api = new $.fn.dataTable.Api(settings);
+    // Custom numbered pagination renderer matching ProERP standard
+    function updateFooter(api) {
         var info = api.page.info();
-
-        if (info.recordsDisplay === 0) {
-            $('#dtInfo').text('Showing 0 to 0 of 0 entries');
-        } else {
-            $('#dtInfo').text(
-                'Showing ' + (info.start + 1) + ' to ' + info.end + ' of ' + info.recordsDisplay + ' entries'
-            );
-        }
-
+        var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
+        var end   = Math.min(info.end, info.recordsDisplay);
         var total = info.recordsDisplay;
-        var len = info.length;
-        var pages = Math.ceil(total / len);
-        var current = info.page;
+        var overall = info.recordsTotal;
 
-        if (pages <= 1) {
-            $('#dtPagination').html('');
-            return;
+        if (total === 0) {
+            $('#dtInfo').text('No entries found');
+        } else if (total < overall) {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' filtered (total ' + overall + ')');
+        } else {
+            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' entries');
         }
 
+        var pages = info.pages;
+        var current = info.page;
         var html = '';
-        var base = 'px-2.5 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 text-gray-600 transition-colors cursor-pointer';
-        var active = 'px-2.5 py-1 text-xs border border-indigo-600 bg-indigo-600 text-white font-bold rounded cursor-default';
-        var disabled = 'px-2.5 py-1 text-xs border border-gray-100 rounded text-gray-300 cursor-not-allowed';
+        var btnClass = 'inline-flex items-center justify-center w-7 h-7 rounded text-xs border transition-colors ';
+        var base   = btnClass + 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer';
+        var active = btnClass + 'border-indigo-600 bg-indigo-600 text-white font-semibold cursor-default';
+        var disabled = btnClass + 'border-gray-100 bg-white text-gray-300 cursor-default';
 
         // Prev
         if (current === 0) {
-            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+            html += '<button type="button" class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
         } else {
-            html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+            html += '<button type="button" class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
         }
 
         var start_p = Math.max(0, current - 2);
-        var end_p = Math.min(pages - 1, current + 2);
+        var end_p   = Math.min(pages - 1, current + 2);
 
-        if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
-        if (start_p > 1) html += '<span class="px-1 text-gray-400 text-xs">...</span>';
+        if (start_p > 0) html += '<button type="button" class="' + base + '" onclick="movePage(0)">1</button>';
+        if (start_p > 1) html += '<span class="text-gray-400 text-xs px-1">…</span>';
 
         for (var i = start_p; i <= end_p; i++) {
-            if (i === current) {
-                html += '<button class="' + active + '">' + (i + 1) + '</button>';
-            } else {
-                html += '<button class="' + base + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
-            }
+            html += '<button type="button" class="' + (i === current ? active : base) + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
         }
 
-        if (end_p < pages - 2) html += '<span class="px-1 text-gray-400 text-xs">...</span>';
-        if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
+        if (end_p < pages - 2) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+        if (end_p < pages - 1) html += '<button type="button" class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
 
         // Next
         if (current >= pages - 1) {
-            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+            html += '<button type="button" class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
         } else {
-            html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+            html += '<button type="button" class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
         }
 
         $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
