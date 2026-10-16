@@ -34,11 +34,25 @@ def suppliers_manage_page(
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
     businesses = business_service.list_businesses(db, skip=0, limit=500)
+    biz_map = {b.id: b.name_en for b in businesses}
     if current_user and not current_user.is_superuser and current_user.business_id:
         businesses = [b for b in businesses if b.id == current_user.business_id]
-    selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
+        suppliers = procurement_service.list_suppliers(db, business_id=current_user.business_id)
+        selected_business_id = current_user.business_id
+    else:
+        suppliers = procurement_service.list_suppliers(db, business_id=resolved_business_id)
+        selected_business_id = resolved_business_id or (businesses[0].id if businesses else 1)
 
-    suppliers = procurement_service.list_suppliers(db, business_id=selected_business_id)
+    total_count = len(suppliers)
+    active_count = sum(1 for s in suppliers if getattr(s, "is_active", True))
+    inactive_count = total_count - active_count
+    net30_count = sum(1 for s in suppliers if getattr(s, "payment_terms", "") == "Net 30")
+
+    current_biz = None
+    if selected_business_id:
+        current_biz = next((b for b in businesses if b.id == selected_business_id), None)
+    if not current_biz and businesses:
+        current_biz = businesses[0]
 
     return templates.TemplateResponse(
         "modules/ecommerce/procurement/suppliers_list.html",
@@ -46,8 +60,14 @@ def suppliers_manage_page(
             "request": request,
             "current_user": current_user,
             "businesses": businesses,
+            "biz_map": biz_map,
+            "current_business": current_biz,
             "selected_business_id": selected_business_id,
             "suppliers": suppliers,
+            "total_count": total_count,
+            "active_count": active_count,
+            "inactive_count": inactive_count,
+            "net30_count": net30_count,
             "active_page": "procurement_suppliers",
         },
     )

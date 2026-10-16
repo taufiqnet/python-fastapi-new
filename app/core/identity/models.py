@@ -56,6 +56,18 @@ class User(Base):
     def is_offline_sync_enabled(self) -> bool:
         return self.can_use_offline_mode
 
+    @property
+    def display_name(self) -> str:
+        return self.username or self.email or f"User #{self.id}"
+
+    @property
+    def first_name(self) -> str:
+        return self.username or "User"
+
+    @property
+    def last_name(self) -> str:
+        return ""
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
@@ -97,7 +109,25 @@ class User(Base):
         if self.is_superuser or self.has_role("admin"):
             return True
         all_codes = self.get_all_permission_codes()
-        return permission_code in all_codes or "*" in all_codes
+        if permission_code in all_codes or "*" in all_codes:
+            return True
+
+        parts = permission_code.split(":")
+        if len(parts) == 3:
+            mod, feat, act = parts
+            candidates = []
+            if feat in ("pos_terminal", "pos_registers"):
+                candidates.extend([f"{mod}:pos:{act}", f"{mod}:orders:{act}"])
+            elif feat in ("procurement_po", "procurement_suppliers"):
+                candidates.extend([f"{mod}:procurement:{act}", f"{mod}:inventory:{act}"])
+            elif feat in ("items_master", "inventory_uom", "inventory_valuation", "lots_serials", "inventory_transfers", "inventory_counts", "barcode_print"):
+                candidates.append(f"{mod}:inventory:{act}")
+            elif feat in ("customers", "customer"):
+                candidates.extend([f"{mod}:pos:{act}", f"{mod}:orders:{act}"])
+            elif feat == "coupons":
+                candidates.append(f"{mod}:products:{act}")
+            return any(c in all_codes for c in candidates)
+        return False
 
 
 # ---------------------------------------------------------------------------

@@ -679,8 +679,8 @@ class StockMovement(Base, UUIDMixin, TimestampMixin):
     # Who/what performed this movement — staff user, seller, or automated
     # system/webhook. Nullable because system-originated movements have no
     # human actor.
-    actor_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), nullable=True
+    actor_id: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
     )
     actor_type: Mapped[str | None] = mapped_column(
         String(50), nullable=True

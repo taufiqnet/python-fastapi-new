@@ -83,7 +83,7 @@ def get_current_session(
         return None
     session_out = POSSessionOut.from_orm(session)
     session_out.register_name = session.register.name if session.register else None
-    session_out.cashier_name = f"{current_user.first_name} {current_user.last_name}".strip()
+    session_out.cashier_name = getattr(current_user, "username", None) or "Cashier"
     return session_out
 
 
@@ -98,7 +98,7 @@ def open_session(
     session = service.open_session(db, current_user, resolved_id, data)
     session_out = POSSessionOut.from_orm(session)
     session_out.register_name = session.register.name if session.register else None
-    session_out.cashier_name = f"{current_user.first_name} {current_user.last_name}".strip()
+    session_out.cashier_name = getattr(current_user, "username", None) or "Cashier"
     return session_out
 
 
@@ -125,7 +125,7 @@ def close_session(
     session = service.close_session(db, session_id, current_user.id, resolved_id, data)
     session_out = POSSessionOut.from_orm(session)
     session_out.register_name = session.register.name if session.register else None
-    session_out.cashier_name = f"{current_user.first_name} {current_user.last_name}".strip()
+    session_out.cashier_name = getattr(current_user, "username", None) or "Cashier"
     return session_out
 
 

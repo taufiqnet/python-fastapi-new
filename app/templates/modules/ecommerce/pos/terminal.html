@@ -9,28 +9,36 @@
         height: calc(100vh - 4.5rem);
         min-height: 600px;
     }
+
     .custom-scrollbar::-webkit-scrollbar {
         width: 5px;
         height: 5px;
     }
+
     .custom-scrollbar::-webkit-scrollbar-track {
         background: #f1f5f9;
     }
+
     .custom-scrollbar::-webkit-scrollbar-thumb {
         background: #cbd5e1;
         border-radius: 4px;
     }
+
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: #94a3b8;
     }
+
     /* Thermal 80mm Receipt Print Media */
     @media print {
         body * {
             visibility: hidden;
         }
-        #thermal-receipt-area, #thermal-receipt-area * {
+
+        #thermal-receipt-area,
+        #thermal-receipt-area * {
             visibility: visible;
         }
+
         #thermal-receipt-area {
             position: absolute;
             left: 0;
@@ -43,6 +51,7 @@
             font-family: 'Courier New', Courier, monospace !important;
             font-size: 11px !important;
         }
+
         .no-print {
             display: none !important;
         }
@@ -51,65 +60,80 @@
 {% endblock %}
 
 {% block content %}
-<div class="pos-screen flex flex-col -m-4 sm:-m-6 lg:-m-8 bg-slate-900 text-slate-100 overflow-hidden font-sans select-none">
+<div
+    class="pos-screen flex flex-col -m-4 sm:-m-6 lg:-m-8 bg-slate-100 text-gray-800 overflow-hidden font-sans select-none">
 
     <!-- Top POS Control Bar -->
-    <header class="h-14 bg-slate-950 border-b border-slate-800 px-4 flex items-center justify-between shrink-0">
+    <header class="h-14 bg-white border-b border-gray-200 px-4 flex items-center justify-between shrink-0 shadow-xs">
         <!-- Brand & Register Info -->
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-indigo-500/20">
+            <div
+                class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-sm">
                 <i class="fas fa-cash-register"></i>
             </div>
             <div>
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold text-white tracking-wide uppercase">POS Terminal</span>
+                    <span class="text-xs font-bold text-gray-900 tracking-wide uppercase">POS Terminal</span>
                     {% if active_session %}
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Shift Active
+                    <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Shift Active
                     </span>
                     {% else %}
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                    <span
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                         <i class="fas fa-lock text-[8px]"></i> Shift Closed
                     </span>
                     {% endif %}
                 </div>
-                <div class="text-[11px] text-slate-400 flex items-center gap-2">
-                    <span>Register: <strong class="text-slate-200">{% if active_session %}{{ active_session.register.name }} ({{ active_session.register.code }}){% else %}None Selected{% endif %}</strong></span>
+                <div class="text-[11px] text-gray-500 flex items-center gap-2">
+                    <span>Register: <strong class="text-gray-800">{% if active_session %}{{ active_session.register.name
+                            }} ({{ active_session.register.code }}){% else %}None Selected{% endif %}</strong></span>
                     <span>•</span>
-                    <span>Warehouse: <strong class="text-slate-200">{% if active_session %}{{ active_session.register.warehouse.name }}{% else %}—{% endif %}</strong></span>
+                    <span>Warehouse: <strong class="text-gray-800">{% if active_session %}{{
+                            active_session.register.warehouse.name }}{% else %}—{% endif %}</strong></span>
                 </div>
             </div>
         </div>
 
         <!-- Center: Live Search / Barcode Listener Prompt -->
-        <div class="hidden md:flex items-center gap-2 bg-slate-800/80 border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-slate-300">
-            <i class="fas fa-barcode text-indigo-400 text-sm"></i>
-            <span>Scanner: <span class="text-emerald-400 font-semibold">Active & Listening</span> (Auto-detects Barcode)</span>
-            <span class="text-[10px] bg-slate-700 px-1.5 py-0.5 rounded text-slate-300 font-mono">Enter</span>
+        <div
+            class="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-600">
+            <i class="fas fa-barcode text-indigo-600 text-sm"></i>
+            <span>Scanner: <span class="text-emerald-600 font-semibold">Active & Listening</span> (Auto-detects
+                Barcode)</span>
+            <span class="text-[10px] bg-gray-200 px-1.5 py-0.5 rounded text-gray-700 font-mono">Enter</span>
         </div>
 
         <!-- Right: Actions, Shift buttons, Fullscreen -->
         <div class="flex items-center gap-2.5">
             {% if active_session %}
-            <button type="button" id="btn-session-summary" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-lg border border-slate-700 transition-colors flex items-center gap-1.5">
-                <i class="fas fa-file-invoice text-indigo-400"></i>
+            <button type="button" id="btn-session-summary"
+                class="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 shadow-xs transition-colors flex items-center gap-1.5">
+                <i class="fas fa-file-invoice text-indigo-600"></i>
                 <span>Z-Report</span>
             </button>
-            <button type="button" id="btn-close-shift" class="px-3 py-1.5 bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 text-xs font-semibold rounded-lg border border-rose-500/30 transition-colors flex items-center gap-1.5">
+            <button type="button" id="btn-close-shift"
+                class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-lg border border-rose-200 shadow-xs transition-colors flex items-center gap-1.5">
                 <i class="fas fa-door-closed text-xs"></i>
                 <span>Close Shift</span>
             </button>
             {% else %}
-            <button type="button" id="btn-open-shift" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm shadow-emerald-600/30">
+            <button type="button" id="btn-open-shift"
+                class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
                 <i class="fas fa-key text-xs"></i>
                 <span>Open Shift</span>
             </button>
             {% endif %}
 
-            <a href="/pos/registers/manage" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" title="Manage Registers">
+            <a href="/pos/registers/manage"
+                class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Manage Registers">
                 <i class="fas fa-cog text-sm"></i>
             </a>
-            <a href="/orders/manage" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors" title="Exit to Backoffice">
+            <a href="/orders/manage"
+                class="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                title="Exit to Backoffice">
                 <i class="fas fa-sign-out-alt text-sm"></i>
             </a>
         </div>
@@ -119,28 +143,31 @@
     <div class="flex-1 flex overflow-hidden">
 
         <!-- ── LEFT: PRODUCT SELECTION & SCANNING (60%) ── -->
-        <div class="flex-1 flex flex-col border-r border-slate-800 bg-slate-900 overflow-hidden">
-            
+        <div class="flex-1 flex flex-col border-r border-gray-200 bg-gray-50/70 overflow-hidden">
+
             <!-- Search & Filter Controls -->
-            <div class="p-3 bg-slate-900/90 border-b border-slate-800 space-y-2.5">
+            <div class="p-3 bg-white border-b border-gray-200 space-y-2.5 shadow-xs">
                 <div class="relative">
-                    <i class="fas fa-search absolute left-3.5 top-3 text-slate-400 text-sm"></i>
-                    <input type="text" id="pos-search-input" 
-                           class="w-full pl-10 pr-24 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-inner" 
-                           placeholder="Scan Barcode or Search by Title / SKU (e.g. 890123... or F1)" 
-                           autocomplete="off">
+                    <i class="fas fa-search absolute left-3.5 top-3 text-gray-400 text-sm"></i>
+                    <input type="text" id="pos-search-input"
+                        class="w-full pl-10 pr-24 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs transition-colors"
+                        placeholder="Scan Barcode or Search by Title / SKU (e.g. 890123... or F1)" autocomplete="off">
                     <div class="absolute right-2 top-2 flex items-center gap-1">
-                        <span class="text-[10px] font-mono bg-slate-700/80 text-slate-300 px-2 py-1 rounded">F1 Search</span>
+                        <span class="text-[10px] font-mono bg-gray-200 text-gray-600 px-2 py-1 rounded">F1 Search</span>
                     </div>
                 </div>
 
                 <!-- Category Pills (Horizontal Scroll) -->
                 <div class="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1 text-xs">
-                    <button type="button" class="category-pill active px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold whitespace-nowrap shadow-sm shadow-indigo-600/30 transition-all" data-category-id="">
+                    <button type="button"
+                        class="category-pill active px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold whitespace-nowrap shadow-sm transition-all"
+                        data-category-id="">
                         <i class="fas fa-th-large text-[10px] mr-1"></i> All Items
                     </button>
                     {% for cat in categories %}
-                    <button type="button" class="category-pill px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium whitespace-nowrap border border-slate-700/50 transition-all" data-category-id="{{ cat.id }}">
+                    <button type="button"
+                        class="category-pill px-3 py-1.5 rounded-lg bg-white hover:bg-gray-100 text-gray-700 font-medium whitespace-nowrap border border-gray-200 shadow-xs transition-all"
+                        data-category-id="{{ cat.id }}">
                         {{ cat.name }}
                     </button>
                     {% endfor %}
@@ -148,109 +175,136 @@
             </div>
 
             <!-- Products Grid Container -->
-            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-100/50">
                 <div id="products-grid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
                     <!-- Dynamic Product Cards injected via JavaScript -->
-                    <div class="col-span-full py-16 text-center text-slate-500 flex flex-col items-center justify-center">
-                        <i class="fas fa-spinner fa-spin text-3xl text-indigo-500 mb-3"></i>
-                        <p class="text-xs font-medium">Loading catalog items...</p>
+                    <div
+                        class="col-span-full py-16 text-center text-gray-400 flex flex-col items-center justify-center">
+                        <i class="fas fa-spinner fa-spin text-3xl text-indigo-600 mb-3"></i>
+                        <p class="text-xs font-medium text-gray-600">Loading catalog items...</p>
                     </div>
                 </div>
             </div>
 
             <!-- Left Footer Status: Hotkeys Cheatsheet -->
-            <div class="h-8 bg-slate-950 border-t border-slate-800 px-4 flex items-center justify-between text-[11px] text-slate-400 shrink-0">
+            <div
+                class="h-8 bg-white border-t border-gray-200 px-4 flex items-center justify-between text-[11px] text-gray-500 shrink-0">
                 <div class="flex items-center gap-3">
-                    <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-200 border border-slate-700">F1</kbd> Search</span>
-                    <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-200 border border-slate-700">F2</kbd> Discount</span>
-                    <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-200 border border-slate-700">F4</kbd> Pay</span>
-                    <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-200 border border-slate-700">F8</kbd> Hold</span>
-                    <span><kbd class="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-200 border border-slate-700">ESC</kbd> Clear</span>
+                    <span><kbd
+                            class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-700 border border-gray-200 font-mono">F1</kbd>
+                        Search</span>
+                    <span><kbd
+                            class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-700 border border-gray-200 font-mono">F2</kbd>
+                        Discount</span>
+                    <span><kbd
+                            class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-700 border border-gray-200 font-mono">F4</kbd>
+                        Pay</span>
+                    <span><kbd
+                            class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-700 border border-gray-200 font-mono">F8</kbd>
+                        Hold</span>
+                    <span><kbd
+                            class="bg-gray-100 px-1.5 py-0.5 rounded text-[10px] text-gray-700 border border-gray-200 font-mono">ESC</kbd>
+                        Clear</span>
                 </div>
-                <div class="text-[10px] text-slate-500">
+                <div class="text-[10px] text-gray-400">
                     Offline PWA Ready • Direct Stock Decrement
                 </div>
             </div>
         </div>
 
         <!-- ── RIGHT: CART & BILLING SUMMARY (40%) ── -->
-        <div class="w-full lg:w-[440px] xl:w-[480px] flex flex-col bg-slate-950 shrink-0">
-            
+        <div
+            class="w-full lg:w-[440px] xl:w-[480px] flex flex-col bg-white border-l border-gray-200 shrink-0 shadow-sm">
+
             <!-- Customer Selector Bar -->
-            <div class="p-3 border-b border-slate-800 bg-slate-900/60 flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+            <div class="p-3 border-b border-gray-200 bg-gray-50/80 flex items-center gap-2">
+                <div
+                    class="w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 shrink-0 shadow-xs">
                     <i class="fas fa-user text-xs"></i>
                 </div>
                 <div class="flex-1 min-w-0">
-                    <select id="pos-customer-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <select id="pos-customer-select"
+                        class="w-full bg-white border border-gray-300 rounded-lg px-2.5 py-1.5 text-xs text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs">
                         <option value="" selected>👤 Walk-in / Cash Customer</option>
                         {% for c in customers %}
                         <option value="{{ c.id }}">{{ c.full_name }}{% if c.phone %} ({{ c.phone }}){% endif %}</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button type="button" id="btn-quick-customer" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg border border-slate-700 transition-colors shrink-0" title="Quick Add Customer">
-                    <i class="fas fa-user-plus text-xs"></i>
+                <button type="button" id="btn-quick-customer" onclick="openAddCustomerModal()"
+                    class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg border border-indigo-600 transition-all shrink-0 flex items-center gap-1.5 text-xs font-semibold shadow-xs"
+                    title="Add New Customer">
+                    <i class="fas fa-plus text-xs"></i>
+                    <span class="text-[11px] font-bold">New</span>
                 </button>
             </div>
 
             <!-- Cart Items List (Scrollable) -->
-            <div class="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2" id="pos-cart-items">
+            <div class="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2 bg-slate-50/50" id="pos-cart-items">
                 <!-- Empty State -->
-                <div id="cart-empty-state" class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
-                    <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center mb-3 text-slate-600">
-                        <i class="fas fa-shopping-basket text-2xl"></i>
+                <div id="cart-empty-state"
+                    class="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400">
+                    <div
+                        class="w-16 h-16 rounded-2xl bg-white border border-gray-200 flex items-center justify-center mb-3 text-gray-300 shadow-xs">
+                        <i class="fas fa-shopping-basket text-2xl text-gray-400"></i>
                     </div>
-                    <p class="text-sm font-semibold text-slate-300">Cart is Empty</p>
-                    <p class="text-xs text-slate-500 mt-1 max-w-[200px]">Scan a barcode or click any product from the catalog to ring up a sale.</p>
+                    <p class="text-sm font-bold text-gray-700">Cart is Empty</p>
+                    <p class="text-xs text-gray-500 mt-1 max-w-[200px]">Scan a barcode or click any product from the
+                        catalog to ring up a sale.</p>
                 </div>
             </div>
 
             <!-- Cart Totals & Financials Box -->
-            <div class="p-4 bg-slate-900 border-t border-slate-800 space-y-2">
-                <div class="flex justify-between text-xs text-slate-400">
+            <div class="p-4 bg-white border-t border-gray-200 space-y-2 shadow-xs">
+                <div class="flex justify-between text-xs text-gray-500">
                     <span>Items Count:</span>
-                    <span id="pos-total-items" class="font-bold text-slate-200">0 pcs</span>
+                    <span id="pos-total-items" class="font-bold text-gray-800">0 pcs</span>
                 </div>
-                <div class="flex justify-between text-xs text-slate-400">
+                <div class="flex justify-between text-xs text-gray-500">
                     <span>Subtotal:</span>
-                    <span id="pos-subtotal" class="font-mono text-slate-200">$0.00</span>
+                    <span id="pos-subtotal" class="font-mono font-semibold text-gray-800">$0.00</span>
                 </div>
-                <div class="flex justify-between items-center text-xs text-slate-400">
+                <div class="flex justify-between items-center text-xs text-gray-500">
                     <span class="flex items-center gap-1">
                         Discount (F2):
-                        <button type="button" id="btn-quick-discount" class="text-indigo-400 hover:text-indigo-300 text-[10px] underline">Set</button>
+                        <button type="button" id="btn-quick-discount"
+                            class="text-indigo-600 hover:text-indigo-800 text-[10px] font-semibold underline">Set</button>
                     </span>
-                    <span id="pos-discount" class="font-mono text-emerald-400">-$0.00</span>
+                    <span id="pos-discount" class="font-mono font-semibold text-emerald-600">-$0.00</span>
                 </div>
-                <div class="flex justify-between text-xs text-slate-400">
+                <div class="flex justify-between text-xs text-gray-500">
                     <span>Tax (0%):</span>
-                    <span id="pos-tax" class="font-mono text-slate-200">$0.00</span>
+                    <span id="pos-tax" class="font-mono font-semibold text-gray-800">$0.00</span>
                 </div>
 
                 <!-- Grand Total -->
-                <div class="pt-2 border-t border-slate-800 flex items-baseline justify-between">
+                <div class="pt-2.5 border-t border-gray-200 flex items-baseline justify-between">
                     <div>
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Payable</span>
-                        <span class="text-[10px] text-slate-500">Includes all taxes</span>
+                        <span class="text-xs font-bold text-gray-600 uppercase tracking-wider block">Total
+                            Payable</span>
+                        <span class="text-[10px] text-gray-400">Includes all taxes</span>
                     </div>
                     <div class="text-right">
-                        <span id="pos-grand-total" class="text-3xl font-black text-white font-mono tracking-tight">$0.00</span>
+                        <span id="pos-grand-total"
+                            class="text-3xl font-black text-gray-900 font-mono tracking-tight">$0.00</span>
                     </div>
                 </div>
             </div>
 
             <!-- Big Action Checkout Buttons -->
-            <div class="p-3 bg-slate-950 border-t border-slate-800 grid grid-cols-4 gap-2">
-                <button type="button" id="btn-clear-cart" class="col-span-1 py-3 bg-slate-800 hover:bg-rose-900/40 hover:text-rose-300 text-slate-400 text-xs font-bold rounded-xl border border-slate-700/80 transition-colors flex flex-col items-center justify-center gap-0.5">
+            <div class="p-3 bg-gray-50 border-t border-gray-200 grid grid-cols-4 gap-2">
+                <button type="button" id="btn-clear-cart"
+                    class="col-span-1 py-3 bg-white hover:bg-rose-50 hover:text-rose-700 text-gray-600 text-xs font-bold rounded-xl border border-gray-200 shadow-xs transition-colors flex flex-col items-center justify-center gap-0.5">
                     <i class="fas fa-trash-alt text-xs"></i>
                     <span>Clear (Esc)</span>
                 </button>
-                <button type="button" id="btn-hold-cart" class="col-span-1 py-3 bg-slate-800 hover:bg-amber-900/40 hover:text-amber-300 text-slate-300 text-xs font-bold rounded-xl border border-slate-700/80 transition-colors flex flex-col items-center justify-center gap-0.5">
+                <button type="button" id="btn-hold-cart"
+                    class="col-span-1 py-3 bg-white hover:bg-amber-50 hover:text-amber-700 text-gray-600 text-xs font-bold rounded-xl border border-gray-200 shadow-xs transition-colors flex flex-col items-center justify-center gap-0.5">
                     <i class="fas fa-pause text-xs"></i>
                     <span>Hold (F8)</span>
                 </button>
-                <button type="button" id="btn-pay-checkout" class="col-span-2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-black rounded-xl transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+                <button type="button" id="btn-pay-checkout"
+                    class="col-span-2 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2">
                     <i class="fas fa-check-circle text-base"></i>
                     <span>PAY NOW (F4)</span>
                 </button>
@@ -265,49 +319,62 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- MODAL 1: OPEN SHIFT MODAL                                      -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<div id="modal-open-shift" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 {% if active_session %}hidden{% endif %}">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl text-slate-100">
+<div id="modal-open-shift"
+    class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 {% if active_session %}hidden{% endif %}">
+    <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-md p-6 shadow-2xl text-gray-800">
         <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/30">
+            <div
+                class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg border border-emerald-100">
                 <i class="fas fa-key"></i>
             </div>
             <div>
-                <h3 class="text-base font-bold text-white">Open Cashier Shift</h3>
-                <p class="text-xs text-slate-400">Initialize register drawer with opening cash float.</p>
+                <h3 class="text-base font-bold text-gray-900">Open Cashier Shift</h3>
+                <p class="text-xs text-gray-500">Initialize register drawer with opening cash float.</p>
             </div>
         </div>
 
         <form id="form-open-shift" class="space-y-4">
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Select POS Register <span class="text-rose-400">*</span></label>
-                <select id="open-register-id" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Select POS Register <span
+                        class="text-rose-500">*</span></label>
+                <select id="open-register-id" required
+                    class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs">
                     <option value="">— Select Register Counter —</option>
                     {% for r in registers %}
-                    <option value="{{ r.id }}" {% if loop.first %}selected{% endif %}>{{ r.name }} ({{ r.code }}) - {{ r.warehouse.name }}</option>
+                    <option value="{{ r.id }}" {% if loop.first %}selected{% endif %}>{{ r.name }} ({{ r.code }}) - {{
+                        r.warehouse.name }}</option>
                     {% endfor %}
                 </select>
                 {% if not registers %}
-                <p class="text-[11px] text-amber-400 mt-1">
-                    <i class="fas fa-exclamation-triangle"></i> No registers found. Please <a href="/pos/registers/manage" class="underline font-bold">create a register first</a>.
+                <p class="text-[11px] text-amber-600 mt-1">
+                    <i class="fas fa-exclamation-triangle"></i> No registers found. Please <a
+                        href="/pos/registers/manage" class="underline font-bold">create a register first</a>.
                 </p>
                 {% endif %}
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Opening Cash Drawer Float ($) <span class="text-rose-400">*</span></label>
-                <input type="number" step="0.01" min="0" id="open-cash-amount" value="100.00" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white font-mono focus:outline-none focus:border-indigo-500" placeholder="0.00">
+                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Opening Cash Drawer Float ($) <span
+                        class="text-rose-500">*</span></label>
+                <input type="number" step="0.01" min="0" id="open-cash-amount" value="100.00" required
+                    class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-sm text-gray-900 font-mono focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                    placeholder="0.00">
             </div>
 
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Shift Notes (Optional)</label>
-                <textarea id="open-notes" rows="2" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500" placeholder="e.g. Morning Shift - Counter 1"></textarea>
+                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shift Notes (Optional)</label>
+                <textarea id="open-notes" rows="2"
+                    class="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                    placeholder="e.g. Morning Shift - Counter 1"></textarea>
             </div>
 
-            <div class="flex items-center justify-end gap-2 pt-2">
-                <a href="/orders/manage" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg transition-colors">
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                <a href="/orders/manage"
+                    class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 transition-colors">
                     Back to Orders
                 </a>
-                <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-md shadow-emerald-600/30">
+                <button type="submit"
+                    class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
                     <i class="fas fa-unlock"></i> Open Register & Start
                 </button>
             </div>
@@ -318,48 +385,59 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- MODAL 2: SPLIT PAYMENT & CHECKOUT MODAL                        -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<div id="modal-payment" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl p-6 shadow-2xl text-slate-100 flex flex-col max-h-[90vh]">
-        
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+<div id="modal-payment"
+    class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div
+        class="bg-white border border-gray-200 rounded-2xl w-full max-w-xl p-6 shadow-2xl text-gray-800 flex flex-col max-h-[90vh]">
+
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200">
             <div>
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="fas fa-credit-card text-emerald-400"></i>
-                    <span>Tender Payment</span>
+                <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fas fa-credit-card text-emerald-600"></i>
+                    <span>Payment Method</span>
                 </h3>
-                <p class="text-xs text-slate-400">Select payment tender or split between Cash, Card, and Mobile Wallet.</p>
+                <p class="text-xs text-gray-500">Select payment method or split between Cash, Card, and Mobile Wallet.
+                </p>
             </div>
-            <button type="button" class="text-slate-400 hover:text-white text-lg p-1" onclick="closeModal('modal-payment')">
+            <button type="button" class="text-gray-400 hover:text-gray-700 text-lg p-1 transition-colors"
+                onclick="closeModal('modal-payment')">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
         <div class="py-4 space-y-4 overflow-y-auto custom-scrollbar flex-1">
             <!-- Total Banner -->
-            <div class="p-3.5 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between">
+            <div class="p-3.5 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
                 <div>
-                    <span class="text-xs text-slate-400 uppercase font-semibold">Total Amount Due</span>
-                    <span id="modal-due-amount" class="text-2xl font-black text-white font-mono block">$0.00</span>
+                    <span class="text-xs text-gray-500 uppercase font-semibold">Total Amount Due</span>
+                    <span id="modal-due-amount" class="text-2xl font-black text-gray-900 font-mono block">$0.00</span>
                 </div>
                 <div class="text-right">
-                    <span class="text-xs text-slate-400 uppercase font-semibold">Balance Remaining</span>
-                    <span id="modal-balance-amount" class="text-2xl font-black text-amber-400 font-mono block">$0.00</span>
+                    <span class="text-xs text-gray-500 uppercase font-semibold">Balance Remaining</span>
+                    <span id="modal-balance-amount"
+                        class="text-2xl font-black text-amber-600 font-mono block">$0.00</span>
                 </div>
             </div>
 
             <!-- Payment Methods Select -->
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-2">Primary Tender Method</label>
+                <label class="block text-xs font-semibold text-gray-700 mb-2">Primary Method</label>
                 <div class="grid grid-cols-3 gap-2">
-                    <button type="button" class="tender-btn active p-3 rounded-xl bg-indigo-600 text-white font-bold text-xs flex flex-col items-center gap-1 border border-indigo-500 shadow-md shadow-indigo-600/30" data-method="cash">
+                    <button type="button"
+                        class="tender-btn active p-3 rounded-xl bg-indigo-600 text-white font-bold text-xs flex flex-col items-center gap-1 border border-indigo-600 shadow-sm"
+                        data-method="cash">
                         <i class="fas fa-money-bill-wave text-base"></i>
                         <span>Cash</span>
                     </button>
-                    <button type="button" class="tender-btn p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs flex flex-col items-center gap-1 border border-slate-700" data-method="card">
+                    <button type="button"
+                        class="tender-btn p-3 rounded-xl bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs flex flex-col items-center gap-1 border border-gray-200 shadow-xs"
+                        data-method="card">
                         <i class="fas fa-credit-card text-base"></i>
                         <span>Card (POS)</span>
                     </button>
-                    <button type="button" class="tender-btn p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs flex flex-col items-center gap-1 border border-slate-700" data-method="mobile_wallet">
+                    <button type="button"
+                        class="tender-btn p-3 rounded-xl bg-white hover:bg-gray-50 text-gray-700 font-bold text-xs flex flex-col items-center gap-1 border border-gray-200 shadow-xs"
+                        data-method="mobile_wallet">
                         <i class="fas fa-mobile-alt text-base"></i>
                         <span>Mobile Wallet</span>
                     </button>
@@ -368,34 +446,49 @@
 
             <!-- Cash Tendered & Quick Denominations -->
             <div id="cash-tendered-section" class="space-y-2">
-                <label class="block text-xs font-semibold text-slate-300">Amount Tendered</label>
+                <label class="block text-xs font-semibold text-gray-700">Amount Tendered</label>
                 <div class="relative">
-                    <span class="absolute left-3.5 top-2.5 text-slate-400 font-mono">$</span>
-                    <input type="number" step="0.01" id="tender-amount-input" class="w-full pl-8 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-lg text-white font-mono font-bold focus:outline-none focus:border-indigo-500" placeholder="0.00">
+                    <span class="absolute left-3.5 top-2.5 text-gray-400 font-mono">$</span>
+                    <input type="number" step="0.01" id="tender-amount-input"
+                        class="w-full pl-8 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-lg text-gray-900 font-mono font-bold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                        placeholder="0.00">
                 </div>
 
                 <!-- Quick Cash Chips -->
                 <div class="flex items-center gap-2 pt-1 flex-wrap">
-                    <button type="button" class="quick-cash-chip px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold rounded-lg border border-slate-700" data-cash="exact">Exact</button>
-                    <button type="button" class="quick-cash-chip px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold rounded-lg border border-slate-700" data-cash="10">$10</button>
-                    <button type="button" class="quick-cash-chip px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold rounded-lg border border-slate-700" data-cash="20">$20</button>
-                    <button type="button" class="quick-cash-chip px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold rounded-lg border border-slate-700" data-cash="50">$50</button>
-                    <button type="button" class="quick-cash-chip px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono font-bold rounded-lg border border-slate-700" data-cash="100">$100</button>
+                    <button type="button"
+                        class="quick-cash-chip px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 text-xs font-mono font-bold rounded-lg border border-gray-200 shadow-xs"
+                        data-cash="exact">Exact</button>
+                    <button type="button"
+                        class="quick-cash-chip px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 text-xs font-mono font-bold rounded-lg border border-gray-200 shadow-xs"
+                        data-cash="10">$10</button>
+                    <button type="button"
+                        class="quick-cash-chip px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 text-xs font-mono font-bold rounded-lg border border-gray-200 shadow-xs"
+                        data-cash="20">$20</button>
+                    <button type="button"
+                        class="quick-cash-chip px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 text-xs font-mono font-bold rounded-lg border border-gray-200 shadow-xs"
+                        data-cash="50">$50</button>
+                    <button type="button"
+                        class="quick-cash-chip px-3 py-1 bg-white hover:bg-gray-100 text-gray-800 text-xs font-mono font-bold rounded-lg border border-gray-200 shadow-xs"
+                        data-cash="100">$100</button>
                 </div>
             </div>
 
             <!-- Change Return Box -->
-            <div class="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl flex items-center justify-between">
-                <span class="text-xs font-bold text-emerald-400 uppercase">Change to Return</span>
-                <span id="modal-change-amount" class="text-2xl font-black text-emerald-300 font-mono">$0.00</span>
+            <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                <span class="text-xs font-bold text-emerald-800 uppercase">Change to Return</span>
+                <span id="modal-change-amount" class="text-2xl font-black text-emerald-700 font-mono">$0.00</span>
             </div>
         </div>
 
-        <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-3 shrink-0">
-            <button type="button" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-colors" onclick="closeModal('modal-payment')">
+        <div class="pt-3 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+            <button type="button"
+                class="px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl border border-gray-200 transition-colors"
+                onclick="closeModal('modal-payment')">
                 Cancel
             </button>
-            <button type="button" id="btn-complete-sale" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-emerald-600/30 flex items-center gap-2">
+            <button type="button" id="btn-complete-sale"
+                class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2">
                 <i class="fas fa-print"></i> Complete & Print Receipt
             </button>
         </div>
@@ -406,26 +499,32 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- MODAL 3: 80mm THERMAL RECEIPT DISPLAY & AUTO-PRINT             -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<div id="modal-receipt" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl text-slate-100 flex flex-col max-h-[90vh]">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                <i class="fas fa-receipt text-emerald-400"></i> Sale Complete
+<div id="modal-receipt"
+    class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div
+        class="bg-white border border-gray-200 rounded-2xl w-full max-w-md p-6 shadow-2xl text-gray-800 flex flex-col max-h-[90vh]">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200">
+            <h3 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-receipt text-emerald-600"></i> Sale Complete
             </h3>
-            <button type="button" class="text-slate-400 hover:text-white" onclick="closeModal('modal-receipt')">
+            <button type="button" class="text-gray-400 hover:text-gray-700" onclick="closeModal('modal-receipt')">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
         <div class="py-4 overflow-y-auto custom-scrollbar flex-1 flex justify-center">
             <!-- 80mm Thermal Receipt Canvas -->
-            <div id="thermal-receipt-area" class="w-[300px] bg-white text-black p-4 font-mono text-[11px] leading-tight shadow-md rounded border border-gray-300">
+            <div id="thermal-receipt-area"
+                class="w-[300px] bg-white text-black p-4 font-mono text-[11px] leading-tight shadow-md rounded border border-gray-300">
                 <div class="text-center pb-2 border-b border-dashed border-gray-400 space-y-0.5">
                     <p class="font-bold text-sm" id="rec-business-name">STORE NAME</p>
                     <p id="rec-header">Tax Invoice / Cash Receipt</p>
                     <p class="text-[10px] text-gray-600" id="rec-datetime">2026-10-15 15:45</p>
                     <p class="text-[10px]">Order: <strong id="rec-order-number">POS-2026-XXXX</strong></p>
-                    <p class="text-[10px]">Cashier: <span id="rec-cashier">Admin</span> | Reg: <span id="rec-register">REG-01</span></p>
+                    <p class="text-[10px]">Cashier: <span id="rec-cashier">Admin</span> | Reg: <span
+                            id="rec-register">REG-01</span></p>
+                    <p class="text-[10px]" id="rec-customer-row">Customer: <strong id="rec-customer">Walk-in</strong>
+                    </p>
                 </div>
 
                 <div class="py-2 border-b border-dashed border-gray-400">
@@ -477,14 +576,130 @@
             </div>
         </div>
 
-        <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
-            <button type="button" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg" onclick="closeModal('modal-receipt')">
+        <div class="pt-3 border-t border-gray-200 flex items-center justify-end gap-2">
+            <button type="button"
+                class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200"
+                onclick="closeModal('modal-receipt')">
                 Close
             </button>
-            <button type="button" id="btn-print-receipt-trigger" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-md shadow-indigo-600/30">
+            <button type="button" id="btn-print-receipt-trigger"
+                class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg flex items-center gap-1.5 shadow-sm">
                 <i class="fas fa-print"></i> Print Receipt
             </button>
         </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL 4: QUICK ADD CUSTOMER MODAL                             -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="modal-add-customer"
+    class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div
+        class="bg-white border border-gray-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-gray-800 flex flex-col max-h-[92vh]">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200 shrink-0">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg border border-indigo-100">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-gray-900">Add New Customer</h3>
+                    <p class="text-xs text-gray-500">Quickly register customer under your business and attach to this
+                        invoice.</p>
+                </div>
+            </div>
+            <button type="button" class="text-gray-400 hover:text-gray-700 text-lg p-1 transition-colors"
+                onclick="closeModal('modal-add-customer')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form id="form-add-customer" class="py-4 space-y-3.5 overflow-y-auto custom-scrollbar flex-1">
+            <!-- Business Profile Field -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Business Profile <span
+                        class="text-rose-500">*</span></label>
+                <div
+                    class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700 flex items-center justify-between">
+                    <span class="flex items-center gap-2 font-medium">
+                        <i class="fas fa-building text-indigo-600"></i>
+                        {% if current_user and current_user.business_profile %}{{ current_user.business_profile.name_en
+                        }}{% else %}Active Business{% endif %}
+                    </span>
+                    <span class="text-[10px] bg-gray-200 text-gray-600 font-mono px-2 py-0.5 rounded">ID: {{
+                        selected_business_id }}</span>
+                </div>
+            </div>
+
+            <!-- First Name & Last Name -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1" for="cust-first-name">First Name <span
+                            class="text-rose-500">*</span></label>
+                    <input type="text" id="cust-first-name" required maxlength="100"
+                        class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                        placeholder="e.g. John">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1" for="cust-last-name">Last Name</label>
+                    <input type="text" id="cust-last-name" maxlength="100"
+                        class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                        placeholder="e.g. Doe">
+                </div>
+            </div>
+
+            <!-- Phone & Email -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1" for="cust-phone">Phone Number <span
+                            class="text-rose-500">*</span></label>
+                    <input type="tel" id="cust-phone" required maxlength="50"
+                        class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                        placeholder="e.g. +880 1712-345678">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1" for="cust-email">Email Address <span
+                            class="text-gray-400 text-[10px]">(Optional)</span></label>
+                    <input type="email" id="cust-email" maxlength="255"
+                        class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                        placeholder="e.g. john.doe@example.com">
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1" for="cust-address">Address <span
+                        class="text-rose-500">*</span></label>
+                <textarea id="cust-address" rows="2" required
+                    class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                    placeholder="Street address, apartment, city, state, postal code..."></textarea>
+            </div>
+
+            <!-- Active Checkbox -->
+            <div class="pt-1">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="cust-is-active" checked
+                        class="w-4 h-4 accent-indigo-600 rounded bg-white border-gray-300 cursor-pointer">
+                    <span class="text-xs font-semibold text-gray-700">Customer Active Status</span>
+                </label>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="pt-3 border-t border-gray-200 flex items-center justify-end gap-3 shrink-0">
+                <button type="button"
+                    class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 transition-colors"
+                    onclick="closeModal('modal-add-customer')">
+                    Cancel
+                </button>
+                <button type="submit" id="btn-save-customer"
+                    class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-2 transition-colors">
+                    <i class="fas fa-save"></i> Save & Select Customer
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -494,14 +709,14 @@
 <script>
     // State Store
     const POS_STATE = {
-        sessionId: {% if active_session %}"{{ active_session.id }}"{% else %}null{% endif %},
-        warehouseId: {% if active_session %}"{{ active_session.register.warehouse_id }}"{% else %}null{% endif %},
-        businessId: {{ selected_business_id }},
-        cart: [],
+        sessionId: {% if active_session %}"{{ active_session.id }}"{% else %} null{% endif %},
+    warehouseId: {% if active_session %} "{{ active_session.register.warehouse_id }}"{% else %} null{% endif %},
+    businessId: { { selected_business_id } },
+    cart: [],
         products: [],
-        discountAmount: 0.00,
-        taxAmount: 0.00,
-        selectedTender: "cash"
+            discountAmount: 0.00,
+                taxAmount: 0.00,
+                    selectedTender: "cash"
     };
 
     // DOM Elements
@@ -516,21 +731,32 @@
     const grandTotalEl = document.getElementById('pos-grand-total');
 
     // Utility Modal Helpers
-    function openModal(id) {
-        document.getElementById(id).classList.remove('hidden');
-    }
-    function closeModal(id) {
-        document.getElementById(id).classList.add('hidden');
-    }
+    window.openModal = function (id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('hidden');
+    };
+    window.closeModal = function (id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    };
+    window.openAddCustomerModal = function () {
+        window.openModal('modal-add-customer');
+        setTimeout(() => {
+            const firstInput = document.getElementById('cust-first-name');
+            if (firstInput) firstInput.focus();
+        }, 100);
+    };
 
     // 1. Fetch & Render Catalog
     async function loadPOSProducts(query = '', categoryId = '') {
         if (!POS_STATE.warehouseId) {
             productsGrid.innerHTML = `
-                <div class="col-span-full py-12 text-center text-slate-500">
-                    <i class="fas fa-lock text-3xl text-amber-500 mb-2"></i>
-                    <p class="text-sm font-semibold text-slate-300">Shift Not Started</p>
-                    <p class="text-xs text-slate-500 mt-1">Please open a cashier shift to load warehouse inventory.</p>
+                <div class="col-span-full py-16 text-center text-gray-400 flex flex-col items-center justify-center">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl mb-3 border border-amber-200">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <p class="text-sm font-bold text-gray-800">Shift Not Started</p>
+                    <p class="text-xs text-gray-500 mt-1">Please open a cashier shift to load warehouse inventory.</p>
                 </div>
             `;
             return;
@@ -549,7 +775,7 @@
         } catch (err) {
             console.error("Product load error:", err);
             productsGrid.innerHTML = `
-                <div class="col-span-full py-10 text-center text-rose-400 text-xs">
+                <div class="col-span-full py-10 text-center text-rose-600 text-xs font-semibold">
                     <i class="fas fa-exclamation-triangle mb-1"></i> Failed to load products. Check network connection.
                 </div>
             `;
@@ -559,35 +785,37 @@
     function renderProductGrid(items) {
         if (!items || items.length === 0) {
             productsGrid.innerHTML = `
-                <div class="col-span-full py-16 text-center text-slate-500">
-                    <i class="fas fa-box-open text-3xl mb-2 text-slate-600"></i>
-                    <p class="text-sm font-semibold text-slate-300">No Items Found</p>
-                    <p class="text-xs text-slate-500">Try a different barcode or search keyword.</p>
+                <div class="col-span-full py-16 text-center text-gray-400 flex flex-col items-center justify-center">
+                    <div class="w-14 h-14 rounded-2xl bg-white border border-gray-200 flex items-center justify-center text-2xl mb-3 text-gray-300 shadow-xs">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <p class="text-sm font-bold text-gray-700">No Items Found</p>
+                    <p class="text-xs text-gray-500 mt-1">Try a different barcode or search keyword.</p>
                 </div>
             `;
             return;
         }
 
         productsGrid.innerHTML = items.map(item => `
-            <div class="product-card group relative bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-indigo-500/80 rounded-xl p-3 flex flex-col justify-between cursor-pointer transition-all duration-200 hover:shadow-lg hover:shadow-indigo-500/10" 
+            <div class="product-card group relative bg-white hover:bg-white border border-gray-200 hover:border-indigo-400 rounded-xl p-3 flex flex-col justify-between cursor-pointer transition-all duration-150 shadow-xs hover:shadow-md hover:-translate-y-0.5" 
                  onclick="addToCart('${item.variant_id}')">
                 <div>
                     <div class="flex items-center justify-between gap-1 mb-1.5">
-                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-700/80 text-slate-300">${item.sku}</span>
-                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${item.stock_qty > 5 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}">
+                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 font-semibold">${item.sku}</span>
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${item.stock_qty > 5 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}">
                             ${item.stock_qty} in stock
                         </span>
                     </div>
-                    <h4 class="text-xs font-bold text-white group-hover:text-indigo-400 transition-colors line-clamp-2 leading-snug">
+                    <h4 class="text-xs font-bold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
                         ${item.title}
                     </h4>
                 </div>
 
-                <div class="mt-3 pt-2 border-t border-slate-700/60 flex items-center justify-between">
+                <div class="mt-3 pt-2 border-t border-gray-100 flex items-center justify-between">
                     <div>
-                        <span class="text-sm font-black text-white font-mono">$${parseFloat(item.price).toFixed(2)}</span>
+                        <span class="text-sm font-black text-gray-900 font-mono">$${parseFloat(item.price).toFixed(2)}</span>
                     </div>
-                    <div class="w-7 h-7 rounded-lg bg-indigo-600/20 group-hover:bg-indigo-600 text-indigo-400 group-hover:text-white flex items-center justify-center transition-all text-xs">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 group-hover:bg-indigo-600 text-indigo-600 group-hover:text-white flex items-center justify-center transition-all text-xs shadow-xs">
                         <i class="fas fa-plus"></i>
                     </div>
                 </div>
@@ -649,24 +877,24 @@
             cartContainer.innerHTML = POS_STATE.cart.map(item => {
                 const lineTotal = (item.unit_price * item.quantity) - item.discount_amount;
                 return `
-                    <div class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3 group hover:border-slate-700 transition-colors">
+                    <div class="p-2.5 rounded-xl bg-white border border-gray-200 shadow-xs flex items-center justify-between gap-3 group hover:border-gray-300 transition-colors">
                         <div class="flex-1 min-w-0">
-                            <h5 class="text-xs font-bold text-white truncate">${item.title}</h5>
-                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">
-                                $${item.unit_price.toFixed(2)} × ${item.quantity} = <strong class="text-slate-200">$${lineTotal.toFixed(2)}</strong>
+                            <h5 class="text-xs font-bold text-gray-900 truncate">${item.title}</h5>
+                            <div class="text-[11px] text-gray-500 font-mono mt-0.5">
+                                $${item.unit_price.toFixed(2)} × ${item.quantity} = <strong class="text-gray-900 font-bold">$${lineTotal.toFixed(2)}</strong>
                             </div>
                         </div>
 
                         <!-- Stepper & Delete -->
                         <div class="flex items-center gap-1.5 shrink-0">
-                            <button type="button" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center justify-center font-bold" onclick="updateCartQty('${item.variant_id}', -1)">
+                            <button type="button" class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs flex items-center justify-center font-bold border border-gray-200" onclick="updateCartQty('${item.variant_id}', -1)">
                                 -
                             </button>
-                            <span class="w-6 text-center text-xs font-bold text-white font-mono">${item.quantity}</span>
-                            <button type="button" class="w-6 h-6 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center justify-center font-bold" onclick="updateCartQty('${item.variant_id}', 1)">
+                            <span class="w-6 text-center text-xs font-bold text-gray-900 font-mono">${item.quantity}</span>
+                            <button type="button" class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs flex items-center justify-center font-bold border border-gray-200" onclick="updateCartQty('${item.variant_id}', 1)">
                                 +
                             </button>
-                            <button type="button" class="w-6 h-6 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 text-xs flex items-center justify-center ml-1" onclick="removeCartItem('${item.variant_id}')">
+                            <button type="button" class="w-6 h-6 rounded text-gray-400 hover:text-rose-600 hover:bg-rose-50 text-xs flex items-center justify-center ml-1" onclick="removeCartItem('${item.variant_id}')">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -699,7 +927,7 @@
     window.addEventListener('keydown', (e) => {
         // Prevent hotkeys from firing if typing inside standard inputs (except barcode search)
         const isInputFocused = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
-        
+
         // F-Key Shortcuts
         if (e.key === 'F1') {
             e.preventDefault();
@@ -772,13 +1000,13 @@
 
     // Category pills
     document.querySelectorAll('.category-pill').forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function () {
             document.querySelectorAll('.category-pill').forEach(b => {
                 b.classList.remove('active', 'bg-indigo-600', 'text-white');
-                b.classList.add('bg-slate-800', 'text-slate-300');
+                b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
             });
             this.classList.add('active', 'bg-indigo-600', 'text-white');
-            this.classList.remove('bg-slate-800', 'text-slate-300');
+            this.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
             loadPOSProducts(searchInput.value.trim(), this.getAttribute('data-category-id'));
         });
     });
@@ -834,6 +1062,19 @@
         });
     }
 
+    // Quick discount handler
+    const btnQuickDiscount = document.getElementById('btn-quick-discount');
+    if (btnQuickDiscount) {
+        btnQuickDiscount.addEventListener('click', () => {
+            const val = prompt("Enter order discount amount ($):", POS_STATE.discountAmount.toFixed(2));
+            if (val !== null) {
+                const parsed = parseFloat(val) || 0;
+                POS_STATE.discountAmount = Math.max(0, parsed);
+                renderCart();
+            }
+        });
+    }
+
     // 5. Payment Modal & Checkout Completion
     const btnPayCheckout = document.getElementById('btn-pay-checkout');
     const tenderAmountInput = document.getElementById('tender-amount-input');
@@ -883,7 +1124,7 @@
     });
 
     document.querySelectorAll('.quick-cash-chip').forEach(chip => {
-        chip.addEventListener('click', function() {
+        chip.addEventListener('click', function () {
             let subtotal = 0;
             POS_STATE.cart.forEach(i => subtotal += (i.unit_price * i.quantity) - i.discount_amount);
             const total = Math.max(0, subtotal + POS_STATE.taxAmount - POS_STATE.discountAmount);
@@ -891,6 +1132,19 @@
             const tendered = (val === 'exact') ? total : parseFloat(val);
             tenderAmountInput.value = tendered.toFixed(2);
             calculatePaymentBalance(tendered, total);
+        });
+    });
+
+    // Tender Method Switcher
+    document.querySelectorAll('.tender-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.tender-btn').forEach(b => {
+                b.classList.remove('active', 'bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+                b.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+            });
+            this.classList.add('active', 'bg-indigo-600', 'text-white', 'border-indigo-600', 'shadow-sm');
+            this.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+            POS_STATE.selectedTender = this.getAttribute('data-method');
         });
     });
 
@@ -954,6 +1208,10 @@
         document.getElementById('rec-order-number').textContent = data.order_number;
         document.getElementById('rec-cashier').textContent = data.cashier_name;
         document.getElementById('rec-register').textContent = data.register_name;
+        const recCust = document.getElementById('rec-customer');
+        if (recCust) {
+            recCust.textContent = data.customer_name || 'Walk-in';
+        }
         document.getElementById('rec-subtotal').textContent = `$${parseFloat(data.subtotal_amount).toFixed(2)}`;
         document.getElementById('rec-discount').textContent = `-$${parseFloat(data.discount_amount).toFixed(2)}`;
         document.getElementById('rec-tax').textContent = `$${parseFloat(data.tax_amount).toFixed(2)}`;
@@ -976,6 +1234,114 @@
     document.getElementById('btn-print-receipt-trigger').addEventListener('click', () => {
         window.print();
     });
+
+    // 6. Quick Add Customer Modal Handlers
+    const btnQuickCustomer = document.getElementById('btn-quick-customer');
+    if (btnQuickCustomer) {
+        btnQuickCustomer.addEventListener('click', () => {
+            openModal('modal-add-customer');
+            setTimeout(() => {
+                const firstInput = document.getElementById('cust-first-name');
+                if (firstInput) firstInput.focus();
+            }, 100);
+        });
+    }
+
+    const formAddCustomer = document.getElementById('form-add-customer');
+    if (formAddCustomer) {
+        formAddCustomer.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const firstName = document.getElementById('cust-first-name').value.trim();
+            const lastName = document.getElementById('cust-last-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            const email = document.getElementById('cust-email').value.trim();
+            const address = document.getElementById('cust-address').value.trim();
+            const isActive = document.getElementById('cust-is-active').checked;
+
+            if (!firstName) {
+                alert("Please enter First Name.");
+                document.getElementById('cust-first-name').focus();
+                return;
+            }
+            if (!phone) {
+                alert("Please enter Phone Number.");
+                document.getElementById('cust-phone').focus();
+                return;
+            }
+            if (!address) {
+                alert("Please enter Address.");
+                document.getElementById('cust-address').focus();
+                return;
+            }
+
+            const btnSave = document.getElementById('btn-save-customer');
+            const origContent = btnSave.innerHTML;
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Saving...';
+
+            const payload = {
+                first_name: firstName,
+                last_name: lastName || null,
+                phone: phone,
+                email: email || null,
+                address: address,
+                is_active: isActive,
+                business_id: POS_STATE.businessId
+            };
+
+            try {
+                const res = await fetch('/customers/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    let msg = data.detail || 'Failed to create customer.';
+                    if (Array.isArray(data.detail)) {
+                        msg = data.detail.map(d => d.msg || d.detail).join(', ');
+                    }
+                    throw new Error(msg);
+                }
+
+                // Add to customer select dropdown
+                const customerSelect = document.getElementById('pos-customer-select');
+                const opt = document.createElement('option');
+                opt.value = data.id;
+                opt.text = `${data.full_name}${data.phone ? ' (' + data.phone + ')' : ''}`;
+                customerSelect.appendChild(opt);
+
+                // Default select the new customer for invoice
+                customerSelect.value = data.id;
+                customerSelect.dispatchEvent(new Event('change'));
+
+                // Close modal and reset form
+                closeModal('modal-add-customer');
+                formAddCustomer.reset();
+                document.getElementById('cust-is-active').checked = true;
+
+                if (window.showSuccessToast) {
+                    window.showSuccessToast('Customer Created', `"${data.full_name}" is now selected for this invoice.`);
+                } else {
+                    alert(`Customer "${data.full_name}" created & selected!`);
+                }
+            } catch (err) {
+                if (window.showErrorAlert) {
+                    window.showErrorAlert('Save Customer Failed', err.message);
+                } else {
+                    alert(err.message);
+                }
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerHTML = origContent;
+            }
+        });
+    }
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {

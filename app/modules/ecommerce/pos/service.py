@@ -226,9 +226,9 @@ class POSService:
         session_out = POSSessionOut.from_orm(session)
         session_out.register_name = session.register.name if session.register else None
         session_out.cashier_name = (
-            f"{session.user.first_name} {session.user.last_name}".strip()
-            if session.user
-            else "Cashier"
+            getattr(session.user, "username", None)
+            or getattr(session.user, "email", None)
+            or "Cashier"
         )
 
         return POSSessionSummaryOut(
@@ -499,7 +499,7 @@ class POSService:
                 reference_id=order.order_number,
                 source_type="pos_checkout",
                 source_id=str(order.id),
-                actor_id=user.id,
+                actor_id=str(user.id) if user and getattr(user, "id", None) else None,
                 actor_type="user",
                 unit_cost=variant.cost_price,
                 notes=f"POS Sale at {session.register.name}",
@@ -540,7 +540,11 @@ class POSService:
         # 8. Assemble structured response
         biz = db.scalar(select(BusinessProfile).where(BusinessProfile.id == business_id))
         biz_name = biz.name_en if biz else "Store"
-        cashier_name = f"{user.first_name} {user.last_name}".strip() if user else "Cashier"
+        cashier_name = (
+            getattr(user, "username", None)
+            or getattr(user, "email", None)
+            or "Cashier"
+        )
 
         return POSCheckoutResponse(
             order_id=order.id,

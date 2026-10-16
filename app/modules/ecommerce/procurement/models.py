@@ -23,6 +23,9 @@ from sqlalchemy.types import UUID
 from app.common.enums import pg_enum
 from app.common.models import SyncMixin, TimestampMixin, UUIDMixin
 from app.database import Base
+from app.core.identity.models import User
+from app.modules.ecommerce.inventory.models import Warehouse
+from app.modules.ecommerce.products.models import ProductVariant
 
 
 class PurchaseOrderStatus(str, enum.Enum):

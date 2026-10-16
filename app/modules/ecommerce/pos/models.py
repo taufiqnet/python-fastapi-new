@@ -22,6 +22,8 @@ from sqlalchemy.types import UUID
 from app.common.enums import pg_enum
 from app.common.models import SyncMixin, TimestampMixin, UUIDMixin
 from app.database import Base
+from app.core.identity.models import User
+from app.modules.ecommerce.inventory.models import Warehouse
 
 
 class SessionStatus(str, enum.Enum):

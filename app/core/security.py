@@ -123,6 +123,8 @@ def require_permission(module: str, feature: str, action: str):
             candidate_codes.extend([f"{module}:procurement:{action}", f"{module}:inventory:{action}"])
         elif feature in ("items_master", "inventory_uom", "inventory_valuation", "lots_serials", "inventory_transfers", "inventory_counts", "barcode_print"):
             candidate_codes.append(f"{module}:inventory:{action}")
+        elif feature in ("customers", "customer"):
+            candidate_codes.extend([f"{module}:pos:{action}", f"{module}:orders:{action}"])
         elif feature == "coupons":
             candidate_codes.append(f"{module}:products:{action}")
 

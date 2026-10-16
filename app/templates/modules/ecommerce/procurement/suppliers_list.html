@@ -1,102 +1,349 @@
 {% extends "base.html" %}
 
-{% block title %}Suppliers & Vendors Management | Procurement{% endblock %}
+{% block title %}Suppliers & Vendors | SaaS Platform{% endblock %}
+
+{% block head %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" type="text/css" href="/static/vendor/datatables/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="/static/vendor/datatables/responsive.dataTables.min.css">
+
+<style>
+    /* ── Brand token ── */
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    /* ── Stat cards ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .stat-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green   { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.yellow  { background: #fefce8; color: #ca8a04; }
+    .stat-icon.sky     { background: #f0f9ff; color: #0284c7; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px; margin-bottom: 12px;
+    }
+    .toolbar-search {
+        position: relative; flex: 1; min-width: 200px;
+    }
+    .toolbar-search i {
+        position: absolute; left: 10px; top: 50%;
+        transform: translateY(-50%); color: #9ca3af; font-size: 13px;
+    }
+    .toolbar-search input {
+        width: 100%; padding: 7px 12px 7px 30px;
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        background: #f9fafb; color: #374151; font-size: 13px; outline: none;
+        transition: border-color .15s, background .15s;
+    }
+    .toolbar-search input:focus {
+        border-color: var(--indigo);
+        box-shadow: 0 0 0 2px rgba(79,70,229,.08);
+        background: #fff;
+    }
+    .toolbar select {
+        padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb;
+        border-radius: 8px; background: #f9fafb; color: #374151;
+        font-size: 13px; cursor: pointer; outline: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 8px center;
+    }
+    .toolbar select:focus { border-color: var(--indigo); background-color: #fff; }
+
+    /* ── Table card ── */
+    .table-card {
+        background: #fff; border: 1px solid #e5e7eb;
+        border-radius: 12px; overflow: hidden;
+    }
+
+    /* ── DataTables overrides ── */
+    table.dataTable { border-collapse: collapse !important; }
+    table.dataTable thead tr th {
+        background: #f9fafb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+        font-size: 10px !important; font-weight: 700 !important;
+        text-transform: uppercase; letter-spacing: .6px;
+        color: #6b7280 !important; padding: 10px 14px !important;
+        white-space: nowrap;
+    }
+    table.dataTable tbody td { padding: 9px 14px !important; font-size: 13px; vertical-align: middle; }
+    table.dataTable tbody tr:hover td { background: #f9fafb !important; }
+    table.dataTable.no-footer { border-bottom: 1px solid #f3f4f6 !important; }
+
+    .dataTables_filter,
+    .dataTables_length { display: none !important; }
+
+    .dataTables_wrapper .dataTables_paginate { padding: 10px 14px !important; }
+
+    /* info + per-page footer row */
+    .dt-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 14px; border-top: 1px solid #f3f4f6;
+        background: #fafafa; flex-wrap: wrap; gap: 8px;
+    }
+    .dt-footer .dt-info { font-size: 12px; color: #9ca3af; }
+    .dt-footer .dt-perpage {
+        display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280;
+    }
+    .dt-perpage select {
+        padding: 3px 22px 3px 8px; border: 1px solid #e5e7eb;
+        border-radius: 6px; background: #fff; color: #374151;
+        font-size: 12px; cursor: pointer; appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; background-position: right 6px center;
+    }
+
+    /* ── Cell helpers ── */
+    .title-name {
+        font-weight: 600;
+        font-size: 13px;
+        color: #111827;
+    }
+    .sup-code { font-size: 11px; font-family: monospace; color: #4f46e5; font-weight: 700; }
+
+    .badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600;
+    }
+    .badge-active   { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-inactive { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+
+    .action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 6px;
+        border: 1px solid #e5e7eb; background: #fff;
+        cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none;
+    }
+    .action-btn.view  { color: #10b981; }
+    .action-btn.view:hover  { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+    .action-btn.edit  { color: #4f46e5; }
+    .action-btn.edit:hover  { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
+    .action-btn.delete { color: #ef4444; }
+    .action-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
 
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<!-- ── Page header ── -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            <i class="fas fa-truck-loading text-indigo-600"></i>
+            Suppliers & Vendors
+        </h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Maintain vendor master records, payment terms, and contact profiles for inventory procurement</p>
+    </div>
+    
+    <div class="flex items-center gap-3">
+        <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
+            <i class="fas fa-sliders-h text-sm"></i>
+        </button>
+        <a href="/procurement/purchase-orders/manage" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 text-xs font-semibold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
+            <i class="fas fa-file-invoice text-indigo-600"></i> Purchase Orders
+        </a>
+        <button type="button" onclick="openCreateSupplierModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm cursor-pointer">
+            <i class="fas fa-plus"></i> Add Supplier
+        </button>
+    </div>
+</div>
+
+<!-- ── Stat cards ── -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-truck-loading"></i></div>
         <div>
-            <div class="flex items-center gap-2 mb-1">
-                <a href="/procurement/purchase-orders/manage" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1">
-                    <i class="fas fa-file-invoice text-[10px]"></i> Purchase Orders
-                </a>
-            </div>
-            <h1 class="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-                <i class="fas fa-truck-loading text-indigo-600"></i>
-                Suppliers & Vendors
-            </h1>
-            <p class="text-xs text-gray-500 mt-1">
-                Maintain vendor master records, payment terms, and contact profiles for inventory procurement.
-            </p>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <button type="button" onclick="openCreateSupplierModal()" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
-                <i class="fas fa-plus text-xs"></i>
-                <span>Add Supplier</span>
-            </button>
-            <a href="/procurement/purchase-orders/create" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2">
-                <i class="fas fa-plus-circle text-xs"></i>
-                <span>Create Purchase Order</span>
-            </a>
+            <div class="stat-label">Total Suppliers</div>
+            <div class="stat-value">{{ total_count }}</div>
         </div>
     </div>
-
-    <!-- Suppliers Table Card -->
-    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="text-xs font-bold text-gray-700 uppercase tracking-wider">
-                Supplier Directory ({{ suppliers|length }})
-            </h2>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+        <div>
+            <div class="stat-label">Active Suppliers</div>
+            <div class="stat-value">{{ active_count }}</div>
         </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon yellow"><i class="fas fa-pause-circle"></i></div>
+        <div>
+            <div class="stat-label">Inactive</div>
+            <div class="stat-value">{{ inactive_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon sky"><i class="fas fa-file-invoice-dollar"></i></div>
+        <div>
+            <div class="stat-label">Net 30 Terms</div>
+            <div class="stat-value">{{ net30_count }}</div>
+        </div>
+    </div>
+</div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                    <tr class="bg-gray-50/80 border-b border-gray-200 text-gray-500 font-semibold uppercase tracking-wider text-[10px]">
-                        <th class="py-3 px-4">Code</th>
-                        <th class="py-3 px-4">Supplier Name</th>
-                        <th class="py-3 px-4">Contact Person</th>
-                        <th class="py-3 px-4">Phone / Email</th>
-                        <th class="py-3 px-4">City / Country</th>
-                        <th class="py-3 px-4">Terms</th>
-                        <th class="py-3 px-4 text-center">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    {% for s in suppliers %}
-                    <tr class="hover:bg-gray-50/60 transition-colors">
-                        <td class="py-3.5 px-4 font-mono font-bold text-indigo-600">{{ s.code }}</td>
-                        <td class="py-3.5 px-4 font-semibold text-gray-900">{{ s.name }}</td>
-                        <td class="py-3.5 px-4 text-gray-700">{{ s.contact_name or "—" }}</td>
-                        <td class="py-3.5 px-4 text-gray-600">
-                            <div>{{ s.phone or "—" }}</div>
-                            <div class="text-[11px] text-gray-400">{{ s.email or "" }}</div>
-                        </td>
-                        <td class="py-3.5 px-4 text-gray-600">{{ s.city or "—" }}, {{ s.country or "" }}</td>
-                        <td class="py-3.5 px-4">
-                            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-medium">{{ s.payment_terms }}</span>
-                        </td>
-                        <td class="py-3.5 px-4 text-center">
-                            {% if s.is_active %}
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">Active</span>
-                            {% else %}
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200">Inactive</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="py-12 text-center text-gray-500">
-                            <div class="w-12 h-12 rounded-xl bg-gray-50 flex items-center justify-center mx-auto mb-2 text-gray-400">
-                                <i class="fas fa-truck-loading text-xl"></i>
+<!-- ── Toolbar ── -->
+<div class="toolbar" id="toolbarContainer">
+    <div class="toolbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="customSearch" placeholder="Search by name, code, contact, phone, city...">
+    </div>
+
+    <select id="filterStatus">
+        <option value="">All Statuses</option>
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
+    </select>
+
+    {% if current_user and current_user.is_superuser %}
+    <select id="filterBusiness">
+        <option value="">All Businesses</option>
+        {% for b in businesses %}
+        <option value="{{ b.name_en }}">{{ b.name_en }}</option>
+        {% endfor %}
+    </select>
+    {% endif %}
+
+    <button type="button" id="btnClearFilters" 
+            class="px-4 py-2 border border-gray-200 hover:border-red-300 bg-gray-50 hover:bg-red-50 text-gray-700 hover:text-red-700 font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer">
+        <i class="fas fa-times-circle text-xs"></i> Clear Filters
+    </button>
+</div>
+
+<!-- ── Table card ── -->
+<div class="table-card">
+    <div class="overflow-x-auto">
+        <table id="supplierTable" class="w-full text-left display">
+            <thead>
+                <tr>
+                    <th>Supplier Details</th>
+                    <th>Code</th>
+                    <th>Contact Person</th>
+                    <th>Phone / Email</th>
+                    <th>Location</th>
+                    <th>Payment Terms</th>
+                    <th>Business Profile</th>
+                    <th>Status</th>
+                    <th style="width:110px">Actions</th>
+                    <th class="hidden"></th><!-- hidden status raw -->
+                    <th class="hidden"></th><!-- hidden business raw -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in suppliers %}
+                <tr id="sup-row-{{ s.id }}">
+                    <td>
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-7 h-7 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">
+                                <i class="fas fa-building text-[11px]"></i>
                             </div>
-                            <p class="font-semibold text-gray-800">No suppliers registered yet.</p>
-                            <p class="text-xs text-gray-500 mt-0.5">Click "Add Supplier" above to record your first vendor profile.</p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            <div>
+                                <span class="title-name">{{ s.name }}</span>
+                                {% if s.tax_id %}
+                                <div class="text-[10px] text-gray-400 font-mono">BIN: {{ s.tax_id }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="sup-code">{{ s.code }}</span>
+                    </td>
+                    <td class="text-xs text-gray-700">
+                        {{ s.contact_name or "—" }}
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        <div>{{ s.phone or "—" }}</div>
+                        <div class="text-[11px] text-gray-400">{{ s.email or "" }}</div>
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        <div>{{ s.city or "—" }}</div>
+                        <div class="text-[10px] text-gray-400">{{ s.country or "" }}</div>
+                    </td>
+                    <td>
+                        <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-medium">
+                            {{ s.payment_terms or "Net 30" }}
+                        </span>
+                    </td>
+                    <td class="text-xs text-gray-600">
+                        {% if s.business_id and biz_map.get(s.business_id) %}
+                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-gray-50 border border-gray-200 text-gray-700 text-[11px] font-medium">
+                            <i class="fas fa-building text-gray-400 text-[10px]"></i>
+                            <span>{{ biz_map.get(s.business_id) }}</span>
+                        </span>
+                        {% else %}
+                        <span class="text-gray-400 italic text-[11px]">— Global —</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.is_active %}
+                        <span class="badge badge-active">
+                            <i class="fas fa-circle text-[6px] mr-1"></i> Active
+                        </span>
+                        {% else %}
+                        <span class="badge badge-inactive">
+                            <i class="fas fa-circle text-[6px] mr-1"></i> Inactive
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" class="action-btn view" onclick="viewSupplier('{{ s.id }}')" title="View Supplier">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button type="button" class="action-btn edit" onclick="editSupplier('{{ s.id }}')" title="Edit Supplier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button type="button" class="action-btn delete" onclick="deleteSupplier('{{ s.id }}', '{{ s.name|e }}')" title="Delete Supplier">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                    <td class="hidden">{% if s.is_active %}Active{% else %}Inactive{% endif %}</td>
+                    <td class="hidden">{% if s.business_id and biz_map.get(s.business_id) %}{{ biz_map.get(s.business_id) }}{% else %}Global{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 
+    <!-- ── DataTables footer ── -->
+    <div class="dt-footer">
+        <div class="dt-info" id="dtInfo"></div>
+        <div class="flex items-center gap-4 flex-wrap">
+            <div class="dt-perpage">
+                Show
+                <select id="dtPerPage">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                </select>
+                entries
+            </div>
+            <div id="dtPagination"></div>
+        </div>
+    </div>
 </div>
 
 <!-- Modal: Create Supplier -->
-<div id="modal-create-supplier" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+<div id="modal-create-supplier" class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
     <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-gray-900">
         <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
             <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
@@ -122,7 +369,7 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">Contact Person</label>
-                    <input type="text" id="sup-contact" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500" placeholder="e.g. John Doe">
+                    <input type="text" id="sup-contact" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500" placeholder="e.g. Tanvir Ahmed">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 mb-1">Phone Number</label>
@@ -175,44 +422,428 @@
     </div>
 </div>
 
+<!-- Modal: Edit Supplier -->
+<div id="modal-edit-supplier" class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-gray-900">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-edit text-indigo-600"></i> Edit Supplier Profile
+            </h3>
+            <button type="button" onclick="closeModal('modal-edit-supplier')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="form-edit-supplier" class="space-y-3.5">
+            <input type="hidden" id="edit-sup-id">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Supplier Name <span class="text-rose-500">*</span></label>
+                    <input type="text" id="edit-sup-name" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Supplier Code <span class="text-rose-500">*</span></label>
+                    <input type="text" id="edit-sup-code" required class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500 font-mono">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Contact Person</label>
+                    <input type="text" id="edit-sup-contact" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Phone Number</label>
+                    <input type="text" id="edit-sup-phone" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
+                    <input type="email" id="edit-sup-email" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Payment Terms</label>
+                    <select id="edit-sup-terms" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500 bg-white">
+                        <option value="Net 15">Net 15 Days</option>
+                        <option value="Net 30">Net 30 Days</option>
+                        <option value="Net 60">Net 60 Days</option>
+                        <option value="Cash on Delivery">Cash on Delivery</option>
+                        <option value="Prepaid">100% Advance / Prepaid</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">Tax / VAT ID (BIN)</label>
+                    <input type="text" id="edit-sup-tax-id" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500 font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 mb-1">City</label>
+                    <input type="text" id="edit-sup-city" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Full Address</label>
+                <textarea id="edit-sup-address" rows="2" class="w-full text-xs border border-gray-200 rounded-lg p-2 outline-none focus:ring-1 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="edit-sup-active" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <label for="edit-sup-active" class="text-xs font-semibold text-gray-700">Active Supplier Status</label>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                <button type="button" onclick="closeModal('modal-edit-supplier')" class="px-4 py-2 border border-gray-200 text-gray-600 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+                    <i class="fas fa-save"></i> Update Supplier
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: View Supplier -->
+<div id="modal-view-supplier" class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-md p-6 shadow-2xl text-gray-900">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-building text-indigo-600"></i> Supplier Details
+            </h3>
+            <button type="button" onclick="closeModal('modal-view-supplier')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="space-y-3 text-xs" id="view-supplier-body">
+            <!-- Dynamic View -->
+        </div>
+        <div class="flex items-center justify-end pt-4 border-t border-gray-100 mt-4">
+            <button type="button" onclick="closeModal('modal-view-supplier')" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<!-- jQuery & DataTables JS -->
+<script src="/static/vendor/jquery/jquery-3.7.1.min.js"></script>
+<script src="/static/vendor/datatables/jquery.dataTables.min.js"></script>
+<script src="/static/vendor/datatables/dataTables.responsive.min.js"></script>
+
 <script>
-    function openCreateSupplierModal() {
-        document.getElementById('modal-create-supplier').classList.remove('hidden');
-    }
-    function closeModal(id) {
-        document.getElementById(id).classList.add('hidden');
-    }
-
-    document.getElementById('form-create-supplier').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const payload = {
-            business_id: {{ selected_business_id }},
-            name: document.getElementById('sup-name').value,
-            code: document.getElementById('sup-code').value,
-            contact_name: document.getElementById('sup-contact').value,
-            phone: document.getElementById('sup-phone').value,
-            email: document.getElementById('sup-email').value,
-            payment_terms: document.getElementById('sup-terms').value,
-            tax_id: document.getElementById('sup-tax-id').value,
-            city: document.getElementById('sup-city').value,
-            address: document.getElementById('sup-address').value,
-            is_active: true
-        };
-
-        try {
-            const res = await fetch('/procurement/suppliers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.detail || "Failed to create supplier");
-            }
-            window.location.reload();
-        } catch (err) {
-            alert(err.message);
+$(document).ready(function() {
+    var table = $('#supplierTable').DataTable({
+        responsive: true,
+        pageLength: 10,
+        dom: 'tp',
+        ordering: true,
+        order: [[0, 'asc']],
+        columnDefs: [
+            { orderable: false, targets: [8] },
+            { targets: [9, 10], visible: false }
+        ],
+        language: {
+            emptyTable: '<div class="py-8 text-center text-gray-400"><i class="fas fa-truck-loading text-3xl mb-2 block"></i>No suppliers found.</div>'
+        },
+        drawCallback: function(settings) {
+            updateCustomPagination(settings);
         }
     });
+
+    // Custom search input
+    $('#customSearch').on('keyup', function() {
+        table.search(this.value).draw();
+    });
+
+    // Filter by Status (column index 9)
+    $('#filterStatus').on('change', function() {
+        table.column(9).search(this.value).draw();
+    });
+
+    // Filter by Business (column index 10)
+    $('#filterBusiness').on('change', function() {
+        table.column(10).search(this.value).draw();
+    });
+
+    // Clear filters
+    $('#btnClearFilters').on('click', function() {
+        $('#customSearch').val('');
+        $('#filterStatus').val('');
+        $('#filterBusiness').val('');
+        table.search('').columns().search('').draw();
+    });
+
+    // Toggle filters bar
+    $('#btnToggleFilters').on('click', function() {
+        $('#toolbarContainer').slideToggle(150);
+    });
+
+    // Per page select
+    $('#dtPerPage').on('change', function() {
+        table.page.len(parseInt(this.value)).draw();
+    });
+
+    // Custom pagination renderer
+    function updateCustomPagination(settings) {
+        var api = new $.fn.dataTable.Api(settings);
+        var info = api.page.info();
+
+        if (info.recordsDisplay === 0) {
+            $('#dtInfo').text('Showing 0 to 0 of 0 entries');
+        } else {
+            $('#dtInfo').text(
+                'Showing ' + (info.start + 1) + ' to ' + info.end + ' of ' + info.recordsDisplay + ' entries'
+            );
+        }
+
+        var total = info.recordsDisplay;
+        var len = info.length;
+        var pages = Math.ceil(total / len);
+        var current = info.page;
+
+        if (pages <= 1) {
+            $('#dtPagination').html('');
+            return;
+        }
+
+        var html = '';
+        var base = 'px-2.5 py-1 text-xs border border-gray-200 rounded hover:bg-gray-50 text-gray-600 transition-colors cursor-pointer';
+        var active = 'px-2.5 py-1 text-xs border border-indigo-600 bg-indigo-600 text-white font-bold rounded cursor-default';
+        var disabled = 'px-2.5 py-1 text-xs border border-gray-100 rounded text-gray-300 cursor-not-allowed';
+
+        // Prev
+        if (current === 0) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+        }
+
+        var start_p = Math.max(0, current - 2);
+        var end_p = Math.min(pages - 1, current + 2);
+
+        if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
+        if (start_p > 1) html += '<span class="px-1 text-gray-400 text-xs">...</span>';
+
+        for (var i = start_p; i <= end_p; i++) {
+            if (i === current) {
+                html += '<button class="' + active + '">' + (i + 1) + '</button>';
+            } else {
+                html += '<button class="' + base + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
+            }
+        }
+
+        if (end_p < pages - 2) html += '<span class="px-1 text-gray-400 text-xs">...</span>';
+        if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
+
+        // Next
+        if (current >= pages - 1) {
+            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        } else {
+            html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+        }
+
+        $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
+    }
+    window._dtTable = table;
+});
+
+function movePage(p) { window._dtTable.page(p).draw('page'); }
+
+function openCreateSupplierModal() {
+    document.getElementById('modal-create-supplier').classList.remove('hidden');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+}
+
+// Create Supplier Form Submission
+document.getElementById('form-create-supplier').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        business_id: {{ selected_business_id }},
+        name: document.getElementById('sup-name').value,
+        code: document.getElementById('sup-code').value,
+        contact_name: document.getElementById('sup-contact').value,
+        phone: document.getElementById('sup-phone').value,
+        email: document.getElementById('sup-email').value,
+        payment_terms: document.getElementById('sup-terms').value,
+        tax_id: document.getElementById('sup-tax-id').value,
+        city: document.getElementById('sup-city').value,
+        address: document.getElementById('sup-address').value,
+        is_active: true
+    };
+
+    try {
+        const res = await fetch('/procurement/suppliers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Failed to create supplier");
+        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Supplier Created',
+            text: 'Supplier record has been saved successfully.',
+            timer: 1200,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.reload();
+        });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+});
+
+// View Supplier Details
+async function viewSupplier(id) {
+    try {
+        const res = await fetch('/procurement/suppliers/' + id);
+        if (!res.ok) throw new Error("Failed to load supplier details");
+        const s = await res.json();
+        
+        let html = `
+            <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-gray-900 text-sm">${s.name}</h4>
+                    <span class="font-mono text-indigo-600 font-semibold">${s.code}</span>
+                </div>
+                <span class="badge ${s.is_active ? 'badge-active' : 'badge-inactive'}">${s.is_active ? 'Active' : 'Inactive'}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <div><span class="text-gray-400">Contact:</span> <strong class="text-gray-800">${s.contact_name || '—'}</strong></div>
+                <div><span class="text-gray-400">Phone:</span> <strong class="text-gray-800">${s.phone || '—'}</strong></div>
+                <div><span class="text-gray-400">Email:</span> <strong class="text-gray-800">${s.email || '—'}</strong></div>
+                <div><span class="text-gray-400">Payment Terms:</span> <strong class="text-gray-800">${s.payment_terms || 'Net 30'}</strong></div>
+                <div><span class="text-gray-400">TAX / BIN:</span> <strong class="text-gray-800 font-mono">${s.tax_id || '—'}</strong></div>
+                <div><span class="text-gray-400">City / Country:</span> <strong class="text-gray-800">${s.city || '—'}, ${s.country || ''}</strong></div>
+            </div>
+            <div class="pt-2">
+                <span class="text-gray-400 block mb-0.5">Address:</span>
+                <p class="text-gray-700 bg-gray-50 p-2 rounded border border-gray-100 font-sans">${s.address || '—'}</p>
+            </div>
+        `;
+        document.getElementById('view-supplier-body').innerHTML = html;
+        document.getElementById('modal-view-supplier').classList.remove('hidden');
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+}
+
+// Edit Supplier Modal Population
+async function editSupplier(id) {
+    try {
+        const res = await fetch('/procurement/suppliers/' + id);
+        if (!res.ok) throw new Error("Failed to load supplier details");
+        const s = await res.json();
+        
+        document.getElementById('edit-sup-id').value = s.id;
+        document.getElementById('edit-sup-name').value = s.name || '';
+        document.getElementById('edit-sup-code').value = s.code || '';
+        document.getElementById('edit-sup-contact').value = s.contact_name || '';
+        document.getElementById('edit-sup-phone').value = s.phone || '';
+        document.getElementById('edit-sup-email').value = s.email || '';
+        document.getElementById('edit-sup-terms').value = s.payment_terms || 'Net 30';
+        document.getElementById('edit-sup-tax-id').value = s.tax_id || '';
+        document.getElementById('edit-sup-city').value = s.city || '';
+        document.getElementById('edit-sup-address').value = s.address || '';
+        document.getElementById('edit-sup-active').checked = s.is_active;
+
+        document.getElementById('modal-edit-supplier').classList.remove('hidden');
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+}
+
+// Edit Supplier Submit
+document.getElementById('form-edit-supplier').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-sup-id').value;
+    const payload = {
+        name: document.getElementById('edit-sup-name').value,
+        code: document.getElementById('edit-sup-code').value,
+        contact_name: document.getElementById('edit-sup-contact').value,
+        phone: document.getElementById('edit-sup-phone').value,
+        email: document.getElementById('edit-sup-email').value,
+        payment_terms: document.getElementById('edit-sup-terms').value,
+        tax_id: document.getElementById('edit-sup-tax-id').value,
+        city: document.getElementById('edit-sup-city').value,
+        address: document.getElementById('edit-sup-address').value,
+        is_active: document.getElementById('edit-sup-active').checked
+    };
+
+    try {
+        const res = await fetch('/procurement/suppliers/' + id, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Failed to update supplier");
+        }
+        Swal.fire({
+            icon: 'success',
+            title: 'Supplier Updated',
+            text: 'Supplier profile updated successfully.',
+            timer: 1200,
+            showConfirmButton: false
+        }).then(() => {
+            window.location.reload();
+        });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+    }
+});
+
+// Delete Supplier
+function deleteSupplier(id, name) {
+    Swal.fire({
+        title: 'Delete Supplier?',
+        text: 'Are you sure you want to delete "' + name + '"? If this supplier is linked to purchase orders, it will be marked inactive.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel'
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const res = await fetch('/procurement/suppliers/' + id, {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (res.ok || res.status === 204) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Deleted',
+                        text: '"' + name + '" has been removed.',
+                        timer: 1200,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    const err = await res.json();
+                    throw new Error(err.detail || 'Failed to delete supplier');
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Delete Failed', text: err.message });
+            }
+        }
+    });
+}
 </script>
 {% endblock %}

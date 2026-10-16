@@ -1517,6 +1517,71 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
             )
             db.add(lt)
 
+    # 13. Seed Default POS Register under WBSOFT
+    from app.modules.ecommerce.pos.models import POSRegister
+    pos_reg = db.query(POSRegister).filter(
+        POSRegister.business_id == wbsoft.id,
+        POSRegister.code == "REG-01",
+    ).first()
+    if not pos_reg:
+        pos_reg = POSRegister(
+            business_id=wbsoft.id,
+            warehouse_id=wh_main.id,
+            name="Main Cash Counter 01",
+            code="REG-01",
+            is_active=True,
+            receipt_header="WBSOFT Technologies Ltd.\nLevel 8, Tower A, Gulshan Avenue, Dhaka\nVAT BIN: VAT-WBSOFT-001\nHotline: +8801700000000",
+            receipt_footer="Thank you for shopping with WBSOFT!\nPlease retain this invoice for warranty and returns.",
+        )
+        db.add(pos_reg)
+
+    # 14. Seed Default Suppliers under WBSOFT
+    from app.modules.ecommerce.procurement.models import Supplier
+    suppliers_def = [
+        ("Apex Electronics Ltd", "SUP-001", "Tanvir Ahmed", "orders@apexelectronics.com", "+8801711223344", "Plot 14, Tejgaon Industrial Area, Dhaka", "Dhaka", "Net 30", "123456789-0101"),
+        ("Dhaka Hardware Hub", "SUP-002", "Rafiqul Islam", "sales@dhakahardware.com", "+8801811556677", "Shop 45, Elephant Road Computer City, Dhaka", "Dhaka", "Net 15", "987654321-0202"),
+        ("Global Tech Distribution", "SUP-003", "Mohammad Hasan", "supply@globaltech.com.bd", "+8801911889900", "Level 4, BCS Computer City, Agargaon, Dhaka", "Dhaka", "Cash on Delivery", "554433221-0303"),
+    ]
+    for s_name, s_code, s_contact, s_email, s_phone, s_addr, s_city, s_terms, s_tax in suppliers_def:
+        sup = db.query(Supplier).filter(Supplier.business_id == wbsoft.id, Supplier.code == s_code).first()
+        if not sup:
+            sup = Supplier(
+                business_id=wbsoft.id,
+                name=s_name,
+                code=s_code,
+                contact_name=s_contact,
+                email=s_email,
+                phone=s_phone,
+                address=s_addr,
+                city=s_city,
+                country="Bangladesh",
+                payment_terms=s_terms,
+                tax_id=s_tax,
+                is_active=True,
+            )
+            db.add(sup)
+
+    # 15. Seed Default Customers under WBSOFT
+    from app.modules.ecommerce.customer.models import Customer
+    customers_def = [
+        ("Walk-in", "Customer", "walkin@wbsoft.com", "01700000000", "Counter Sale, Dhaka"),
+        ("Rahim", "Uddin", "rahim.uddin@gmail.com", "01712345678", "House 12, Road 5, Dhanmondi, Dhaka"),
+        ("Sadia", "Akter", "sadia.akter@gmail.com", "01812345678", "Sector 3, Uttara, Dhaka"),
+    ]
+    for c_first, c_last, c_email, c_phone, c_addr in customers_def:
+        cust = db.query(Customer).filter(Customer.business_id == wbsoft.id, Customer.phone == c_phone).first()
+        if not cust:
+            cust = Customer(
+                business_id=wbsoft.id,
+                first_name=c_first,
+                last_name=c_last,
+                email=c_email,
+                phone=c_phone,
+                address=c_addr,
+                is_active=True,
+            )
+            db.add(cust)
+
     db.commit()
 
 

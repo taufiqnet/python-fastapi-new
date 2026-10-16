@@ -410,7 +410,11 @@ def get_service_worker():
     sw_path = "app/static/sw.js"
     if not os.path.exists(sw_path):
         return HTMLResponse(content="// Service worker placeholder", media_type="application/javascript")
-    return FileResponse(sw_path, media_type="application/javascript")
+    return FileResponse(
+        sw_path,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate, max-age=0"},
+    )
 
 
 @app.get("/health")

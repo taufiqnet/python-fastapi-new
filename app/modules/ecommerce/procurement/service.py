@@ -44,9 +44,11 @@ class ProcurementService:
 
     # --- Supplier Management ---
     def list_suppliers(
-        self, db: Session, business_id: int, is_active: Optional[bool] = None
+        self, db: Session, business_id: Optional[int] = None, is_active: Optional[bool] = None
     ) -> List[Supplier]:
-        query = select(Supplier).where(Supplier.business_id == business_id)
+        query = select(Supplier)
+        if business_id is not None:
+            query = query.where(Supplier.business_id == business_id)
         if is_active is not None:
             query = query.where(Supplier.is_active == is_active)
         return list(db.scalars(query.order_by(Supplier.name)).all())
@@ -105,6 +107,18 @@ class ProcurementService:
         db.commit()
         db.refresh(supplier)
         return supplier
+
+    def delete_supplier(self, db: Session, supplier_id: uuid.UUID, business_id: int) -> None:
+        supplier = self.get_supplier(db, supplier_id, business_id)
+        has_pos = db.scalar(
+            select(PurchaseOrder).where(PurchaseOrder.supplier_id == supplier_id).limit(1)
+        )
+        if has_pos:
+            supplier.is_active = False
+            db.commit()
+            return
+        db.delete(supplier)
+        db.commit()
 
     # --- Purchase Order Management ---
     def list_purchase_orders(
@@ -379,7 +393,7 @@ class ProcurementService:
                 reference_id=po.po_number,
                 source_type="purchase_order",
                 source_id=grn.grn_number,
-                actor_id=user.id,
+                actor_id=str(user.id) if user and getattr(user, "id", None) else None,
                 actor_type="user",
                 unit_cost=unit_cost,
                 batch_number=item_data.lot_number,

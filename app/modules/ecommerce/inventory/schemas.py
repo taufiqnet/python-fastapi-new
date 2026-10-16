@@ -447,7 +447,7 @@ class StockAdjustmentRequest(BaseModel):
     source_type: str | None = Field(None, max_length=50)
     source_id: str | None = Field(None, max_length=255)
     notes: str | None = None
-    actor_id: uuid.UUID | None = None
+    actor_id: str | None = None
     actor_type: str | None = Field(None, max_length=50)
     unit_cost: Decimal | None = Field(None, ge=Decimal("0.00"))
     idempotency_key: str | None = Field(None, max_length=255)
@@ -468,7 +468,7 @@ class StockMovementOut(BaseModel):
     source_type: str | None = None
     source_id: str | None = None
     notes: str | None = None
-    actor_id: uuid.UUID | None = None
+    actor_id: str | None = None
     actor_type: str | None = None
     unit_cost: Decimal | None = None
     idempotency_key: str | None = None

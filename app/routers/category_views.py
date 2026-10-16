@@ -44,6 +44,14 @@ def category_list_page(
     inactive_count = total_count - active_count
     root_count = sum(1 for c in categories if c.parent_id is None)
 
+    current_biz = None
+    if resolved_business_id:
+        current_biz = next((b for b in all_businesses if b.id == resolved_business_id), None)
+    elif current_user and current_user.business_profile:
+        current_biz = current_user.business_profile
+    elif all_businesses:
+        current_biz = all_businesses[0]
+
     return templates.TemplateResponse(
         request=request,
         name="modules/ecommerce/categories/category_list.html",
@@ -57,6 +65,8 @@ def category_list_page(
             "root_count": root_count,
             "active_page": "categories",
             "current_user": current_user,
+            "current_business": current_biz,
+            "selected_business_id": resolved_business_id,
         },
     )
 
@@ -78,6 +88,14 @@ def category_create_page(
         db, skip=0, limit=500, business_id=resolved_business_id
     )
 
+    current_biz = None
+    if resolved_business_id:
+        current_biz = next((b for b in all_businesses if b.id == resolved_business_id), None)
+    elif current_user and current_user.business_profile:
+        current_biz = current_user.business_profile
+    elif all_businesses:
+        current_biz = all_businesses[0]
+
     return templates.TemplateResponse(
         request=request,
         name="modules/ecommerce/categories/category_form.html",
@@ -88,6 +106,8 @@ def category_create_page(
             "parent_categories": parent_categories,
             "active_page": "categories",
             "current_user": current_user,
+            "current_business": current_biz,
+            "selected_business_id": resolved_business_id,
         },
     )
 
@@ -111,6 +131,7 @@ def category_detail_page(
         context={
             "category": category,
             "business": business,
+            "current_business": business,
             "active_page": "categories",
             "current_user": current_user,
         },
@@ -139,6 +160,14 @@ def category_edit_page(
     )
     parent_categories = [c for c in all_categories if c.id != category_id]
 
+    current_biz = None
+    if resolved_business_id:
+        current_biz = next((b for b in all_businesses if b.id == resolved_business_id), None)
+    elif current_user and current_user.business_profile:
+        current_biz = current_user.business_profile
+    elif all_businesses:
+        current_biz = all_businesses[0]
+
     return templates.TemplateResponse(
         request=request,
         name="modules/ecommerce/categories/category_form.html",
@@ -149,5 +178,7 @@ def category_edit_page(
             "parent_categories": parent_categories,
             "active_page": "categories",
             "current_user": current_user,
+            "current_business": current_biz,
+            "selected_business_id": resolved_business_id,
         },
     )

@@ -23,7 +23,7 @@ class SupplierBase(BaseModel):
 
 
 class SupplierCreate(SupplierBase):
-    business_id: int
+    business_id: Optional[int] = None
 
 
 class SupplierUpdate(BaseModel):
@@ -77,7 +77,7 @@ class PurchaseOrderItemOut(BaseModel):
 
 # --- Purchase Order Schemas ---
 class PurchaseOrderCreate(BaseModel):
-    business_id: int
+    business_id: Optional[int] = None
     supplier_id: uuid.UUID
     destination_warehouse_id: uuid.UUID
     order_date: date = Field(default_factory=date.today)

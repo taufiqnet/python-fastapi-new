@@ -45,7 +45,7 @@ def create_supplier(
     current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
     db: Session = Depends(get_db),
 ):
-    resolve_business_id(current_user, data.business_id)
+    data.business_id = resolve_business_id(current_user, data.business_id)
     supplier = service.create_supplier(db, data)
     return SupplierOut.from_orm(supplier)
 
@@ -75,6 +75,19 @@ def update_supplier(
     return SupplierOut.from_orm(supplier)
 
 
+@router.delete("/suppliers/{supplier_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_supplier(
+    supplier_id: uuid.UUID,
+    business_id: Optional[int] = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "inventory", "delete")),
+    db: Session = Depends(get_db),
+):
+    resolved_id = resolve_business_id(current_user, business_id)
+    service.delete_supplier(db, supplier_id, resolved_id)
+    from fastapi.responses import Response
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 # --- Purchase Orders Endpoints ---
 @router.get("/purchase-orders", response_model=List[PurchaseOrderOut])
 def list_purchase_orders(
@@ -96,7 +109,7 @@ def create_purchase_order(
     current_user: User = Depends(require_permission("ecommerce", "inventory", "create")),
     db: Session = Depends(get_db),
 ):
-    resolve_business_id(current_user, data.business_id)
+    data.business_id = resolve_business_id(current_user, data.business_id)
     return service.create_purchase_order(db, data)
 
 
