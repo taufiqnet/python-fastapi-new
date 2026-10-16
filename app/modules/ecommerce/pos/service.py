@@ -132,6 +132,18 @@ class POSService:
             query = query.where(POSSession.register_id == register_id)
         return db.scalar(query.order_by(POSSession.opened_at.desc()))
 
+    def get_active_session_for_register(
+        self, db: Session, register_id: uuid.UUID
+    ) -> Optional[POSSession]:
+        return db.scalar(
+            select(POSSession)
+            .where(
+                POSSession.register_id == register_id,
+                POSSession.status == SessionStatus.OPEN,
+            )
+            .order_by(POSSession.opened_at.desc())
+        )
+
     def open_session(
         self, db: Session, user: User, business_id: int, request: POSSessionOpenRequest
     ) -> POSSession:

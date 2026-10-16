@@ -19,6 +19,7 @@ business_service = BusinessService()
 
 
 @router.get("/sellers/manage", response_class=HTMLResponse)
+@router.get("/procurement/suppliers/manage", response_class=HTMLResponse)
 def sellers_manage_page(
     request: Request,
     business_id: int | None = None,

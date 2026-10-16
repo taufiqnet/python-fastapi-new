@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Multi-Vendor / Sellers | SaaS Platform{% endblock %}
+{% block title %}Suppliers & Sellers | SaaS Platform{% endblock %}
 
 {% block head %}
 <!-- DataTables CSS -->
@@ -30,7 +30,6 @@
     .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
     .stat-icon.green   { background: #f0fdf4; color: #16a34a; }
     .stat-icon.yellow  { background: #fefce8; color: #ca8a04; }
-    .stat-icon.purple  { background: #faf5ff; color: #9333ea; }
     .stat-icon.gray    { background: #f3f4f6; color: #6b7280; }
     .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
     .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
@@ -111,13 +110,13 @@
     .badge-active    { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
     .badge-pending   { background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; }
     .badge-suspended { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-    .badge-rejected  { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+    .badge-inactive  { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
 
     .action-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none; }
     .action-btn.view { color: #10b981; } .action-btn.view:hover { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
     .action-btn.edit { color: #4f46e5; } .action-btn.edit:hover { background: #eef2ff; border-color: #a5b4fc; color: #3730a3; }
     .action-btn.status { color: #d97706; } .action-btn.status:hover { background: #fffbeb; border-color: #fde68a; color: #b45309; }
-    .action-btn.products { color: #9333ea; } .action-btn.products:hover { background: #faf5ff; border-color: #e9d5ff; color: #7e22ce; }
+    .action-btn.products { color: #9333ea; } .action-btn.products:hover { background: #faf5ff; border-color: #e9d5ff; color: #6b21a8; }
     .action-btn.delete { color: #ef4444; } .action-btn.delete:hover { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
 </style>
 {% endblock %}
@@ -125,8 +124,8 @@
 {% block content %}
 <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Multi-Vendor & Seller Management</h1>
-        <p class="text-xs text-gray-500 mt-0.5 font-medium">Onboard vendors, configure commission structures, manage onboarding approvals, and associate products</p>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Suppliers & Sellers</h1>
+        <p class="text-xs text-gray-500 mt-0.5 font-medium">Onboard vendors, configure commission structures, and manage seller catalogs</p>
     </div>
     <div class="flex items-center gap-3">
         <button type="button" id="btnToggleFilters" class="w-10 h-10 border border-gray-200 bg-white rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors shadow-sm" title="Toggle Filters">
@@ -161,7 +160,7 @@
         </div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon purple"><i class="fas fa-percentage"></i></div>
+        <div class="stat-icon gray"><i class="fas fa-percentage"></i></div>
         <div>
             <div class="stat-label">Avg Commission Rate</div>
             <div class="stat-value">{{ "%.2f"|format(stats.avg_commission_rate) }}%</div>
@@ -172,7 +171,7 @@
 <div class="toolbar">
     <div class="toolbar-search">
         <i class="fas fa-search"></i>
-        <input type="text" id="customSearch" placeholder="Search store name, slug, company, email, phone...">
+        <input type="text" id="customSearch" placeholder="Search store name, company, email, phone, slug...">
     </div>
     <select id="filterStatus">
         <option value="">All Statuses</option>
@@ -189,7 +188,7 @@
         {% endfor %}
     </select>
     {% else %}
-    <select id="filterBusiness" onchange="window.location.href='/sellers/manage?business_id='+this.value">
+    <select id="filterBusiness">
         {% for b in businesses %}
         <option value="{{ b.id }}" {% if b.id == selected_business_id %}selected{% endif %}>{{ b.name_en }}</option>
         {% endfor %}
@@ -211,7 +210,7 @@
                     <th>Commission Structure</th>
                     <th>Verified</th>
                     <th>Products</th>
-                    <th style="width:140px" class="text-right">Actions</th>
+                    <th style="width:140px">Actions</th>
                     <th class="hidden"></th>
                     <th class="hidden"></th>
                 </tr>
@@ -222,18 +221,18 @@
                 {% set comm_type = s.commission_type.value if s.commission_type.value is defined else s.commission_type %}
                 <tr id="seller-row-{{ s.id }}">
                     <td>
-                        <div class="flex items-center gap-2.5">
-                            <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs shrink-0">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center font-bold text-xs shrink-0">
                                 {{ s.store_name[:2]|upper }}
                             </div>
                             <div>
-                                <div class="font-semibold text-gray-900 text-xs">{{ s.store_name }}</div>
-                                <div class="text-[10px] text-gray-400 font-mono">/seller/{{ s.slug }}</div>
+                                <div class="font-semibold text-gray-900">{{ s.store_name }}</div>
+                                <div class="text-[10px] text-gray-500 font-mono">/seller/{{ s.slug }}</div>
                             </div>
                         </div>
                     </td>
                     <td>
-                        <div class="font-medium text-gray-800 text-xs">{{ s.company_name or 'Individual Seller' }}</div>
+                        <div class="font-medium text-gray-800">{{ s.company_name or 'Individual Seller' }}</div>
                         <div class="text-[10px] text-gray-500">{{ s.contact_email or 'No email' }} | {{ s.contact_phone or 'No phone' }}</div>
                     </td>
                     <td>
@@ -244,34 +243,30 @@
                         {% elif st == 'suspended' %}
                         <span class="badge badge-suspended"><i class="fas fa-circle text-[6px] mr-1"></i> Suspended</span>
                         {% else %}
-                        <span class="badge badge-rejected"><i class="fas fa-circle text-[6px] mr-1"></i> {{ st|title }}</span>
+                        <span class="badge badge-inactive"><i class="fas fa-circle text-[6px] mr-1"></i> {{ st|title }}</span>
                         {% endif %}
                     </td>
-                    <td>
+                    <td class="font-medium">
                         {% if comm_type == 'percentage' %}
-                        <span class="text-indigo-700 font-bold text-xs">{{ "%.2f"|format(s.commission_rate) }}%</span>
+                        <span class="text-indigo-700 font-bold">{{ "%.2f"|format(s.commission_rate) }}%</span>
                         <span class="text-[10px] text-gray-400"> rate</span>
                         {% else %}
-                        <span class="text-purple-700 font-bold text-xs">${{ "%.2f"|format(s.flat_fee) }}</span>
+                        <span class="text-purple-700 font-bold">${{ "%.2f"|format(s.flat_fee) }}</span>
                         <span class="text-[10px] text-gray-400"> flat fee</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if s.is_verified %}
-                        <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-100 flex items-center space-x-1 w-max">
-                            <i class="fas fa-check-circle text-[10px]"></i>
-                            <span>Verified</span>
-                        </span>
+                        <span class="badge badge-active"><i class="fas fa-check-circle text-[10px] mr-1"></i> Verified</span>
                         {% else %}
                         <span class="text-gray-400 text-[10px] italic">Unverified</span>
                         {% endif %}
                     </td>
-                    <td class="font-bold text-gray-900 text-xs">
+                    <td class="font-bold text-gray-900">
                         {{ s.products|length if s.products else 0 }}
                     </td>
-                    <td class="text-right">
-                        <div class="flex items-center justify-end gap-1.5">
-                            <!-- View Detail -->
+                    <td>
+                        <div class="flex items-center gap-1">
                             <button type="button" class="action-btn view btn-action-detail"
                                 data-id="{{ s.id }}"
                                 data-name="{{ s.store_name|e }}"
@@ -287,11 +282,8 @@
                                 data-payout="{{ (s.payout_account or '')|e }}"
                                 data-address="{{ (s.address or '')|e }}"
                                 data-desc="{{ (s.description or '')|e }}"
-                                title="View Seller Profile">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                                title="View Seller Profile"><i class="fas fa-eye"></i></button>
 
-                            <!-- Edit Profile & Commission -->
                             <button type="button" class="action-btn edit btn-action-edit"
                                 data-id="{{ s.id }}"
                                 data-name="{{ s.store_name|e }}"
@@ -306,38 +298,27 @@
                                 data-payout="{{ (s.payout_account or '')|e }}"
                                 data-address="{{ (s.address or '')|e }}"
                                 data-desc="{{ (s.description or '')|e }}"
-                                title="Edit Profile & Commission">
-                                <i class="fas fa-edit"></i>
-                            </button>
+                                title="Edit Profile & Commission"><i class="fas fa-edit"></i></button>
 
-                            <!-- Status & Approval -->
                             <button type="button" class="action-btn status btn-action-status"
                                 data-id="{{ s.id }}"
                                 data-status="{{ st }}"
                                 data-verified="{{ 'true' if s.is_verified else 'false' }}"
-                                title="Manage Approval & Status">
-                                <i class="fas fa-user-check"></i>
-                            </button>
+                                title="Manage Approval & Status"><i class="fas fa-user-check"></i></button>
 
-                            <!-- Products Association -->
                             <button type="button" class="action-btn products btn-action-products"
                                 data-id="{{ s.id }}"
                                 data-name="{{ s.store_name|e }}"
-                                title="Manage Seller Products">
-                                <i class="fas fa-box"></i>
-                            </button>
+                                title="Manage Seller Products"><i class="fas fa-box"></i></button>
 
-                            <!-- Delete -->
                             <button type="button" class="action-btn delete btn-action-delete"
                                 data-id="{{ s.id }}"
                                 data-name="{{ s.store_name|e }}"
-                                title="Delete Seller">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
+                                title="Delete Seller"><i class="fas fa-trash-alt"></i></button>
                         </div>
                     </td>
                     <td class="hidden">{{ st }}</td>
-                    <td class="hidden">{% if s.business_id %}{{ s.business_id }}{% else %}Global{% endif %}</td>
+                    <td class="hidden">{% if s.business_id %}{{ s.business_id }}{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -718,471 +699,474 @@
 <script src="/static/vendor/datatables/jquery.dataTables.min.js"></script>
 <script src="/static/vendor/datatables/dataTables.responsive.min.js"></script>
 <script>
-const currentBusinessId = parseInt("{{ selected_business_id }}");
-let activeSellerForProducts = null;
+    const currentBusinessId = parseInt("{{ selected_business_id }}");
+    let activeSellerForProducts = null;
 
-$(document).ready(function () {
-    var table = $('#sellersTable').DataTable({
-        responsive: true,
-        pageLength: 10,
-        dom: 'rt',
-        columnDefs: [
-            { targets: [0], responsivePriority: 1 },
-            { targets: [6], responsivePriority: 2 },
-            { targets: [7, 8], visible: false, searchable: true }
-        ],
-        order: [],
-        language: { emptyTable: "No sellers found." },
-        drawCallback: function () { updateFooter(this.api()); }
-    });
-
-    $('#customSearch').on('input', function () { table.search(this.value).draw(); });
-    $('#filterStatus').on('change', function () { table.column(7).search(this.value).draw(); });
-    if ($('#filterBusiness').length) {
-        $('#filterBusiness').on('change', function () { table.column(8).search(this.value).draw(); });
-    }
-    $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
-
-    $('#btnToggleFilters').on('click', function() {
-        $('.toolbar').slideToggle(200);
-    });
-
-    $('#btnClearFilters').on('click', function() {
-        $('#customSearch').val('');
-        table.search('');
-        $('#filterStatus').val('');
-        if ($('#filterBusiness').length && !$('#filterBusiness').prop('disabled')) {
-            $('#filterBusiness').val('');
-        }
-        table.columns().search('').draw();
-    });
-
-    function updateFooter(api) {
-        var info = api.page.info();
-        var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
-        var end   = Math.min(info.end, info.recordsDisplay);
-        var total = info.recordsDisplay;
-        var overall = info.recordsTotal;
-
-        if (total === 0) {
-            $('#dtInfo').text('No entries found');
-        } else if (total < overall) {
-            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' filtered (total ' + overall + ')');
-        } else {
-            $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' entries');
-        }
-
-        var pages = info.pages;
-        var current = info.page;
-        var html = '';
-        var btnClass = 'inline-flex items-center justify-center w-7 h-7 rounded text-xs border transition-colors ';
-        var base   = btnClass + 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer';
-        var active = btnClass + 'border-indigo-600 bg-indigo-600 text-white font-semibold cursor-default';
-        var disabled = btnClass + 'border-gray-100 bg-white text-gray-300 cursor-default';
-
-        if (current === 0) {
-            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
-        } else {
-            html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
-        }
-
-        var start_p = Math.max(0, current - 2);
-        var end_p   = Math.min(pages - 1, current + 2);
-        if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
-        if (start_p > 1) html += '<span class="text-gray-400 text-xs px-1">…</span>';
-        for (var i = start_p; i <= end_p; i++) {
-            html += '<button class="' + (i === current ? active : base) + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
-        }
-        if (end_p < pages - 2) html += '<span class="text-gray-400 text-xs px-1">…</span>';
-        if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(0)">' + pages + '</button>';
-
-        if (current >= pages - 1) {
-            html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
-        } else {
-            html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
-        }
-
-        $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
-    }
-    window._dtTable = table;
-});
-
-function movePage(p) { window._dtTable.page(p).draw('page'); }
-
-// Delegated Event Listeners for DataTables Dynamic Action Buttons
-$(document).on('click', '.btn-action-detail', function () {
-    openDetailModal(
-        this.dataset.id,
-        this.dataset.name,
-        this.dataset.slug,
-        this.dataset.company,
-        this.dataset.email,
-        this.dataset.phone,
-        this.dataset.status,
-        this.dataset.rate,
-        this.dataset.type,
-        this.dataset.flat,
-        this.dataset.tax,
-        this.dataset.payout,
-        this.dataset.address,
-        this.dataset.desc
-    );
-});
-
-$(document).on('click', '.btn-action-edit', function () {
-    openEditModal(
-        this.dataset.id,
-        this.dataset.name,
-        this.dataset.slug,
-        this.dataset.company,
-        this.dataset.email,
-        this.dataset.phone,
-        this.dataset.rate,
-        this.dataset.type,
-        this.dataset.flat,
-        this.dataset.tax,
-        this.dataset.payout,
-        this.dataset.address,
-        this.dataset.desc
-    );
-});
-
-$(document).on('click', '.btn-action-status', function () {
-    openStatusModal(
-        this.dataset.id,
-        this.dataset.status,
-        this.dataset.verified === 'true'
-    );
-});
-
-$(document).on('click', '.btn-action-products', function () {
-    openProductsModal(this.dataset.id, this.dataset.name);
-});
-
-$(document).on('click', '.btn-action-delete', function () {
-    deleteSeller(this.dataset.id, this.dataset.name);
-});
-
-// Onboarding Modal Handlers
-function openOnboardingModal() {
-    document.getElementById('onboardingForm').reset();
-    document.getElementById('onboardingModal').classList.remove('hidden');
-}
-function closeOnboardingModal() {
-    document.getElementById('onboardingModal').classList.add('hidden');
-}
-
-async function submitOnboardingForm(e) {
-    e.preventDefault();
-    const storeName = document.getElementById('onboard_store_name').value.trim();
-    const companyName = document.getElementById('onboard_company_name').value.trim();
-    const contactEmail = document.getElementById('onboard_contact_email').value.trim();
-    const contactPhone = document.getElementById('onboard_contact_phone').value.trim();
-    const commType = document.getElementById('onboard_commission_type').value;
-    const commRate = parseFloat(document.getElementById('onboard_commission_rate').value) || 0;
-    const flatFee = parseFloat(document.getElementById('onboard_flat_fee').value) || 0;
-    const taxId = document.getElementById('onboard_tax_id').value.trim();
-    const payoutAcc = document.getElementById('onboard_payout_account').value.trim();
-    const address = document.getElementById('onboard_address').value.trim();
-
-    const btn = document.getElementById('btnSaveOnboarding');
-    btn.disabled = true;
-
-    try {
-        const res = await fetch(`/sellers?business_id=${currentBusinessId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                business_id: currentBusinessId,
-                store_name: storeName,
-                company_name: companyName || null,
-                contact_email: contactEmail,
-                contact_phone: contactPhone || null,
-                commission_type: commType,
-                commission_rate: commRate,
-                flat_fee: flatFee,
-                tax_id: taxId || null,
-                payout_account: payoutAcc || null,
-                address: address || null,
-                status: 'pending'
-            })
-        });
-        if (res.ok) {
-            if (window.showSuccessToast) window.showSuccessToast('Vendor Onboarded', 'Seller application submitted and set to Pending status.');
-            setTimeout(() => window.location.reload(), 800);
-        } else {
-            const err = await res.json();
-            if (window.showErrorAlert) window.showErrorAlert('Error', err.detail || 'Failed to onboard vendor.');
-        }
-    } catch (err) {
-        console.error(err);
-        if (window.showErrorAlert) window.showErrorAlert('Error', 'An unexpected error occurred.');
-    } finally {
-        btn.disabled = false;
-    }
-}
-
-// Edit Modal Handlers
-function openEditModal(id, storeName, slug, company, email, phone, rate, commType, flatFee, taxId, payout, address, desc) {
-    document.getElementById('edit_seller_id').value = id;
-    document.getElementById('edit_store_name').value = storeName;
-    document.getElementById('edit_company_name').value = company;
-    document.getElementById('edit_contact_email').value = email;
-    document.getElementById('edit_contact_phone').value = phone;
-    document.getElementById('edit_commission_type').value = commType;
-    document.getElementById('edit_commission_rate').value = rate;
-    document.getElementById('edit_flat_fee').value = flatFee;
-    document.getElementById('edit_tax_id').value = taxId;
-    document.getElementById('edit_payout_account').value = payout;
-    document.getElementById('edit_address').value = address;
-
-    document.getElementById('editSellerModal').classList.remove('hidden');
-}
-function closeEditModal() {
-    document.getElementById('editSellerModal').classList.add('hidden');
-}
-
-async function submitEditForm(e) {
-    e.preventDefault();
-    const sellerId = document.getElementById('edit_seller_id').value;
-    const storeName = document.getElementById('edit_store_name').value.trim();
-    const companyName = document.getElementById('edit_company_name').value.trim();
-    const contactEmail = document.getElementById('edit_contact_email').value.trim();
-    const contactPhone = document.getElementById('edit_contact_phone').value.trim();
-    const commType = document.getElementById('edit_commission_type').value;
-    const commRate = parseFloat(document.getElementById('edit_commission_rate').value) || 0;
-    const flatFee = parseFloat(document.getElementById('edit_flat_fee').value) || 0;
-    const taxId = document.getElementById('edit_tax_id').value.trim();
-    const payoutAcc = document.getElementById('edit_payout_account').value.trim();
-    const address = document.getElementById('edit_address').value.trim();
-
-    const btn = document.getElementById('btnSaveEdit');
-    btn.disabled = true;
-
-    try {
-        const res1 = await fetch(`/sellers/${sellerId}?business_id=${currentBusinessId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                store_name: storeName,
-                company_name: companyName || null,
-                contact_email: contactEmail || null,
-                contact_phone: contactPhone || null,
-                tax_id: taxId || null,
-                payout_account: payoutAcc || null,
-                address: address || null
-            })
+    $(document).ready(function () {
+        var table = $('#sellersTable').DataTable({
+            responsive: true,
+            pageLength: 10,
+            dom: 'rt',
+            columnDefs: [{ targets: [7, 8], visible: false, searchable: true }],
+            order: [],
+            language: { emptyTable: "No sellers or suppliers found." },
+            drawCallback: function () { updateFooter(this.api()); }
         });
 
-        const res2 = await fetch(`/sellers/${sellerId}/commission?business_id=${currentBusinessId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                commission_type: commType,
-                commission_rate: commRate,
-                flat_fee: flatFee
-            })
-        });
-
-        if (res1.ok && res2.ok) {
-            if (window.showSuccessToast) window.showSuccessToast('Seller Updated', 'Vendor profile and commission structure saved.');
-            setTimeout(() => window.location.reload(), 800);
-        } else {
-            if (window.showErrorAlert) window.showErrorAlert('Update Failed', 'Failed to update seller profile.');
-        }
-    } catch (err) {
-        console.error(err);
-        if (window.showErrorAlert) window.showErrorAlert('Error', 'An unexpected error occurred.');
-    } finally {
-        btn.disabled = false;
-    }
-}
-
-// Status Approval Modal Handlers
-function openStatusModal(id, currentStatus, isVerified) {
-    document.getElementById('status_seller_id').value = id;
-    document.getElementById('status_select').value = currentStatus;
-    document.getElementById('status_is_verified').checked = isVerified;
-    document.getElementById('statusModal').classList.remove('hidden');
-}
-function closeStatusModal() {
-    document.getElementById('statusModal').classList.add('hidden');
-}
-
-async function submitStatusForm(e) {
-    e.preventDefault();
-    const sellerId = document.getElementById('status_seller_id').value;
-    const status = document.getElementById('status_select').value;
-    const isVerified = document.getElementById('status_is_verified').checked;
-
-    const btn = document.getElementById('btnSaveStatus');
-    btn.disabled = true;
-
-    try {
-        const res = await fetch(`/sellers/${sellerId}/status?business_id=${currentBusinessId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                status: status,
-                is_verified: isVerified
-            })
-        });
-        if (res.ok) {
-            if (window.showSuccessToast) window.showSuccessToast('Status Updated', 'Vendor status updated successfully.');
-            setTimeout(() => window.location.reload(), 800);
-        } else {
-            const err = await res.json();
-            if (window.showErrorAlert) window.showErrorAlert('Update Failed', err.detail || 'Could not update vendor status.');
-        }
-    } catch (err) {
-        console.error(err);
-        if (window.showErrorAlert) window.showErrorAlert('Error', 'An unexpected error occurred.');
-    } finally {
-        btn.disabled = false;
-    }
-}
-
-// Products Modal Handlers
-async function openProductsModal(sellerId, storeName) {
-    activeSellerForProducts = sellerId;
-    document.getElementById('productsSellerTitle').textContent = `Catalog Linkages for: ${storeName}`;
-    document.getElementById('productsModal').classList.remove('hidden');
-    await loadSellerProducts(sellerId);
-}
-function closeProductsModal() {
-    document.getElementById('productsModal').classList.add('hidden');
-    activeSellerForProducts = null;
-}
-
-async function loadSellerProducts(sellerId) {
-    const container = document.getElementById('sellerProductsContainer');
-    container.innerHTML = `<p class="text-xs text-gray-400 italic py-2 text-center">Loading seller products...</p>`;
-
-    try {
-        const res = await fetch(`/sellers/${sellerId}/products?business_id=${currentBusinessId}`);
-        if (res.ok) {
-            const products = await res.json();
-            if (!products.length) {
-                container.innerHTML = `<p class="text-xs text-gray-400 italic py-2 text-center">No products associated with this seller yet.</p>`;
-                return;
-            }
-            let html = '';
-            products.forEach(p => {
-                html += `
-                    <div class="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-200/80">
-                        <div>
-                            <span class="font-bold text-gray-800 text-xs">${p.title}</span>
-                            <span class="text-[10px] text-gray-400 block">${p.brand || 'No Brand'} | Price: $${p.price || '0.00'}</span>
-                        </div>
-                        <button type="button" onclick="disassociateProduct('${sellerId}', '${p.id}')"
-                            class="px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors">
-                            Unlink
-                        </button>
-                    </div>
-                `;
+        $('#customSearch').on('input', function () { table.search(this.value).draw(); });
+        $('#filterStatus').on('change', function () { table.column(7).search(this.value).draw(); });
+        if ($('#filterBusiness').length) {
+            $('#filterBusiness').on('change', function () {
+                const val = this.value;
+                if (val) {
+                    const currentPath = window.location.pathname;
+                    window.location.href = currentPath + '?business_id=' + val;
+                }
             });
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = `<p class="text-xs text-rose-500 italic py-2 text-center">Failed to load products.</p>`;
         }
-    } catch (err) {
-        console.error(err);
-        container.innerHTML = `<p class="text-xs text-rose-500 italic py-2 text-center">Error loading products.</p>`;
-    }
-}
+        $('#dtPerPage').on('change', function () { table.page.len(parseInt(this.value)).draw(); });
 
-async function associateProduct() {
-    if (!activeSellerForProducts) return;
-    const productId = document.getElementById('associate_product_id').value;
-    if (!productId) {
-        if (window.showWarningAlert) window.showWarningAlert('Select Product', 'Please select a product from the unassigned list.');
-        return;
-    }
-
-    try {
-        const res = await fetch(`/sellers/${activeSellerForProducts}/products/${productId}?business_id=${currentBusinessId}`, {
-            method: 'POST'
+        $('#btnToggleFilters').on('click', function() {
+            $('.toolbar').slideToggle(200);
         });
-        if (res.ok) {
-            if (window.showSuccessToast) window.showSuccessToast('Product Linked', 'Product associated with seller successfully.');
-            await loadSellerProducts(activeSellerForProducts);
-            setTimeout(() => window.location.reload(), 800);
-        } else {
-            const err = await res.json();
-            if (window.showErrorAlert) window.showErrorAlert('Link Failed', err.detail || 'Could not associate product.');
-        }
-    } catch (err) {
-        console.error(err);
-        if (window.showErrorAlert) window.showErrorAlert('Error', 'An unexpected error occurred.');
-    }
-}
 
-async function disassociateProduct(sellerId, productId) {
-    try {
-        const res = await fetch(`/sellers/${sellerId}/products/${productId}?business_id=${currentBusinessId}`, {
-            method: 'DELETE'
+        $('#btnClearFilters').on('click', function() {
+            $('#customSearch').val('');
+            table.search('');
+            $('#filterStatus').val('');
+            table.columns().search('').draw();
         });
-        if (res.ok) {
-            if (window.showSuccessToast) window.showSuccessToast('Product Unlinked', 'Product disassociated from seller.');
-            await loadSellerProducts(sellerId);
-            setTimeout(() => window.location.reload(), 800);
-        } else {
-            if (window.showErrorAlert) window.showErrorAlert('Error', 'Failed to unlink product.');
+
+        function updateFooter(api) {
+            var info = api.page.info();
+            var start = info.recordsDisplay === 0 ? 0 : info.start + 1;
+            var end   = Math.min(info.end, info.recordsDisplay);
+            var total = info.recordsDisplay;
+            var overall = info.recordsTotal;
+
+            if (total === 0) {
+                $('#dtInfo').text('No entries found');
+            } else if (total < overall) {
+                $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' filtered (total ' + overall + ')');
+            } else {
+                $('#dtInfo').text('Showing ' + start + '–' + end + ' of ' + total + ' entries');
+            }
+
+            var pages = info.pages;
+            var current = info.page;
+            var html = '';
+            var btnClass = 'inline-flex items-center justify-center w-7 h-7 rounded text-xs border transition-colors ';
+            var base   = btnClass + 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 cursor-pointer';
+            var active = btnClass + 'border-indigo-600 bg-indigo-600 text-white font-semibold cursor-default';
+            var disabled = btnClass + 'border-gray-100 bg-white text-gray-300 cursor-default';
+
+            if (current === 0) {
+                html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+            } else {
+                html += '<button class="' + base + '" onclick="movePage(' + (current - 1) + ')"><i class="fas fa-chevron-left" style="font-size:10px"></i></button>';
+            }
+
+            var start_p = Math.max(0, current - 2);
+            var end_p   = Math.min(pages - 1, current + 2);
+            if (start_p > 0) html += '<button class="' + base + '" onclick="movePage(0)">1</button>';
+            if (start_p > 1) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+            for (var i = start_p; i <= end_p; i++) {
+                html += '<button class="' + (i === current ? active : base) + '" onclick="movePage(' + i + ')">' + (i + 1) + '</button>';
+            }
+            if (end_p < pages - 2) html += '<span class="text-gray-400 text-xs px-1">…</span>';
+            if (end_p < pages - 1) html += '<button class="' + base + '" onclick="movePage(' + (pages - 1) + ')">' + pages + '</button>';
+
+            if (current >= pages - 1) {
+                html += '<button class="' + disabled + '" disabled><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+            } else {
+                html += '<button class="' + base + '" onclick="movePage(' + (current + 1) + ')"><i class="fas fa-chevron-right" style="font-size:10px"></i></button>';
+            }
+
+            $('#dtPagination').html('<div class="flex items-center gap-1">' + html + '</div>');
         }
-    } catch (err) {
-        console.error(err);
-        if (window.showErrorAlert) window.showErrorAlert('Error', 'An unexpected error occurred.');
+        window._dtTable = table;
+    });
+
+    function movePage(p) { window._dtTable.page(p).draw('page'); }
+
+    // Attach Event Listeners for Action Buttons
+    document.addEventListener('DOMContentLoaded', () => {
+        $(document).on('click', '.btn-action-detail', function() {
+            var btn = this;
+            openDetailModal(
+                btn.dataset.id,
+                btn.dataset.name,
+                btn.dataset.slug,
+                btn.dataset.company,
+                btn.dataset.email,
+                btn.dataset.phone,
+                btn.dataset.status,
+                btn.dataset.rate,
+                btn.dataset.type,
+                btn.dataset.flat,
+                btn.dataset.tax,
+                btn.dataset.payout,
+                btn.dataset.address,
+                btn.dataset.desc
+            );
+        });
+
+        $(document).on('click', '.btn-action-edit', function() {
+            var btn = this;
+            openEditModal(
+                btn.dataset.id,
+                btn.dataset.name,
+                btn.dataset.slug,
+                btn.dataset.company,
+                btn.dataset.email,
+                btn.dataset.phone,
+                btn.dataset.rate,
+                btn.dataset.type,
+                btn.dataset.flat,
+                btn.dataset.tax,
+                btn.dataset.payout,
+                btn.dataset.address,
+                btn.dataset.desc
+            );
+        });
+
+        $(document).on('click', '.btn-action-status', function() {
+            var btn = this;
+            openStatusModal(
+                btn.dataset.id,
+                btn.dataset.status,
+                btn.dataset.verified === 'true'
+            );
+        });
+
+        $(document).on('click', '.btn-action-products', function() {
+            var btn = this;
+            openProductsModal(btn.dataset.id, btn.dataset.name);
+        });
+
+        $(document).on('click', '.btn-action-delete', function() {
+            var btn = this;
+            deleteSeller(btn.dataset.id, btn.dataset.name);
+        });
+    });
+
+    // Onboarding Modal Handlers
+    function openOnboardingModal() {
+        document.getElementById('onboardingForm').reset();
+        document.getElementById('onboardingModal').classList.remove('hidden');
     }
-}
+    function closeOnboardingModal() {
+        document.getElementById('onboardingModal').classList.add('hidden');
+    }
 
-// Detail Modal
-function openDetailModal(id, name, slug, company, email, phone, status, rate, commType, flatFee, taxId, payout, address, desc) {
-    document.getElementById('detailStoreName').textContent = name;
-    document.getElementById('detailSlug').textContent = `/seller/${slug}`;
-    document.getElementById('detailStatus').textContent = status.toUpperCase();
-    document.getElementById('detailCompany').textContent = company || 'Individual';
-    document.getElementById('detailTaxId').textContent = taxId || 'None';
-    document.getElementById('detailEmail').textContent = email || 'None';
-    document.getElementById('detailPhone').textContent = phone || 'None';
-    document.getElementById('detailPayout').textContent = payout || 'None';
-    document.getElementById('detailAddress').textContent = address || 'None';
+    async function submitOnboardingForm(e) {
+        e.preventDefault();
+        const storeName = document.getElementById('onboard_store_name').value.trim();
+        const companyName = document.getElementById('onboard_company_name').value.trim();
+        const contactEmail = document.getElementById('onboard_contact_email').value.trim();
+        const contactPhone = document.getElementById('onboard_contact_phone').value.trim();
+        const commType = document.getElementById('onboard_commission_type').value;
+        const commRate = parseFloat(document.getElementById('onboard_commission_rate').value) || 0;
+        const flatFee = parseFloat(document.getElementById('onboard_flat_fee').value) || 0;
+        const taxId = document.getElementById('onboard_tax_id').value.trim();
+        const payoutAcc = document.getElementById('onboard_payout_account').value.trim();
+        const address = document.getElementById('onboard_address').value.trim();
 
-    let commStr = commType === 'percentage' ? `${parseFloat(rate).toFixed(2)}% Commission` : `$${parseFloat(flatFee).toFixed(2)} Flat Fee`;
-    document.getElementById('detailCommission').textContent = commStr;
+        const btn = document.getElementById('btnSaveOnboarding');
+        btn.disabled = true;
 
-    document.getElementById('sellerDetailModal').classList.remove('hidden');
-}
-function closeDetailModal() {
-    document.getElementById('sellerDetailModal').classList.add('hidden');
-}
+        try {
+            const res = await fetch(`/sellers?business_id=${currentBusinessId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: currentBusinessId,
+                    store_name: storeName,
+                    company_name: companyName || null,
+                    contact_email: contactEmail,
+                    contact_phone: contactPhone || null,
+                    commission_type: commType,
+                    commission_rate: commRate,
+                    flat_fee: flatFee,
+                    tax_id: taxId || null,
+                    payout_account: payoutAcc || null,
+                    address: address || null,
+                    status: 'pending'
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Vendor Onboarded', 'Seller application submitted and set to Pending status.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Error', err.detail || 'Failed to onboard vendor.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
 
-// Delete Seller
-async function deleteSeller(sellerId, name) {
-    let confirmed = false;
-    if (window.showConfirmDialog) {
-        confirmed = await window.showConfirmDialog(
+    // Edit Modal Handlers
+    function openEditModal(id, storeName, slug, company, email, phone, rate, commType, flatFee, taxId, payout, address, desc) {
+        document.getElementById('edit_seller_id').value = id;
+        document.getElementById('edit_store_name').value = storeName;
+        document.getElementById('edit_company_name').value = company;
+        document.getElementById('edit_contact_email').value = email;
+        document.getElementById('edit_contact_phone').value = phone;
+        document.getElementById('edit_commission_type').value = commType;
+        document.getElementById('edit_commission_rate').value = rate;
+        document.getElementById('edit_flat_fee').value = flatFee;
+        document.getElementById('edit_tax_id').value = taxId;
+        document.getElementById('edit_payout_account').value = payout;
+        document.getElementById('edit_address').value = address;
+
+        document.getElementById('editSellerModal').classList.remove('hidden');
+    }
+    function closeEditModal() {
+        document.getElementById('editSellerModal').classList.add('hidden');
+    }
+
+    async function submitEditForm(e) {
+        e.preventDefault();
+        const sellerId = document.getElementById('edit_seller_id').value;
+        const storeName = document.getElementById('edit_store_name').value.trim();
+        const companyName = document.getElementById('edit_company_name').value.trim();
+        const contactEmail = document.getElementById('edit_contact_email').value.trim();
+        const contactPhone = document.getElementById('edit_contact_phone').value.trim();
+        const commType = document.getElementById('edit_commission_type').value;
+        const commRate = parseFloat(document.getElementById('edit_commission_rate').value) || 0;
+        const flatFee = parseFloat(document.getElementById('edit_flat_fee').value) || 0;
+        const taxId = document.getElementById('edit_tax_id').value.trim();
+        const payoutAcc = document.getElementById('edit_payout_account').value.trim();
+        const address = document.getElementById('edit_address').value.trim();
+
+        const btn = document.getElementById('btnSaveEdit');
+        btn.disabled = true;
+
+        try {
+            // Update profile
+            const res1 = await fetch(`/sellers/${sellerId}?business_id=${currentBusinessId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    store_name: storeName,
+                    company_name: companyName || null,
+                    contact_email: contactEmail || null,
+                    contact_phone: contactPhone || null,
+                    tax_id: taxId || null,
+                    payout_account: payoutAcc || null,
+                    address: address || null
+                })
+            });
+
+            // Update commission
+            const res2 = await fetch(`/sellers/${sellerId}/commission?business_id=${currentBusinessId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    commission_type: commType,
+                    commission_rate: commRate,
+                    flat_fee: flatFee
+                })
+            });
+
+            if (res1.ok && res2.ok) {
+                window.showSuccessToast('Seller Updated', 'Vendor profile and commission structure saved.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                window.showErrorAlert('Update Failed', 'Failed to update seller profile.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Status Approval Modal Handlers
+    function openStatusModal(id, currentStatus, isVerified) {
+        document.getElementById('status_seller_id').value = id;
+        document.getElementById('status_select').value = currentStatus;
+        document.getElementById('status_is_verified').checked = isVerified;
+        document.getElementById('statusModal').classList.remove('hidden');
+    }
+    function closeStatusModal() {
+        document.getElementById('statusModal').classList.add('hidden');
+    }
+
+    async function submitStatusForm(e) {
+        e.preventDefault();
+        const sellerId = document.getElementById('status_seller_id').value;
+        const status = document.getElementById('status_select').value;
+        const isVerified = document.getElementById('status_is_verified').checked;
+
+        const btn = document.getElementById('btnSaveStatus');
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`/sellers/${sellerId}/status?business_id=${currentBusinessId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    status: status,
+                    is_verified: isVerified
+                })
+            });
+            if (res.ok) {
+                window.showSuccessToast('Status Updated', 'Vendor status updated successfully.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Update Failed', err.detail || 'Could not update vendor status.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // Products Modal Handlers
+    async function openProductsModal(sellerId, storeName) {
+        activeSellerForProducts = sellerId;
+        document.getElementById('productsSellerTitle').textContent = `Catalog Linkages for: ${storeName}`;
+        document.getElementById('productsModal').classList.remove('hidden');
+        await loadSellerProducts(sellerId);
+    }
+    function closeProductsModal() {
+        document.getElementById('productsModal').classList.add('hidden');
+        activeSellerForProducts = null;
+    }
+
+    async function loadSellerProducts(sellerId) {
+        const container = document.getElementById('sellerProductsContainer');
+        container.innerHTML = `<p class="text-xs text-gray-400 italic py-2 text-center">Loading seller products...</p>`;
+
+        try {
+            const res = await fetch(`/sellers/${sellerId}/products?business_id=${currentBusinessId}`);
+            if (res.ok) {
+                const products = await res.json();
+                if (!products.length) {
+                    container.innerHTML = `<p class="text-xs text-gray-400 italic py-2 text-center">No products associated with this seller yet.</p>`;
+                    return;
+                }
+                let html = '';
+                products.forEach(p => {
+                    html += `
+                        <div class="flex items-center justify-between p-2.5 bg-gray-50 rounded-xl border border-gray-200/80">
+                            <div>
+                                <span class="font-bold text-gray-800 text-xs">${p.title}</span>
+                                <span class="text-[10px] text-gray-400 block">${p.brand || 'No Brand'} | Price: $${p.price || '0.00'}</span>
+                            </div>
+                            <button type="button" onclick="disassociateProduct('${sellerId}', '${p.id}')"
+                                class="px-2.5 py-1 text-[11px] font-semibold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors">
+                                Unlink
+                            </button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } else {
+                container.innerHTML = `<p class="text-xs text-rose-500 italic py-2 text-center">Failed to load products.</p>`;
+            }
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<p class="text-xs text-rose-500 italic py-2 text-center">Error loading products.</p>`;
+        }
+    }
+
+    async function associateProduct() {
+        if (!activeSellerForProducts) return;
+        const productId = document.getElementById('associate_product_id').value;
+        if (!productId) {
+            window.showWarningAlert('Select Product', 'Please select a product from the unassigned list.');
+            return;
+        }
+
+        try {
+            const res = await fetch(`/sellers/${activeSellerForProducts}/products/${productId}?business_id=${currentBusinessId}`, {
+                method: 'POST'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Product Linked', 'Product associated with seller successfully.');
+                await loadSellerProducts(activeSellerForProducts);
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Link Failed', err.detail || 'Could not associate product.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        }
+    }
+
+    async function disassociateProduct(sellerId, productId) {
+        try {
+            const res = await fetch(`/sellers/${sellerId}/products/${productId}?business_id=${currentBusinessId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Product Unlinked', 'Product disassociated from seller.');
+                await loadSellerProducts(sellerId);
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                window.showErrorAlert('Error', 'Failed to unlink product.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        }
+    }
+
+    // Detail Modal
+    function openDetailModal(id, name, slug, company, email, phone, status, rate, commType, flatFee, taxId, payout, address, desc) {
+        document.getElementById('detailStoreName').textContent = name;
+        document.getElementById('detailSlug').textContent = `/seller/${slug}`;
+        document.getElementById('detailStatus').textContent = status.toUpperCase();
+        document.getElementById('detailCompany').textContent = company || 'Individual';
+        document.getElementById('detailTaxId').textContent = taxId || 'None';
+        document.getElementById('detailEmail').textContent = email || 'None';
+        document.getElementById('detailPhone').textContent = phone || 'None';
+        document.getElementById('detailPayout').textContent = payout || 'None';
+        document.getElementById('detailAddress').textContent = address || 'None';
+
+        let commStr = commType === 'percentage' ? `${parseFloat(rate).toFixed(2)}% Commission` : `$${parseFloat(flatFee).toFixed(2)} Flat Fee`;
+        document.getElementById('detailCommission').textContent = commStr;
+
+        document.getElementById('sellerDetailModal').classList.remove('hidden');
+    }
+    function closeDetailModal() {
+        document.getElementById('sellerDetailModal').classList.add('hidden');
+    }
+
+    // Delete Seller
+    async function deleteSeller(sellerId, name) {
+        const confirmed = await window.showConfirmDialog(
             'Delete Vendor Profile',
             `Are you sure you want to delete '${name}'? Associated products will be unlinked.`
         );
-    } else {
-        confirmed = confirm(`Are you sure you want to delete '${name}'?`);
-    }
-    if (!confirmed) return;
+        if (!confirmed) return;
 
-    try {
-        const res = await fetch(`/sellers/${sellerId}?business_id=${currentBusinessId}`, {
-            method: 'DELETE'
-        });
-        if (res.ok) {
-            if (window.showSuccessToast) window.showSuccessToast('Seller Deleted', 'Vendor profile removed successfully.');
-            setTimeout(() => window.location.reload(), 800);
-        } else {
-            if (window.showErrorAlert) window.showErrorAlert('Error', 'Failed to delete seller.');
+        try {
+            const res = await fetch(`/sellers/${sellerId}?business_id=${currentBusinessId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Seller Deleted', 'Vendor profile removed successfully.');
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                window.showErrorAlert('Error', 'Failed to delete seller.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
         }
-    } catch (err) {
-        console.error(err);
-        if (window.showErrorAlert) window.showErrorAlert('Error', 'An unexpected error occurred.');
     }
-}
 </script>
 {% endblock %}

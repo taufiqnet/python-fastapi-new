@@ -46,8 +46,14 @@ def pos_terminal_page(
     registers = pos_service.list_registers(db, business_id=selected_business_id, is_active=True)
     warehouses = inventory_service.get_warehouses(db, business_id=selected_business_id, is_active=True)
 
-    # Check if cashier has an open session
-    active_session = pos_service.get_active_session_for_user(db, current_user.id, register_id)
+    # Check if register or cashier has an open session
+    active_session = None
+    if register_id:
+        active_session = pos_service.get_active_session_for_register(db, register_id)
+    if not active_session:
+        active_session = pos_service.get_active_session_for_user(db, current_user.id)
+
+    selected_register_id = register_id or (active_session.register_id if active_session else (registers[0].id if registers else None))
 
     # Categories for quick touch-tabs
     categories = category_service.get_categories(db, skip=0, limit=100)
@@ -62,6 +68,7 @@ def pos_terminal_page(
             "current_user": current_user,
             "businesses": businesses,
             "selected_business_id": selected_business_id,
+            "selected_register_id": selected_register_id,
             "registers": registers,
             "warehouses": warehouses,
             "active_session": active_session,

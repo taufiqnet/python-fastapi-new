@@ -143,7 +143,7 @@ def inventory_valuation_page(
     cost_layers = cost_layers_query.order_by(CostLayer.received_at.desc()).all()
 
     total_valuation = float(valuation_report.total_valuation)
-    total_quantity = sum(item.quantity_on_hand for item in valuation_report.items)
+    total_quantity = sum(getattr(item, "total_quantity", getattr(item, "quantity_on_hand", 0)) for item in valuation_report.items)
     avg_unit_cost = (total_valuation / total_quantity) if total_quantity > 0 else 0.0
 
     return templates.TemplateResponse(

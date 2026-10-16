@@ -108,19 +108,19 @@
         <!-- Right: Actions, Shift buttons, Fullscreen -->
         <div class="flex items-center gap-2.5">
             {% if active_session %}
-            <button type="button" id="btn-session-summary"
-                class="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 shadow-xs transition-colors flex items-center gap-1.5">
+            <button type="button" id="btn-session-summary" onclick="openSessionSummaryModal()"
+                class="px-3 py-1.5 bg-white hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer">
                 <i class="fas fa-file-invoice text-indigo-600"></i>
                 <span>Z-Report</span>
             </button>
-            <button type="button" id="btn-close-shift"
-                class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-lg border border-rose-200 shadow-xs transition-colors flex items-center gap-1.5">
+            <button type="button" id="btn-close-shift" onclick="openCloseShiftModal()"
+                class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-lg border border-rose-200 shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer">
                 <i class="fas fa-door-closed text-xs"></i>
                 <span>Close Shift</span>
             </button>
             {% else %}
-            <button type="button" id="btn-open-shift"
-                class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+            <button type="button" id="btn-open-shift" onclick="openOpenShiftModal()"
+                class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer">
                 <i class="fas fa-key text-xs"></i>
                 <span>Open Shift</span>
             </button>
@@ -322,27 +322,33 @@
 <div id="modal-open-shift"
     class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 {% if active_session %}hidden{% endif %}">
     <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-md p-6 shadow-2xl text-gray-800">
-        <div class="flex items-center gap-3 mb-4">
-            <div
-                class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg border border-emerald-100">
-                <i class="fas fa-key"></i>
+        <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg border border-emerald-100">
+                    <i class="fas fa-key"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-gray-900">Open Cashier Shift</h3>
+                    <p class="text-xs text-gray-500">Initialize register drawer with opening cash float.</p>
+                </div>
             </div>
-            <div>
-                <h3 class="text-base font-bold text-gray-900">Open Cashier Shift</h3>
-                <p class="text-xs text-gray-500">Initialize register drawer with opening cash float.</p>
-            </div>
+            <button type="button" class="text-gray-400 hover:text-gray-700 text-lg p-1" onclick="closeModal('modal-open-shift')">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
 
         <form id="form-open-shift" class="space-y-4">
             <div>
                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Select POS Register <span
                         class="text-rose-500">*</span></label>
-                <select id="open-register-id" required
+                <select id="open-shift-register" required
                     class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs">
                     <option value="">— Select Register Counter —</option>
                     {% for r in registers %}
-                    <option value="{{ r.id }}" {% if loop.first %}selected{% endif %}>{{ r.name }} ({{ r.code }}) - {{
-                        r.warehouse.name }}</option>
+                    <option value="{{ r.id }}" {% if (selected_register_id and r.id|string == selected_register_id|string) or loop.first %}selected{% endif %}>
+                        {{ r.name }} ({{ r.code }}) - {{ r.warehouse.name if r.warehouse else 'Main Warehouse' }}
+                    </option>
                     {% endfor %}
                 </select>
                 {% if not registers %}
@@ -356,25 +362,28 @@
             <div>
                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Opening Cash Drawer Float ($) <span
                         class="text-rose-500">*</span></label>
-                <input type="number" step="0.01" min="0" id="open-cash-amount" value="100.00" required
-                    class="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-sm text-gray-900 font-mono focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
-                    placeholder="0.00">
+                <div class="relative">
+                    <span class="absolute left-3.5 top-2.5 text-gray-400 font-mono text-sm">$</span>
+                    <input type="number" step="0.01" min="0" id="open-shift-cash" value="100.00" required
+                        class="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-sm text-gray-900 font-mono font-bold focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
+                        placeholder="0.00">
+                </div>
             </div>
 
             <div>
                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Shift Notes (Optional)</label>
-                <textarea id="open-notes" rows="2"
+                <textarea id="open-shift-notes" rows="2"
                     class="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs text-gray-900 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 shadow-xs"
                     placeholder="e.g. Morning Shift - Counter 1"></textarea>
             </div>
 
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
-                <a href="/orders/manage"
+                <button type="button" onclick="closeModal('modal-open-shift')"
                     class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200 transition-colors">
-                    Back to Orders
-                </a>
-                <button type="submit"
-                    class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                    Cancel
+                </button>
+                <button type="submit" id="btn-submit-open-shift"
+                    class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer">
                     <i class="fas fa-unlock"></i> Open Register & Start
                 </button>
             </div>
@@ -704,19 +713,150 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL: CLOSE CASHIER SHIFT & CASH COUNT MODAL                  -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="modal-close-shift" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-lg p-6 shadow-2xl text-gray-800 flex flex-col max-h-[92vh]">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200">
+            <div>
+                <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fas fa-door-closed text-rose-600"></i> Close Shift & Cash Count
+                </h3>
+                <p class="text-xs text-gray-500 mt-0.5">Reconcile drawer cash, verify totals, and finalize shift.</p>
+            </div>
+            <button type="button" class="text-gray-400 hover:text-gray-700 text-lg p-1" onclick="closeModal('modal-close-shift')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="form-close-shift" class="py-4 space-y-4 overflow-y-auto custom-scrollbar flex-1">
+            <!-- Shift Summary Box -->
+            <div class="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2 text-xs">
+                <div class="flex justify-between items-center text-gray-600">
+                    <span>Register:</span>
+                    <strong class="text-gray-900" id="close-shift-reg-name">{% if active_session %}{{ active_session.register.name }}{% endif %}</strong>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span>Cashier:</span>
+                    <strong class="text-gray-900" id="close-shift-cashier">{% if active_session %}{{ active_session.user.username or active_session.user.email }}{% endif %}</strong>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span>Opening Float:</span>
+                    <strong class="text-gray-900 font-mono" id="close-shift-opening">$0.00</strong>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span>Cash Sales:</span>
+                    <strong class="text-emerald-600 font-mono" id="close-shift-cash-sales">$0.00</strong>
+                </div>
+                <div class="flex justify-between items-center text-gray-600">
+                    <span>Card & Digital Sales:</span>
+                    <strong class="text-indigo-600 font-mono" id="close-shift-digital-sales">$0.00</strong>
+                </div>
+                <div class="pt-2 border-t border-gray-200 flex justify-between items-center text-sm">
+                    <span class="font-bold text-gray-800">Expected Cash in Drawer:</span>
+                    <strong class="text-base font-black text-gray-900 font-mono" id="close-shift-expected">$0.00</strong>
+                </div>
+            </div>
+
+            <!-- Counted Cash Input -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">
+                    Counted Cash in Drawer ($) <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    <span class="absolute left-3.5 top-2.5 text-gray-400 font-mono text-base">$</span>
+                    <input type="number" step="0.01" min="0" id="close-shift-counted" required class="w-full pl-8 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-base text-gray-900 font-mono font-black focus:outline-none focus:border-indigo-500" placeholder="0.00">
+                </div>
+            </div>
+
+            <!-- Live Difference Box -->
+            <div id="close-shift-diff-box" class="p-3 rounded-xl border flex items-center justify-between text-xs font-bold bg-gray-50 border-gray-200 text-gray-700">
+                <span>Difference (Counted - Expected):</span>
+                <span id="close-shift-difference" class="text-sm font-mono font-black">$0.00</span>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Closing Notes <span class="text-gray-400 font-normal">(Optional)</span></label>
+                <textarea id="close-shift-notes" rows="2" class="w-full bg-white border border-gray-300 rounded-lg p-2 text-xs text-gray-900 focus:outline-none focus:border-indigo-500" placeholder="e.g. Drawer balanced and handed over."></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-gray-200 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeModal('modal-close-shift')" class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200">
+                    Cancel
+                </button>
+                <button type="submit" id="btn-submit-close-shift" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer">
+                    <i class="fas fa-lock"></i> Reconcile & Close Shift
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL 7: Z-REPORT / SHIFT SUMMARY MODAL                        -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="modal-session-summary" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white border border-gray-200 rounded-2xl w-full max-w-md p-6 shadow-2xl text-gray-800 flex flex-col max-h-[92vh]">
+        <div class="flex items-center justify-between pb-3 border-b border-gray-200">
+            <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fas fa-file-invoice text-indigo-600"></i> Shift Summary (Z-Report)
+            </h3>
+            <button type="button" class="text-gray-400 hover:text-gray-700 text-lg p-1" onclick="closeModal('modal-session-summary')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="py-4 space-y-3 overflow-y-auto custom-scrollbar flex-1 text-xs">
+            <div id="z-report-thermal-canvas" class="p-4 bg-white border border-gray-300 rounded font-mono leading-relaxed space-y-2 text-gray-900">
+                <div class="text-center pb-2 border-b border-dashed border-gray-400">
+                    <p class="font-bold text-sm">Z-REPORT / SHIFT AUDIT</p>
+                    <p class="text-[11px] text-gray-500" id="z-report-date"></p>
+                </div>
+                <div class="space-y-1 text-[11px]">
+                    <div class="flex justify-between"><span>Register:</span><strong id="z-reg-name"></strong></div>
+                    <div class="flex justify-between"><span>Cashier:</span><strong id="z-cashier-name"></strong></div>
+                    <div class="flex justify-between"><span>Total Invoices:</span><strong id="z-total-orders"></strong></div>
+                </div>
+                <div class="py-2 border-t border-b border-dashed border-gray-400 space-y-1 text-[11px]">
+                    <div class="flex justify-between"><span>Opening Float:</span><span id="z-open-cash"></span></div>
+                    <div class="flex justify-between"><span>Cash Sales:</span><span id="z-cash-sales"></span></div>
+                    <div class="flex justify-between"><span>Card Sales:</span><span id="z-card-sales"></span></div>
+                    <div class="flex justify-between"><span>Mobile Wallet:</span><span id="z-mobile-sales"></span></div>
+                    <div class="flex justify-between font-bold pt-1 border-t border-gray-200"><span>GROSS SALES:</span><strong id="z-total-sales"></strong></div>
+                </div>
+                <div class="flex justify-between items-center text-xs font-bold pt-1">
+                    <span>EXPECTED DRAWER CASH:</span>
+                    <strong class="text-sm font-black text-emerald-700" id="z-expected-cash"></strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-3 border-t border-gray-200 flex items-center justify-end gap-2">
+            <button type="button" onclick="closeModal('modal-session-summary')" class="px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-lg border border-gray-200">
+                Close
+            </button>
+            <button type="button" onclick="window.print()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer">
+                <i class="fas fa-print"></i> Print Z-Report
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
 <!-- JAVASCRIPT: POS CONTROLLER & REALTIME LOGIC                   -->
 <!-- ══════════════════════════════════════════════════════════════ -->
 <script>
     // State Store
     const POS_STATE = {
-        sessionId: {% if active_session %}"{{ active_session.id }}"{% else %} null{% endif %},
-    warehouseId: {% if active_session %} "{{ active_session.register.warehouse_id }}"{% else %} null{% endif %},
-    businessId: { { selected_business_id } },
-    cart: [],
+        sessionId: {% if active_session %}"{{ active_session.id }}"{% else %}null{% endif %},
+        warehouseId: {% if active_session %}"{{ active_session.register.warehouse_id }}"{% else %}null{% endif %},
+        registerId: {% if active_session %}"{{ active_session.register_id }}"{% elif selected_register_id %}"{{ selected_register_id }}"{% else %}null{% endif %},
+        businessId: {{ selected_business_id }},
+        cart: [],
         products: [],
-            discountAmount: 0.00,
-                taxAmount: 0.00,
-                    selectedTender: "cash"
+        discountAmount: 0.00,
+        taxAmount: 0.00,
+        selectedTender: "cash"
     };
 
     // DOM Elements
@@ -757,6 +897,9 @@
                     </div>
                     <p class="text-sm font-bold text-gray-800">Shift Not Started</p>
                     <p class="text-xs text-gray-500 mt-1">Please open a cashier shift to load warehouse inventory.</p>
+                    <button type="button" onclick="openOpenShiftModal()" class="mt-4 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer">
+                        <i class="fas fa-key text-xs"></i> Open Shift Now
+                    </button>
                 </div>
             `;
             return;
@@ -1010,57 +1153,6 @@
             loadPOSProducts(searchInput.value.trim(), this.getAttribute('data-category-id'));
         });
     });
-
-    // 4. Shift Opening & Closing Handlers
-    const formOpenShift = document.getElementById('form-open-shift');
-    if (formOpenShift) {
-        formOpenShift.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const registerId = document.getElementById('open-register-id').value;
-            const openingCash = parseFloat(document.getElementById('open-cash-amount').value || 0);
-            const notes = document.getElementById('open-notes').value;
-
-            try {
-                const res = await fetch(`/pos/sessions/open?business_id=${POS_STATE.businessId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ register_id: registerId, opening_cash: openingCash, notes })
-                });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.detail || "Failed to open shift");
-                }
-                window.location.reload();
-            } catch (err) {
-                alert(err.message);
-            }
-        });
-    }
-
-    const btnCloseShift = document.getElementById('btn-close-shift');
-    if (btnCloseShift) {
-        btnCloseShift.addEventListener('click', async () => {
-            if (!POS_STATE.sessionId) return;
-            const counted = prompt("Enter total cash counted in drawer ($):", "0.00");
-            if (counted === null) return;
-
-            try {
-                const res = await fetch(`/pos/sessions/${POS_STATE.sessionId}/close?business_id=${POS_STATE.businessId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ closing_cash_counted: parseFloat(counted) })
-                });
-                if (!res.ok) {
-                    const err = await res.json();
-                    throw new Error(err.detail || "Failed to close shift");
-                }
-                alert("Shift closed successfully. Thank you!");
-                window.location.reload();
-            } catch (err) {
-                alert(err.message);
-            }
-        });
-    }
 
     // Quick discount handler
     const btnQuickDiscount = document.getElementById('btn-quick-discount');
@@ -1339,6 +1431,235 @@
             } finally {
                 btnSave.disabled = false;
                 btnSave.innerHTML = origContent;
+            }
+        });
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // SHIFT & CASH DRAWER RECONCILIATION CONTROLLER
+    // ══════════════════════════════════════════════════════════════
+    window.openOpenShiftModal = function() {
+        window.openModal('modal-open-shift');
+    };
+
+    window.openCloseShiftModal = async function() {
+        if (!POS_STATE.sessionId) {
+            if (window.showErrorAlert) {
+                window.showErrorAlert('No Active Shift', 'No active cashier shift found to close.');
+            } else {
+                alert('No active cashier shift found to close.');
+            }
+            return;
+        }
+        try {
+            if (window.Swal) {
+                Swal.fire({ title: 'Loading shift data...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            }
+            const res = await fetch(`/pos/sessions/${POS_STATE.sessionId}/summary`);
+            if (!res.ok) throw new Error("Failed to fetch shift summary.");
+            const data = await res.json();
+            if (window.Swal) Swal.close();
+
+            document.getElementById('close-shift-reg-name').innerText = data.session.register_name || 'Register';
+            document.getElementById('close-shift-cashier').innerText = data.session.cashier_name || 'Cashier';
+            document.getElementById('close-shift-opening').innerText = '$' + parseFloat(data.session.opening_cash || 0).toFixed(2);
+            document.getElementById('close-shift-cash-sales').innerText = '$' + parseFloat(data.cash_sales_amount || 0).toFixed(2);
+            document.getElementById('close-shift-digital-sales').innerText = '$' + (parseFloat(data.card_sales_amount || 0) + parseFloat(data.mobile_wallet_sales_amount || 0)).toFixed(2);
+            document.getElementById('close-shift-expected').innerText = '$' + parseFloat(data.expected_drawer_cash || 0).toFixed(2);
+
+            window._expectedDrawerCash = parseFloat(data.expected_drawer_cash || 0);
+            document.getElementById('close-shift-counted').value = '';
+            document.getElementById('close-shift-difference').innerText = '$0.00';
+            document.getElementById('close-shift-diff-box').className = 'p-3 rounded-xl border flex items-center justify-between text-xs font-bold bg-gray-50 border-gray-200 text-gray-700';
+
+            window.openModal('modal-close-shift');
+            setTimeout(() => document.getElementById('close-shift-counted').focus(), 100);
+        } catch (err) {
+            if (window.Swal) {
+                Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+            } else {
+                alert(err.message);
+            }
+        }
+    };
+
+    window.openSessionSummaryModal = async function() {
+        if (!POS_STATE.sessionId) {
+            if (window.showErrorAlert) {
+                window.showErrorAlert('No Active Shift', 'No active cashier shift found.');
+            } else {
+                alert('No active cashier shift found.');
+            }
+            return;
+        }
+        try {
+            if (window.Swal) {
+                Swal.fire({ title: 'Generating Z-Report...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            }
+            const res = await fetch(`/pos/sessions/${POS_STATE.sessionId}/summary`);
+            if (!res.ok) throw new Error("Failed to fetch shift summary.");
+            const data = await res.json();
+            if (window.Swal) Swal.close();
+
+            document.getElementById('z-report-date').innerText = new Date().toLocaleString();
+            document.getElementById('z-reg-name').innerText = data.session.register_name || '—';
+            document.getElementById('z-cashier-name').innerText = data.session.cashier_name || '—';
+            document.getElementById('z-total-orders').innerText = data.total_orders_count;
+            document.getElementById('z-open-cash').innerText = '$' + parseFloat(data.session.opening_cash || 0).toFixed(2);
+            document.getElementById('z-cash-sales').innerText = '$' + parseFloat(data.cash_sales_amount || 0).toFixed(2);
+            document.getElementById('z-card-sales').innerText = '$' + parseFloat(data.card_sales_amount || 0).toFixed(2);
+            document.getElementById('z-mobile-sales').innerText = '$' + parseFloat(data.mobile_wallet_sales_amount || 0).toFixed(2);
+            document.getElementById('z-total-sales').innerText = '$' + parseFloat(data.total_sales_amount || 0).toFixed(2);
+            document.getElementById('z-expected-cash').innerText = '$' + parseFloat(data.expected_drawer_cash || 0).toFixed(2);
+
+            window.openModal('modal-session-summary');
+        } catch (err) {
+            if (window.Swal) {
+                Swal.fire({ icon: 'error', title: 'Error', text: err.message });
+            } else {
+                alert(err.message);
+            }
+        }
+    };
+
+    // Live difference calculation in close shift modal
+    const inputCounted = document.getElementById('close-shift-counted');
+    if (inputCounted) {
+        inputCounted.addEventListener('input', function() {
+            const counted = parseFloat(this.value) || 0;
+            const expected = window._expectedDrawerCash || 0;
+            const diff = counted - expected;
+            const diffEl = document.getElementById('close-shift-difference');
+            const box = document.getElementById('close-shift-diff-box');
+
+            if (Math.abs(diff) < 0.005) {
+                diffEl.innerText = '$0.00 (Exact Match)';
+                box.className = 'p-3 rounded-xl border flex items-center justify-between text-xs font-bold bg-emerald-50 border-emerald-200 text-emerald-800';
+            } else if (diff < 0) {
+                diffEl.innerText = '-$' + Math.abs(diff).toFixed(2) + ' (Cash Short)';
+                box.className = 'p-3 rounded-xl border flex items-center justify-between text-xs font-bold bg-rose-50 border-rose-200 text-rose-800';
+            } else {
+                diffEl.innerText = '+$' + diff.toFixed(2) + ' (Cash Over)';
+                box.className = 'p-3 rounded-xl border flex items-center justify-between text-xs font-bold bg-blue-50 border-blue-200 text-blue-800';
+            }
+        });
+    }
+
+    // Submit Open Shift Form
+    const formOpenShift = document.getElementById('form-open-shift');
+    if (formOpenShift) {
+        formOpenShift.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const regId = document.getElementById('open-shift-register').value;
+            const openCash = parseFloat(document.getElementById('open-shift-cash').value) || 0;
+            const notes = document.getElementById('open-shift-notes').value.trim();
+
+            const btn = document.getElementById('btn-submit-open-shift');
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Starting Shift...';
+
+            try {
+                const res = await fetch('/pos/sessions/open', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        register_id: regId,
+                        opening_cash: openCash,
+                        notes: notes || null
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed to open shift.');
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Shift Opened!',
+                        text: 'Cashier shift has been started successfully.',
+                        timer: 1200,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = `/pos/terminal?register_id=${regId}`;
+                    });
+                } else {
+                    alert('Shift opened successfully!');
+                    window.location.href = `/pos/terminal?register_id=${regId}`;
+                }
+            } catch (err) {
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'Open Shift Failed', text: err.message });
+                } else {
+                    alert(err.message);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = orig;
+            }
+        });
+    }
+
+    // Submit Close Shift Form
+    const formCloseShift = document.getElementById('form-close-shift');
+    if (formCloseShift) {
+        formCloseShift.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!POS_STATE.sessionId) return;
+
+            const countedVal = document.getElementById('close-shift-counted').value;
+            if (countedVal === '') {
+                if (window.Swal) {
+                    Swal.fire({ icon: 'warning', title: 'Input Required', text: 'Please enter the counted cash in drawer.' });
+                } else {
+                    alert('Please enter the counted cash in drawer.');
+                }
+                return;
+            }
+            const counted = parseFloat(countedVal) || 0;
+            const notes = document.getElementById('close-shift-notes').value.trim();
+
+            const btn = document.getElementById('btn-submit-close-shift');
+            const orig = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Finalizing Shift...';
+
+            try {
+                const res = await fetch(`/pos/sessions/${POS_STATE.sessionId}/close`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({
+                        closing_cash_counted: counted,
+                        notes: notes || null
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Failed to close shift.');
+
+                if (window.Swal) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Shift Closed',
+                        text: 'Cash drawer reconciled and shift closed successfully.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        const regParam = POS_STATE.registerId ? `?register_id=${POS_STATE.registerId}` : '';
+                        window.location.href = `/pos/terminal${regParam}`;
+                    });
+                } else {
+                    alert('Shift closed successfully!');
+                    const regParam = POS_STATE.registerId ? `?register_id=${POS_STATE.registerId}` : '';
+                    window.location.href = `/pos/terminal${regParam}`;
+                }
+            } catch (err) {
+                if (window.Swal) {
+                    Swal.fire({ icon: 'error', title: 'Close Shift Failed', text: err.message });
+                } else {
+                    alert(err.message);
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = orig;
             }
         });
     }
