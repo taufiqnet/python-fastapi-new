@@ -22,6 +22,8 @@ docker compose down -v
 docker compose build api
 docker compose up -d
 
+docker compose exec api pytest tests/test_customer.py -q
+
 docker compose exec api alembic revision --autogenerate -m "add users table"
 docker compose exec api alembic --version
 docker compose ps

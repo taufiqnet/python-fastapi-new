@@ -91,6 +91,25 @@ def check_phone(
     return {"exists": False, "message": None}
 
 
+@router.get("/search", response_model=list[CustomerOut])
+def search_customers(
+    q: str = Query("", description="Search by phone, name or email"),
+    business_id: int | None = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+    is_active: bool | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "customers", "view")),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.search_customers(
+        db,
+        query=q,
+        business_id=resolved_business_id,
+        limit=limit,
+        is_active=is_active,
+    )
+
+
 @router.get("/{customer_id}", response_model=CustomerOut)
 def get_customer(
     customer_id: uuid.UUID,

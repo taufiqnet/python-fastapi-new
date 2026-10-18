@@ -8,9 +8,14 @@ from app.core.deps import get_current_user, require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
+from app.modules.ecommerce.customer.schemas import CustomerOut
+from app.modules.ecommerce.customer.service import CustomerService
 from app.modules.ecommerce.pos.schemas import (
     POSCheckoutRequest,
     POSCheckoutResponse,
+    POSOrderLookupResponse,
+    POSOrderReturnRequest,
+    POSOrderReturnResponse,
     POSProductSearchOut,
     POSRegisterCreate,
     POSRegisterOut,
@@ -24,6 +29,7 @@ from app.modules.ecommerce.pos.service import POSService
 
 router = APIRouter(prefix="/pos", tags=["Point of Sale (POS)"])
 service = POSService()
+customer_service = CustomerService()
 
 
 # --- Registers ---
@@ -129,6 +135,24 @@ def close_session(
     return session_out
 
 
+# --- Customer Fast Typeahead for POS ---
+@router.get("/customers/search", response_model=List[CustomerOut])
+def search_pos_customers(
+    q: Optional[str] = Query(None),
+    business_id: Optional[int] = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    resolved_id = resolve_business_id(current_user, business_id)
+    return customer_service.search_customers(
+        db,
+        query=q or "",
+        business_id=resolved_id,
+        limit=limit,
+    )
+
+
 # --- Products Scan & Fast Checkout ---
 @router.get("/products/search", response_model=List[POSProductSearchOut])
 def search_pos_products(
@@ -160,3 +184,27 @@ def pos_checkout(
 ):
     resolved_id = resolve_business_id(current_user, business_id)
     return service.fast_checkout(db, current_user, resolved_id, data)
+
+
+# --- Returns, Refunds & Receipt Lookup ---
+@router.get("/orders/lookup", response_model=POSOrderLookupResponse)
+def lookup_pos_order(
+    order_number: str = Query(..., min_length=1),
+    business_id: Optional[int] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    resolved_id = resolve_business_id(current_user, business_id)
+    return service.lookup_order_for_return(db, business_id=resolved_id, order_number=order_number)
+
+
+@router.post("/orders/return", response_model=POSOrderReturnResponse, status_code=status.HTTP_200_OK)
+def pos_process_return(
+    data: POSOrderReturnRequest,
+    business_id: Optional[int] = Query(None),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    resolved_id = resolve_business_id(current_user, business_id)
+    return service.process_order_return(db, current_user, resolved_id, data)
+

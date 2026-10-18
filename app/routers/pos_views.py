@@ -58,8 +58,8 @@ def pos_terminal_page(
     # Categories for quick touch-tabs
     categories = category_service.get_categories(db, skip=0, limit=100)
 
-    # Customers for quick autocomplete
-    customers = customer_service.get_customers(db, business_id=selected_business_id, skip=0, limit=200)
+    # Customers for initial quick cache (Top 10 recent customers; typeahead will dynamically search 1M+ records)
+    customers = customer_service.get_customers(db, business_id=selected_business_id, skip=0, limit=10)
 
     return templates.TemplateResponse(
         "modules/ecommerce/pos/terminal.html",

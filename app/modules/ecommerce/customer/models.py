@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from decimal import Decimal
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.common.models import TimestampMixin, UUIDMixin
@@ -18,8 +19,11 @@ class Customer(Base, UUIDMixin, TimestampMixin):
     last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     phone: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    address: Mapped[str] = mapped_column(Text, nullable=False)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    loyalty_points: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    store_credit: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=Decimal("0.00"), server_default="0.00", nullable=False)
+    membership_tier: Mapped[str] = mapped_column(String(50), default="Regular", server_default="Regular", nullable=False)
 
     business_profile: Mapped["BusinessProfile | None"] = relationship(  # noqa: F821
         "BusinessProfile",

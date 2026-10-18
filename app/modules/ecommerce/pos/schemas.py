@@ -113,6 +113,8 @@ class POSCartLineItem(BaseModel):
     quantity: int = Field(..., gt=0)
     unit_price: Decimal = Field(..., ge=0)
     discount_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
+    note: Optional[str] = None
+    tax_exempt: Optional[bool] = False
 
 
 class POSCheckoutRequest(BaseModel):
@@ -124,6 +126,9 @@ class POSCheckoutRequest(BaseModel):
     payments: List[POSPaymentSplitItem]
     discount_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
     tax_amount: Decimal = Field(default=Decimal("0.00"), ge=0)
+    discount_reason: Optional[str] = None
+    coupon_code: Optional[str] = None
+    points_redeemed: Optional[int] = 0
     customer_note: Optional[str] = None
 
 
@@ -136,6 +141,7 @@ class POSReceiptLineItem(BaseModel):
     unit_price: Decimal
     discount_amount: Decimal
     subtotal: Decimal
+    note: Optional[str] = None
 
 
 class POSCheckoutResponse(BaseModel):
@@ -154,6 +160,12 @@ class POSCheckoutResponse(BaseModel):
     total_paid: Decimal
     change_amount: Decimal
     payments: List[POSPaymentOut]
+    discount_reason: Optional[str] = None
+    coupon_code: Optional[str] = None
+    points_earned: Optional[int] = 0
+    points_balance: Optional[int] = None
+    store_credit_balance: Optional[Decimal] = None
+    membership_tier: Optional[str] = None
     receipt_header: Optional[str] = None
     receipt_footer: Optional[str] = None
 
@@ -170,3 +182,75 @@ class POSProductSearchOut(BaseModel):
     category_name: Optional[str] = None
     stock_qty: int
     image_url: Optional[str] = None
+
+
+# --- POS Returns & Refunds Schemas ---
+class POSReturnItemRequest(BaseModel):
+    order_item_id: uuid.UUID
+    quantity: int = Field(..., gt=0)
+    restock: bool = True
+    reason: Optional[str] = None
+
+
+class POSOrderReturnRequest(BaseModel):
+    session_id: uuid.UUID
+    order_number: str
+    items: List[POSReturnItemRequest]
+    refund_method: str = Field(..., description="cash, card, or store_credit")
+    refund_reason: Optional[str] = None
+    customer_id: Optional[uuid.UUID] = None
+
+
+class POSOrderLookupItem(BaseModel):
+    item_id: uuid.UUID
+    variant_id: uuid.UUID
+    product_title: str
+    sku: str
+    barcode: Optional[str] = None
+    unit_price: Decimal
+    discount_amount: Decimal
+    net_unit_price: Decimal
+    quantity: int
+    refunded_quantity: int
+    returnable_quantity: int
+    subtotal: Decimal
+
+
+class POSOrderLookupResponse(BaseModel):
+    order_id: uuid.UUID
+    order_number: str
+    created_at: datetime
+    customer_name: str
+    customer_id: Optional[uuid.UUID] = None
+    total_amount: Decimal
+    payment_status: str
+    fulfillment_status: str
+    items: List[POSOrderLookupItem]
+
+
+class POSReturnItemReceipt(BaseModel):
+    product_title: str
+    sku: str
+    returned_quantity: int
+    unit_price: Decimal
+    refund_subtotal: Decimal
+    restocked: bool
+
+
+class POSOrderReturnResponse(BaseModel):
+    return_id: str
+    order_id: uuid.UUID
+    order_number: str
+    created_at: datetime
+    business_name: str
+    register_name: str
+    cashier_name: str
+    customer_name: str
+    refund_method: str
+    refund_reason: Optional[str] = None
+    total_refund_amount: Decimal
+    items_returned: List[POSReturnItemReceipt]
+    customer_store_credit_balance: Optional[Decimal] = None
+    receipt_header: Optional[str] = None
+    receipt_footer: Optional[str] = None
+

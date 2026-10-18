@@ -27,6 +27,22 @@ class CustomerService:
             db, skip=skip, limit=limit, business_id=business_id, is_active=is_active
         )
 
+    def search_customers(
+        self,
+        db: Session,
+        query: str = "",
+        business_id: int | None = None,
+        limit: int = 20,
+        is_active: bool | None = True,
+    ) -> list[Customer]:
+        return self.repository.search(
+            db,
+            query_str=query,
+            business_id=business_id,
+            limit=limit,
+            is_active=is_active,
+        )
+
     def get_customer(self, db: Session, customer_id: uuid.UUID) -> Customer:
         customer = self.repository.get_by_id(db, customer_id)
         if not customer:
@@ -36,7 +52,9 @@ class CustomerService:
             )
         return customer
 
-    def create_customer(self, db: Session, data: CustomerCreate) -> Customer:
+    def create_customer(
+        self, db: Session, data: CustomerCreate, require_address: bool = False
+    ) -> Customer:
         if not data.first_name or not data.first_name.strip():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -47,7 +65,7 @@ class CustomerService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Phone number is required",
             )
-        if not data.address or not data.address.strip():
+        if require_address and (not data.address or not data.address.strip()):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Full Address is required",

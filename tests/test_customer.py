@@ -46,7 +46,7 @@ async def client(sync_db):
     def _override_get_db():
         yield sync_db
 
-    def _override_user(*args, **kwargs):
+    def _override_user(request=None):
         return admin_user
 
     app.dependency_overrides[get_db] = _override_get_db
@@ -120,3 +120,34 @@ async def test_customer_creation_and_phone_validation(client: AsyncClient):
 
     resp_missing = await client.post("/customers/", json=payload_missing)
     assert resp_missing.status_code == 400
+
+    # 5. Customer Search Endpoint verification
+    search_resp = await client.get("/customers/search?q=01700&business_id=1")
+    assert search_resp.status_code == 200, search_resp.text
+    search_results = search_resp.json()
+    assert len(search_results) == 1
+    assert search_results[0]["phone"] == "+8801700112233"
+    assert search_results[0]["full_name"] == "John Doe"
+
+    # 6. POS Customer Search Endpoint verification
+    pos_search_resp = await client.get("/pos/customers/search?q=John&business_id=1")
+    assert pos_search_resp.status_code == 200, pos_search_resp.text
+    pos_results = pos_search_resp.json()
+    assert len(pos_results) == 1
+    assert pos_results[0]["phone"] == "+8801700112233"
+
+    # 7. POS Customer creation WITHOUT address -> Must succeed
+    payload_pos_cust = {
+        "first_name": "POS Walkin",
+        "last_name": "Shopper",
+        "phone": "+8801999888777",
+        "email": "pos.shopper@example.com",
+        "address": None,
+        "business_id": 1,
+        "is_active": True,
+    }
+    resp_pos = await client.post("/customers/", json=payload_pos_cust)
+    assert resp_pos.status_code == 201, resp_pos.text
+    data_pos = resp_pos.json()
+    assert data_pos["first_name"] == "POS Walkin"
+    assert data_pos["address"] is None

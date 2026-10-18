@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.modules.ecommerce.customer.models import Customer
@@ -40,6 +41,34 @@ class CustomerRepository:
         if is_active is not None:
             query = query.filter(Customer.is_active == is_active)
         return query.offset(skip).limit(limit).all()
+
+    def search(
+        self,
+        db: Session,
+        query_str: str,
+        business_id: int | None = None,
+        limit: int = 20,
+        is_active: bool | None = None,
+    ) -> list[Customer]:
+        query = db.query(Customer)
+        if business_id is not None:
+            query = query.filter(Customer.business_id == business_id)
+        if is_active is not None:
+            query = query.filter(Customer.is_active == is_active)
+
+        clean_q = query_str.strip()
+        if clean_q:
+            search_pattern = f"%{clean_q}%"
+            query = query.filter(
+                or_(
+                    Customer.phone.ilike(f"{clean_q}%"),
+                    Customer.phone.ilike(search_pattern),
+                    Customer.first_name.ilike(search_pattern),
+                    Customer.last_name.ilike(search_pattern),
+                    Customer.email.ilike(search_pattern),
+                )
+            )
+        return query.order_by(Customer.created_at.desc()).limit(limit).all()
 
     def create(self, db: Session, data: CustomerCreate) -> Customer:
         customer = Customer(
