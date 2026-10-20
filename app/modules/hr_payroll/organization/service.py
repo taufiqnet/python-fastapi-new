@@ -11,11 +11,12 @@ from app.core.tenancy.models import BusinessProfile
 from app.core.tenancy.repository import BusinessRepository
 from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.employees.models import Employee
-from app.modules.hr_payroll.organization.models import Branch, Department, JobTitle
+from app.modules.hr_payroll.organization.models import Branch, Department, JobTitle, SalaryGrade
 from app.modules.hr_payroll.organization.repository import (
     BranchRepository,
     DepartmentRepository,
     JobTitleRepository,
+    SalaryGradeRepository,
 )
 from app.modules.hr_payroll.organization.schemas import (
     BranchCreate,
@@ -29,6 +30,8 @@ from app.modules.hr_payroll.organization.schemas import (
     JobTitleUpdate,
     OrganogramEmployeeNode,
     OrganogramStructureTree,
+    SalaryGradeCreate,
+    SalaryGradeUpdate,
 )
 
 
@@ -972,4 +975,244 @@ class OrganogramService:
             total_employees=len(employees),
             branches=branch_nodes,
         )
+
+
+BANGLADESH_SALARY_GRADE_PRESETS: dict[str, list[dict[str, Any]]] = {
+    "corporate_bd": [
+        {"code": "M-1", "name": "Executive Leadership", "level_rank": 1, "min_gross": 200000, "max_gross": 450000, "basic_pct": 50.0, "desc": "C-Suite & Managing Directors (CEO, CTO, CFO, VP)"},
+        {"code": "M-2", "name": "Senior Management", "level_rank": 2, "min_gross": 140000, "max_gross": 220000, "basic_pct": 50.0, "desc": "General Managers, Directors, Heads of Divisions"},
+        {"code": "M-3", "name": "Mid Management", "level_rank": 3, "min_gross": 90000, "max_gross": 150000, "basic_pct": 50.0, "desc": "Senior Managers, Department Managers"},
+        {"code": "M-4", "name": "Senior Professional", "level_rank": 4, "min_gross": 65000, "max_gross": 95000, "basic_pct": 50.0, "desc": "Assistant Managers, Team Leads, Senior Engineers"},
+        {"code": "M-5", "name": "Professional", "level_rank": 5, "min_gross": 45000, "max_gross": 70000, "basic_pct": 50.0, "desc": "Officers, Executives, Software Engineers, Analysts"},
+        {"code": "M-6", "name": "Associate", "level_rank": 6, "min_gross": 30000, "max_gross": 48000, "basic_pct": 50.0, "desc": "Junior Officers, Junior Executives, Associates"},
+        {"code": "M-7", "name": "Operational & Support", "level_rank": 7, "min_gross": 20000, "max_gross": 32000, "basic_pct": 50.0, "desc": "Support Staff, Trainees, Field Assistants"},
+    ],
+    "rmg_bd": [
+        {"code": "G-1", "name": "Grade 1 - Pattern & Quality Master", "level_rank": 2, "min_gross": 25000, "max_gross": 35000, "basic_pct": 52.0, "desc": "Chief Pattern Master, Chief Quality Controller, Production Master"},
+        {"code": "G-2", "name": "Grade 2 - Cutting & Mechanic Master", "level_rank": 3, "min_gross": 20000, "max_gross": 26000, "basic_pct": 52.0, "desc": "Cutting Master, Mechanic Master, Senior Supervisor"},
+        {"code": "G-3", "name": "Grade 3 - Senior Operator", "level_rank": 5, "min_gross": 15000, "max_gross": 19000, "basic_pct": 52.0, "desc": "Senior Sewing Operator, Senior Sample Maker, Quality Inspector"},
+        {"code": "G-4", "name": "Grade 4 - General Operator", "level_rank": 6, "min_gross": 13000, "max_gross": 15500, "basic_pct": 52.0, "desc": "General Sewing Operator, Ironer, Fabric Inspector"},
+        {"code": "G-5", "name": "Grade 5 - Junior Operator & Helper", "level_rank": 7, "min_gross": 12500, "max_gross": 14000, "basic_pct": 52.0, "desc": "Junior Operator, Helper, Trimmer, Apprentice"},
+    ],
+    "banking_bd": [
+        {"code": "SEVP", "name": "Senior Executive Vice President", "level_rank": 1, "min_gross": 280000, "max_gross": 450000, "basic_pct": 50.0, "desc": "SEVP / Executive Vice President / Division Head"},
+        {"code": "SVP", "name": "Senior Vice President", "level_rank": 2, "min_gross": 200000, "max_gross": 300000, "basic_pct": 50.0, "desc": "Senior Vice President / Vice President"},
+        {"code": "AVP", "name": "Assistant Vice President", "level_rank": 3, "min_gross": 150000, "max_gross": 220000, "basic_pct": 50.0, "desc": "AVP / Senior Branch Manager"},
+        {"code": "SPO", "name": "Senior Principal Officer", "level_rank": 4, "min_gross": 110000, "max_gross": 160000, "basic_pct": 50.0, "desc": "Senior Principal Officer / Branch Operations Manager"},
+        {"code": "PO", "name": "Principal Officer", "level_rank": 5, "min_gross": 80000, "max_gross": 120000, "basic_pct": 50.0, "desc": "Principal Officer / Senior Department Officer"},
+        {"code": "SO", "name": "Senior Officer", "level_rank": 6, "min_gross": 60000, "max_gross": 85000, "basic_pct": 50.0, "desc": "Senior Officer / Credit Officer"},
+        {"code": "OFF", "name": "Officer", "level_rank": 7, "min_gross": 45000, "max_gross": 65000, "basic_pct": 50.0, "desc": "Officer / Customer Relationship Officer"},
+        {"code": "PROB", "name": "Probationary Officer", "level_rank": 8, "min_gross": 35000, "max_gross": 48000, "basic_pct": 50.0, "desc": "Probationary Officer / Management Trainee Officer"},
+    ],
+}
+
+
+class SalaryGradeService:
+
+    def __init__(self, repository: SalaryGradeRepository | None = None):
+        self.repository = repository or SalaryGradeRepository()
+        self.business_repo = BusinessRepository()
+
+    def get_salary_grades(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+        level_rank: int | None = None,
+    ) -> list[SalaryGrade]:
+        return self.repository.get_all(
+            db,
+            skip=skip,
+            limit=limit,
+            business_id=business_id,
+            search=search,
+            is_active=is_active,
+            level_rank=level_rank,
+        )
+
+    def count_salary_grades(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+        level_rank: int | None = None,
+    ) -> int:
+        return self.repository.count(
+            db,
+            business_id=business_id,
+            search=search,
+            is_active=is_active,
+            level_rank=level_rank,
+        )
+
+    def get_salary_grade(
+        self,
+        db: Session,
+        salary_grade_id: uuid.UUID,
+        current_user: Any | None = None,
+    ) -> SalaryGrade:
+        grade = self.repository.get_by_id(db, salary_grade_id)
+        if current_user is not None:
+            return verify_record_ownership(grade, current_user, detail="Salary grade not found")
+        if not grade:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Salary grade not found",
+            )
+        return grade
+
+    def create_salary_grade(
+        self,
+        db: Session,
+        data: SalaryGradeCreate,
+        current_user: Any | None = None,
+    ) -> SalaryGrade:
+        existing_code = self.repository.get_by_code(db, data.code, business_id=data.business_id)
+        if existing_code:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Salary grade with code '{data.code}' already exists for this business",
+            )
+
+        existing_name = self.repository.get_by_name(db, data.name, business_id=data.business_id)
+        if existing_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Salary grade with name '{data.name}' already exists for this business",
+            )
+
+        return self.repository.create(db, data)
+
+    def update_salary_grade(
+        self,
+        db: Session,
+        salary_grade_id: uuid.UUID,
+        data: SalaryGradeUpdate,
+        current_user: Any | None = None,
+    ) -> SalaryGrade:
+        grade = self.get_salary_grade(db, salary_grade_id, current_user=current_user)
+
+        target_business_id = data.business_id if data.business_id is not None else grade.business_id
+
+        if data.code is not None and data.code != grade.code:
+            existing_code = self.repository.get_by_code(db, data.code, business_id=target_business_id)
+            if existing_code and existing_code.id != salary_grade_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Salary grade with code '{data.code}' already exists for this business",
+                )
+
+        if data.name is not None and data.name != grade.name:
+            existing_name = self.repository.get_by_name(db, data.name, business_id=target_business_id)
+            if existing_name and existing_name.id != salary_grade_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Salary grade with name '{data.name}' already exists for this business",
+                )
+
+        return self.repository.update(db, grade, data)
+
+    def delete_salary_grade(
+        self,
+        db: Session,
+        salary_grade_id: uuid.UUID,
+        current_user: Any | None = None,
+    ) -> None:
+        grade = self.get_salary_grade(db, salary_grade_id, current_user=current_user)
+        self.repository.delete(db, grade)
+
+    def load_preset_grades(
+        self,
+        db: Session,
+        preset_key: str,
+        business_id: int,
+        current_user: Any | None = None,
+    ) -> dict[str, Any]:
+        preset_items = BANGLADESH_SALARY_GRADE_PRESETS.get(preset_key)
+        if not preset_items:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unknown preset key '{preset_key}'. Available: {list(BANGLADESH_SALARY_GRADE_PRESETS.keys())}",
+            )
+
+        created_count = 0
+        skipped_count = 0
+
+        for item in preset_items:
+            existing = self.repository.get_by_code(db, item["code"], business_id=business_id)
+            if existing:
+                skipped_count += 1
+                continue
+
+            create_data = SalaryGradeCreate(
+                name=item["name"],
+                code=item["code"],
+                level_rank=item["level_rank"],
+                description=item["desc"],
+                min_gross_salary=item["min_gross"],
+                max_gross_salary=item["max_gross"],
+                default_basic_percent=item["basic_pct"],
+                is_active=True,
+                business_id=business_id,
+            )
+            self.repository.create(db, create_data)
+            created_count += 1
+
+        return {
+            "preset_key": preset_key,
+            "created_count": created_count,
+            "skipped_count": skipped_count,
+        }
+
+    def generate_export_excel(
+        self,
+        db: Session,
+        business_id: int | None = None,
+    ) -> bytes:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Salary Grades"
+
+        headers = [
+            "Grade ID",
+            "Grade Code",
+            "Grade Name",
+            "Seniority Level Rank",
+            "Min Gross Salary (BDT)",
+            "Max Gross Salary (BDT)",
+            "Default Basic %",
+            "Business ID",
+            "Status",
+            "Description",
+        ]
+        ws.append(headers)
+
+        grades = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
+        for g in grades:
+            ws.append([
+                str(g.id),
+                g.code,
+                g.name,
+                g.level_rank,
+                float(g.min_gross_salary) if g.min_gross_salary is not None else None,
+                float(g.max_gross_salary) if g.max_gross_salary is not None else None,
+                float(g.default_basic_percent) if g.default_basic_percent is not None else 50.0,
+                g.business_id,
+                "Active" if g.is_active else "Inactive",
+                g.description or "",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
 

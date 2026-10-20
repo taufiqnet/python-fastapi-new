@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { JobTitleOut, DepartmentOut, EmployeeOut } from "@/types";
+import { JobTitleOut, DepartmentOut, EmployeeOut, SalaryGradeOut } from "@/types";
 import { apiClient } from "@/lib/api-client";
 import {
   Briefcase,
@@ -37,6 +37,7 @@ interface JobTitlesTabProps {
   jobTitles: JobTitleOut[];
   departments: DepartmentOut[];
   employees: EmployeeOut[];
+  salaryGrades?: SalaryGradeOut[];
   onRefresh: () => Promise<void>;
   businessId?: number;
 }
@@ -45,6 +46,7 @@ export function JobTitlesTab({
   jobTitles,
   departments,
   employees,
+  salaryGrades = [],
   onRefresh,
   businessId = 1,
 }: JobTitlesTabProps) {
@@ -663,6 +665,7 @@ export function JobTitlesTab({
         onSave={handleSaveJobTitle}
         editingJobTitle={editingJobTitle}
         departments={departments}
+        salaryGrades={salaryGrades}
         businessId={businessId}
       />
 

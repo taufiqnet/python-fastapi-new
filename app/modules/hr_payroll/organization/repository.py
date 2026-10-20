@@ -2,7 +2,7 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.modules.hr_payroll.organization.models import Branch, Department, JobTitle
+from app.modules.hr_payroll.organization.models import Branch, Department, JobTitle, SalaryGrade
 from app.modules.hr_payroll.organization.schemas import (
     BranchCreate,
     BranchUpdate,
@@ -10,6 +10,8 @@ from app.modules.hr_payroll.organization.schemas import (
     DepartmentUpdate,
     JobTitleCreate,
     JobTitleUpdate,
+    SalaryGradeCreate,
+    SalaryGradeUpdate,
 )
 
 
@@ -324,6 +326,7 @@ class JobTitleRepository:
             level_rank=data.level_rank,
             is_active=data.is_active,
             department_id=data.department_id,
+            salary_grade_id=data.salary_grade_id,
             business_id=data.business_id,
         )
         db.add(job_title)
@@ -345,3 +348,113 @@ class JobTitleRepository:
     def delete(self, db: Session, job_title: JobTitle) -> None:
         db.delete(job_title)
         db.commit()
+
+
+class SalaryGradeRepository:
+
+    def get_by_id(self, db: Session, salary_grade_id: uuid.UUID) -> SalaryGrade | None:
+        return db.query(SalaryGrade).filter(SalaryGrade.id == salary_grade_id).first()
+
+    def get_by_code(
+        self, db: Session, code: str, business_id: int | None = None
+    ) -> SalaryGrade | None:
+        query = db.query(SalaryGrade).filter(SalaryGrade.code == code)
+        if business_id is not None:
+            query = query.filter(SalaryGrade.business_id == business_id)
+        return query.first()
+
+    def get_by_name(
+        self, db: Session, name: str, business_id: int | None = None
+    ) -> SalaryGrade | None:
+        query = db.query(SalaryGrade).filter(SalaryGrade.name == name)
+        if business_id is not None:
+            query = query.filter(SalaryGrade.business_id == business_id)
+        return query.first()
+
+    def get_all(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+        level_rank: int | None = None,
+    ) -> list[SalaryGrade]:
+        query = db.query(SalaryGrade)
+        if business_id is not None:
+            query = query.filter(SalaryGrade.business_id == business_id)
+        if is_active is not None:
+            query = query.filter(SalaryGrade.is_active == is_active)
+        if level_rank is not None:
+            query = query.filter(SalaryGrade.level_rank == level_rank)
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (SalaryGrade.name.ilike(search_pattern))
+                | (SalaryGrade.code.ilike(search_pattern))
+                | (SalaryGrade.description.ilike(search_pattern))
+            )
+        return (
+            query.order_by(SalaryGrade.level_rank.asc(), SalaryGrade.code.asc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def count(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+        level_rank: int | None = None,
+    ) -> int:
+        query = db.query(SalaryGrade)
+        if business_id is not None:
+            query = query.filter(SalaryGrade.business_id == business_id)
+        if is_active is not None:
+            query = query.filter(SalaryGrade.is_active == is_active)
+        if level_rank is not None:
+            query = query.filter(SalaryGrade.level_rank == level_rank)
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (SalaryGrade.name.ilike(search_pattern))
+                | (SalaryGrade.code.ilike(search_pattern))
+                | (SalaryGrade.description.ilike(search_pattern))
+            )
+        return query.count()
+
+    def create(self, db: Session, data: SalaryGradeCreate) -> SalaryGrade:
+        salary_grade = SalaryGrade(
+            name=data.name,
+            code=data.code,
+            level_rank=data.level_rank,
+            description=data.description,
+            min_gross_salary=data.min_gross_salary,
+            max_gross_salary=data.max_gross_salary,
+            default_basic_percent=data.default_basic_percent,
+            is_active=data.is_active,
+            business_id=data.business_id,
+        )
+        db.add(salary_grade)
+        db.commit()
+        db.refresh(salary_grade)
+        return salary_grade
+
+    def update(
+        self, db: Session, salary_grade: SalaryGrade, data: SalaryGradeUpdate
+    ) -> SalaryGrade:
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(salary_grade, field, value)
+
+        db.commit()
+        db.refresh(salary_grade)
+        return salary_grade
+
+    def delete(self, db: Session, salary_grade: SalaryGrade) -> None:
+        db.delete(salary_grade)
+        db.commit()
+

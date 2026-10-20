@@ -103,6 +103,12 @@ class Employee(Base, UUIDMixin, TimestampMixin):
         nullable=True,
         index=True,
     )
+    salary_grade_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("salary_grades.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     team: Mapped[str | None] = mapped_column(String(255), nullable=True)
     direct_manager_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -150,6 +156,11 @@ class Employee(Base, UUIDMixin, TimestampMixin):
     job_title: Mapped["JobTitle | None"] = relationship(  # noqa: F821
         "JobTitle",
         foreign_keys=[job_title_id],
+        lazy="selectin",
+    )
+    salary_grade: Mapped["SalaryGrade | None"] = relationship(  # noqa: F821
+        "SalaryGrade",
+        foreign_keys=[salary_grade_id],
         lazy="selectin",
     )
     direct_manager: Mapped["Employee | None"] = relationship(

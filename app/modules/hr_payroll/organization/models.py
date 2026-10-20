@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import UUID
 
@@ -172,6 +172,12 @@ class JobTitle(Base, UUIDMixin, TimestampMixin):
         ForeignKey("departments.id", ondelete="CASCADE"),
         nullable=True,
     )
+    salary_grade_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("salary_grades.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     short_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -184,6 +190,11 @@ class JobTitle(Base, UUIDMixin, TimestampMixin):
     department: Mapped["Department | None"] = relationship(
         "Department",
         back_populates="job_titles",
+    )
+    salary_grade: Mapped["SalaryGrade | None"] = relationship(
+        "SalaryGrade",
+        back_populates="job_titles",
+        lazy="selectin",
     )
     business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
         "BusinessProfile",
@@ -201,6 +212,14 @@ class JobTitle(Base, UUIDMixin, TimestampMixin):
         return self.department.name if self.department else None
 
     @property
+    def salary_grade_name(self) -> str | None:
+        return self.salary_grade.name if self.salary_grade else None
+
+    @property
+    def salary_grade_code(self) -> str | None:
+        return self.salary_grade.code if self.salary_grade else None
+
+    @property
     def employee_count(self) -> int:
         return len(self.employees) if self.employees else 0
 
@@ -208,3 +227,58 @@ class JobTitle(Base, UUIDMixin, TimestampMixin):
         if self.short_name:
             return f"<JobTitle {self.name} ({self.short_name})>"
         return f"<JobTitle {self.name}>"
+
+
+class SalaryGrade(Base, UUIDMixin, TimestampMixin):
+    __tablename__ = "salary_grades"
+    __table_args__ = (
+        UniqueConstraint("business_id", "code", name="uq_salary_grade_business_code"),
+        UniqueConstraint("business_id", "name", name="uq_salary_grade_business_name"),
+    )
+
+    business_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    level_rank: Mapped[int] = mapped_column(
+        Integer, default=5, nullable=False
+    )  # 1: Executive/C-Level, 2: Director/VP, 3: Manager, 4: Lead, 5: Senior, 6: Associate, 7: Support/Intern
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    min_gross_salary: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    max_gross_salary: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    default_basic_percent: Mapped[float | None] = mapped_column(
+        Numeric(5, 2), default=50.0, nullable=True
+    )  # Standard 50% basic in Bangladesh
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Relationships
+    business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
+        "BusinessProfile",
+        lazy="selectin",
+    )
+    job_titles: Mapped[list["JobTitle"]] = relationship(
+        "JobTitle",
+        back_populates="salary_grade",
+        lazy="selectin",
+    )
+    employees: Mapped[list["Employee"]] = relationship(  # noqa: F821
+        "Employee",
+        foreign_keys="Employee.salary_grade_id",
+        overlaps="salary_grade",
+        lazy="selectin",
+    )
+
+    @property
+    def job_title_count(self) -> int:
+        return len(self.job_titles) if self.job_titles else 0
+
+    @property
+    def employee_count(self) -> int:
+        return len(self.employees) if self.employees else 0
+
+    def __repr__(self) -> str:
+        return f"<SalaryGrade {self.code}: {self.name}>"

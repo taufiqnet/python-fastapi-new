@@ -20,12 +20,16 @@ from app.modules.hr_payroll.organization.schemas import (
     JobTitleUpdate,
     OrganogramEmployeeNode,
     OrganogramStructureTree,
+    SalaryGradeCreate,
+    SalaryGradeOut,
+    SalaryGradeUpdate,
 )
 from app.modules.hr_payroll.organization.service import (
     BranchService,
     DepartmentService,
     JobTitleService,
     OrganogramService,
+    SalaryGradeService,
 )
 
 router = APIRouter(tags=["Organization"])
@@ -34,6 +38,7 @@ department_service = DepartmentService()
 job_title_service = JobTitleService()
 branch_service = BranchService()
 organogram_service = OrganogramService()
+salary_grade_service = SalaryGradeService()
 
 
 # --- Departments Endpoints ---
@@ -437,4 +442,107 @@ def get_structure_organogram(
             detail="Business profile ID is required for organization structure.",
         )
     return organogram_service.get_structure_organogram(db, business_id=resolved_business_id)
+
+
+# --- Salary Grades Endpoints ---
+@router.get("/salary-grades/export-excel")
+def export_salary_grades_excel(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "departments", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = salary_grade_service.generate_export_excel(db, business_id=resolved_business_id)
+    filename = "salary_grades_export.xlsx" if not resolved_business_id else f"salary_grades_export_business_{resolved_business_id}.xlsx"
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
+@router.post("/salary-grades/presets/{preset_key}")
+def load_salary_grade_presets(
+    preset_key: str,
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "departments", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    if not resolved_business_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is required to load presets.",
+        )
+    return salary_grade_service.load_preset_grades(
+        db, preset_key, business_id=resolved_business_id, current_user=current_user
+    )
+
+
+@router.get("/salary-grades", response_model=list[SalaryGradeOut])
+def get_salary_grades(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    business_id: int | None = Query(None),
+    search: str | None = Query(None),
+    is_active: bool | None = Query(None),
+    level_rank: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return salary_grade_service.get_salary_grades(
+        db,
+        skip=skip,
+        limit=limit,
+        business_id=resolved_business_id,
+        search=search,
+        is_active=is_active,
+        level_rank=level_rank,
+    )
+
+
+@router.post("/salary-grades", response_model=SalaryGradeOut, status_code=status.HTTP_201_CREATED)
+def create_salary_grade(
+    grade_data: SalaryGradeCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "departments", "create")),
+):
+    if not current_user.is_superuser:
+        grade_data.business_id = current_user.business_id
+    return salary_grade_service.create_salary_grade(db, grade_data, current_user=current_user)
+
+
+@router.get("/salary-grades/{salary_grade_id}", response_model=SalaryGradeOut)
+def get_salary_grade(
+    salary_grade_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_current_user_optional),
+):
+    return salary_grade_service.get_salary_grade(db, salary_grade_id, current_user=current_user)
+
+
+@router.put("/salary-grades/{salary_grade_id}", response_model=SalaryGradeOut)
+def update_salary_grade(
+    salary_grade_id: uuid.UUID,
+    grade_data: SalaryGradeUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "departments", "update")),
+):
+    if not current_user.is_superuser:
+        grade_data.business_id = current_user.business_id
+    return salary_grade_service.update_salary_grade(
+        db, salary_grade_id, grade_data, current_user=current_user
+    )
+
+
+@router.delete("/salary-grades/{salary_grade_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_salary_grade(
+    salary_grade_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "departments", "delete")),
+):
+    salary_grade_service.delete_salary_grade(db, salary_grade_id, current_user=current_user)
+    return None
+
 

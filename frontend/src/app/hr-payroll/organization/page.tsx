@@ -10,10 +10,12 @@ import {
   EmployeeOut,
   OrganogramEmployeeNode,
   OrganogramStructureTree,
+  SalaryGradeOut,
 } from "@/types";
 import { BranchesTab } from "@/components/hr-payroll/branches/branches-tab";
 import { DepartmentsTab } from "@/components/hr-payroll/departments/departments-tab";
 import { JobTitlesTab } from "@/components/hr-payroll/job-titles/job-titles-tab";
+import { GradesTab } from "@/components/hr-payroll/grades/grades-tab";
 import {
   Building2,
   GitBranch,
@@ -41,16 +43,18 @@ import {
   ArrowRight,
   X,
   Filter,
+  Award,
 } from "lucide-react";
 
 export default function OrganizationPage() {
-  const [activeTab, setActiveTab] = useState<"organogram" | "branches" | "departments" | "job_titles">("organogram");
+  const [activeTab, setActiveTab] = useState<"organogram" | "branches" | "departments" | "job_titles" | "grades">("organogram");
   const [organogramMode, setOrganogramMode] = useState<"reporting" | "structure">("reporting");
 
   // Data states
   const [branches, setBranches] = useState<BranchOut[]>([]);
   const [departments, setDepartments] = useState<DepartmentOut[]>([]);
   const [jobTitles, setJobTitles] = useState<JobTitleOut[]>([]);
+  const [salaryGrades, setSalaryGrades] = useState<SalaryGradeOut[]>([]);
   const [employees, setEmployees] = useState<EmployeeOut[]>([]);
   const [reportingTree, setReportingTree] = useState<OrganogramEmployeeNode[]>([]);
   const [structureTree, setStructureTree] = useState<OrganogramStructureTree | null>(null);
@@ -92,10 +96,11 @@ export default function OrganizationPage() {
     setLoading(true);
     setError(null);
     try {
-      const [branchRes, deptRes, titleRes, empRes, repTreeRes] = await Promise.allSettled([
+      const [branchRes, deptRes, titleRes, gradeRes, empRes, repTreeRes] = await Promise.allSettled([
         apiClient.get<BranchOut[]>("/branches?limit=200"),
         apiClient.get<DepartmentOut[]>("/departments?limit=200"),
         apiClient.get<JobTitleOut[]>("/job-titles?limit=200"),
+        apiClient.get<SalaryGradeOut[]>("/salary-grades?limit=300"),
         apiClient.get<EmployeeOut[]>("/employees?limit=500"),
         apiClient.get<OrganogramEmployeeNode[]>("/organization/organogram/reporting"),
       ]);
@@ -103,6 +108,7 @@ export default function OrganizationPage() {
       if (branchRes.status === "fulfilled") setBranches(branchRes.value.data || []);
       if (deptRes.status === "fulfilled") setDepartments(deptRes.value.data || []);
       if (titleRes.status === "fulfilled") setJobTitles(titleRes.value.data || []);
+      if (gradeRes.status === "fulfilled") setSalaryGrades(gradeRes.value.data || []);
       if (empRes.status === "fulfilled") setEmployees(empRes.value.data || []);
       if (repTreeRes.status === "fulfilled") setReportingTree(repTreeRes.value.data || []);
     } catch {
@@ -299,6 +305,17 @@ export default function OrganizationPage() {
             <Briefcase className="w-4 h-4" />
             Job Designations ({jobTitles.length})
           </button>
+          <button
+            onClick={() => setActiveTab("grades")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === "grades"
+                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/20"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            Salary Grades ({salaryGrades.length})
+          </button>
         </div>
 
         {/* ─── TAB 1: ORGANOGRAM ─── */}
@@ -440,6 +457,18 @@ export default function OrganizationPage() {
           <JobTitlesTab
             jobTitles={jobTitles}
             departments={departments}
+            employees={employees}
+            salaryGrades={salaryGrades}
+            onRefresh={loadData}
+            businessId={branches[0]?.business_id || 1}
+          />
+        )}
+
+        {/* ─── TAB 5: SALARY GRADES ─── */}
+        {activeTab === "grades" && (
+          <GradesTab
+            salaryGrades={salaryGrades}
+            jobTitles={jobTitles}
             employees={employees}
             onRefresh={loadData}
             businessId={branches[0]?.business_id || 1}

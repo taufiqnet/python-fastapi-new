@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { JobTitleOut, DepartmentOut } from "@/types";
+import { JobTitleOut, DepartmentOut, SalaryGradeOut } from "@/types";
 import { X, Briefcase, Award, Layers, Check, AlertCircle } from "lucide-react";
 
 interface JobTitleModalProps {
@@ -10,6 +10,7 @@ interface JobTitleModalProps {
   onSave: (data: any) => Promise<void>;
   editingJobTitle: JobTitleOut | null;
   departments: DepartmentOut[];
+  salaryGrades?: SalaryGradeOut[];
   initialDepartmentId?: string | null;
   businessId?: number;
 }
@@ -33,6 +34,7 @@ export function JobTitleModal({
   onSave,
   editingJobTitle,
   departments,
+  salaryGrades = [],
   initialDepartmentId,
   businessId = 1,
 }: JobTitleModalProps) {
@@ -41,6 +43,7 @@ export function JobTitleModal({
   const [name, setName] = useState("");
   const [shortName, setShortName] = useState("");
   const [departmentId, setDepartmentId] = useState<string>("");
+  const [salaryGradeId, setSalaryGradeId] = useState<string>("");
   const [levelRank, setLevelRank] = useState<number>(5);
   const [description, setDescription] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -53,6 +56,7 @@ export function JobTitleModal({
       setName(editingJobTitle.name || "");
       setShortName(editingJobTitle.short_name || "");
       setDepartmentId(editingJobTitle.department_id || "");
+      setSalaryGradeId(editingJobTitle.salary_grade_id || "");
       setLevelRank(editingJobTitle.level_rank || 5);
       setDescription(editingJobTitle.description || "");
       setIsActive(editingJobTitle.is_active);
@@ -60,6 +64,7 @@ export function JobTitleModal({
       setName("");
       setShortName("");
       setDepartmentId(initialDepartmentId || "");
+      setSalaryGradeId("");
       setLevelRank(5);
       setDescription("");
       setIsActive(true);
@@ -82,6 +87,7 @@ export function JobTitleModal({
         name: name.trim(),
         short_name: shortName.trim().toUpperCase() || null,
         department_id: departmentId || null,
+        salary_grade_id: salaryGradeId || null,
         level_rank: Number(levelRank),
         description: description.trim() || null,
         is_active: isActive,
@@ -195,6 +201,33 @@ export function JobTitleModal({
               </div>
             </div>
           </div>
+
+          {/* Optional Salary Grade / Pay Band */}
+          {salaryGrades.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">
+                Assigned Salary Grade / Pay Band (Optional)
+              </label>
+              <div className="relative">
+                <select
+                  value={salaryGradeId}
+                  onChange={(e) => setSalaryGradeId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-semibold text-emerald-950 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 transition-all appearance-none bg-emerald-50/40"
+                >
+                  <option value="">-- None / Open Negotiation (Ungraded) --</option>
+                  {salaryGrades.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      [{g.code}] {g.name} (Rank {g.level_rank} • {g.min_gross_salary ? `৳${Number(g.min_gross_salary).toLocaleString()} - ৳${Number(g.max_gross_salary || 0).toLocaleString()}` : "Open"})
+                    </option>
+                  ))}
+                </select>
+                <Award className="w-4 h-4 text-emerald-600 absolute right-3 top-3 pointer-events-none" />
+              </div>
+              <p className="text-[11px] text-slate-400 mt-1">
+                Links this title to an official compensation bracket. Fully optional.
+              </p>
+            </div>
+          )}
 
           {/* Organogram Seniority Level Rank */}
           <div>

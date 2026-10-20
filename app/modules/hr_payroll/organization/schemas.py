@@ -61,6 +61,7 @@ class JobTitleBase(BaseModel):
     level_rank: int = Field(5, ge=1, le=10)
     is_active: bool = True
     department_id: uuid.UUID | None = None
+    salary_grade_id: uuid.UUID | None = None
     business_id: int
 
 
@@ -75,6 +76,7 @@ class JobTitleUpdate(BaseModel):
     level_rank: int | None = Field(None, ge=1, le=10)
     is_active: bool | None = None
     department_id: uuid.UUID | None = None
+    salary_grade_id: uuid.UUID | None = None
     business_id: int | None = None
 
 
@@ -85,6 +87,47 @@ class JobTitleOut(JobTitleBase):
     created_at: datetime
     updated_at: datetime
     department_name: str | None = None
+    salary_grade_name: str | None = None
+    salary_grade_code: str | None = None
+    employee_count: int = 0
+
+
+# --- SalaryGrade Schemas ---
+class SalaryGradeBase(BaseModel):
+    name: str = Field(..., max_length=100)
+    code: str = Field(..., max_length=50)
+    level_rank: int = Field(5, ge=1, le=20)
+    description: str | None = None
+    min_gross_salary: float | None = None
+    max_gross_salary: float | None = None
+    default_basic_percent: float | None = 50.0
+    is_active: bool = True
+    business_id: int
+
+
+class SalaryGradeCreate(SalaryGradeBase):
+    pass
+
+
+class SalaryGradeUpdate(BaseModel):
+    name: str | None = Field(None, max_length=100)
+    code: str | None = Field(None, max_length=50)
+    level_rank: int | None = Field(None, ge=1, le=20)
+    description: str | None = None
+    min_gross_salary: float | None = None
+    max_gross_salary: float | None = None
+    default_basic_percent: float | None = None
+    is_active: bool | None = None
+    business_id: int | None = None
+
+
+class SalaryGradeOut(SalaryGradeBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    job_title_count: int = 0
     employee_count: int = 0
 
 

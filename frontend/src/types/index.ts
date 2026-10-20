@@ -252,6 +252,9 @@ export interface JobTitleOut {
   is_active: boolean;
   department_id?: string | null;
   department_name?: string | null;
+  salary_grade_id?: string | null;
+  salary_grade_name?: string | null;
+  salary_grade_code?: string | null;
   employee_count?: number;
   business_id: number;
   created_at?: string;
@@ -265,6 +268,7 @@ export interface JobTitleCreateInput {
   level_rank?: number;
   is_active?: boolean;
   department_id?: string | null;
+  salary_grade_id?: string | null;
   business_id?: number;
 }
 
@@ -275,6 +279,48 @@ export interface JobTitleUpdateInput {
   level_rank?: number | null;
   is_active?: boolean | null;
   department_id?: string | null;
+  salary_grade_id?: string | null;
+  business_id?: number | null;
+}
+
+export interface SalaryGradeOut {
+  id: string;
+  name: string;
+  code: string;
+  level_rank: number;
+  description?: string | null;
+  min_gross_salary?: number | null;
+  max_gross_salary?: number | null;
+  default_basic_percent?: number | null;
+  is_active: boolean;
+  business_id: number;
+  job_title_count?: number;
+  employee_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SalaryGradeCreateInput {
+  name: string;
+  code: string;
+  level_rank: number;
+  description?: string | null;
+  min_gross_salary?: number | null;
+  max_gross_salary?: number | null;
+  default_basic_percent?: number | null;
+  is_active?: boolean;
+  business_id: number;
+}
+
+export interface SalaryGradeUpdateInput {
+  name?: string | null;
+  code?: string | null;
+  level_rank?: number | null;
+  description?: string | null;
+  min_gross_salary?: number | null;
+  max_gross_salary?: number | null;
+  default_basic_percent?: number | null;
+  is_active?: boolean | null;
   business_id?: number | null;
 }
 
@@ -304,6 +350,8 @@ export interface EmployeeOut {
   department_name?: string | null;
   branch_id?: string | null;
   branch_name?: string | null;
+  salary_grade_id?: string | null;
+  salary_grade_name?: string | null;
   team?: string | null;
   direct_manager_id?: string | null;
   manager_name?: string | null;
@@ -334,6 +382,7 @@ export interface EmployeeCreateInput {
   department_id?: string | null;
   branch_id?: string | null;
   job_title_id?: string | null;
+  salary_grade_id?: string | null;
   direct_manager_id?: string | null;
   team?: string;
   employment_type?: string;
