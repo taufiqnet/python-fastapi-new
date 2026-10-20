@@ -134,8 +134,9 @@ async def holiday_edit_page(
     )
 
 
-# ── Payroll Period Views ───────────────────────────────────────────────
+# ── Payroll Period & Process Views ────────────────────────────────────
 @router.get("/payroll-periods/manage", response_class=HTMLResponse)
+@router.get("/payroll-process/manage", response_class=HTMLResponse)
 async def period_list_page(
     request: Request,
     skip: int = 0,

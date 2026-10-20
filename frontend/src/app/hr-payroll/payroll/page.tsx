@@ -18,6 +18,7 @@ import { PeriodFilterBar } from "@/components/hr-payroll/payroll/periods/period-
 import { PeriodTable } from "@/components/hr-payroll/payroll/periods/period-table";
 import { PeriodModal } from "@/components/hr-payroll/payroll/periods/modals/period-modal";
 import { PeriodExportModal } from "@/components/hr-payroll/payroll/periods/modals/period-export-modal";
+import { PayrollProcessTab } from "@/components/hr-payroll/payroll/process/payroll-process-tab";
 import { PayrollSettingsTab } from "@/components/hr-payroll/payroll/settings/payroll-settings-tab";
 
 import {
@@ -37,7 +38,7 @@ interface BusinessItem {
   name_en: string;
 }
 
-type TabType = "periods" | "settings";
+type TabType = "periods" | "process" | "settings";
 
 function PayrollContent() {
   const { user } = useAuth();
@@ -49,10 +50,9 @@ function PayrollContent() {
   const currentBusinessId = user?.business_id || 1;
 
   // Active Tab state
-  const initialTab = (searchParams.get("tab") as TabType) || "periods";
-  const [activeTab, setActiveTab] = useState<TabType>(
-    initialTab === "settings" ? "settings" : "periods"
-  );
+  const rawTab = searchParams.get("tab");
+  const initialTab: TabType = rawTab === "settings" ? "settings" : rawTab === "process" ? "process" : "periods";
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   // Sync tab with URL
   const handleTabChange = (tab: TabType) => {
@@ -361,6 +361,19 @@ function PayrollContent() {
 
           <button
             type="button"
+            onClick={() => handleTabChange("process")}
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all ${
+              activeTab === "process"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Cog className="w-4 h-4" />
+            <span>Payroll Process</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => handleTabChange("settings")}
             className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all ${
               activeTab === "settings"
@@ -447,7 +460,20 @@ function PayrollContent() {
           </div>
         )}
 
-        {/* Tab 2: Payroll Settings Content */}
+        {/* Tab 2: Payroll Process Content */}
+        {activeTab === "process" && (
+          <div className="animate-in fade-in duration-150">
+            <PayrollProcessTab
+              periods={periods}
+              businesses={businesses}
+              isSuperuser={isSuperuser}
+              currentBusinessId={currentBusinessId}
+              onRefreshPeriods={() => fetchPeriods(false)}
+            />
+          </div>
+        )}
+
+        {/* Tab 3: Payroll Settings Content */}
         {activeTab === "settings" && (
           <div className="animate-in fade-in duration-150">
             <PayrollSettingsTab

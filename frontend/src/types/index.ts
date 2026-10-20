@@ -784,4 +784,38 @@ export interface PayrollSettingsUpdatePayload {
   standard_hours_per_day?: number;
 }
 
+export interface PayrollRecordOut {
+  id: string;
+  period_id: string;
+  employee_id: string;
+  employee_name?: string;
+  employee_code?: string;
+  working_days: number;
+  present_days: number;
+  absent_days: number;
+  leave_days: number;
+  holiday_days: number;
+  overtime_hours: number;
+  basic_salary: number;
+  house_rent: number;
+  transport_allowance: number;
+  medical_allowance: number;
+  food_allowance: number;
+  other_allowance: number;
+  overtime_pay: number;
+  bonus: number;
+  tax: number;
+  gross_salary: number;
+  total_deduction: number;
+  net_salary: number;
+  payment_method?: string | null;
+  bank_account?: string | null;
+  is_paid: boolean;
+  paid_at?: string | null;
+  note?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+
 
