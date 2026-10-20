@@ -596,16 +596,81 @@ export interface OrganogramStructureTree {
   branches: BranchStructureNode[];
 }
 
+export type AttendanceStatusEnum =
+  | "present"
+  | "absent"
+  | "late"
+  | "half_day"
+  | "on_leave"
+  | "holiday"
+  | "weekend";
+
+export type AttendanceSourceEnum =
+  | "manual"
+  | "web"
+  | "biometric"
+  | "mobile"
+  | "excel";
+
 export interface AttendanceRecord {
   id: string;
+  business_id: number;
   employee_id: string;
   employee_name?: string;
+  employee_code?: string;
   date: string;
-  status: string;
-  check_in?: string;
-  check_out?: string;
-  work_hours?: number;
+  status: AttendanceStatusEnum | string;
+  check_in?: string | null;
+  check_out?: string | null;
+  work_hours: number;
+  overtime_hours: number;
+  source: AttendanceSourceEnum | string;
+  note?: string | null;
+  recorded_by_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
+
+export interface AttendanceCreatePayload {
+  business_id: number;
+  employee_id: string;
+  date: string;
+  status: AttendanceStatusEnum | string;
+  check_in?: string | null;
+  check_out?: string | null;
+  work_hours?: number;
+  overtime_hours?: number;
+  source?: AttendanceSourceEnum | string;
+  note?: string | null;
+  recorded_by_id?: string | null;
+}
+
+export interface AttendanceUpdatePayload {
+  business_id?: number;
+  employee_id?: string;
+  date?: string;
+  status?: AttendanceStatusEnum | string;
+  check_in?: string | null;
+  check_out?: string | null;
+  work_hours?: number;
+  overtime_hours?: number;
+  source?: AttendanceSourceEnum | string;
+  note?: string | null;
+  recorded_by_id?: string | null;
+}
+
+export interface ImportJobStatus {
+  job_id: string;
+  status: "pending" | "processing" | "completed" | "failed" | "cancelled";
+  total_rows: number;
+  processed: number;
+  success_count: number;
+  error_count: number;
+  errors: Array<{ row?: number; message?: string; error?: string }>;
+  cancelled: boolean;
+  created_by?: string;
+}
+
 
 // ── Leave Management Types ─────────────────────────────────────────────
 export type GenderApplicabilityEnum = "all" | "male" | "female";
