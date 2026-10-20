@@ -11,6 +11,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [showTimeoutNotice, setShowTimeoutNotice] = React.useState(false);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -74,9 +76,6 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-
-  const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [collapsed, setCollapsed] = React.useState(false);
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
