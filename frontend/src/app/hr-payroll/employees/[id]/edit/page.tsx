@@ -42,7 +42,7 @@ export default function EditEmployeePage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-5xl mx-auto pb-12">
+      <div className="space-y-6 w-full pb-12">
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-2 text-xs font-medium text-slate-500">
           <Link href="/hr-payroll/employees" className="hover:text-indigo-600 transition">

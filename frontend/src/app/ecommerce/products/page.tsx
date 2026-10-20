@@ -206,7 +206,7 @@ export default function ProductsPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      <div className="space-y-6 w-full pb-12">
         {/* Top Header & Quick Actions */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>

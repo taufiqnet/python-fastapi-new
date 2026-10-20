@@ -94,7 +94,7 @@ export default function EmployeeDetailPage() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="max-w-5xl mx-auto py-20 text-center">
+        <div className="w-full py-20 text-center">
           <Loader2 className="w-9 h-9 animate-spin text-indigo-600 mx-auto" />
           <p className="text-sm font-semibold text-slate-800 mt-3">Loading employee profile...</p>
         </div>
@@ -105,7 +105,7 @@ export default function EmployeeDetailPage() {
   if (error || !employee) {
     return (
       <DashboardLayout>
-        <div className="max-w-5xl mx-auto py-12">
+        <div className="w-full py-12">
           <div className="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-sm flex items-center gap-3">
             <AlertCircle className="w-6 h-6 shrink-0" />
             <div>
@@ -136,7 +136,7 @@ export default function EmployeeDetailPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-5xl mx-auto pb-16">
+      <div className="space-y-6 w-full pb-16">
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-2 text-xs font-medium text-slate-500">
           <Link href="/hr-payroll/employees" className="hover:text-indigo-600 transition">

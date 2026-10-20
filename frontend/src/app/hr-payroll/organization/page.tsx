@@ -226,7 +226,7 @@ export default function OrganizationPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-7xl mx-auto pb-12">
+      <div className="space-y-6 w-full pb-12">
         {/* Top Header Banner */}
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden border border-slate-800">
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
