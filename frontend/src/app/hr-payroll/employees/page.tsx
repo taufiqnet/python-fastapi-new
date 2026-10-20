@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef, startTransition } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { apiClient } from "@/lib/api-client";
@@ -51,8 +51,10 @@ export default function EmployeesPage() {
   const [activeSystemEmployees, setActiveSystemEmployees] = useState<number>(0);
   const [departments, setDepartments] = useState<DepartmentOut[]>([]);
   const [jobTitles, setJobTitles] = useState<JobTitleOut[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isInitialMount = useRef(true);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
@@ -146,8 +148,12 @@ export default function EmployeesPage() {
   }, []);
 
   // Server-Side Search & Paginated Fetch
-  const fetchEmployees = async () => {
-    setLoading(true);
+  const fetchEmployees = async (isInitial = false) => {
+    if (isInitial) {
+      setInitialLoading(true);
+    } else {
+      setIsFetching(true);
+    }
     setError(null);
     try {
       const skip = (currentPage - 1) * pageSize;
@@ -188,65 +194,60 @@ export default function EmployeesPage() {
     } catch {
       setError("Unable to connect to FastAPI REST server.");
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    fetchEmployees();
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      fetchEmployees(true);
+    } else {
+      fetchEmployees(false);
+    }
   }, [currentPage, pageSize, debouncedSearch, selectedDepartment, statusFilter]);
 
-  // Reset to page 1 on filter/search change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch, statusFilter, selectedDepartment, selectedEmploymentType, pageSize]);
-
   const loadData = () => {
-    fetchEmployees();
+    fetchEmployees(false);
     loadLookups();
   };
 
-  // Compute employee counts per department for combobox badges
-  const employeeCountsByDept = useMemo(() => {
-    const counts: Record<string, number> = {};
-    departments.forEach((d) => {
-      if (d.id && d.employee_count !== undefined) {
-        counts[d.id] = d.employee_count;
-      }
+  const handleDepartmentSelect = (deptId: string) => {
+    startTransition(() => {
+      setSelectedDepartment(deptId);
+      setCurrentPage(1);
     });
-    return counts;
-  }, [departments]);
+  };
 
-  // Client-side employment type filter on page
-  const filteredEmployees = useMemo(() => {
-    if (selectedEmploymentType === "all") return employees;
-    return employees.filter(
-      (e) => e.employment_type?.toLowerCase() === selectedEmploymentType.toLowerCase()
-    );
-  }, [employees, selectedEmploymentType]);
+  const handleStatusFilterChange = (status: string) => {
+    startTransition(() => {
+      setStatusFilter(status);
+      setCurrentPage(1);
+    });
+  };
 
-  // Pagination Calculations
-  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const startIndex = (safeCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + filteredEmployees.length, totalFiltered);
-  const paginatedEmployees = filteredEmployees;
+  const handleEmploymentTypeChange = (empType: string) => {
+    startTransition(() => {
+      setSelectedEmploymentType(empType);
+      setCurrentPage(1);
+    });
+  };
 
-  // Summary Metrics
-  const metrics = useMemo(() => {
-    const total = totalSystemEmployees;
-    const active = activeSystemEmployees;
-    const inactive = Math.max(0, total - active);
-    const deptCount = departments.length;
-    return { total, active, inactive, deptCount };
-  }, [totalSystemEmployees, activeSystemEmployees, departments]);
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+  };
 
   const clearFilters = () => {
-    setSearchQuery("");
-    setDebouncedSearch("");
-    setStatusFilter("all");
-    setSelectedDepartment("all");
-    setSelectedEmploymentType("all");
+    startTransition(() => {
+      setSearchQuery("");
+      setDebouncedSearch("");
+      setStatusFilter("all");
+      setSelectedDepartment("all");
+      setSelectedEmploymentType("all");
+      setCurrentPage(1);
+    });
   };
 
   const hasActiveFilters =
@@ -293,7 +294,7 @@ export default function EmployeesPage() {
             <button
               type="button"
               onClick={handleExportExcel}
-              disabled={isExporting || loading}
+              disabled={isExporting || initialLoading}
               className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs transition-colors shadow-xs disabled:opacity-60"
               title="Export complete employee roster to Excel"
             >
@@ -319,11 +320,11 @@ export default function EmployeesPage() {
             <button
               type="button"
               onClick={loadData}
-              disabled={loading}
+              disabled={isFetching || initialLoading}
               className="p-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-xs"
               title="Refresh Roster"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching || initialLoading ? "animate-spin" : ""}`} />
             </button>
 
             {/* Dedicated Page Link for Employee Add */}
@@ -390,13 +391,16 @@ export default function EmployeesPage() {
                 type="text"
                 placeholder="Search staff by name, employee ID, corporate email, or team..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
               />
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    handleSearchChange("");
+                    setDebouncedSearch("");
+                  }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-4 h-4" />
@@ -409,14 +413,14 @@ export default function EmployeesPage() {
               <SearchableDepartmentCombobox
                 departments={departments}
                 selectedDepartmentId={selectedDepartment}
-                onSelect={(deptId) => setSelectedDepartment(deptId)}
+                onSelect={handleDepartmentSelect}
                 employeeCountsByDept={employeeCountsByDept}
                 totalAllEmployees={metrics.total}
               />
 
               <select
                 value={selectedEmploymentType}
-                onChange={(e) => setSelectedEmploymentType(e.target.value)}
+                onChange={(e) => handleEmploymentTypeChange(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="all">All Types</option>
@@ -482,7 +486,7 @@ export default function EmployeesPage() {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setStatusFilter(tab.id)}
+                  onClick={() => handleStatusFilterChange(tab.id)}
                   className={`px-3 py-1 rounded-lg font-medium transition ${
                     statusFilter === tab.id
                       ? "bg-indigo-600 text-white shadow-xs"
@@ -495,9 +499,10 @@ export default function EmployeesPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-slate-500 font-medium">
+              <span className="text-slate-500 font-medium flex items-center gap-1.5">
+                {isFetching && <Loader2 className="w-3.5 h-3.5 text-indigo-600 animate-spin shrink-0" />}
                 Showing <strong className="text-slate-800">{filteredEmployees.length}</strong> of{" "}
-                {employees.length} employees
+                {totalFiltered || employees.length} employees
               </span>
               {hasActiveFilters && (
                 <button
@@ -521,7 +526,7 @@ export default function EmployeesPage() {
         )}
 
         {/* Data Presentation */}
-        {loading ? (
+        {initialLoading ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-xs">
             <div className="flex flex-col items-center justify-center gap-3">
               <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
@@ -530,12 +535,23 @@ export default function EmployeesPage() {
             </div>
           </div>
         ) : filteredEmployees.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-xs">
-            <div className="flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
-                <Users className="w-7 h-7" />
+          <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-xs relative overflow-hidden">
+            {isFetching && (
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-indigo-100 overflow-hidden z-20">
+                <div className="w-full h-full bg-indigo-600 animate-pulse" />
               </div>
-              <h3 className="text-base font-bold text-slate-800">No employee records found</h3>
+            )}
+            <div className={`flex flex-col items-center justify-center gap-3 max-w-sm mx-auto transition-opacity duration-150 ${isFetching ? "opacity-50" : "opacity-100"}`}>
+              <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
+                {isFetching ? (
+                  <RefreshCw className="w-7 h-7 text-indigo-600 animate-spin" />
+                ) : (
+                  <Users className="w-7 h-7" />
+                )}
+              </div>
+              <h3 className="text-base font-bold text-slate-800">
+                {isFetching ? "Updating records..." : "No employee records found"}
+              </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
                 {hasActiveFilters
                   ? "No staff members match the selected search or department criteria."
@@ -565,7 +581,13 @@ export default function EmployeesPage() {
           <OrgChartView departments={departments} />
         ) : viewMode === "table" ? (
           /* Table View */
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden relative">
+            {/* Slim indeterminate progress bar on in-place re-fetch */}
+            {isFetching && (
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-indigo-100 overflow-hidden z-20">
+                <div className="w-full h-full bg-indigo-600 animate-pulse" />
+              </div>
+            )}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -578,7 +600,7 @@ export default function EmployeesPage() {
                     <th className="py-3.5 px-5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className={`divide-y divide-slate-100 transition-opacity duration-150 ${isFetching ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
                   {paginatedEmployees.map((e) => {
                     const initials = `${e.first_name[0] || ""}${e.last_name?.[0] || ""}`.toUpperCase();
                     const dName = e.department_id ? deptMap.get(e.department_id) || "Unassigned" : "Unassigned";
@@ -714,7 +736,13 @@ export default function EmployeesPage() {
           </div>
         ) : (
           /* Card Grid View */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="relative">
+            {isFetching && (
+              <div className="absolute -top-3 left-0 right-0 h-0.5 bg-indigo-100 overflow-hidden z-20 rounded-full">
+                <div className="w-full h-full bg-indigo-600 animate-pulse" />
+              </div>
+            )}
+            <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 transition-opacity duration-150 ${isFetching ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
             {paginatedEmployees.map((e) => {
               const initials = `${e.first_name[0] || ""}${e.last_name?.[0] || ""}`.toUpperCase();
               const dName = e.department_id ? deptMap.get(e.department_id) || "Unassigned" : "Unassigned";
@@ -808,6 +836,7 @@ export default function EmployeesPage() {
                 </div>
               );
             })}
+            </div>
           </div>
         )}
 
