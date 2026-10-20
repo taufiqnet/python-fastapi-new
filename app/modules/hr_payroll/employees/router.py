@@ -187,6 +187,9 @@ def get_employees(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     department_id: uuid.UUID | None = Query(None),
+    branch_id: uuid.UUID | None = Query(None),
+    search: str | None = Query(None),
+    status: str | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("hrm", "employees", "view")),
 ):
@@ -197,7 +200,32 @@ def get_employees(
         limit=limit,
         business_id=resolved_business_id,
         department_id=department_id,
+        branch_id=branch_id,
+        search=search,
+        status=status,
     )
+
+
+@router.get("/employees/count")
+def count_employees(
+    business_id: int | None = Query(None),
+    department_id: uuid.UUID | None = Query(None),
+    branch_id: uuid.UUID | None = Query(None),
+    search: str | None = Query(None),
+    status: str | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    total = employee_service.count_employees(
+        db,
+        business_id=resolved_business_id,
+        department_id=department_id,
+        branch_id=branch_id,
+        search=search,
+        status=status,
+    )
+    return {"total": total}
 
 
 @router.post("/employees/bulk-delete", status_code=status.HTTP_200_OK)

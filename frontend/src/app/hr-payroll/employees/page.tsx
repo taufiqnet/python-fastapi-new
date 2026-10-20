@@ -39,12 +39,16 @@ import { useToast } from "@/context/toast-context";
 import { DeleteEmployeeDialog } from "@/components/hr-payroll/delete-employee-dialog";
 import { OrgChartView } from "@/components/hr-payroll/employees/org-chart-view";
 import { EmployeeImportModal } from "@/components/hr-payroll/employees/employee-import-modal";
+import { SearchableDepartmentCombobox } from "@/components/hr-payroll/searchable-department-combobox";
 import { Network, Droplet } from "lucide-react";
 
 export default function EmployeesPage() {
   const { toast } = useToast();
 
   const [employees, setEmployees] = useState<EmployeeOut[]>([]);
+  const [totalFiltered, setTotalFiltered] = useState<number>(0);
+  const [totalSystemEmployees, setTotalSystemEmployees] = useState<number>(0);
+  const [activeSystemEmployees, setActiveSystemEmployees] = useState<number>(0);
   const [departments, setDepartments] = useState<DepartmentOut[]>([]);
   const [jobTitles, setJobTitles] = useState<JobTitleOut[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +56,7 @@ export default function EmployeesPage() {
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [selectedEmploymentType, setSelectedEmploymentType] = useState<string>("all");
@@ -100,14 +105,74 @@ export default function EmployeesPage() {
     }
   };
 
-  const loadData = async () => {
+  // 300ms Debounce for Search Query to avoid overwhelming database at high concurrency
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Load static/lookup data and global counts
+  const loadLookups = async () => {
+    try {
+      const [deptRes, titleRes, countRes, activeCountRes] = await Promise.allSettled([
+        apiClient.get<DepartmentOut[]>("/departments"),
+        apiClient.get<JobTitleOut[]>("/job-titles"),
+        apiClient.get<{ total: number }>("/employees/count"),
+        apiClient.get<{ total: number }>("/employees/count?status=active"),
+      ]);
+
+      if (deptRes.status === "fulfilled") {
+        setDepartments(deptRes.value.data || []);
+      }
+      if (titleRes.status === "fulfilled") {
+        setJobTitles(titleRes.value.data || []);
+      }
+      if (countRes.status === "fulfilled") {
+        setTotalSystemEmployees(countRes.value.data?.total || 0);
+      }
+      if (activeCountRes.status === "fulfilled") {
+        setActiveSystemEmployees(activeCountRes.value.data?.total || 0);
+      }
+    } catch {
+      // ignore lookup errors
+    }
+  };
+
+  useEffect(() => {
+    loadLookups();
+  }, []);
+
+  // Server-Side Search & Paginated Fetch
+  const fetchEmployees = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [empRes, deptRes, titleRes] = await Promise.allSettled([
-        apiClient.get<EmployeeOut[]>("/employees?limit=300"),
-        apiClient.get<DepartmentOut[]>("/departments"),
-        apiClient.get<JobTitleOut[]>("/job-titles"),
+      const skip = (currentPage - 1) * pageSize;
+      const limit = pageSize;
+      const queryParams = new URLSearchParams();
+      queryParams.set("skip", String(skip));
+      queryParams.set("limit", String(limit));
+
+      const countParams = new URLSearchParams();
+
+      if (debouncedSearch.trim()) {
+        queryParams.set("search", debouncedSearch.trim());
+        countParams.set("search", debouncedSearch.trim());
+      }
+      if (selectedDepartment && selectedDepartment !== "all") {
+        queryParams.set("department_id", selectedDepartment);
+        countParams.set("department_id", selectedDepartment);
+      }
+      if (statusFilter && statusFilter !== "all") {
+        queryParams.set("status", statusFilter);
+        countParams.set("status", statusFilter);
+      }
+
+      const [empRes, countRes] = await Promise.allSettled([
+        apiClient.get<EmployeeOut[]>(`/employees?${queryParams.toString()}`),
+        apiClient.get<{ total: number }>(`/employees/count?${countParams.toString()}`),
       ]);
 
       if (empRes.status === "fulfilled") {
@@ -116,12 +181,8 @@ export default function EmployeesPage() {
         setError("Failed to fetch employees from backend API.");
       }
 
-      if (deptRes.status === "fulfilled") {
-        setDepartments(deptRes.value.data || []);
-      }
-
-      if (titleRes.status === "fulfilled") {
-        setJobTitles(titleRes.value.data || []);
+      if (countRes.status === "fulfilled") {
+        setTotalFiltered(countRes.value.data?.total ?? 0);
       }
     } catch {
       setError("Unable to connect to FastAPI REST server.");
@@ -131,69 +192,57 @@ export default function EmployeesPage() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
-
-  // Filter Logic
-  const filteredEmployees = useMemo(() => {
-    return employees.filter((e) => {
-      // Search filter
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        !searchQuery.trim() ||
-        (e.full_name && e.full_name.toLowerCase().includes(q)) ||
-        (e.first_name && e.first_name.toLowerCase().includes(q)) ||
-        (e.last_name && e.last_name.toLowerCase().includes(q)) ||
-        (e.employee_id && e.employee_id.toLowerCase().includes(q)) ||
-        (e.work_email && e.work_email.toLowerCase().includes(q)) ||
-        (e.team && e.team.toLowerCase().includes(q));
-
-      // Status filter
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && e.is_active) ||
-        (statusFilter === "inactive" && !e.is_active);
-
-      // Department filter
-      const matchesDepartment =
-        selectedDepartment === "all" || e.department_id === selectedDepartment;
-
-      // Employment type filter
-      const matchesType =
-        selectedEmploymentType === "all" ||
-        e.employment_type?.toLowerCase() === selectedEmploymentType.toLowerCase();
-
-      return matchesSearch && matchesStatus && matchesDepartment && matchesType;
-    });
-  }, [employees, searchQuery, statusFilter, selectedDepartment, selectedEmploymentType]);
+    fetchEmployees();
+  }, [currentPage, pageSize, debouncedSearch, selectedDepartment, statusFilter]);
 
   // Reset to page 1 on filter/search change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, selectedDepartment, selectedEmploymentType, pageSize]);
+  }, [debouncedSearch, statusFilter, selectedDepartment, selectedEmploymentType, pageSize]);
+
+  const loadData = () => {
+    fetchEmployees();
+    loadLookups();
+  };
+
+  // Compute employee counts per department for combobox badges
+  const employeeCountsByDept = useMemo(() => {
+    const counts: Record<string, number> = {};
+    departments.forEach((d) => {
+      if (d.id && d.employee_count !== undefined) {
+        counts[d.id] = d.employee_count;
+      }
+    });
+    return counts;
+  }, [departments]);
+
+  // Client-side employment type filter on page
+  const filteredEmployees = useMemo(() => {
+    if (selectedEmploymentType === "all") return employees;
+    return employees.filter(
+      (e) => e.employment_type?.toLowerCase() === selectedEmploymentType.toLowerCase()
+    );
+  }, [employees, selectedEmploymentType]);
 
   // Pagination Calculations
-  const totalFiltered = filteredEmployees.length;
   const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalFiltered);
-
-  const paginatedEmployees = useMemo(() => {
-    return filteredEmployees.slice(startIndex, endIndex);
-  }, [filteredEmployees, startIndex, endIndex]);
+  const endIndex = Math.min(startIndex + filteredEmployees.length, totalFiltered);
+  const paginatedEmployees = filteredEmployees;
 
   // Summary Metrics
   const metrics = useMemo(() => {
-    const total = employees.length;
-    const active = employees.filter((e) => e.is_active).length;
-    const inactive = total - active;
+    const total = totalSystemEmployees;
+    const active = activeSystemEmployees;
+    const inactive = Math.max(0, total - active);
     const deptCount = departments.length;
     return { total, active, inactive, deptCount };
-  }, [employees, departments]);
+  }, [totalSystemEmployees, activeSystemEmployees, departments]);
 
   const clearFilters = () => {
     setSearchQuery("");
+    setDebouncedSearch("");
     setStatusFilter("all");
     setSelectedDepartment("all");
     setSelectedEmploymentType("all");
@@ -356,18 +405,13 @@ export default function EmployeesPage() {
 
             {/* Dropdown Filters */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
-              <select
-                value={selectedDepartment}
-                onChange={(e) => setSelectedDepartment(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-              >
-                <option value="all">All Departments</option>
-                {departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+              <SearchableDepartmentCombobox
+                departments={departments}
+                selectedDepartmentId={selectedDepartment}
+                onSelect={(deptId) => setSelectedDepartment(deptId)}
+                employeeCountsByDept={employeeCountsByDept}
+                totalAllEmployees={employees.length}
+              />
 
               <select
                 value={selectedEmploymentType}

@@ -220,3 +220,65 @@ async def test_org_chart_hierarchy(client):
     assert md_node is not None
     assert len(md_node["reports"]) == 1
     assert md_node["reports"][0]["employee_id"] == "GM-001"
+
+
+@pytest.mark.asyncio
+async def test_employee_search_and_count(client):
+    # Create two employees with distinct names and IDs
+    emp1_res = await client.post(
+        "/employees",
+        json={
+            "first_name": "Taufiq",
+            "last_name": "Hossain",
+            "bangla_name": "তৌফিক হোসেন",
+            "employee_id": "EMP-9001",
+            "work_email": "taufiq.h@company.com",
+            "is_active": True,
+            "business_id": 1,
+        },
+    )
+    assert emp1_res.status_code == 201
+
+    emp2_res = await client.post(
+        "/employees",
+        json={
+            "first_name": "Salma",
+            "last_name": "Khatun",
+            "bangla_name": "সালমা খাতুন",
+            "employee_id": "EMP-9002",
+            "work_email": "salma.k@company.com",
+            "is_active": False,
+            "business_id": 1,
+        },
+    )
+    assert emp2_res.status_code == 201
+
+    # Total count
+    count_res = await client.get("/employees/count?business_id=1")
+    assert count_res.status_code == 200
+    assert count_res.json()["total"] >= 2
+
+    # Status filtered count
+    active_count_res = await client.get("/employees/count?business_id=1&status=active")
+    assert active_count_res.status_code == 200
+    assert active_count_res.json()["total"] >= 1
+
+    # Search by Bengali name
+    search_bng_res = await client.get("/employees?business_id=1&search=তৌফিক")
+    assert search_bng_res.status_code == 200
+    bng_emps = search_bng_res.json()
+    assert len(bng_emps) == 1
+    assert bng_emps[0]["employee_id"] == "EMP-9001"
+
+    # Search by employee ID
+    search_id_res = await client.get("/employees?business_id=1&search=9002")
+    assert search_id_res.status_code == 200
+    id_emps = search_id_res.json()
+    assert len(id_emps) == 1
+    assert id_emps[0]["employee_id"] == "EMP-9002"
+
+    # Search with count endpoint
+    search_cnt_res = await client.get("/employees/count?business_id=1&search=Salma")
+    assert search_cnt_res.status_code == 200
+    assert search_cnt_res.json()["total"] == 1
+

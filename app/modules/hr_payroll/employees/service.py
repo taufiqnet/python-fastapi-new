@@ -67,6 +67,9 @@ class EmployeeService:
         limit: int = 100,
         business_id: int | None = None,
         department_id: uuid.UUID | None = None,
+        branch_id: uuid.UUID | None = None,
+        search: str | None = None,
+        status: str | None = None,
     ) -> list[Employee]:
         return self.repository.get_all(
             db,
@@ -74,6 +77,9 @@ class EmployeeService:
             limit=limit,
             business_id=business_id,
             department_id=department_id,
+            branch_id=branch_id,
+            search=search,
+            status=status,
         )
 
     def count_employees(
@@ -81,12 +87,16 @@ class EmployeeService:
         db: Session,
         business_id: int | None = None,
         department_id: uuid.UUID | None = None,
+        branch_id: uuid.UUID | None = None,
+        search: str | None = None,
         status: str | None = None,
     ) -> int:
         return self.repository.count_employees(
             db,
             business_id=business_id,
             department_id=department_id,
+            branch_id=branch_id,
+            search=search,
             status=status,
         )
 

@@ -1,5 +1,6 @@
 import uuid
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.modules.hr_payroll.employees.models import Employee, EmployeeNominee
@@ -73,19 +74,45 @@ class EmployeeRepository:
         limit: int = 100,
         business_id: int | None = None,
         department_id: uuid.UUID | None = None,
+        branch_id: uuid.UUID | None = None,
+        search: str | None = None,
+        status: str | None = None,
     ) -> list[Employee]:
         query = db.query(Employee)
         if business_id is not None:
             query = query.filter(Employee.business_id == business_id)
         if department_id is not None:
             query = query.filter(Employee.department_id == department_id)
-        return query.offset(skip).limit(limit).all()
+        if branch_id is not None:
+            query = query.filter(Employee.branch_id == branch_id)
+        if status is not None:
+            s_lower = status.strip().lower()
+            if s_lower in ("active", "true", "1"):
+                query = query.filter(Employee.is_active.is_(True))
+            elif s_lower in ("inactive", "false", "0"):
+                query = query.filter(Employee.is_active.is_(False))
+        if search and search.strip():
+            s_term = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    Employee.first_name.ilike(s_term),
+                    Employee.middle_name.ilike(s_term),
+                    Employee.last_name.ilike(s_term),
+                    Employee.bangla_name.ilike(s_term),
+                    Employee.employee_id.ilike(s_term),
+                    Employee.work_email.ilike(s_term),
+                    Employee.phone.ilike(s_term),
+                )
+            )
+        return query.order_by(Employee.created_at.desc()).offset(skip).limit(limit).all()
 
     def count_employees(
         self,
         db: Session,
         business_id: int | None = None,
         department_id: uuid.UUID | None = None,
+        branch_id: uuid.UUID | None = None,
+        search: str | None = None,
         status: str | None = None,
     ) -> int:
         query = db.query(Employee)
@@ -93,12 +120,27 @@ class EmployeeRepository:
             query = query.filter(Employee.business_id == business_id)
         if department_id is not None:
             query = query.filter(Employee.department_id == department_id)
+        if branch_id is not None:
+            query = query.filter(Employee.branch_id == branch_id)
         if status is not None:
             s_lower = status.strip().lower()
             if s_lower in ("active", "true", "1"):
                 query = query.filter(Employee.is_active.is_(True))
             elif s_lower in ("inactive", "false", "0"):
                 query = query.filter(Employee.is_active.is_(False))
+        if search and search.strip():
+            s_term = f"%{search.strip()}%"
+            query = query.filter(
+                or_(
+                    Employee.first_name.ilike(s_term),
+                    Employee.middle_name.ilike(s_term),
+                    Employee.last_name.ilike(s_term),
+                    Employee.bangla_name.ilike(s_term),
+                    Employee.employee_id.ilike(s_term),
+                    Employee.work_email.ilike(s_term),
+                    Employee.phone.ilike(s_term),
+                )
+            )
         return query.count()
 
     def count_employees_by_department(
