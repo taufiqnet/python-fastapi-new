@@ -132,25 +132,6 @@ export default function LeaveManagementPage() {
               Manage statutory leave policies, annual quota allocations, and approval workflows.
             </p>
           </div>
-
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={loadData}
-              disabled={loading}
-              title="Refresh Data"
-              className="p-2 border border-slate-200 bg-white rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition-colors shadow-2xs"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-            </button>
-
-            <button
-              onClick={() => setIsApplyModalOpen(true)}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Apply for Leave</span>
-            </button>
-          </div>
         </div>
 
         {/* Error Alert */}

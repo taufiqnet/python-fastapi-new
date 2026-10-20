@@ -54,21 +54,38 @@ export function SearchableDepartmentCombobox({
     }
   }, [isOpen]);
 
-  // Filtered departments
+  // Active departments only
+  const activeDepartments = useMemo(() => {
+    return departments.filter((d) => d.is_active !== false);
+  }, [departments]);
+
+  // Filtered active departments by search term
   const filteredDepartments = useMemo(() => {
-    if (!searchTerm.trim()) return departments;
+    if (!searchTerm.trim()) return activeDepartments;
     const q = searchTerm.toLowerCase();
-    return departments.filter(
+    return activeDepartments.filter(
       (d) =>
         d.name.toLowerCase().includes(q) ||
         (d.code && d.code.toLowerCase().includes(q))
     );
-  }, [departments, searchTerm]);
+  }, [activeDepartments, searchTerm]);
 
   const selectedDepartment = useMemo(() => {
     if (selectedDepartmentId === "all") return null;
-    return departments.find((d) => d.id === selectedDepartmentId) || null;
-  }, [departments, selectedDepartmentId]);
+    return activeDepartments.find((d) => d.id === selectedDepartmentId) || null;
+  }, [activeDepartments, selectedDepartmentId]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (filteredDepartments.length > 0) {
+        onSelect(filteredDepartments[0].id);
+        setIsOpen(false);
+      }
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+    }
+  };
 
   return (
     <div ref={containerRef} className="relative inline-block text-left">
@@ -129,7 +146,8 @@ export function SearchableDepartmentCombobox({
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search department name or code..."
+                onKeyDown={handleKeyDown}
+                placeholder="Search active departments..."
                 className="w-full pl-8 pr-7 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition-colors"
               />
               {searchTerm && (
@@ -181,7 +199,7 @@ export function SearchableDepartmentCombobox({
             {filteredDepartments.length === 0 ? (
               <div className="py-6 text-center text-slate-400 text-xs">
                 <Building2 className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-                <p className="font-semibold text-slate-600">No departments match &ldquo;{searchTerm}&rdquo;</p>
+                <p className="font-semibold text-slate-600">No active departments match &ldquo;{searchTerm}&rdquo;</p>
                 <p className="text-[10px] mt-0.5">Try a different keyword</p>
               </div>
             ) : (

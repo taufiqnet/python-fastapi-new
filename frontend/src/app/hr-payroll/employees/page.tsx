@@ -117,14 +117,15 @@ export default function EmployeesPage() {
   const loadLookups = async () => {
     try {
       const [deptRes, titleRes, countRes, activeCountRes] = await Promise.allSettled([
-        apiClient.get<DepartmentOut[]>("/departments"),
+        apiClient.get<DepartmentOut[]>("/departments?is_active=true&limit=300"),
         apiClient.get<JobTitleOut[]>("/job-titles"),
         apiClient.get<{ total: number }>("/employees/count"),
         apiClient.get<{ total: number }>("/employees/count?status=active"),
       ]);
 
       if (deptRes.status === "fulfilled") {
-        setDepartments(deptRes.value.data || []);
+        const rawDepts = deptRes.value.data || [];
+        setDepartments(rawDepts.filter((d) => d.is_active !== false));
       }
       if (titleRes.status === "fulfilled") {
         setJobTitles(titleRes.value.data || []);
@@ -404,13 +405,13 @@ export default function EmployeesPage() {
             </div>
 
             {/* Dropdown Filters */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0">
               <SearchableDepartmentCombobox
                 departments={departments}
                 selectedDepartmentId={selectedDepartment}
                 onSelect={(deptId) => setSelectedDepartment(deptId)}
                 employeeCountsByDept={employeeCountsByDept}
-                totalAllEmployees={employees.length}
+                totalAllEmployees={metrics.total}
               />
 
               <select
