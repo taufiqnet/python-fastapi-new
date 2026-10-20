@@ -33,6 +33,8 @@ import {
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/context/toast-context";
 import { DeleteEmployeeDialog } from "@/components/hr-payroll/delete-employee-dialog";
+import { OrgChartView } from "@/components/hr-payroll/employees/org-chart-view";
+import { Network, Droplet } from "lucide-react";
 
 export default function EmployeesPage() {
   const { toast } = useToast();
@@ -48,7 +50,7 @@ export default function EmployeesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [selectedEmploymentType, setSelectedEmploymentType] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [viewMode, setViewMode] = useState<"table" | "grid" | "orgchart">("table");
 
   // Pagination State (Default 10 items per page)
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -338,6 +340,18 @@ export default function EmployeesPage() {
                 >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("orgchart")}
+                  className={`p-1.5 rounded-lg transition ${
+                    viewMode === "orgchart"
+                      ? "bg-white text-indigo-600 shadow-xs"
+                      : "text-slate-400 hover:text-slate-700"
+                  }`}
+                  title="Organizational Chart (Org Chart)"
+                >
+                  <Network className="w-4 h-4" />
+                </button>
               </div>
             </div>
           </div>
@@ -434,6 +448,9 @@ export default function EmployeesPage() {
               )}
             </div>
           </div>
+        ) : viewMode === "orgchart" ? (
+          /* Organizational Chart View */
+          <OrgChartView departments={departments} />
         ) : viewMode === "table" ? (
           /* Table View */
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
@@ -464,16 +481,33 @@ export default function EmployeesPage() {
                               {initials}
                             </div>
                             <div className="min-w-0">
-                              <Link
-                                href={`/hr-payroll/employees/${e.id}`}
-                                className="font-bold text-slate-900 group-hover:text-indigo-600 transition truncate block hover:underline"
-                              >
-                                {e.full_name || `${e.first_name} ${e.last_name || ""}`}
-                              </Link>
+                              <div className="flex items-center gap-1.5">
+                                <Link
+                                  href={`/hr-payroll/employees/${e.id}`}
+                                  className="font-bold text-slate-900 group-hover:text-indigo-600 transition truncate block hover:underline"
+                                >
+                                  {e.full_name || `${e.first_name} ${e.last_name || ""}`}
+                                </Link>
+                                {e.bangla_name && (
+                                  <span className="text-[11px] font-semibold text-slate-400 font-bengali truncate">
+                                    ({e.bangla_name})
+                                  </span>
+                                )}
+                              </div>
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <span className="font-mono text-[11px] text-slate-400">
                                   {e.employee_id}
                                 </span>
+                                {e.blood_group && (
+                                  <span className="inline-flex items-center gap-0.5 text-[9px] font-black text-rose-600 bg-rose-50 px-1 py-0.2 rounded border border-rose-200">
+                                    <Droplet className="w-2.5 h-2.5 fill-rose-600" /> {e.blood_group}
+                                  </span>
+                                )}
+                                {e.salary_grade_name && (
+                                  <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">
+                                    {e.salary_grade_name}
+                                  </span>
+                                )}
                                 {e.is_department_head && (
                                   <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded font-semibold border border-amber-200">
                                     <Sparkles className="w-2.5 h-2.5" /> Head

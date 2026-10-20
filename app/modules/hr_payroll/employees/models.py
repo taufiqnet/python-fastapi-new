@@ -1,7 +1,7 @@
 import enum
 import uuid
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import UUID, Enum as SAEnum
 
@@ -67,24 +67,59 @@ class Employee(Base, UUIDMixin, TimestampMixin):
     first_name: Mapped[str] = mapped_column(String(255), nullable=False)
     middle_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bangla_name: Mapped[str | None] = mapped_column(String(255), nullable=True)  # বাংলায় পূর্ণ নাম
     employee_id: Mapped[str] = mapped_column(String(50), nullable=False)
     date_of_birth: Mapped["Date | None"] = mapped_column(Date, nullable=True)
     gender: Mapped[GenderEnum | None] = mapped_column(SAEnum(GenderEnum, name="employee_gender"), nullable=True)
     marital_status: Mapped[MaritalStatusEnum | None] = mapped_column(
         SAEnum(MaritalStatusEnum, name="employee_marital_status"), nullable=True
     )
-    nationality: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    national_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    religion: Mapped[str | None] = mapped_column(String(50), nullable=True)  # Islam, Hinduism, Buddhism, Christianity
+    blood_group: Mapped[str | None] = mapped_column(String(10), nullable=True)  # A+, B+, O+, AB+, etc.
+    nationality: Mapped[str | None] = mapped_column(String(100), default="Bangladeshi", nullable=True)
+    national_id: Mapped[str | None] = mapped_column(String(50), nullable=True)  # NID (10/13/17 digits)
     passport_no: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    tin: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    tin: Mapped[str | None] = mapped_column(String(50), nullable=True)  # e-TIN 12 digits
+    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # ── Family Information (BLA 2006 statutory) ───────────────────
+    father_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    mother_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    spouse_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # ── Contact Information ────────────────────────────────────────
     work_email: Mapped[str] = mapped_column(String(255), nullable=False)
     personal_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     emergency_contact: Mapped[str | None] = mapped_column(Text, nullable=True)
+    emergency_contact_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    emergency_contact_relation: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    emergency_contact_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     linkedin: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # ── Address Information (Present vs Permanent) ────────────────
     residential_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    present_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    present_thana: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    present_district: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    present_division: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    present_post_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    permanent_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    permanent_thana: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    permanent_district: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    permanent_division: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    permanent_post_code: Mapped[str | None] = mapped_column(String(20), nullable=True)
+
+    # ── Salary Disbursement (Banking / MFS) ────────────────────────
+    disbursement_method: Mapped[str | None] = mapped_column(String(50), default="bank_transfer", nullable=True)  # bank_transfer, mfs_bkash, mfs_nagad, mfs_rocket, cash
+    bank_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bank_branch: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bank_account_no: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    bank_account_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bank_routing_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    mfs_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)  # bkash, nagad, rocket
+    mfs_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # ── Job Information ────────────────────────────────────────────
     job_title_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -116,19 +151,28 @@ class Employee(Base, UUIDMixin, TimestampMixin):
         nullable=True,
     )
 
-    # ── Employment Details ─────────────────────────────────────────
+    # ── Employment Details & Terms ─────────────────────────────────
+    employee_category: Mapped[str | None] = mapped_column(String(50), default="management", nullable=True)  # management, staff, worker
     employment_type: Mapped[EmploymentTypeEnum | None] = mapped_column(
         SAEnum(EmploymentTypeEnum, name="employee_employment_type"), nullable=True
     )
     start_date: Mapped["Date | None"] = mapped_column(Date, nullable=True)
+    confirmation_date: Mapped["Date | None"] = mapped_column(Date, nullable=True)
     contract_end_date: Mapped["Date | None"] = mapped_column(Date, nullable=True)
+    probation_period_months: Mapped[int | None] = mapped_column(Integer, default=3, nullable=True)
     probation_end_date: Mapped["Date | None"] = mapped_column(Date, nullable=True)
+    notice_period_days: Mapped[int | None] = mapped_column(Integer, default=30, nullable=True)
+    is_overtime_eligible: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     work_arrangement: Mapped[WorkArrangementEnum | None] = mapped_column(
         SAEnum(WorkArrangementEnum, name="employee_work_arrangement"), nullable=True
     )
     working_hours: Mapped[str | None] = mapped_column(String(100), nullable=True)
     working_days_per_week: Mapped[int | None] = mapped_column(Integer, nullable=True)
     working_days: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # ── Access Control & Biometrics ────────────────────────────────
+    biometric_user_id: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
+    rfid_card_number: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)
 
     # ── Skills ──────────────────────────────────────────────────────
     skills_expertise: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -173,6 +217,12 @@ class Employee(Base, UUIDMixin, TimestampMixin):
         "Employee",
         back_populates="direct_manager",
     )
+    nominees: Mapped[list["EmployeeNominee"]] = relationship(
+        "EmployeeNominee",
+        back_populates="employee",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     @property
     def full_name(self) -> str:
@@ -197,6 +247,55 @@ class Employee(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Employee {self.first_name} {self.last_name} ({self.employee_id})>"
+
+
+class EmployeeNominee(Base, UUIDMixin, TimestampMixin):
+    """
+    Statutory Nominee declaration per Bangladesh Labour Act 2006 (§ 19, 20, 38)
+    and Bangladesh Labour Rules 2015 Form 33 for terminal dues, Provident Fund,
+    Gratuity, and Group Term Insurance.
+    """
+
+    __tablename__ = "employee_nominees"
+
+    business_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    employee_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("employees.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    nominee_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    nominee_name_bangla: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    relation: Mapped[str] = mapped_column(String(100), nullable=False)
+    nid_or_birth_cert: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    dob: Mapped["Date | None"] = mapped_column(Date, nullable=True)
+    share_percentage: Mapped[float] = mapped_column(Float, default=100.0, nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    # Minor protection fields (BLA Rule 23: if nominee is < 18 years old)
+    is_minor: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    guardian_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    guardian_relation: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    guardian_nid: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    guardian_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    guardian_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    employee: Mapped["Employee"] = relationship(
+        "Employee",
+        back_populates="nominees",
+    )
+
+    def __repr__(self) -> str:
+        return f"<EmployeeNominee {self.nominee_name} ({self.relation}, {self.share_percentage}%)>"
 
 
 class ImportJob(Base, UUIDMixin, TimestampMixin):

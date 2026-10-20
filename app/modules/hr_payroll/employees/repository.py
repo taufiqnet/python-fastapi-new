@@ -2,9 +2,11 @@ import uuid
 
 from sqlalchemy.orm import Session
 
-from app.modules.hr_payroll.employees.models import Employee
+from app.modules.hr_payroll.employees.models import Employee, EmployeeNominee
 from app.modules.hr_payroll.employees.schemas import (
     EmployeeCreate,
+    EmployeeNomineeCreate,
+    EmployeeNomineeUpdate,
     EmployeeUpdate,
 )
 
@@ -217,3 +219,65 @@ class EmployeeRepository:
     def get_import_job(self, db: Session, job_id: uuid.UUID) -> "ImportJob | None":
         from app.modules.hr_payroll.employees.models import ImportJob
         return db.query(ImportJob).filter(ImportJob.id == job_id).first()
+
+    # ── Nominee Methods (Statutory BLA 2006 Form 33) ───────────────
+    def create_nominee(
+        self, db: Session, nominee_data: EmployeeNomineeCreate, employee_id: uuid.UUID, business_id: int
+    ) -> EmployeeNominee:
+        nominee = EmployeeNominee(
+            **nominee_data.model_dump(),
+            employee_id=employee_id,
+            business_id=business_id,
+        )
+        db.add(nominee)
+        db.commit()
+        db.refresh(nominee)
+        return nominee
+
+    def get_nominees_by_employee(
+        self, db: Session, employee_id: uuid.UUID
+    ) -> list[EmployeeNominee]:
+        return (
+            db.query(EmployeeNominee)
+            .filter(EmployeeNominee.employee_id == employee_id)
+            .order_by(EmployeeNominee.created_at.asc())
+            .all()
+        )
+
+    def get_nominee_by_id(
+        self, db: Session, nominee_id: uuid.UUID
+    ) -> EmployeeNominee | None:
+        return db.query(EmployeeNominee).filter(EmployeeNominee.id == nominee_id).first()
+
+    def update_nominee(
+        self, db: Session, nominee: EmployeeNominee, data: EmployeeNomineeUpdate
+    ) -> EmployeeNominee:
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(nominee, field, value)
+        db.commit()
+        db.refresh(nominee)
+        return nominee
+
+    def delete_nominee(self, db: Session, nominee: EmployeeNominee) -> None:
+        db.delete(nominee)
+        db.commit()
+
+    # ── Org Chart Data Retrieval ──────────────────────────────────
+    def get_all_for_org_chart(
+        self,
+        db: Session,
+        business_id: int,
+        branch_id: uuid.UUID | None = None,
+        department_id: uuid.UUID | None = None,
+    ) -> list[Employee]:
+        query = db.query(Employee).filter(
+            Employee.business_id == business_id,
+            Employee.is_active.is_(True),
+        )
+        if branch_id is not None:
+            query = query.filter(Employee.branch_id == branch_id)
+        if department_id is not None:
+            query = query.filter(Employee.department_id == department_id)
+        return query.all()
+

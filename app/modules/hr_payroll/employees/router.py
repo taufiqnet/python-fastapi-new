@@ -12,8 +12,13 @@ from app.modules.hr_payroll.employees.models import ImportJob
 from app.modules.hr_payroll.employees.schemas import (
     BulkDeleteEmployeesRequest,
     EmployeeCreate,
+    EmployeeNomineeCreate,
+    EmployeeNomineeOut,
+    EmployeeNomineeUpdate,
     EmployeeOut,
     EmployeeUpdate,
+    IDCardDataOut,
+    OrgChartNodeOut,
 )
 from app.modules.hr_payroll.employees.service import EmployeeService
 
@@ -241,6 +246,23 @@ def get_next_employee_id(
     )
 
 
+@router.get("/employees/org-chart", response_model=list[OrgChartNodeOut])
+def get_employee_org_chart(
+    business_id: int | None = Query(None),
+    branch_id: uuid.UUID | None = Query(None),
+    department_id: uuid.UUID | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.get_org_chart(
+        db,
+        business_id=resolved_business_id,
+        branch_id=branch_id,
+        department_id=department_id,
+    )
+
+
 @router.get("/employees/{employee_id}", response_model=EmployeeOut)
 def get_employee(
     employee_id: uuid.UUID,
@@ -290,3 +312,96 @@ def delete_employee(
 ):
     employee_service.delete_employee(db, employee_id, current_user=current_user)
     return None
+
+
+# ── Nominee Endpoints (BLA 2006 Form 33) ──────────────────────────
+@router.get("/employees/{employee_id}/nominees", response_model=list[EmployeeNomineeOut])
+def get_employee_nominees(
+    employee_id: uuid.UUID,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.get_employee_nominees(
+        db, employee_id=employee_id, business_id=resolved_business_id
+    )
+
+
+@router.post(
+    "/employees/{employee_id}/nominees",
+    response_model=EmployeeNomineeOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_employee_nominee(
+    employee_id: uuid.UUID,
+    nominee_data: EmployeeNomineeCreate,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "update")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.create_nominee(
+        db,
+        employee_id=employee_id,
+        data=nominee_data,
+        business_id=resolved_business_id,
+    )
+
+
+@router.put(
+    "/employees/{employee_id}/nominees/{nominee_id}",
+    response_model=EmployeeNomineeOut,
+)
+def update_employee_nominee(
+    employee_id: uuid.UUID,
+    nominee_id: uuid.UUID,
+    nominee_data: EmployeeNomineeUpdate,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "update")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.update_nominee(
+        db,
+        employee_id=employee_id,
+        nominee_id=nominee_id,
+        data=nominee_data,
+        business_id=resolved_business_id,
+    )
+
+
+@router.delete(
+    "/employees/{employee_id}/nominees/{nominee_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_employee_nominee(
+    employee_id: uuid.UUID,
+    nominee_id: uuid.UUID,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "update")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    employee_service.delete_nominee(
+        db,
+        employee_id=employee_id,
+        nominee_id=nominee_id,
+        business_id=resolved_business_id,
+    )
+    return None
+
+
+# ── Smart ID Card Generation Endpoint ─────────────────────────────
+@router.get("/employees/{employee_id}/id-card", response_model=IDCardDataOut)
+def get_employee_id_card(
+    employee_id: uuid.UUID,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.get_id_card_data(
+        db, employee_id=employee_id, business_id=resolved_business_id
+    )
+

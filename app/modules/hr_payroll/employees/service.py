@@ -9,7 +9,11 @@ from typing import Any
 from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.hr_payroll.employees.schemas import (
     EmployeeCreate,
+    EmployeeNomineeCreate,
+    EmployeeNomineeUpdate,
     EmployeeUpdate,
+    IDCardDataOut,
+    OrgChartNodeOut,
 )
 from app.core.tenancy.repository import BusinessRepository
 from app.modules.hr_payroll.organization.repository import (
@@ -22,10 +26,11 @@ import json
 import csv
 import openpyxl
 from app.modules.hr_payroll.employees.models import (
-    GenderEnum,
     EmploymentTypeEnum,
-    WorkArrangementEnum,
+    GenderEnum,
     ImportJob,
+    WorkArrangementEnum,
+    EmployeeNominee,
 )
 from app.database import SessionLocal
 
@@ -115,6 +120,17 @@ class EmployeeService:
                 detail="Employee not found",
             )
         return employee
+
+    def get_employee_by_id(
+        self, db: Session, employee_id: uuid.UUID, business_id: int | None = None
+    ) -> Employee:
+        emp = self.repository.get_by_id(db, employee_id)
+        if not emp or (business_id is not None and emp.business_id != business_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Employee not found",
+            )
+        return emp
 
     def validate_direct_manager(
         self,
@@ -845,3 +861,159 @@ class EmployeeService:
                 writer.writerow(["", "", "", str(err)])
 
         return output.getvalue()
+
+    # ── Nominee Management (BLA 2006 / Form 33) ───────────────────
+    def create_nominee(
+        self,
+        db: Session,
+        employee_id: uuid.UUID,
+        data: EmployeeNomineeCreate,
+        business_id: int | None = None,
+    ) -> EmployeeNominee:
+        emp = self.get_employee_by_id(db, employee_id, business_id=business_id)
+        current_nominees = self.repository.get_nominees_by_employee(db, employee_id)
+        current_total = sum(n.share_percentage for n in current_nominees)
+        if current_total + data.share_percentage > 100.001:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Total nominee share percentage cannot exceed 100%. Current allocated: {current_total:.1f}%, Attempted to add: {data.share_percentage:.1f}%",
+            )
+        eff_biz_id = business_id if business_id is not None else emp.business_id
+        return self.repository.create_nominee(db, data, employee_id, eff_biz_id)
+
+    def get_employee_nominees(
+        self,
+        db: Session,
+        employee_id: uuid.UUID,
+        business_id: int | None = None,
+    ) -> list[EmployeeNominee]:
+        self.get_employee_by_id(db, employee_id, business_id=business_id)
+        return self.repository.get_nominees_by_employee(db, employee_id)
+
+    def update_nominee(
+        self,
+        db: Session,
+        employee_id: uuid.UUID,
+        nominee_id: uuid.UUID,
+        data: EmployeeNomineeUpdate,
+        business_id: int | None = None,
+    ) -> EmployeeNominee:
+        self.get_employee_by_id(db, employee_id, business_id=business_id)
+        nominee = self.repository.get_nominee_by_id(db, nominee_id)
+        if not nominee or nominee.employee_id != employee_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nominee not found",
+            )
+        if business_id is not None and nominee.business_id != business_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nominee not found",
+            )
+        if data.share_percentage is not None:
+            current_nominees = self.repository.get_nominees_by_employee(db, employee_id)
+            other_total = sum(n.share_percentage for n in current_nominees if n.id != nominee_id)
+            if other_total + data.share_percentage > 100.001:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Total nominee share percentage cannot exceed 100%. Other nominees: {other_total:.1f}%, Attempted: {data.share_percentage:.1f}%",
+                )
+        return self.repository.update_nominee(db, nominee, data)
+
+    def delete_nominee(
+        self,
+        db: Session,
+        employee_id: uuid.UUID,
+        nominee_id: uuid.UUID,
+        business_id: int | None = None,
+    ) -> None:
+        self.get_employee_by_id(db, employee_id, business_id=business_id)
+        nominee = self.repository.get_nominee_by_id(db, nominee_id)
+        if not nominee or nominee.employee_id != employee_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nominee not found",
+            )
+        if business_id is not None and nominee.business_id != business_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nominee not found",
+            )
+        self.repository.delete_nominee(db, nominee)
+
+    # ── Org Chart Tree Construction ───────────────────────────────
+    def get_org_chart(
+        self,
+        db: Session,
+        business_id: int,
+        branch_id: uuid.UUID | None = None,
+        department_id: uuid.UUID | None = None,
+    ) -> list[OrgChartNodeOut]:
+        employees = self.repository.get_all_for_org_chart(
+            db, business_id=business_id, branch_id=branch_id, department_id=department_id
+        )
+        if not employees:
+            return []
+
+        node_map: dict[uuid.UUID, OrgChartNodeOut] = {}
+        for emp in employees:
+            node_map[emp.id] = OrgChartNodeOut(
+                id=emp.id,
+                employee_id=emp.employee_id,
+                name=emp.full_name,
+                bangla_name=emp.bangla_name,
+                job_title=emp.job_title_name,
+                department=emp.department_name,
+                branch=emp.branch_name,
+                salary_grade=emp.salary_grade.name if emp.salary_grade else None,
+                photo_url=emp.photo_url,
+                email=emp.work_email,
+                phone=emp.phone,
+                direct_manager_id=emp.direct_manager_id,
+                reports=[],
+            )
+
+        roots: list[OrgChartNodeOut] = []
+        for emp in employees:
+            node = node_map[emp.id]
+            if emp.direct_manager_id and emp.direct_manager_id in node_map and emp.direct_manager_id != emp.id:
+                node_map[emp.direct_manager_id].reports.append(node)
+            else:
+                roots.append(node)
+
+        return roots
+
+    # ── Smart ID Card Generation ──────────────────────────────────
+    def get_id_card_data(
+        self,
+        db: Session,
+        employee_id: uuid.UUID,
+        business_id: int,
+    ) -> IDCardDataOut:
+        emp = self.get_employee_by_id(db, employee_id, business_id=business_id)
+        biz = emp.business_profile
+        company_name = getattr(biz, "name_en", None) or getattr(biz, "company_name", None) or "Enterprise Group"
+        city_str = f", {biz.city}" if biz and getattr(biz, "city", None) else ""
+        addr = getattr(biz, "address_en", None) or getattr(biz, "address", None) or ""
+        company_address = f"{addr}{city_str}" if addr else "Dhaka, Bangladesh"
+        company_logo_url = getattr(biz, "logo", None) or getattr(biz, "logo_url", None)
+
+        return IDCardDataOut(
+            employee_id=emp.employee_id,
+            full_name=emp.full_name,
+            bangla_name=emp.bangla_name,
+            photo_url=emp.photo_url,
+            job_title=emp.job_title_name,
+            department=emp.department_name,
+            branch=emp.branch_name,
+            blood_group=emp.blood_group,
+            emergency_contact_phone=emp.emergency_contact_phone or emp.phone,
+            joining_date=emp.start_date,
+            biometric_user_id=emp.biometric_user_id,
+            rfid_card_number=emp.rfid_card_number,
+            company_name=company_name,
+            company_address=company_address.strip(", "),
+            company_logo_url=company_logo_url,
+            verification_url=f"/verify/emp/{emp.employee_id}",
+        )
+

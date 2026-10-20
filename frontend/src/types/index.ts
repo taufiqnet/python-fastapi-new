@@ -324,26 +324,101 @@ export interface SalaryGradeUpdateInput {
   business_id?: number | null;
 }
 
+export interface EmployeeNomineeOut {
+  id: string;
+  employee_id: string;
+  business_id: number;
+  nominee_name: string;
+  nominee_name_bangla?: string | null;
+  relation: string;
+  nid_or_birth_cert?: string | null;
+  dob?: string | null;
+  share_percentage: number;
+  phone?: string | null;
+  address?: string | null;
+  photo_url?: string | null;
+  is_minor: boolean;
+  guardian_name?: string | null;
+  guardian_relation?: string | null;
+  guardian_nid?: string | null;
+  guardian_phone?: string | null;
+  guardian_address?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface EmployeeNomineeInput {
+  nominee_name: string;
+  nominee_name_bangla?: string;
+  relation: string;
+  nid_or_birth_cert?: string;
+  dob?: string | null;
+  share_percentage: number;
+  phone?: string;
+  address?: string;
+  photo_url?: string;
+  is_minor?: boolean;
+  guardian_name?: string;
+  guardian_relation?: string;
+  guardian_nid?: string;
+  guardian_phone?: string;
+  guardian_address?: string;
+}
+
 export interface EmployeeOut {
   id: string;
   first_name: string;
   middle_name?: string | null;
   last_name?: string | null;
   full_name: string;
+  bangla_name?: string | null;
   employee_id: string;
   date_of_birth?: string | null;
   gender?: string | null;
   marital_status?: string | null;
+  religion?: string | null;
+  blood_group?: string | null;
   nationality?: string | null;
   national_id?: string | null;
   passport_no?: string | null;
   tin?: string | null;
+  photo_url?: string | null;
+
+  father_name?: string | null;
+  mother_name?: string | null;
+  spouse_name?: string | null;
+
   work_email: string;
   personal_email?: string | null;
   phone?: string | null;
   emergency_contact?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_relation?: string | null;
+  emergency_contact_phone?: string | null;
   linkedin?: string | null;
+
   residential_address?: string | null;
+  present_address?: string | null;
+  present_thana?: string | null;
+  present_district?: string | null;
+  present_division?: string | null;
+  present_post_code?: string | null;
+
+  permanent_address?: string | null;
+  permanent_thana?: string | null;
+  permanent_district?: string | null;
+  permanent_division?: string | null;
+  permanent_post_code?: string | null;
+
+  disbursement_method?: "bank_transfer" | "mfs_bkash" | "mfs_nagad" | "mfs_rocket" | "cash" | string | null;
+  bank_name?: string | null;
+  bank_branch?: string | null;
+  bank_account_no?: string | null;
+  bank_account_title?: string | null;
+  bank_routing_number?: string | null;
+  mfs_provider?: "bkash" | "nagad" | "rocket" | string | null;
+  mfs_number?: string | null;
+
   job_title_id?: string | null;
   job_title_name?: string | null;
   department_id?: string | null;
@@ -355,17 +430,28 @@ export interface EmployeeOut {
   team?: string | null;
   direct_manager_id?: string | null;
   manager_name?: string | null;
+
+  employee_category?: "management" | "staff" | "worker" | string | null;
   employment_type?: "full_time" | "part_time" | "contract" | "intern" | string | null;
   start_date?: string | null;
+  confirmation_date?: string | null;
   contract_end_date?: string | null;
+  probation_period_months?: number | null;
   probation_end_date?: string | null;
+  notice_period_days?: number | null;
+  is_overtime_eligible?: boolean;
   work_arrangement?: "onsite" | "remote" | "hybrid" | string | null;
   working_hours?: string | null;
   working_days_per_week?: number | null;
+
+  biometric_user_id?: string | null;
+  rfid_card_number?: string | null;
+
   skills_expertise?: string | null;
   is_department_head?: boolean;
   is_active: boolean;
   business_id: number;
+  nominees?: EmployeeNomineeOut[];
   created_at?: string;
   updated_at?: string;
 }
@@ -374,24 +460,94 @@ export interface EmployeeCreateInput {
   first_name: string;
   middle_name?: string;
   last_name?: string;
+  bangla_name?: string;
   employee_id: string;
   work_email: string;
   personal_email?: string;
   phone?: string;
   gender?: string;
+  date_of_birth?: string | null;
+  religion?: string;
+  blood_group?: string;
+  national_id?: string;
+  tin?: string;
+  father_name?: string;
+  mother_name?: string;
+  spouse_name?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
+  emergency_contact_phone?: string;
+  present_address?: string;
+  present_thana?: string;
+  present_district?: string;
+  present_division?: string;
+  present_post_code?: string;
+  permanent_address?: string;
+  permanent_thana?: string;
+  permanent_district?: string;
+  permanent_division?: string;
+  permanent_post_code?: string;
+  disbursement_method?: string;
+  bank_name?: string;
+  bank_branch?: string;
+  bank_account_no?: string;
+  bank_account_title?: string;
+  bank_routing_number?: string;
+  mfs_provider?: string;
+  mfs_number?: string;
   department_id?: string | null;
   branch_id?: string | null;
   job_title_id?: string | null;
   salary_grade_id?: string | null;
   direct_manager_id?: string | null;
   team?: string;
+  employee_category?: string;
   employment_type?: string;
   work_arrangement?: string;
   start_date?: string | null;
+  probation_period_months?: number;
+  is_overtime_eligible?: boolean;
+  biometric_user_id?: string;
+  rfid_card_number?: string;
   skills_expertise?: string;
   is_department_head?: boolean;
   is_active?: boolean;
   business_id?: number;
+}
+
+export interface OrgChartNodeOut {
+  id: string;
+  employee_id: string;
+  name: string;
+  bangla_name?: string | null;
+  job_title?: string | null;
+  department?: string | null;
+  branch?: string | null;
+  salary_grade?: string | null;
+  photo_url?: string | null;
+  email: string;
+  phone?: string | null;
+  direct_manager_id?: string | null;
+  reports: OrgChartNodeOut[];
+}
+
+export interface IDCardDataOut {
+  employee_id: string;
+  full_name: string;
+  bangla_name?: string | null;
+  photo_url?: string | null;
+  job_title?: string | null;
+  department?: string | null;
+  branch?: string | null;
+  blood_group?: string | null;
+  emergency_contact_phone?: string | null;
+  joining_date?: string | null;
+  biometric_user_id?: string | null;
+  rfid_card_number?: string | null;
+  company_name: string;
+  company_address?: string | null;
+  company_logo_url?: string | null;
+  verification_url: string;
 }
 
 export interface OrganogramEmployeeNode {
