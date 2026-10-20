@@ -213,6 +213,41 @@ export default function EmployeesPage() {
     loadLookups();
   };
 
+  // Compute employee counts per department for combobox badges
+  const employeeCountsByDept = useMemo(() => {
+    const counts: Record<string, number> = {};
+    departments.forEach((d) => {
+      if (d.id && d.employee_count !== undefined) {
+        counts[d.id] = d.employee_count;
+      }
+    });
+    return counts;
+  }, [departments]);
+
+  // Client-side employment type filter on page
+  const filteredEmployees = useMemo(() => {
+    if (selectedEmploymentType === "all") return employees;
+    return employees.filter(
+      (e) => e.employment_type?.toLowerCase() === selectedEmploymentType.toLowerCase()
+    );
+  }, [employees, selectedEmploymentType]);
+
+  // Pagination Calculations
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + filteredEmployees.length, totalFiltered);
+  const paginatedEmployees = filteredEmployees;
+
+  // Summary Metrics
+  const metrics = useMemo(() => {
+    const total = totalSystemEmployees;
+    const active = activeSystemEmployees;
+    const inactive = Math.max(0, total - active);
+    const deptCount = departments.length;
+    return { total, active, inactive, deptCount };
+  }, [totalSystemEmployees, activeSystemEmployees, departments]);
+
   const handleDepartmentSelect = (deptId: string) => {
     startTransition(() => {
       setSelectedDepartment(deptId);
