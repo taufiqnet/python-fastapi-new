@@ -183,7 +183,7 @@ def export_leave_allocations_excel(
 @router.get("/leave-allocations", response_model=list[LeaveAllocationOut])
 def get_leave_allocations(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(100, ge=1, le=1000),
     business_id: int | None = Query(None),
     employee_id: uuid.UUID | None = Query(None),
     year: int | None = Query(None),
@@ -276,7 +276,7 @@ def export_leave_applications_excel(
 @router.get("/leave-applications", response_model=list[LeaveApplicationOut])
 def get_leave_applications(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    limit: int = Query(100, ge=1, le=1000),
     business_id: int | None = Query(None),
     employee_id: uuid.UUID | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),

@@ -72,8 +72,8 @@ export default function LeaveManagementPage() {
     try {
       const [typesRes, allocRes, appRes, empRes] = await Promise.allSettled([
         apiClient.get<LeaveTypeOut[]>("/leave-types?limit=500"),
-        apiClient.get<LeaveAllocationOut[]>("/leave-allocations?limit=1000"),
-        apiClient.get<LeaveApplicationOut[]>("/leave-applications?limit=1000"),
+        apiClient.get<LeaveAllocationOut[]>("/leave-allocations?limit=500"),
+        apiClient.get<LeaveApplicationOut[]>("/leave-applications?limit=500"),
         apiClient.get<EmployeeOut[]>("/employees?limit=500"),
       ]);
 
