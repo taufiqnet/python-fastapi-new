@@ -421,15 +421,20 @@ export interface EmployeeOut {
 
   job_title_id?: string | null;
   job_title_name?: string | null;
+  job_title?: JobTitleOut | null;
   department_id?: string | null;
   department_name?: string | null;
+  department?: DepartmentOut | null;
   branch_id?: string | null;
   branch_name?: string | null;
+  branch?: BranchOut | null;
   salary_grade_id?: string | null;
   salary_grade_name?: string | null;
+  salary_grade?: SalaryGradeOut | null;
   team?: string | null;
   direct_manager_id?: string | null;
   manager_name?: string | null;
+
 
   employee_category?: "management" | "staff" | "worker" | string | null;
   employment_type?: "full_time" | "part_time" | "contract" | "intern" | string | null;
@@ -601,3 +606,57 @@ export interface AttendanceRecord {
   check_out?: string;
   work_hours?: number;
 }
+
+// ── Leave Management Types ─────────────────────────────────────────────
+export type GenderApplicabilityEnum = "all" | "male" | "female";
+export type LeaveStatusEnum = "pending" | "approved" | "rejected" | "cancelled";
+
+export interface LeaveTypeOut {
+  id: string;
+  name: string;
+  code: string;
+  description?: string | null;
+  max_days_per_year: number;
+  is_paid: boolean;
+  requires_document: boolean;
+  applicable_gender: GenderApplicabilityEnum;
+  carry_forward: boolean;
+  is_active: boolean;
+  business_id: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface LeaveAllocationOut {
+  id: string;
+  employee_id: string;
+  leave_type_id: string;
+  year: number;
+  allocated_days: number;
+  used_days: number;
+  carried_forward: number;
+  remaining_days: number;
+  business_id: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface LeaveApplicationOut {
+  id: string;
+  employee_id: string;
+  leave_type_id: string;
+  start_date: string;
+  end_date: string;
+  total_days: number;
+  reason: string;
+  document_url?: string | null;
+  status: LeaveStatusEnum;
+  reviewed_by_id?: string | null;
+  review_note?: string | null;
+  applied_at?: string | null;
+  reviewed_at?: string | null;
+  business_id: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
