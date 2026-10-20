@@ -76,7 +76,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
         { name: "Employees", href: "/hr-payroll/employees" },
         { name: "Attendance", href: "/hr-payroll/attendance" },
         { name: "Leave Management", href: "/hr-payroll/leave" },
-        { name: "Payroll Records", href: "/hr-payroll/payroll" },
+        { name: "Payroll Management", href: "/hr-payroll/payroll" },
         { name: "Organization", href: "/hr-payroll/organization" },
       ],
     },

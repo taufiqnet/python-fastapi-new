@@ -725,3 +725,63 @@ export interface LeaveApplicationOut {
   updated_at?: string;
 }
 
+// ── Payroll Types ───────────────────────────────────────────────────────
+export type PayrollPeriodStatusEnum = "draft" | "processing" | "locked" | "paid";
+
+export interface PayrollPeriodOut {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  status: PayrollPeriodStatusEnum | string;
+  payment_date?: string | null;
+  notes?: string | null;
+  business_id: number;
+  is_locked: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollPeriodCreatePayload {
+  name: string;
+  start_date: string;
+  end_date: string;
+  status?: PayrollPeriodStatusEnum | string;
+  payment_date?: string | null;
+  notes?: string | null;
+  business_id: number;
+}
+
+export interface PayrollPeriodUpdatePayload {
+  name?: string;
+  start_date?: string;
+  end_date?: string;
+  status?: PayrollPeriodStatusEnum | string;
+  payment_date?: string | null;
+  notes?: string | null;
+  business_id?: number;
+}
+
+export interface PayrollSettingsOut {
+  id: string;
+  business_id: number;
+  include_attendance: boolean;
+  include_leave: boolean;
+  include_holidays: boolean;
+  include_overtime: boolean;
+  deduct_absent_days: boolean;
+  standard_hours_per_day: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollSettingsUpdatePayload {
+  include_attendance?: boolean;
+  include_leave?: boolean;
+  include_holidays?: boolean;
+  include_overtime?: boolean;
+  deduct_absent_days?: boolean;
+  standard_hours_per_day?: number;
+}
+
+
