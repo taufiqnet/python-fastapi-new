@@ -27,7 +27,8 @@ class Settings(BaseSettings):
     openrouter_api_key: str
     openrouter_model: str = "openrouter/free"
     openrouter_models: str = "openrouter/free"
-    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # CORS Configuration for decoupled frontend (e.g. Next.js)
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -49,6 +50,12 @@ class Settings(BaseSettings):
     @property
     def openrouter_model_list(self) -> list[str]:
         return [m.strip() for m in self.openrouter_models.split(",") if m.strip()]
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        if isinstance(self.cors_origins, list):
+            return self.cors_origins
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
 @lru_cache
