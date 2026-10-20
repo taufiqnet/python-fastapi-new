@@ -46,11 +46,106 @@ export interface ProductListItem {
   id: string;
   title: string;
   slug: string;
-  sku: string;
-  status: string;
-  business_id: number;
-  price?: number;
+  brand?: string | null;
+  brand_id?: string | null;
+  model_id?: string | null;
+  status: "draft" | "active" | "archived" | "inactive" | string;
+  thumbnail_url?: string | null;
+  min_price?: number | string | null;
+  business_id?: number | null;
+  is_featured?: boolean;
+  average_rating?: number | string;
+  sku?: string;
   created_at?: string;
+}
+
+export interface ProductImage {
+  id?: string;
+  url: string;
+  position?: number;
+  alt_text?: string | null;
+  is_primary?: boolean;
+}
+
+export interface ProductVariant {
+  id?: string;
+  sku: string;
+  barcode?: string | null;
+  price: number;
+  compare_at_price?: number | null;
+  currency?: string;
+  stock_qty?: number;
+  low_stock_threshold?: number;
+  is_default?: boolean;
+}
+
+export interface ProductDetailOut {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string | null;
+  brand?: string | null;
+  status: "draft" | "active" | "archived" | "inactive" | string;
+  condition?: "new" | "used" | "refurbished" | string;
+  product_type?: "physical" | "digital" | "service" | string;
+  requires_shipping?: boolean;
+  category_id?: string | null;
+  brand_id?: string | null;
+  business_id?: number | null;
+  is_featured?: boolean;
+  average_rating?: number | string;
+  sold_count?: number;
+  review_count?: number;
+  variants: ProductVariant[];
+  images: ProductImage[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductCreateInput {
+  title: string;
+  slug: string;
+  description?: string;
+  brand?: string;
+  status: string;
+  condition?: string;
+  product_type?: string;
+  requires_shipping?: boolean;
+  category_id?: string | null;
+  brand_id?: string | null;
+  business_id?: number | null;
+  is_featured?: boolean;
+  variants?: Array<{
+    sku: string;
+    price: number;
+    compare_at_price?: number;
+    currency?: string;
+    is_default?: boolean;
+  }>;
+  images?: Array<{
+    url: string;
+    position?: number;
+    alt_text?: string;
+    is_primary?: boolean;
+  }>;
+}
+
+export interface CategoryOut {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  parent_id?: string | null;
+  business_id?: number | null;
+}
+
+export interface BrandOut {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  logo_url?: string | null;
+  business_id?: number | null;
 }
 
 export interface EmployeeListItem {
