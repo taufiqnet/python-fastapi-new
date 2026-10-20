@@ -152,18 +152,62 @@ class DepartmentRepository:
         business_id: int | None = None,
         search: str | None = None,
         parent_id: uuid.UUID | None = None,
+        is_active: bool | None = None,
     ) -> list[Department]:
         query = db.query(Department)
         if business_id is not None:
             query = query.filter(Department.business_id == business_id)
         if parent_id is not None:
             query = query.filter(Department.parent_department_id == parent_id)
+        if is_active is not None:
+            query = query.filter(Department.is_active == is_active)
         if search:
             search_pattern = f"%{search}%"
             query = query.filter(
-                (Department.name.ilike(search_pattern)) | (Department.slug.ilike(search_pattern))
+                (Department.name.ilike(search_pattern))
+                | (Department.slug.ilike(search_pattern))
+                | (Department.code.ilike(search_pattern))
+                | (Department.description.ilike(search_pattern))
             )
         return query.order_by(Department.name.asc()).offset(skip).limit(limit).all()
+
+    def count(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        search: str | None = None,
+        parent_id: uuid.UUID | None = None,
+        is_active: bool | None = None,
+    ) -> int:
+        query = db.query(Department)
+        if business_id is not None:
+            query = query.filter(Department.business_id == business_id)
+        if parent_id is not None:
+            query = query.filter(Department.parent_department_id == parent_id)
+        if is_active is not None:
+            query = query.filter(Department.is_active == is_active)
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (Department.name.ilike(search_pattern))
+                | (Department.slug.ilike(search_pattern))
+                | (Department.code.ilike(search_pattern))
+                | (Department.description.ilike(search_pattern))
+            )
+        return query.count()
+
+    def get_descendant_ids(self, db: Session, department_id: uuid.UUID) -> set[uuid.UUID]:
+        descendant_ids: set[uuid.UUID] = set()
+        to_check = [department_id]
+        while to_check:
+            current_id = to_check.pop(0)
+            children = db.query(Department.id).filter(Department.parent_department_id == current_id).all()
+            for child_id_tuple in children:
+                cid = child_id_tuple[0]
+                if cid not in descendant_ids:
+                    descendant_ids.add(cid)
+                    to_check.append(cid)
+        return descendant_ids
 
     def create(self, db: Session, data: DepartmentCreate) -> Department:
         department = Department(
@@ -218,18 +262,59 @@ class JobTitleRepository:
         limit: int = 100,
         business_id: int | None = None,
         department_id: uuid.UUID | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+        level_rank: int | None = None,
     ) -> list[JobTitle]:
         query = db.query(JobTitle)
         if business_id is not None:
             query = query.filter(JobTitle.business_id == business_id)
         if department_id is not None:
             query = query.filter(JobTitle.department_id == department_id)
+        if is_active is not None:
+            query = query.filter(JobTitle.is_active == is_active)
+        if level_rank is not None:
+            query = query.filter(JobTitle.level_rank == level_rank)
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (JobTitle.name.ilike(search_pattern))
+                | (JobTitle.short_name.ilike(search_pattern))
+                | (JobTitle.description.ilike(search_pattern))
+            )
         return (
             query.order_by(JobTitle.level_rank.asc(), JobTitle.name.asc())
             .offset(skip)
             .limit(limit)
             .all()
         )
+
+    def count(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        department_id: uuid.UUID | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+        level_rank: int | None = None,
+    ) -> int:
+        query = db.query(JobTitle)
+        if business_id is not None:
+            query = query.filter(JobTitle.business_id == business_id)
+        if department_id is not None:
+            query = query.filter(JobTitle.department_id == department_id)
+        if is_active is not None:
+            query = query.filter(JobTitle.is_active == is_active)
+        if level_rank is not None:
+            query = query.filter(JobTitle.level_rank == level_rank)
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (JobTitle.name.ilike(search_pattern))
+                | (JobTitle.short_name.ilike(search_pattern))
+                | (JobTitle.description.ilike(search_pattern))
+            )
+        return query.count()
 
     def create(self, db: Session, data: JobTitleCreate) -> JobTitle:
         job_title = JobTitle(

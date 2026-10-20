@@ -44,9 +44,17 @@ class DepartmentService:
         limit: int = 100,
         business_id: int | None = None,
         search: str | None = None,
+        is_active: bool | None = None,
+        parent_id: uuid.UUID | None = None,
     ) -> list[Department]:
         return self.repository.get_all(
-            db, skip=skip, limit=limit, business_id=business_id, search=search
+            db,
+            skip=skip,
+            limit=limit,
+            business_id=business_id,
+            search=search,
+            is_active=is_active,
+            parent_id=parent_id,
         )
 
     def get_department_tree(
@@ -137,6 +145,19 @@ class DepartmentService:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Department with name '{data.name}' already exists",
+                )
+
+        if data.parent_department_id is not None:
+            if data.parent_department_id == department_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="A department cannot be its own parent department.",
+                )
+            descendant_ids = self.repository.get_descendant_ids(db, department_id)
+            if data.parent_department_id in descendant_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Cannot assign a sub-department as parent (cyclic hierarchy dependency).",
                 )
 
         return self.repository.update(db, department, data)
@@ -351,6 +372,9 @@ class JobTitleService:
         limit: int = 100,
         business_id: int | None = None,
         department_id: uuid.UUID | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+        level_rank: int | None = None,
     ) -> list[JobTitle]:
         return self.repository.get_all(
             db,
@@ -358,6 +382,9 @@ class JobTitleService:
             limit=limit,
             business_id=business_id,
             department_id=department_id,
+            search=search,
+            is_active=is_active,
+            level_rank=level_rank,
         )
 
     def get_job_title(

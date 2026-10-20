@@ -160,6 +160,7 @@ export interface BranchOut {
   email?: string | null;
   address?: string | null;
   city?: string | null;
+  state?: string | null;
   country?: string | null;
   zip_code?: string | null;
   is_head_office: boolean;
@@ -176,11 +177,29 @@ export interface BranchCreateInput {
   email?: string | null;
   address?: string | null;
   city?: string | null;
+  state?: string | null;
   country?: string | null;
   zip_code?: string | null;
   is_head_office?: boolean;
   is_active?: boolean;
   business_id?: number;
+}
+
+export interface BranchUpdateInput {
+  name?: string | null;
+  code?: string | null;
+  branch_type?: string | null;
+  manager_employee_id?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  zip_code?: string | null;
+  is_head_office?: boolean | null;
+  is_active?: boolean | null;
+  business_id?: number | null;
 }
 
 export interface DepartmentOut {
@@ -190,11 +209,37 @@ export interface DepartmentOut {
   slug: string;
   description?: string | null;
   is_active: boolean;
+  multiple_heads_allowed?: boolean;
   parent_department_id?: string | null;
   parent_department_name?: string | null;
   head_employee_id?: string | null;
   head_employee_name?: string | null;
   employee_count?: number;
+  business_id?: number | null;
+  created_at?: string;
+}
+
+export interface DepartmentCreateInput {
+  name: string;
+  code?: string | null;
+  slug: string;
+  description?: string | null;
+  is_active?: boolean;
+  multiple_heads_allowed?: boolean;
+  parent_department_id?: string | null;
+  head_employee_id?: string | null;
+  business_id?: number | null;
+}
+
+export interface DepartmentUpdateInput {
+  name?: string | null;
+  code?: string | null;
+  slug?: string | null;
+  description?: string | null;
+  is_active?: boolean | null;
+  multiple_heads_allowed?: boolean | null;
+  parent_department_id?: string | null;
+  head_employee_id?: string | null;
   business_id?: number | null;
 }
 
@@ -206,7 +251,31 @@ export interface JobTitleOut {
   level_rank?: number;
   is_active: boolean;
   department_id?: string | null;
+  department_name?: string | null;
+  employee_count?: number;
   business_id: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface JobTitleCreateInput {
+  name: string;
+  short_name?: string | null;
+  description?: string | null;
+  level_rank?: number;
+  is_active?: boolean;
+  department_id?: string | null;
+  business_id?: number;
+}
+
+export interface JobTitleUpdateInput {
+  name?: string | null;
+  short_name?: string | null;
+  description?: string | null;
+  level_rank?: number | null;
+  is_active?: boolean | null;
+  department_id?: string | null;
+  business_id?: number | null;
 }
 
 export interface EmployeeOut {

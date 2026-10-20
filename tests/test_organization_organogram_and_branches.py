@@ -299,3 +299,70 @@ async def test_organogram_reporting_and_structure(client: AsyncClient, sync_db):
     assert len(struct["branches"]) == 1
     assert struct["branches"][0]["branch_name"] == "Main Corporate Branch"
     assert len(struct["branches"][0]["employees"]) == 3
+
+
+@pytest.mark.asyncio
+async def test_department_cycle_prevention_and_filtering(client: AsyncClient):
+    # 1. Create Top Department A
+    res = await client.post("/departments", json={
+        "name": "Engineering Division",
+        "code": "ENG",
+        "slug": "engineering-division",
+        "is_active": True,
+        "business_id": 1,
+    })
+    assert res.status_code == 201
+    dept_a_id = res.json()["id"]
+
+    # 2. Create Sub-department B under A
+    res = await client.post("/departments", json={
+        "name": "Cloud Operations",
+        "code": "CLOUD",
+        "slug": "cloud-operations",
+        "parent_department_id": dept_a_id,
+        "is_active": True,
+        "business_id": 1,
+    })
+    assert res.status_code == 201
+    dept_b_id = res.json()["id"]
+
+    # 3. Create Sub-sub-department C under B
+    res = await client.post("/departments", json={
+        "name": "Kubernetes Team",
+        "code": "K8S",
+        "slug": "kubernetes-team",
+        "parent_department_id": dept_b_id,
+        "is_active": False,
+        "business_id": 1,
+    })
+    assert res.status_code == 201
+    dept_c_id = res.json()["id"]
+
+    # 4. Attempt Self-Parenting (A -> A) -> Should return 400
+    res = await client.put(f"/departments/{dept_a_id}", json={
+        "parent_department_id": dept_a_id,
+    })
+    assert res.status_code == 400
+    assert "own parent" in res.json()["detail"].lower()
+
+    # 5. Attempt Cyclic Parenting (A -> C) -> Should return 400
+    res = await client.put(f"/departments/{dept_a_id}", json={
+        "parent_department_id": dept_c_id,
+    })
+    assert res.status_code == 400
+    assert "cyclic" in res.json()["detail"].lower()
+
+    # 6. Test Filtering by is_active=True
+    res = await client.get("/departments?business_id=1&is_active=true")
+    assert res.status_code == 200
+    active_depts = res.json()
+    assert any(d["id"] == dept_a_id for d in active_depts)
+    assert not any(d["id"] == dept_c_id for d in active_depts)
+
+    # 7. Test Filtering by is_active=false
+    res = await client.get("/departments?business_id=1&is_active=false")
+    assert res.status_code == 200
+    inactive_depts = res.json()
+    assert any(d["id"] == dept_c_id for d in inactive_depts)
+    assert not any(d["id"] == dept_a_id for d in inactive_depts)
+

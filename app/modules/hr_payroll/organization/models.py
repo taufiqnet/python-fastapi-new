@@ -189,6 +189,20 @@ class JobTitle(Base, UUIDMixin, TimestampMixin):
         "BusinessProfile",
         lazy="selectin",
     )
+    employees: Mapped[list["Employee"]] = relationship(  # noqa: F821
+        "Employee",
+        foreign_keys="Employee.job_title_id",
+        overlaps="job_title",
+        lazy="selectin",
+    )
+
+    @property
+    def department_name(self) -> str | None:
+        return self.department.name if self.department else None
+
+    @property
+    def employee_count(self) -> int:
+        return len(self.employees) if self.employees else 0
 
     def __repr__(self) -> str:
         if self.short_name:

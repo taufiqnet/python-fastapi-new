@@ -99,12 +99,20 @@ def get_departments(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     search: str | None = Query(None),
+    is_active: bool | None = Query(None),
+    parent_id: uuid.UUID | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("hrm", "departments", "view")),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
     return department_service.get_departments(
-        db, skip=skip, limit=limit, business_id=resolved_business_id, search=search
+        db,
+        skip=skip,
+        limit=limit,
+        business_id=resolved_business_id,
+        search=search,
+        is_active=is_active,
+        parent_id=parent_id,
     )
 
 
@@ -235,6 +243,9 @@ def get_job_titles(
     limit: int = Query(100, ge=1, le=500),
     business_id: int | None = Query(None),
     department_id: uuid.UUID | None = Query(None),
+    search: str | None = Query(None),
+    is_active: bool | None = Query(None),
+    level_rank: int | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("hrm", "job_titles", "view")),
 ):
@@ -245,6 +256,9 @@ def get_job_titles(
         limit=limit,
         business_id=resolved_business_id,
         department_id=department_id,
+        search=search,
+        is_active=is_active,
+        level_rank=level_rank,
     )
 
 

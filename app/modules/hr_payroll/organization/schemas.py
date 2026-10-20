@@ -84,6 +84,8 @@ class JobTitleOut(JobTitleBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    department_name: str | None = None
+    employee_count: int = 0
 
 
 # --- Department Schemas ---
