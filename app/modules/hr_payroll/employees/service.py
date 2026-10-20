@@ -276,6 +276,46 @@ class EmployeeService:
 
         return self.repository.create(db, data)
 
+    def get_next_employee_id(
+        self,
+        db: Session,
+        business_id: int | None,
+        prefix: str = "EMP-",
+        padding: int = 3,
+    ) -> dict:
+        import re
+
+        clean_prefix = (prefix or "EMP-").strip()
+        base_prefix = clean_prefix.rstrip("-")
+        pattern = re.compile(rf"^{re.escape(base_prefix)}[-]?(\d+)$", re.IGNORECASE)
+
+        query = db.query(Employee.employee_id)
+        if business_id is not None:
+            query = query.filter(Employee.business_id == business_id)
+
+        all_ids = query.all()
+        max_num = 0
+        for (eid,) in all_ids:
+            if not eid:
+                continue
+            m = pattern.match(eid.strip())
+            if m:
+                try:
+                    num = int(m.group(1))
+                    if num > max_num:
+                        max_num = num
+                except ValueError:
+                    pass
+
+        next_seq = max_num + 1
+        next_id = f"{clean_prefix}{str(next_seq).zfill(padding)}"
+        return {
+            "next_employee_id": next_id,
+            "sequence": next_seq,
+            "prefix": clean_prefix,
+            "padding": padding,
+        }
+
     def update_employee(
         self,
         db: Session,

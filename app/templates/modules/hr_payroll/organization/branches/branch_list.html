@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Branches | Organization Setup{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="/static/vendor/datatables/jquery.dataTables.min.css">
+<link rel="stylesheet" type="text/css" href="/static/vendor/datatables/responsive.dataTables.min.css">
+
+<style>
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card {
+        background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
+        padding: 14px 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .stat-icon {
+        width: 38px; height: 38px; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.green { background: #f0fdf4; color: #16a34a; }
+    .stat-icon.yellow { background: #fefce8; color: #ca8a04; }
+    .stat-icon.purple { background: #f5f3ff; color: #7c3aed; }
+    .stat-label { font-size: 11px; color: #6b7280; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 700; color: #111827; line-height: 1; }
+
+    .toolbar {
+        display: flex; flex-wrap: wrap; align-items: center;
+        gap: 8px; margin-bottom: 12px;
+    }
+    .toolbar-search { position: relative; flex: 1; min-width: 200px; }
+    .toolbar-search i {
+        position: absolute; left: 10px; top: 50%;
+        transform: translateY(-50%); color: #9ca3af; font-size: 13px;
+    }
+    .toolbar-search input {
+        width: 100%; padding: 7px 12px 7px 30px;
+        border: 1px solid #e5e7eb; border-radius: 8px;
+        background: #f9fafb; color: #374151; font-size: 13px; outline: none;
+        transition: border-color .15s, background .15s;
+    }
+    .toolbar-search input:focus {
+        border-color: var(--indigo);
+        box-shadow: 0 0 0 2px rgba(79,70,229,.08); background: #fff;
+    }
+    .toolbar select {
+        padding: 7px 28px 7px 10px; border: 1px solid #e5e7eb;
+        border-radius: 8px; background: #f9fafb; color: #374151;
+        font-size: 13px; outline: none; cursor: pointer;
+    }
+    .btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 7px 14px; border-radius: 8px; font-size: 13px;
+        font-weight: 500; cursor: pointer; transition: all .15s; border: 1px solid transparent;
+        text-decoration: none;
+    }
+    .btn-primary { background: var(--indigo); color: #fff; }
+    .btn-primary:hover { background: var(--indigo-dark); }
+    .btn-secondary { background: #fff; border-color: #e5e7eb; color: #374151; }
+    .btn-secondary:hover { background: #f9fafb; border-color: #d1d5db; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                    <i class="fas fa-network-wired text-[10px]"></i> Multi-Branch Structure
+                </span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Branches & Locations</h1>
+            <p class="text-xs text-gray-500 mt-1">Configure company headquarters, regional hubs, and operational branch locations.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/branches/export-excel" class="btn btn-secondary">
+                <i class="fas fa-file-excel text-emerald-600"></i> Export Excel
+            </a>
+            <a href="/organization/organogram" class="btn btn-secondary">
+                <i class="fas fa-sitemap text-indigo-600"></i> View Organogram
+            </a>
+            <a href="/branches/create" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Branch
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-icon indigo"><i class="fas fa-building"></i></div>
+            <div>
+                <p class="stat-label">Total Branches</p>
+                <p class="stat-value">{{ total_count }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon purple"><i class="fas fa-star"></i></div>
+            <div>
+                <p class="stat-label">Head Office(s)</p>
+                <p class="stat-value">{{ hq_count }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div>
+                <p class="stat-label">Active Branches</p>
+                <p class="stat-value">{{ active_count }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon yellow"><i class="fas fa-users"></i></div>
+            <div>
+                <p class="stat-label">Workforce Distributed</p>
+                <p class="stat-value">Across {{ total_count }} locations</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-xs">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-code-branch text-indigo-600"></i>
+                <h3 class="text-sm font-semibold text-gray-900">Branch Directory</h3>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600">
+                <thead class="bg-gray-50 text-gray-700 text-xs uppercase font-semibold border-b border-gray-200">
+                    <tr>
+                        <th class="py-3 px-4">Branch Name</th>
+                        <th class="py-3 px-4">Code</th>
+                        <th class="py-3 px-4">Type</th>
+                        <th class="py-3 px-4">Branch Manager</th>
+                        <th class="py-3 px-4">Location</th>
+                        <th class="py-3 px-4">Staff Count</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% if branches and branches|length > 0 %}
+                        {% for b in branches %}
+                        <tr class="hover:bg-gray-50/80 transition-colors">
+                            <td class="py-3.5 px-4 font-medium text-gray-900">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
+                                        {{ b.name[0] | upper }}
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 leading-tight">{{ b.name }}</p>
+                                        {% if b.is_head_office %}
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600">
+                                            <i class="fas fa-crown text-[9px]"></i> Corporate Headquarters
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-4 font-mono text-xs text-gray-600">
+                                <span class="px-2 py-0.5 rounded bg-gray-100 font-semibold">{{ b.code }}</span>
+                            </td>
+                            <td class="py-3.5 px-4 text-xs">
+                                <span class="capitalize px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
+                                    {{ b.branch_type.replace('_', ' ') }}
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-xs text-gray-800">
+                                {% if b.manager_name %}
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fas fa-user-tie text-indigo-500 text-[11px]"></i>
+                                    <span>{{ b.manager_name }}</span>
+                                </div>
+                                {% else %}
+                                <span class="text-gray-400 italic">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-xs text-gray-600">
+                                <div class="flex items-center gap-1">
+                                    <i class="fas fa-map-marker-alt text-gray-400 text-[11px]"></i>
+                                    <span>{{ b.city or '—' }}, {{ b.country or 'Bangladesh' }}</span>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-4 text-xs font-semibold text-gray-900">
+                                <span class="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                    {{ b.employee_count }} staff
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-4 text-xs">
+                                {% if b.is_active %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span> Inactive
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3.5 px-4 text-right text-xs">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="/branches/edit/{{ b.id }}" class="p-1.5 text-gray-500 hover:text-indigo-600 rounded-lg hover:bg-gray-100 transition-colors" title="Edit Branch">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="py-12 text-center text-gray-400">
+                                <i class="fas fa-building text-3xl mb-3 text-gray-300"></i>
+                                <p class="text-sm font-medium text-gray-600">No branches registered yet</p>
+                                <p class="text-xs text-gray-400 mt-1">Get started by creating your corporate headquarters or retail branch.</p>
+                                <a href="/branches/create" class="btn btn-primary mt-4">
+                                    <i class="fas fa-plus"></i> Create First Branch
+                                </a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

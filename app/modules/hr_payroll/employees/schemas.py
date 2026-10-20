@@ -36,6 +36,7 @@ class EmployeeBase(BaseModel):
     # Job Information
     job_title_id: uuid.UUID | None = None
     department_id: uuid.UUID | None = None
+    branch_id: uuid.UUID | None = None
     team: str | None = Field(None, max_length=255)
     direct_manager_id: uuid.UUID | None = None
 
@@ -83,6 +84,7 @@ class EmployeeUpdate(BaseModel):
 
     job_title_id: uuid.UUID | None = None
     department_id: uuid.UUID | None = None
+    branch_id: uuid.UUID | None = None
     team: str | None = Field(None, max_length=255)
     direct_manager_id: uuid.UUID | None = None
 
@@ -107,6 +109,10 @@ class EmployeeOut(EmployeeBase):
 
     id: uuid.UUID
     full_name: str
+    branch_name: str | None = None
+    department_name: str | None = None
+    job_title_name: str | None = None
+    manager_name: str | None = None
     created_at: datetime
     updated_at: datetime
 

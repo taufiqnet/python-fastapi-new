@@ -97,6 +97,12 @@ class Employee(Base, UUIDMixin, TimestampMixin):
         ForeignKey("departments.id", ondelete="SET NULL"),
         nullable=True,
     )
+    branch_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("branches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     team: Mapped[str | None] = mapped_column(String(255), nullable=True)
     direct_manager_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
@@ -131,6 +137,11 @@ class Employee(Base, UUIDMixin, TimestampMixin):
         "BusinessProfile",
         lazy="selectin",
     )
+    branch: Mapped["Branch | None"] = relationship(  # noqa: F821
+        "Branch",
+        foreign_keys=[branch_id],
+        lazy="selectin",
+    )
     department: Mapped["Department | None"] = relationship(  # noqa: F821
         "Department",
         foreign_keys=[department_id],
@@ -156,6 +167,22 @@ class Employee(Base, UUIDMixin, TimestampMixin):
     def full_name(self) -> str:
         parts = [self.first_name, self.middle_name, self.last_name]
         return " ".join(p for p in parts if p)
+
+    @property
+    def branch_name(self) -> str | None:
+        return self.branch.name if self.branch else None
+
+    @property
+    def department_name(self) -> str | None:
+        return self.department.name if self.department else None
+
+    @property
+    def job_title_name(self) -> str | None:
+        return self.job_title.name if self.job_title else None
+
+    @property
+    def manager_name(self) -> str | None:
+        return self.direct_manager.full_name if self.direct_manager else None
 
     def __repr__(self) -> str:
         return f"<Employee {self.first_name} {self.last_name} ({self.employee_id})>"

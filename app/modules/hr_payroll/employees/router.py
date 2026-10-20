@@ -224,6 +224,23 @@ async def bulk_delete_employees(
     }
 
 
+@router.get("/employees/next-id")
+def get_next_employee_id(
+    prefix: str = Query("EMP-", max_length=20),
+    padding: int = Query(3, ge=1, le=8),
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.get_next_employee_id(
+        db,
+        business_id=resolved_business_id,
+        prefix=prefix,
+        padding=padding,
+    )
+
+
 @router.get("/employees/{employee_id}", response_model=EmployeeOut)
 def get_employee(
     employee_id: uuid.UUID,

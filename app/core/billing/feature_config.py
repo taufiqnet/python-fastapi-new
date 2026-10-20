@@ -18,6 +18,16 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
         "module_group": "hr_payroll",
         "items": [
             {
+                "key": "branches",
+                "title": "Branches",
+                "icon": "fas fa-code-branch",
+                "url": "/branches/manage",
+                "permission_code": "hrm:departments:view",
+                "plans": ["Free", "Basic", "Pro", "Enterprise", "hr payroll module (free tier)"],
+                "description": "Manage multi-branch enterprise locations, head offices, and outlets.",
+                "active_page": "branches",
+            },
+            {
                 "key": "departments",
                 "title": "Department",
                 "icon": "fas fa-sitemap",
@@ -46,6 +56,16 @@ FEATURE_CONFIG: List[Dict[str, Any]] = [
                 "plans": ["Free", "Basic", "Pro", "Enterprise", "hr payroll module (free tier)"],
                 "description": "Manage comprehensive employee records and directory.",
                 "active_page": "employees",
+            },
+            {
+                "key": "organogram",
+                "title": "Organogram",
+                "icon": "fas fa-network-wired",
+                "url": "/organization/organogram",
+                "permission_code": "hrm:employees:view",
+                "plans": ["Free", "Basic", "Pro", "Enterprise", "hr payroll module (free tier)"],
+                "description": "Interactive visual organizational chart and reporting hierarchy.",
+                "active_page": "organogram",
             },
         ],
     },

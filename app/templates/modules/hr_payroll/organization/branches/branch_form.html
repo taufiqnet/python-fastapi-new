@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Branch{% else %}Create Branch{% endif %} | Organization Setup{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <a href="/branches/manage" class="text-xs font-medium text-indigo-600 hover:underline flex items-center gap-1">
+                    <i class="fas fa-arrow-left text-[10px]"></i> Back to Branches
+                </a>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+                {% if is_edit %}Edit Branch: {{ branch.name }}{% else %}Register New Branch{% endif %}
+            </h1>
+            <p class="text-xs text-gray-500 mt-1">Specify branch identity, physical location, and management assignment.</p>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-xs">
+        <form id="branch-form" class="space-y-6">
+            <!-- Business Profile selection -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-2">Company / Business Profile <span class="text-red-500">*</span></label>
+                <select name="business_id" id="business_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 focus:bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                    {% for b in businesses %}
+                    <option value="{{ b.id }}" {% if branch and branch.business_id == b.id %}selected{% endif %}>{{ b.name_en }} (Tenant #{{ b.id }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Basic Info Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Branch Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" id="name" required value="{{ branch.name if branch else '' }}" placeholder="e.g. Banani Corporate Headquarters" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Branch Code <span class="text-red-500">*</span></label>
+                    <input type="text" name="code" id="code" required value="{{ branch.code if branch else '' }}" placeholder="e.g. HQ-01, DHK-GLS" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none uppercase font-mono">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Branch Type <span class="text-red-500">*</span></label>
+                    <select name="branch_type" id="branch_type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                        <option value="headquarters" {% if branch and branch.branch_type == 'headquarters' %}selected{% endif %}>Corporate Headquarters</option>
+                        <option value="regional_office" {% if branch and branch.branch_type == 'regional_office' %}selected{% endif %}>Regional Office</option>
+                        <option value="branch_office" {% if not branch or branch.branch_type == 'branch_office' %}selected{% endif %}>Branch Office</option>
+                        <option value="retail_outlet" {% if branch and branch.branch_type == 'retail_outlet' %}selected{% endif %}>Retail Super Shop Outlet</option>
+                        <option value="warehouse_hub" {% if branch and branch.branch_type == 'warehouse_hub' %}selected{% endif %}>Central Logistics / Warehouse Hub</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Branch Manager / In-Charge</label>
+                    <select name="manager_employee_id" id="manager_employee_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                        <option value="">-- No Branch Manager Assigned --</option>
+                        {% for emp in employees %}
+                        <option value="{{ emp.id }}" {% if branch and branch.manager_employee_id == emp.id %}selected{% endif %}>
+                            {{ emp.full_name }} ({{ emp.employee_id }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Contact Phone</label>
+                    <input type="text" name="phone" id="phone" value="{{ branch.phone if branch else '' }}" placeholder="+880 1700-000000" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Contact Email</label>
+                    <input type="email" name="email" id="email" value="{{ branch.email if branch else '' }}" placeholder="branch@example.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                </div>
+            </div>
+
+            <!-- Address -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Street Address</label>
+                <textarea name="address" id="address" rows="2" placeholder="Building, Street, Area..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">{{ branch.address if branch else '' }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">City</label>
+                    <input type="text" name="city" id="city" value="{{ branch.city if branch else 'Dhaka' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Country</label>
+                    <input type="text" name="country" id="country" value="{{ branch.country if branch else 'Bangladesh' }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase mb-1">Postal / Zip Code</label>
+                    <input type="text" name="zip_code" id="zip_code" value="{{ branch.zip_code if branch else '' }}" placeholder="1213" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 outline-none">
+                </div>
+            </div>
+
+            <!-- Checkboxes -->
+            <div class="pt-2 border-t border-gray-100 flex flex-col sm:flex-row gap-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_head_office" id="is_head_office" {% if branch and branch.is_head_office %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                    <span class="text-xs font-semibold text-gray-800">Set as Corporate Head Office</span>
+                </label>
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="is_active" id="is_active" {% if not branch or branch.is_active %}checked{% endif %} class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                    <span class="text-xs font-semibold text-gray-800">Active Location</span>
+                </label>
+            </div>
+
+            <!-- Submit -->
+            <div class="pt-4 border-t border-gray-100 flex items-center justify-end gap-3">
+                <a href="/branches/manage" class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" id="save-btn" class="px-5 py-2 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-xs">
+                    {% if is_edit %}Save Changes{% else %}Create Branch{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.getElementById('branch-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.innerText = 'Saving...';
+
+    const isEdit = {{ 'true' if is_edit else 'false' }};
+    const branchId = "{{ branch.id if branch else '' }}";
+    const url = isEdit ? `/branches/${branchId}` : '/branches';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    const payload = {
+        name: document.getElementById('name').value.trim(),
+        code: document.getElementById('code').value.trim(),
+        branch_type: document.getElementById('branch_type').value,
+        manager_employee_id: document.getElementById('manager_employee_id').value || null,
+        phone: document.getElementById('phone').value.trim() || null,
+        email: document.getElementById('email').value.trim() || null,
+        address: document.getElementById('address').value.trim() || null,
+        city: document.getElementById('city').value.trim() || null,
+        country: document.getElementById('country').value.trim() || null,
+        zip_code: document.getElementById('zip_code').value.trim() || null,
+        is_head_office: document.getElementById('is_head_office').checked,
+        is_active: document.getElementById('is_active').checked,
+        business_id: parseInt(document.getElementById('business_id').value, 10),
+    };
+
+    try {
+        const res = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert(err.detail || 'Failed to save branch.');
+            btn.disabled = false;
+            btn.innerText = isEdit ? 'Save Changes' : 'Create Branch';
+            return;
+        }
+
+        window.location.href = '/branches/manage';
+    } catch (err) {
+        alert('Network or server error.');
+        btn.disabled = false;
+        btn.innerText = isEdit ? 'Save Changes' : 'Create Branch';
+    }
+});
+</script>
+{% endblock %}

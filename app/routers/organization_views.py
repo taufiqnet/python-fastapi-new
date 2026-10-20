@@ -11,8 +11,10 @@ from app.core.tenancy.scoping import resolve_business_id
 from app.core.tenancy.service import BusinessService
 from app.database import get_async_db, get_db
 from app.modules.hr_payroll.organization.service import (
+    BranchService,
     DepartmentService,
     JobTitleService,
+    OrganogramService,
 )
 
 router = APIRouter(prefix="", tags=["Organization Views"])
@@ -20,6 +22,8 @@ templates = Jinja2Templates(directory="app/templates")
 
 department_service = DepartmentService()
 job_title_service = JobTitleService()
+branch_service = BranchService()
+organogram_service = OrganogramService()
 business_service = BusinessService()
 
 
@@ -274,3 +278,149 @@ def job_title_edit_page(
             "active_page": "job_titles",
         },
     )
+
+
+# --- Branch Views ---
+@router.get("/branches/manage", response_class=HTMLResponse)
+async def branch_list_page(
+    request: Request,
+    skip: int = 0,
+    limit: int = 500,
+    business_id: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "departments", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    branches = branch_service.get_branches(
+        db, skip=skip, limit=limit, business_id=resolved_business_id
+    )
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    biz_map = {b.id: b.name_en for b in businesses}
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+
+    total_count = len(branches)
+    active_count = sum(1 for b in branches if b.is_active)
+    hq_count = sum(1 for b in branches if b.is_head_office)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/organization/branches/branch_list.html",
+        context={
+            "current_user": current_user,
+            "branches": branches,
+            "businesses": businesses,
+            "biz_map": biz_map,
+            "total_count": total_count,
+            "active_count": active_count,
+            "hq_count": hq_count,
+            "active_page": "branches",
+        },
+    )
+
+
+@router.get("/branches/create", response_class=HTMLResponse)
+def branch_create_page(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "departments", "create")),
+):
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+
+    from app.modules.hr_payroll.employees.models import Employee
+    employees = db.query(Employee).filter(Employee.is_active == True).all()
+    if current_user and not current_user.is_superuser:
+        employees = [e for e in employees if e.business_id == current_user.business_id]
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/organization/branches/branch_form.html",
+        context={
+            "current_user": current_user,
+            "branch": None,
+            "is_edit": False,
+            "businesses": businesses,
+            "employees": employees,
+            "active_page": "branches",
+        },
+    )
+
+
+@router.get("/branches/edit/{branch_id}", response_class=HTMLResponse)
+def branch_edit_page(
+    branch_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "departments", "update")),
+):
+    branch = branch_service.get_branch(db, branch_id, current_user=current_user)
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+
+    from app.modules.hr_payroll.employees.models import Employee
+    employees = db.query(Employee).filter(
+        Employee.business_id == branch.business_id, Employee.is_active == True
+    ).all()
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/organization/branches/branch_form.html",
+        context={
+            "current_user": current_user,
+            "branch": branch,
+            "is_edit": True,
+            "businesses": businesses,
+            "employees": employees,
+            "active_page": "branches",
+        },
+    )
+
+
+# --- Organogram View ---
+@router.get("/organization/organogram", response_class=HTMLResponse)
+def organogram_page(
+    request: Request,
+    business_id: int | None = None,
+    branch_id: uuid.UUID | None = None,
+    department_id: uuid.UUID | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+
+    branches = branch_service.get_branches(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
+    departments = department_service.get_departments(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
+
+    reporting_tree = organogram_service.get_reporting_organogram(
+        db,
+        business_id=resolved_business_id,
+        branch_id=branch_id,
+        department_id=department_id,
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/organization/organogram/organogram_view.html",
+        context={
+            "current_user": current_user,
+            "businesses": businesses,
+            "branches": branches,
+            "departments": departments,
+            "reporting_tree": [n.model_dump() for n in reporting_tree],
+            "selected_business_id": resolved_business_id,
+            "selected_branch_id": str(branch_id) if branch_id else None,
+            "selected_department_id": str(department_id) if department_id else None,
+            "active_page": "organogram",
+        },
+    )
+

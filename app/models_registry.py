@@ -106,6 +106,7 @@ from app.modules.hr_payroll.leave.models import (  # noqa: F401
 )
 from app.modules.hr_payroll.notice_board.models import Notice, NoticeReadReceipt  # noqa: F401
 from app.modules.hr_payroll.organization.models import (  # noqa: F401
+    Branch,
     Department,
     JobTitle,
 )

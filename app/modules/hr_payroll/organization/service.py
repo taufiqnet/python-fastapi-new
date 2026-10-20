@@ -1,25 +1,35 @@
 import uuid
+from typing import Any
+from io import BytesIO
+import openpyxl
+import re
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from typing import Any
+from app.core.tenancy.models import BusinessProfile
 from app.core.tenancy.repository import BusinessRepository
 from app.core.tenancy.scoping import verify_record_ownership
-from app.modules.hr_payroll.organization.models import Department, JobTitle
+from app.modules.hr_payroll.employees.models import Employee
+from app.modules.hr_payroll.organization.models import Branch, Department, JobTitle
 from app.modules.hr_payroll.organization.repository import (
+    BranchRepository,
     DepartmentRepository,
     JobTitleRepository,
 )
 from app.modules.hr_payroll.organization.schemas import (
+    BranchCreate,
+    BranchOut,
+    BranchStructureNode,
+    BranchUpdate,
     DepartmentCreate,
+    DepartmentTreeNode,
     DepartmentUpdate,
     JobTitleCreate,
     JobTitleUpdate,
+    OrganogramEmployeeNode,
+    OrganogramStructureTree,
 )
-from io import BytesIO
-import openpyxl
-import re
 
 
 class DepartmentService:
@@ -38,6 +48,34 @@ class DepartmentService:
         return self.repository.get_all(
             db, skip=skip, limit=limit, business_id=business_id, search=search
         )
+
+    def get_department_tree(
+        self, db: Session, business_id: int | None = None
+    ) -> list[DepartmentTreeNode]:
+        departments = self.repository.get_all(db, business_id=business_id, limit=500)
+        nodes: dict[uuid.UUID, DepartmentTreeNode] = {}
+        for d in departments:
+            nodes[d.id] = DepartmentTreeNode(
+                id=d.id,
+                name=d.name,
+                code=d.code,
+                slug=d.slug,
+                description=d.description,
+                is_active=d.is_active,
+                head_employee_id=d.head_employee_id,
+                head_employee_name=d.head_employee_name,
+                employee_count=d.employee_count,
+                children=[],
+            )
+
+        tree: list[DepartmentTreeNode] = []
+        for d in departments:
+            node = nodes[d.id]
+            if d.parent_department_id and d.parent_department_id in nodes:
+                nodes[d.parent_department_id].children.append(node)
+            else:
+                tree.append(node)
+        return tree
 
     def get_department(
         self, db: Session, department_id: uuid.UUID, current_user: Any | None = None
@@ -566,3 +604,345 @@ class JobTitleService:
             "imported_count": success_count,
             "errors": error_messages,
         }
+
+
+class BranchService:
+
+    def __init__(self, repository: BranchRepository | None = None):
+        self.repository = repository or BranchRepository()
+        self.business_repo = BusinessRepository()
+
+    def get_branches(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+        branch_type: str | None = None,
+    ) -> list[Branch]:
+        return self.repository.get_all(
+            db,
+            skip=skip,
+            limit=limit,
+            business_id=business_id,
+            search=search,
+            is_active=is_active,
+            branch_type=branch_type,
+        )
+
+    def count_branches(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        search: str | None = None,
+        is_active: bool | None = None,
+    ) -> int:
+        return self.repository.count(
+            db, business_id=business_id, search=search, is_active=is_active
+        )
+
+    def get_branch(
+        self, db: Session, branch_id: uuid.UUID, current_user: Any | None = None
+    ) -> Branch:
+        branch = self.repository.get_by_id(db, branch_id)
+        if current_user is not None:
+            return verify_record_ownership(branch, current_user, detail="Branch not found")
+        if not branch:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Branch not found",
+            )
+        return branch
+
+    def create_branch(self, db: Session, data: BranchCreate) -> Branch:
+        if self.repository.get_by_code(db, data.code, data.business_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Branch with code '{data.code}' already exists for this business",
+            )
+        if self.repository.get_by_name(db, data.name, data.business_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Branch with name '{data.name}' already exists for this business",
+            )
+        if data.is_head_office:
+            existing_branches = self.repository.get_all(
+                db, business_id=data.business_id, limit=500
+            )
+            for eb in existing_branches:
+                if eb.is_head_office:
+                    eb.is_head_office = False
+            db.commit()
+
+        return self.repository.create(db, data)
+
+    def update_branch(
+        self,
+        db: Session,
+        branch_id: uuid.UUID,
+        data: BranchUpdate,
+        current_user: Any | None = None,
+    ) -> Branch:
+        branch = self.get_branch(db, branch_id, current_user=current_user)
+        target_business_id = (
+            data.business_id if data.business_id is not None else branch.business_id
+        )
+
+        if data.code and data.code != branch.code:
+            existing = self.repository.get_by_code(db, data.code, target_business_id)
+            if existing and existing.id != branch_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Branch with code '{data.code}' already exists",
+                )
+
+        if data.name and data.name != branch.name:
+            existing = self.repository.get_by_name(db, data.name, target_business_id)
+            if existing and existing.id != branch_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Branch with name '{data.name}' already exists",
+                )
+
+        if data.is_head_office:
+            existing_branches = self.repository.get_all(
+                db, business_id=target_business_id, limit=500
+            )
+            for eb in existing_branches:
+                if eb.id != branch_id and eb.is_head_office:
+                    eb.is_head_office = False
+            db.commit()
+
+        return self.repository.update(db, branch, data)
+
+    def delete_branch(
+        self, db: Session, branch_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        branch = self.get_branch(db, branch_id, current_user=current_user)
+        if branch.employees and len(branch.employees) > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot delete branch '{branch.name}' because {len(branch.employees)} employee(s) are assigned to it. Please reassign them first.",
+            )
+        self.repository.delete(db, branch)
+
+    def generate_export_excel(self, db: Session, business_id: int | None = None) -> bytes:
+        branches = self.repository.get_all(db, business_id=business_id, limit=1000)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Branches"
+
+        headers = [
+            "Name",
+            "Code",
+            "Type",
+            "Manager",
+            "Headcount",
+            "Phone",
+            "Email",
+            "City",
+            "Country",
+            "Is Head Office",
+            "Status",
+        ]
+        ws.append(headers)
+
+        for b in branches:
+            ws.append([
+                b.name,
+                b.code,
+                b.branch_type.replace("_", " ").title(),
+                b.manager_name or "Unassigned",
+                b.employee_count,
+                b.phone or "",
+                b.email or "",
+                b.city or "",
+                b.country or "",
+                "Yes" if b.is_head_office else "No",
+                "Active" if b.is_active else "Inactive",
+            ])
+
+        for col in ws.columns:
+            max_len = max(len(str(cell.value or "")) for cell in col)
+            col_letter = openpyxl.utils.get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+
+        output = BytesIO()
+        wb.save(output)
+        return output.getvalue()
+
+
+class OrganogramService:
+
+    def __init__(
+        self,
+        branch_repo: BranchRepository | None = None,
+        dept_repo: DepartmentRepository | None = None,
+    ):
+        self.branch_repo = branch_repo or BranchRepository()
+        self.dept_repo = dept_repo or DepartmentRepository()
+
+    def get_reporting_organogram(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        branch_id: uuid.UUID | None = None,
+        department_id: uuid.UUID | None = None,
+        root_employee_id: uuid.UUID | None = None,
+    ) -> list[OrganogramEmployeeNode]:
+        """
+        Builds a recursive tree of employees representing the reporting hierarchy (Chain of Command).
+        Nodes connect via direct_manager_id. Top-level nodes are employees without a manager
+        (or whose manager is outside the filtered scope).
+        """
+        query = db.query(Employee).filter(Employee.is_active == True)
+        if business_id is not None:
+            query = query.filter(Employee.business_id == business_id)
+        if branch_id is not None:
+            query = query.filter(Employee.branch_id == branch_id)
+        if department_id is not None:
+            query = query.filter(Employee.department_id == department_id)
+
+        employees = query.all()
+        if not employees:
+            return []
+
+        # Map employees to OrganogramEmployeeNode
+        node_map: dict[uuid.UUID, OrganogramEmployeeNode] = {}
+        for emp in employees:
+            job_title_name = emp.job_title.name if emp.job_title else None
+            level_rank = emp.job_title.level_rank if emp.job_title else 5
+            node_map[emp.id] = OrganogramEmployeeNode(
+                id=emp.id,
+                employee_id=emp.employee_id,
+                name=emp.full_name,
+                work_email=emp.work_email,
+                phone=emp.phone,
+                job_title=job_title_name,
+                level_rank=level_rank,
+                department=emp.department_name,
+                department_id=emp.department_id,
+                branch=emp.branch_name,
+                branch_id=emp.branch_id,
+                is_department_head=emp.is_department_head,
+                is_active=emp.is_active,
+                direct_manager_id=emp.direct_manager_id,
+                subordinate_count=0,
+                subordinates=[],
+            )
+
+        # Build tree
+        roots: list[OrganogramEmployeeNode] = []
+        for emp in employees:
+            node = node_map[emp.id]
+            mgr_id = emp.direct_manager_id
+
+            if root_employee_id is not None and emp.id == root_employee_id:
+                roots.append(node)
+                continue
+
+            if root_employee_id is None:
+                if mgr_id and mgr_id in node_map and mgr_id != emp.id:
+                    node_map[mgr_id].subordinates.append(node)
+                else:
+                    roots.append(node)
+
+        # Calculate subordinate counts recursively
+        def calculate_counts(curr: OrganogramEmployeeNode) -> int:
+            total = len(curr.subordinates)
+            for child in curr.subordinates:
+                total += calculate_counts(child)
+            curr.subordinate_count = total
+            return total
+
+        for r in roots:
+            calculate_counts(r)
+
+        # Sort roots by level_rank ascending (1=top leadership), then name
+        roots.sort(key=lambda x: (x.level_rank, x.name))
+        return roots
+
+    def get_structure_organogram(
+        self, db: Session, business_id: int
+    ) -> OrganogramStructureTree:
+        """
+        Builds the complete multi-branch company structure:
+        Company -> Branches -> Departments -> Headcount & Staff rosters.
+        """
+        biz = db.query(BusinessProfile).filter(BusinessProfile.id == business_id).first()
+        company_name = biz.name_en if biz else f"Company #{business_id}"
+
+        branches = self.branch_repo.get_all(db, business_id=business_id, limit=500)
+        departments = self.dept_repo.get_all(db, business_id=business_id, limit=500)
+        employees = (
+            db.query(Employee)
+            .filter(Employee.business_id == business_id, Employee.is_active == True)
+            .all()
+        )
+
+        dept_nodes = [
+            DepartmentTreeNode(
+                id=d.id,
+                name=d.name,
+                code=d.code,
+                slug=d.slug,
+                description=d.description,
+                is_active=d.is_active,
+                head_employee_id=d.head_employee_id,
+                head_employee_name=d.head_employee_name,
+                employee_count=d.employee_count,
+                children=[],
+            )
+            for d in departments
+        ]
+
+        branch_nodes: list[BranchStructureNode] = []
+        for b in branches:
+            branch_emps = [e for e in employees if e.branch_id == b.id]
+            emp_nodes = [
+                OrganogramEmployeeNode(
+                    id=e.id,
+                    employee_id=e.employee_id,
+                    name=e.full_name,
+                    work_email=e.work_email,
+                    phone=e.phone,
+                    job_title=e.job_title_name,
+                    level_rank=e.job_title.level_rank if e.job_title else 5,
+                    department=e.department_name,
+                    department_id=e.department_id,
+                    branch=b.name,
+                    branch_id=b.id,
+                    is_department_head=e.is_department_head,
+                    is_active=e.is_active,
+                    direct_manager_id=e.direct_manager_id,
+                    subordinate_count=0,
+                    subordinates=[],
+                )
+                for e in branch_emps
+            ]
+            branch_nodes.append(
+                BranchStructureNode(
+                    branch_id=b.id,
+                    branch_name=b.name,
+                    branch_code=b.code,
+                    branch_type=b.branch_type,
+                    is_head_office=b.is_head_office,
+                    city=b.city,
+                    manager_name=b.manager_name,
+                    employee_count=len(branch_emps),
+                    departments=dept_nodes,
+                    employees=emp_nodes,
+                )
+            )
+
+        return OrganogramStructureTree(
+            business_id=business_id,
+            company_name=company_name,
+            total_branches=len(branches),
+            total_departments=len(departments),
+            total_employees=len(employees),
+            branches=branch_nodes,
+        )
+

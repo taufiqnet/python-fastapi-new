@@ -159,9 +159,8 @@ if settings.app_env in ("development", "test", "local"):
             seed_system_admin_and_permissions_sync(db)
         finally:
             db.close()
-    except Exception:
-        logger.exception("Failed to create database tables on startup")
-        raise
+    except Exception as ex:
+        logger.warning(f"Database connection unavailable during module import: {ex}. FastAPI startup lifecycle will initialize.")
 
 app = FastAPI(
     title="E-Commerce API",
