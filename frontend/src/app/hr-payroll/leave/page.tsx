@@ -289,6 +289,7 @@ export default function LeaveManagementPage() {
           }}
           onSuccess={loadData}
           allocationToEdit={editingAlloc}
+          existingAllocations={allocations}
           leaveTypes={leaveTypes}
           employees={employees}
         />

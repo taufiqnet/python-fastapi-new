@@ -340,14 +340,25 @@ class LeaveAllocationService:
             year=data.year,
             business_id=data.business_id,
         )
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    f"Leave allocation for employee and leave type in year "
-                    f"{data.year} already exists"
-                ),
+        if not existing:
+            existing = (
+                db.query(LeaveAllocation)
+                .filter(
+                    LeaveAllocation.employee_id == data.employee_id,
+                    LeaveAllocation.leave_type_id == data.leave_type_id,
+                    LeaveAllocation.year == data.year,
+                )
+                .first()
             )
+
+        if existing:
+            existing.allocated_days = data.allocated_days
+            existing.carried_forward = data.carried_forward
+            if data.used_days is not None:
+                existing.used_days = data.used_days
+            db.commit()
+            db.refresh(existing)
+            return existing
 
         return self.repository.create(db, data)
 

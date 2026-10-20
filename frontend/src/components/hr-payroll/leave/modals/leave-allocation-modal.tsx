@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { apiClient } from "@/lib/api-client";
 import { LeaveAllocationOut, LeaveTypeOut, EmployeeOut } from "@/types";
-import { X, AlertCircle, CheckCircle2, UserCheck, Calendar } from "lucide-react";
+import { X, AlertCircle, CheckCircle2, Search, Sparkles } from "lucide-react";
 
 interface LeaveAllocationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   allocationToEdit?: LeaveAllocationOut | null;
+  existingAllocations?: LeaveAllocationOut[];
   leaveTypes: LeaveTypeOut[];
   employees: EmployeeOut[];
   businessId?: number | null;
@@ -20,6 +21,7 @@ export function LeaveAllocationModal({
   onClose,
   onSuccess,
   allocationToEdit,
+  existingAllocations = [],
   leaveTypes,
   employees,
   businessId,
@@ -35,8 +37,27 @@ export function LeaveAllocationModal({
     used_days: 0,
   });
 
+  const [empSearch, setEmpSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const findExisting = (empId: string, typeId: string, yearVal: number) => {
+    if (!existingAllocations || !empId || !typeId) return null;
+    return (
+      existingAllocations.find(
+        (a) =>
+          a.employee_id === empId &&
+          a.leave_type_id === typeId &&
+          Number(a.year) === Number(yearVal)
+      ) || null
+    );
+  };
+
+  const matchedExisting = useMemo(() => {
+    if (allocationToEdit) return allocationToEdit;
+    if (!formData.employee_id || !formData.leave_type_id) return null;
+    return findExisting(formData.employee_id, formData.leave_type_id, formData.year);
+  }, [allocationToEdit, existingAllocations, formData.employee_id, formData.leave_type_id, formData.year]);
 
   useEffect(() => {
     if (allocationToEdit) {
@@ -49,28 +70,97 @@ export function LeaveAllocationModal({
         used_days: Number(allocationToEdit.used_days || 0),
       });
     } else {
-      const defaultLeaveType = leaveTypes[0];
+      const defaultEmp = employees[0]?.id || "";
+      const defaultType = leaveTypes[0];
+      const defaultTypeId = defaultType?.id || "";
+      const existing = findExisting(defaultEmp, defaultTypeId, currentYear);
+
       setFormData({
-        employee_id: employees[0]?.id || "",
-        leave_type_id: defaultLeaveType?.id || "",
+        employee_id: defaultEmp,
+        leave_type_id: defaultTypeId,
         year: currentYear,
-        allocated_days: defaultLeaveType?.max_days_per_year || 10,
-        carried_forward: 0,
-        used_days: 0,
+        allocated_days: existing
+          ? Number(existing.allocated_days)
+          : defaultType?.max_days_per_year || 10,
+        carried_forward: existing ? Number(existing.carried_forward || 0) : 0,
+        used_days: existing ? Number(existing.used_days || 0) : 0,
       });
     }
+    setEmpSearch("");
     setError(null);
   }, [allocationToEdit, isOpen, leaveTypes, employees, currentYear]);
 
   if (!isOpen) return null;
 
+  const filteredEmployees = employees.filter((emp) => {
+    if (!empSearch.trim()) return true;
+    const q = empSearch.toLowerCase();
+    const name = emp.full_name?.toLowerCase() || "";
+    const code = emp.employee_id?.toLowerCase() || "";
+    const dept = (emp.department_name || emp.department?.name || "").toLowerCase();
+    return name.includes(q) || code.includes(q) || dept.includes(q);
+  });
+
+  const handleEmployeeChange = (empId: string) => {
+    const existing = findExisting(empId, formData.leave_type_id, formData.year);
+    if (existing) {
+      setFormData((prev) => ({
+        ...prev,
+        employee_id: empId,
+        allocated_days: Number(existing.allocated_days),
+        carried_forward: Number(existing.carried_forward || 0),
+        used_days: Number(existing.used_days || 0),
+      }));
+    } else {
+      const selectedType = leaveTypes.find((t) => t.id === formData.leave_type_id);
+      setFormData((prev) => ({
+        ...prev,
+        employee_id: empId,
+        allocated_days: selectedType && selectedType.max_days_per_year > 0 ? selectedType.max_days_per_year : 10,
+        carried_forward: 0,
+        used_days: 0,
+      }));
+    }
+  };
+
   const handleLeaveTypeChange = (typeId: string) => {
-    const selected = leaveTypes.find((t) => t.id === typeId);
-    setFormData((prev) => ({
-      ...prev,
-      leave_type_id: typeId,
-      allocated_days: selected && selected.max_days_per_year > 0 ? selected.max_days_per_year : prev.allocated_days,
-    }));
+    const existing = findExisting(formData.employee_id, typeId, formData.year);
+    if (existing) {
+      setFormData((prev) => ({
+        ...prev,
+        leave_type_id: typeId,
+        allocated_days: Number(existing.allocated_days),
+        carried_forward: Number(existing.carried_forward || 0),
+        used_days: Number(existing.used_days || 0),
+      }));
+    } else {
+      const selected = leaveTypes.find((t) => t.id === typeId);
+      setFormData((prev) => ({
+        ...prev,
+        leave_type_id: typeId,
+        allocated_days: selected && selected.max_days_per_year > 0 ? selected.max_days_per_year : 10,
+        carried_forward: 0,
+        used_days: 0,
+      }));
+    }
+  };
+
+  const handleYearChange = (yr: number) => {
+    const existing = findExisting(formData.employee_id, formData.leave_type_id, yr);
+    if (existing) {
+      setFormData((prev) => ({
+        ...prev,
+        year: yr,
+        allocated_days: Number(existing.allocated_days),
+        carried_forward: Number(existing.carried_forward || 0),
+        used_days: Number(existing.used_days || 0),
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        year: yr,
+      }));
+    }
   };
 
   const remainingPreview =
@@ -80,6 +170,19 @@ export function LeaveAllocationModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.employee_id) {
+      setError("Please select an employee.");
+      return;
+    }
+    if (!formData.leave_type_id) {
+      setError("Please select a leave policy / type.");
+      return;
+    }
+    if (isNaN(Number(formData.allocated_days)) || Number(formData.allocated_days) < 0) {
+      setError("Please specify a valid allocated days quota (0 or greater).");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -88,14 +191,15 @@ export function LeaveAllocationModal({
       leave_type_id: formData.leave_type_id,
       year: Number(formData.year),
       allocated_days: Number(formData.allocated_days),
-      carried_forward: Number(formData.carried_forward),
-      used_days: Number(formData.used_days),
+      carried_forward: Number(formData.carried_forward || 0),
+      used_days: Number(formData.used_days || 0),
       business_id: businessId || 1,
     };
 
     try {
-      if (allocationToEdit) {
-        await apiClient.put(`/leave-allocations/${allocationToEdit.id}`, {
+      const targetId = allocationToEdit?.id || matchedExisting?.id;
+      if (targetId) {
+        await apiClient.put(`/leave-allocations/${targetId}`, {
           allocated_days: payload.allocated_days,
           carried_forward: payload.carried_forward,
           used_days: payload.used_days,
@@ -120,7 +224,11 @@ export function LeaveAllocationModal({
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
           <div>
             <h2 className="text-base font-bold">
-              {allocationToEdit ? "Adjust Leave Allocation" : "Assign Leave Quota"}
+              {allocationToEdit
+                ? "Adjust Leave Allocation"
+                : matchedExisting
+                ? "Update Leave Quota"
+                : "Assign Leave Quota"}
             </h2>
             <p className="text-xs text-indigo-200/80 mt-0.5">
               Assign or update annual leave balance for an employee.
@@ -146,19 +254,50 @@ export function LeaveAllocationModal({
             </div>
           )}
 
+          {matchedExisting && !allocationToEdit && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-xs text-amber-900">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                <div>
+                  <span className="font-bold">Existing Quota Detected: </span>
+                  <span>
+                    Currently {matchedExisting.allocated_days}d allocated ({matchedExisting.used_days || 0}d used). Saving will update this quota.
+                  </span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-100 text-amber-800 rounded-full shrink-0">
+                Update Mode
+              </span>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               Select Employee <span className="text-rose-500">*</span>
             </label>
+
+            {!allocationToEdit && employees.length > 5 && (
+              <div className="relative mb-2">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="Filter employee list..."
+                  value={empSearch}
+                  onChange={(e) => setEmpSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
+                />
+              </div>
+            )}
+
             <select
               required
               disabled={!!allocationToEdit}
               value={formData.employee_id}
-              onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
+              onChange={(e) => handleEmployeeChange(e.target.value)}
               className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-white disabled:bg-slate-50 transition-colors"
             >
               <option value="">-- Choose Employee --</option>
-              {employees.map((emp) => (
+              {filteredEmployees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
                   {emp.full_name} ({emp.employee_id || "No ID"}) - {emp.department_name || emp.department?.name || "General"}
                 </option>
@@ -195,7 +334,7 @@ export function LeaveAllocationModal({
                 required
                 disabled={!!allocationToEdit}
                 value={formData.year}
-                onChange={(e) => setFormData({ ...formData, year: Number(e.target.value) })}
+                onChange={(e) => handleYearChange(Number(e.target.value))}
                 className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-white disabled:bg-slate-50 transition-colors"
               >
                 {[currentYear - 1, currentYear, currentYear + 1].map((yr) => (
@@ -289,7 +428,13 @@ export function LeaveAllocationModal({
               className="px-5 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5 disabled:opacity-60"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>{loading ? "Saving..." : allocationToEdit ? "Update Allocation" : "Assign Quota"}</span>
+              <span>
+                {loading
+                  ? "Saving..."
+                  : allocationToEdit || matchedExisting
+                  ? "Update Quota"
+                  : "Assign Quota"}
+              </span>
             </button>
           </div>
         </form>

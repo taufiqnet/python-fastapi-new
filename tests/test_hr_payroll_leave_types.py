@@ -10,6 +10,7 @@ from app.main import app
 from app.core.deps import get_current_user_optional, get_current_user
 from app.core.identity.models import User
 from app.core.tenancy.models import BusinessProfile
+from app.modules.hr_payroll.employees.models import Employee
 
 sync_engine = create_engine(
     "sqlite:///:memory:",
@@ -179,3 +180,84 @@ async def test_leave_type_tenant_isolation(client: AsyncClient, sync_db):
     su_get_res = await client.get(f"/leave-types/{lt_b_id}")
     assert su_get_res.status_code == 200
     assert su_get_res.json()["id"] == lt_b_id
+
+
+@pytest.mark.asyncio
+async def test_leave_allocation_creation_and_upsert(client: AsyncClient, sync_db):
+    # 1. Create Business
+    biz = BusinessProfile(
+        id=1,
+        legal_name="Acme Corp Ltd",
+        name_en="Acme Corp",
+        cr_number="1234567890",
+        vat_number="300000000000001",
+    )
+    sync_db.add(biz)
+    sync_db.commit()
+
+    # 2. Create Employee
+    emp = Employee(
+        business_id=1,
+        first_name="Rahim",
+        last_name="Uddin",
+        employee_id="EMP-9001",
+        work_email="rahim@acme.com",
+    )
+    sync_db.add(emp)
+    sync_db.commit()
+
+    # 3. Create Leave Type
+    res_lt = await client.post(
+        "/leave-types",
+        json={
+            "name": "Earned Leave",
+            "code": "EL",
+            "business_id": 1,
+            "max_days_per_year": 18,
+            "applicable_gender": "all",
+            "is_paid": True,
+        },
+    )
+    assert res_lt.status_code == 201
+    lt_id = res_lt.json()["id"]
+
+    # 4. First Allocation (Assign Quota)
+    res_alloc1 = await client.post(
+        "/leave-allocations",
+        json={
+            "employee_id": str(emp.id),
+            "leave_type_id": lt_id,
+            "year": 2026,
+            "allocated_days": 18.0,
+            "carried_forward": 2.0,
+            "used_days": 0.0,
+            "business_id": 1,
+        },
+    )
+    assert res_alloc1.status_code == 201
+    alloc1_data = res_alloc1.json()
+    assert alloc1_data["allocated_days"] == 18.0
+    assert alloc1_data["carried_forward"] == 2.0
+    assert alloc1_data["remaining_days"] == 20.0
+
+    # 5. Second Allocation call for same employee, leave type and year (Assign Quota / Upsert)
+    # Should seamlessly update instead of throwing HTTP 400 Bad Request
+    res_alloc2 = await client.post(
+        "/leave-allocations",
+        json={
+            "employee_id": str(emp.id),
+            "leave_type_id": lt_id,
+            "year": 2026,
+            "allocated_days": 22.0,
+            "carried_forward": 3.0,
+            "used_days": 1.0,
+            "business_id": 1,
+        },
+    )
+    assert res_alloc2.status_code == 201
+    alloc2_data = res_alloc2.json()
+    assert alloc2_data["id"] == alloc1_data["id"]
+    assert alloc2_data["allocated_days"] == 22.0
+    assert alloc2_data["carried_forward"] == 3.0
+    assert alloc2_data["used_days"] == 1.0
+    assert alloc2_data["remaining_days"] == 24.0
