@@ -134,9 +134,76 @@ async def holiday_edit_page(
     )
 
 
-# ── Payroll Period & Process Views ────────────────────────────────────
-@router.get("/payroll-periods/manage", response_class=HTMLResponse)
+# ── Payroll Process View ──────────────────────────────────────────────
 @router.get("/payroll-process/manage", response_class=HTMLResponse)
+async def payroll_process_page(
+    request: Request,
+    business_id: int | None = None,
+    period_id: uuid.UUID | None = None,
+    _perm=Depends(require_permission("hrm", "payroll_periods", "view")),
+    db: Session = Depends(get_db),
+    async_db=Depends(get_async_db),
+):
+    current_user = await get_current_user_optional(request, None, async_db)
+    resolved_business_id = resolve_business_id(current_user, business_id)
+
+    businesses = business_service.list_businesses(db, skip=0, limit=500)
+    if current_user and not current_user.is_superuser:
+        businesses = [b for b in businesses if b.id == current_user.business_id]
+    biz_map = {b.id: b.name_en for b in businesses}
+
+    periods = period_service.get_periods(
+        db, skip=0, limit=500, business_id=resolved_business_id
+    )
+
+    selected_period = None
+    if period_id:
+        selected_period = next((p for p in periods if p.id == period_id), None)
+    if not selected_period and periods:
+        selected_period = next((p for p in periods if not p.is_locked), periods[0])
+
+    target_biz_id = resolved_business_id or (current_user.business_id if current_user else 1) or 1
+    settings = settings_service.get_settings(db, target_biz_id)
+    employees = employee_service.get_employees(db, skip=0, limit=500, business_id=resolved_business_id)
+    emp_map = {e.id: e for e in employees}
+
+    records = []
+    if selected_period:
+        records = record_service.get_records(
+            db, skip=0, limit=500, business_id=resolved_business_id, period_id=selected_period.id
+        )
+
+    total_count = len(records)
+    total_gross = sum(float(r.gross_salary or 0) for r in records)
+    total_deduction = sum(float(r.total_deduction or 0) for r in records)
+    total_net = sum(float(r.net_salary or 0) for r in records)
+    paid_count = sum(1 for r in records if r.is_paid)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="modules/hr_payroll/payroll/process/payroll_process.html",
+        context={
+            "current_user": current_user,
+            "businesses": businesses,
+            "periods": periods,
+            "selected_period": selected_period,
+            "settings": settings,
+            "employees": employees,
+            "records": records,
+            "emp_map": emp_map,
+            "biz_map": biz_map,
+            "total_count": total_count,
+            "total_gross": total_gross,
+            "total_deduction": total_deduction,
+            "total_net": total_net,
+            "paid_count": paid_count,
+            "active_page": "payroll_process",
+        },
+    )
+
+
+# ── Payroll Period Views ───────────────────────────────────────────────
+@router.get("/payroll-periods/manage", response_class=HTMLResponse)
 async def period_list_page(
     request: Request,
     skip: int = 0,

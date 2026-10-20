@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block title %}Payroll Process | HR & Payroll{% endblock %}
+
+{% block head %}
+<style>
+    :root { --indigo: #4f46e5; --indigo-dark: #4338ca; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+    @media (max-width: 1024px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .stat-grid { grid-template-columns: repeat(1, 1fr); } }
+    .stat-card {
+        background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px 16px;
+        display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+    .stat-icon {
+        width: 40px; height: 40px; border-radius: 10px; display: flex;
+        align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+    }
+    .stat-icon.indigo  { background: #eef2ff; color: #4f46e5; }
+    .stat-icon.blue    { background: #eff6ff; color: #2563eb; }
+    .stat-icon.rose    { background: #fff1f2; color: #e11d48; }
+    .stat-icon.emerald { background: #ecfdf5; color: #059669; }
+    .stat-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .stat-value { font-size: 20px; font-weight: 800; color: #111827; line-height: 1; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+    .badge-paid    { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
+    .badge-pending { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+    .badge-draft   { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+    .badge-locked  { background: #fefce8; color: #ca8a04; border: 1px solid #fef08a; }
+
+    .action-btn {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 28px; height: 28px; border-radius: 6px; border: 1px solid #e5e7eb;
+        background: #fff; cursor: pointer; transition: all .15s; font-size: 13px; text-decoration: none;
+    }
+    .action-btn.view { color: #10b981; }
+    .action-btn.view:hover { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1.5 w-fit">
+                <i class="fas fa-cogs text-[10px]"></i> Payroll Engine
+            </span>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Payroll Process & Execution</h1>
+        <p class="text-xs text-gray-500 font-medium">Automate and execute bulk monthly salary runs, evaluate rules, and generate payslips</p>
+    </div>
+    
+    <div class="flex flex-wrap items-center gap-2.5">
+        <a href="/payroll-periods/manage" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm">
+            <i class="fas fa-calendar-alt text-gray-500"></i> Payroll Periods
+        </a>
+        <a href="/payroll-settings/manage" class="px-3.5 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 shadow-sm">
+            <i class="fas fa-sliders-h text-gray-500"></i> Payroll Settings
+        </a>
+        <a href="/payroll-records/manage" class="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-xl text-xs transition-colors flex items-center gap-1.5 border border-indigo-200 shadow-sm">
+            <i class="fas fa-file-invoice-dollar text-indigo-600"></i> View All Payslips
+        </a>
+    </div>
+</div>
+
+<!-- Business & Cycle Selector Card -->
+<div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm mb-6 space-y-4">
+    <form method="GET" action="/payroll-process/manage" id="payrollProcessFilterForm" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+        <!-- Business Profile -->
+        <div class="md:col-span-5">
+            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <i class="fas fa-building text-gray-400"></i> Business Profile
+            </label>
+            {% if current_user and current_user.is_superuser %}
+            <select name="business_id" onchange="document.getElementById('payrollProcessFilterForm').submit()" class="w-full text-xs font-semibold border border-gray-200 rounded-xl p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none bg-white">
+                {% for b in businesses %}
+                <option value="{{ b.id }}" {% if b.id == (selected_period.business_id if selected_period else businesses[0].id) %}selected{% endif %}>
+                    {{ b.name_en }} (ID: {{ b.id }})
+                </option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <input type="text" class="w-full text-xs font-semibold border border-gray-200 rounded-xl p-2.5 bg-gray-50 text-gray-700 cursor-not-allowed outline-none" value="{% if businesses %}{{ businesses[0].name_en }}{% else %}My Business{% endif %}" readonly disabled>
+            <input type="hidden" name="business_id" value="{% if current_user and current_user.business_id %}{{ current_user.business_id }}{% else %}1{% endif %}">
+            {% endif %}
+        </div>
+
+        <!-- Target Payroll Period -->
+        <div class="md:col-span-5">
+            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <i class="fas fa-clock text-gray-400"></i> Target Payroll Period
+            </label>
+            <select name="period_id" onchange="document.getElementById('payrollProcessFilterForm').submit()" class="w-full text-xs font-bold border border-gray-200 rounded-xl p-2.5 focus:ring-1 focus:ring-indigo-500 outline-none bg-white text-gray-900">
+                {% for p in periods %}
+                <option value="{{ p.id }}" {% if selected_period and selected_period.id == p.id %}selected{% endif %}>
+                    {{ p.name }} ({{ p.start_date }} ~ {{ p.end_date }}) — {{ p.status|upper }}{% if p.is_locked %} [LOCKED]{% endif %}
+                </option>
+                {% endfor %}
+                {% if not periods %}
+                <option value="">No payroll periods found</option>
+                {% endif %}
+            </select>
+        </div>
+
+        <div class="md:col-span-2 flex items-center gap-2">
+            <button type="submit" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                <i class="fas fa-sync-alt text-[10px]"></i> Load Cycle
+            </button>
+        </div>
+    </form>
+
+    {% if selected_period %}
+    <div class="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3 text-xs bg-gray-50/50 p-3 rounded-xl">
+        <div class="flex flex-wrap items-center gap-4">
+            <div>
+                <span class="text-[10px] uppercase font-bold text-gray-400 block">Cycle Window</span>
+                <span class="font-mono font-bold text-gray-900">{{ selected_period.start_date }} to {{ selected_period.end_date }}</span>
+            </div>
+            <div class="h-6 w-px bg-gray-200"></div>
+            <div>
+                <span class="text-[10px] uppercase font-bold text-gray-400 block">Cycle Status</span>
+                {% set st = selected_period.status.value|default(selected_period.status)|lower %}
+                <span class="badge {% if selected_period.is_locked %}badge-locked{% elif st == 'paid' %}badge-paid{% elif st == 'draft' %}badge-draft{% else %}badge-pending{% endif %}">
+                    {% if selected_period.is_locked %}<i class="fas fa-lock"></i> Locked{% else %}{{ selected_period.status }}{% endif %}
+                </span>
+            </div>
+            <div class="h-6 w-px bg-gray-200"></div>
+            <div>
+                <span class="text-[10px] uppercase font-bold text-gray-400 block">Disbursement Date</span>
+                <span class="font-mono text-gray-700">{{ selected_period.payment_date or 'Not Scheduled' }}</span>
+            </div>
+        </div>
+
+        <div>
+            {% if selected_period.notes %}
+            <span class="text-[11px] text-gray-500 italic"><i class="fas fa-info-circle text-gray-400"></i> "{{ selected_period.notes }}"</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Preflight Parameters & Execution Control -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <!-- Card 1: Configured Payroll Rules -->
+    <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm space-y-3">
+        <span class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+            <i class="fas fa-shield-alt text-indigo-600"></i> Configured Payroll Rules
+        </span>
+        <div class="space-y-2 text-xs">
+            <div class="flex items-center justify-between text-gray-600">
+                <span class="flex items-center gap-1.5"><i class="fas fa-clock text-gray-400 text-[10px]"></i> Attendance Logs</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded {% if settings and settings.include_attendance %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-gray-100 text-gray-500{% endif %}">
+                    {% if settings and settings.include_attendance %}INCLUDED{% else %}BYPASS{% endif %}
+                </span>
+            </div>
+
+            <div class="flex items-center justify-between text-gray-600">
+                <span class="flex items-center gap-1.5"><i class="fas fa-umbrella-beach text-gray-400 text-[10px]"></i> Approved Leaves</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded {% if settings and settings.include_leave %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-gray-100 text-gray-500{% endif %}">
+                    {% if settings and settings.include_leave %}INCLUDED{% else %}BYPASS{% endif %}
+                </span>
+            </div>
+
+            <div class="flex items-center justify-between text-gray-600">
+                <span class="flex items-center gap-1.5"><i class="fas fa-calendar-day text-gray-400 text-[10px]"></i> Company Holidays</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded {% if settings and settings.include_holidays %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-gray-100 text-gray-500{% endif %}">
+                    {% if settings and settings.include_holidays %}INCLUDED{% else %}BYPASS{% endif %}
+                </span>
+            </div>
+
+            <div class="flex items-center justify-between text-gray-600">
+                <span class="flex items-center gap-1.5"><i class="fas fa-bolt text-gray-400 text-[10px]"></i> Overtime Hours</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded {% if settings and settings.include_overtime %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-gray-100 text-gray-500{% endif %}">
+                    {% if settings and settings.include_overtime %}INCLUDED{% else %}BYPASS{% endif %}
+                </span>
+            </div>
+
+            <div class="flex items-center justify-between text-gray-600">
+                <span class="flex items-center gap-1.5"><i class="fas fa-user-times text-gray-400 text-[10px]"></i> Absent Days</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded {% if settings and settings.deduct_absent_days %}bg-rose-50 text-rose-700 border border-rose-200{% else %}bg-gray-100 text-gray-500{% endif %}">
+                    {% if settings and settings.deduct_absent_days %}DEDUCTED{% else %}EXCUSED{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Eligible Workforce Pool -->
+    <div class="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm space-y-3 flex flex-col justify-between">
+        <div>
+            <span class="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                <i class="fas fa-users text-blue-600"></i> Eligible Workforce Pool
+            </span>
+            <div class="mt-2">
+                <div class="text-3xl font-extrabold text-gray-900 font-mono">{{ employees|length }}</div>
+                <p class="text-xs text-gray-500 mt-1">Active employees eligible for salary computation in this business profile.</p>
+            </div>
+        </div>
+        <div class="pt-2 border-t border-gray-100 text-[11px] text-gray-500 flex items-center justify-between">
+            <span>Standard Shift:</span>
+            <strong class="text-gray-900">{{ settings.standard_hours_per_day if settings else 8.0 }} hrs/day</strong>
+        </div>
+    </div>
+
+    <!-- Card 3: Execution Control Panel -->
+    <div class="bg-gradient-to-br from-indigo-50 to-indigo-100/70 border border-indigo-200 rounded-2xl p-4 shadow-sm flex flex-col justify-between space-y-3">
+        <div>
+            <span class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
+                <i class="fas fa-play-circle text-indigo-600"></i> Run Execution Control
+            </span>
+            <p class="text-xs text-indigo-800 mt-1 leading-relaxed">
+                {% if selected_period %}
+                    Ready to compute payslips for <strong class="text-indigo-950">{{ selected_period.name }}</strong>. Existing draft payslips will be re-calculated.
+                {% else %}
+                    Please define or select a payroll period first.
+                {% endif %}
+            </p>
+        </div>
+
+        <div>
+            {% if selected_period and not selected_period.is_locked %}
+            <button type="button" id="btnExecutePayroll" onclick="executePayrollRun('{{ selected_period.id }}', '{{ selected_period.name|e }}')" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
+                <i class="fas fa-bolt"></i> Execute Salary Run
+            </button>
+            {% elif selected_period and selected_period.is_locked %}
+            <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-semibold flex items-center justify-center gap-2">
+                <i class="fas fa-lock"></i> Period is Locked (Execution Disabled)
+            </div>
+            {% else %}
+            <button type="button" disabled class="w-full py-2.5 px-4 rounded-xl bg-gray-200 text-gray-400 text-xs font-bold cursor-not-allowed flex items-center justify-center gap-2">
+                <i class="fas fa-ban"></i> No Active Cycle Selected
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Financial Stats Summary Cards -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-file-invoice-dollar"></i></div>
+        <div>
+            <div class="stat-label">Total Payslips</div>
+            <div class="stat-value">{{ total_count }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-coins"></i></div>
+        <div>
+            <div class="stat-label">Gross Payroll</div>
+            <div class="stat-value">{{ "%.2f"|format(total_gross) }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon rose"><i class="fas fa-minus-circle"></i></div>
+        <div>
+            <div class="stat-label">Total Deductions</div>
+            <div class="stat-value">{{ "%.2f"|format(total_deduction) }}</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon emerald"><i class="fas fa-wallet"></i></div>
+        <div>
+            <div class="stat-label">Net Disbursement</div>
+            <div class="stat-value">{{ "%.2f"|format(total_net) }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Payslips Breakdown Table Card -->
+<div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+    <div class="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50/50">
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-gray-900">Payslip Breakdown</span>
+            <span class="text-xs text-gray-500 font-medium">({{ records|length }} records for {{ selected_period.name if selected_period else 'selected period' }})</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" id="tableFilterInput" onkeyup="filterProcessTable()" placeholder="Filter employee or ID..." class="pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-xs outline-none focus:border-indigo-500 w-48 sm:w-64">
+            </div>
+            {% if selected_period %}
+            <a href="/payroll/records/export-excel?period_id={{ selected_period.id }}" class="px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors">
+                <i class="fas fa-file-download text-[10px]"></i> Export Sheet
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse" id="payslipTable">
+            <thead>
+                <tr class="bg-gray-50/70 border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                    <th class="px-4 py-3">Employee</th>
+                    <th class="px-4 py-3">Days (Work/Pres)</th>
+                    <th class="px-4 py-3">Basic Salary</th>
+                    <th class="px-4 py-3">Gross Salary</th>
+                    <th class="px-4 py-3">Deductions</th>
+                    <th class="px-4 py-3">Net Salary</th>
+                    <th class="px-4 py-3">Payment Status</th>
+                    <th class="px-4 py-3 text-right" style="width:70px">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100" id="payslipTbody">
+                {% if records %}
+                    {% for r in records %}
+                    {% set emp = emp_map.get(r.employee_id) %}
+                    <tr class="hover:bg-gray-50/80 transition-colors payslip-row">
+                        <td class="px-4 py-3">
+                            <div class="font-bold text-gray-900 emp-name">{{ emp.full_name if emp else 'Employee' }}</div>
+                            <div class="font-mono text-[10px] text-gray-400 emp-code">{{ emp.employee_id if emp else r.employee_id }}</div>
+                        </td>
+                        <td class="px-4 py-3 font-mono text-gray-700 whitespace-nowrap">
+                            {{ r.present_days }} / {{ r.working_days }}
+                        </td>
+                        <td class="px-4 py-3 font-mono text-gray-800">
+                            {{ "%.2f"|format(r.basic_salary) }}
+                        </td>
+                        <td class="px-4 py-3 font-mono font-bold text-blue-900">
+                            {{ "%.2f"|format(r.gross_salary) }}
+                        </td>
+                        <td class="px-4 py-3 font-mono text-rose-700">
+                            -{{ "%.2f"|format(r.total_deduction) }}
+                        </td>
+                        <td class="px-4 py-3 font-mono font-extrabold text-emerald-700">
+                            {{ "%.2f"|format(r.net_salary) }}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if r.is_paid %}
+                            <span class="badge badge-paid">PAID</span>
+                            {% else %}
+                            <span class="badge badge-pending">PENDING</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <a href="/payroll-records/detail/{{ r.id }}" class="action-btn view" title="View Payslip Detail">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr id="emptyRow">
+                        <td colspan="8" class="px-5 py-10 text-center text-gray-400 font-medium">
+                            <i class="fas fa-inbox text-3xl mb-2 block text-gray-300"></i>
+                            No payslips calculated yet for this period. Click <strong>"Execute Salary Run"</strong> above to compute payroll.
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/vendor/sweetalert2/sweetalert2.all.min.js"></script>
+
+<script>
+function executePayrollRun(periodId, periodName) {
+    if (!periodId) return;
+
+    Swal.fire({
+        title: 'Execute Payroll Run?',
+        text: 'Generate and compute employee payslips for ' + periodName + '? Calculation rules will be evaluated.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5',
+        confirmButtonText: 'Yes, Execute Run'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Processing Payroll...',
+                text: 'Evaluating attendance, leave balances, and salary allowances...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch('/payroll/periods/' + periodId + '/generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(async res => {
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Failed to execute payroll run.');
+                }
+                return data;
+            })
+            .then(data => {
+                Swal.fire({
+                    title: 'Payroll Run Complete!',
+                    text: 'Successfully generated/updated ' + data.length + ' employee payslips.',
+                    icon: 'success',
+                    confirmButtonColor: '#4f46e5'
+                }).then(() => {
+                    window.location.reload();
+                });
+            })
+            .catch(err => {
+                Swal.fire({
+                    title: 'Execution Failed',
+                    text: err.message,
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
+            });
+        }
+    });
+}
+
+function filterProcessTable() {
+    const input = document.getElementById('tableFilterInput');
+    const filter = input.value.toLowerCase();
+    const rows = document.querySelectorAll('.payslip-row');
+
+    rows.forEach(row => {
+        const nameElem = row.querySelector('.emp-name');
+        const codeElem = row.querySelector('.emp-code');
+        const text = (nameElem ? nameElem.textContent : '') + ' ' + (codeElem ? codeElem.textContent : '');
+        if (text.toLowerCase().includes(filter)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}
