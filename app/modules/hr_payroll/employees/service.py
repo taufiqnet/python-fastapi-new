@@ -17,18 +17,23 @@ from app.modules.hr_payroll.employees.schemas import (
 )
 from app.core.tenancy.repository import BusinessRepository
 from app.modules.hr_payroll.organization.repository import (
+    BranchRepository,
     DepartmentRepository,
     JobTitleRepository,
+    SalaryGradeRepository,
 )
 from datetime import date, datetime
 from io import BytesIO, StringIO
 import json
 import csv
 import openpyxl
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from app.modules.hr_payroll.employees.models import (
     EmploymentTypeEnum,
     GenderEnum,
     ImportJob,
+    MaritalStatusEnum,
     WorkArrangementEnum,
     EmployeeNominee,
 )
@@ -42,12 +47,18 @@ class EmployeeService:
         repository: EmployeeRepository | None = None,
         department_repository: DepartmentRepository | None = None,
         job_title_repository: JobTitleRepository | None = None,
+        branch_repository: BranchRepository | None = None,
+        salary_grade_repository: SalaryGradeRepository | None = None,
     ):
         self.repository = repository or EmployeeRepository()
         self.department_repository = (
             department_repository or DepartmentRepository()
         )
         self.job_title_repository = job_title_repository or JobTitleRepository()
+        self.branch_repository = branch_repository or BranchRepository()
+        self.salary_grade_repository = (
+            salary_grade_repository or SalaryGradeRepository()
+        )
 
     def get_employees(
         self,
@@ -461,56 +472,318 @@ class EmployeeService:
 
     def generate_excel_template(self, db: Session, business_id: int) -> bytes:
         if not business_id or business_id <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Business profile ID is mandatory.",
-            )
+            business_id = 1
+
         wb = openpyxl.Workbook()
+
+        # Styles
+        header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        sub_header_fill = PatternFill(start_color="334155", end_color="334155", fill_type="solid")
+        title_font = Font(name="Calibri", size=14, bold=True, color="0F172A")
+        subtitle_font = Font(name="Calibri", size=10, italic=True, color="64748B")
+        border_thin = Border(
+            left=Side(style="thin", color="CBD5E1"),
+            right=Side(style="thin", color="CBD5E1"),
+            top=Side(style="thin", color="CBD5E1"),
+            bottom=Side(style="thin", color="CBD5E1"),
+        )
+        center_align = Alignment(horizontal="center", vertical="center")
+        left_align = Alignment(horizontal="left", vertical="center")
+
+        # ── Worksheet 1: Employee Master Demo ──
         ws = wb.active
-        ws.title = "Employee Template"
+        ws.title = "Employee Master Demo"
+
+        # Lookup samples from DB
+        dept_samples = self.department_repository.get_all(db, business_id=business_id, limit=5)
+        dept_1 = dept_samples[0].name if dept_samples else "Engineering & Tech"
+        dept_2 = dept_samples[1].name if len(dept_samples) > 1 else "Operations & Supply"
+
+        jt_samples = self.job_title_repository.get_all(db, business_id=business_id, limit=5)
+        jt_1 = jt_samples[0].name if jt_samples else "Senior Software Engineer"
+        jt_2 = jt_samples[1].name if len(jt_samples) > 1 else "Quality Assurance Officer"
+
+        branch_samples = self.branch_repository.get_all(db, business_id=business_id, limit=5)
+        branch_1 = branch_samples[0].name if branch_samples else "Dhaka Corporate HQ"
+        branch_2 = branch_samples[1].name if len(branch_samples) > 1 else "Gazipur Operations Hub"
+
+        grade_samples = self.salary_grade_repository.get_all(db, business_id=business_id, limit=5)
+        grade_1 = grade_samples[0].name if grade_samples else "Grade 3 (Senior Professional)"
+        grade_2 = grade_samples[1].name if len(grade_samples) > 1 else "Grade 5 (Operational Staff)"
 
         headers = [
-            "Employee ID",
-            "First Name",
+            # Basic Information
+            "Employee ID *",
+            "First Name *",
             "Middle Name",
             "Last Name",
-            "Work Email",
-            "Phone",
-            "Department",
-            "Job Title",
+            "Bangla Name",
+            "Work Email *",
+            "Personal Email",
+            "Phone Number",
+            "Date of Birth (YYYY-MM-DD)",
+            "Gender (male/female/other)",
+            "Marital Status (single/married/divorced/widowed)",
+            "Religion (Islam/Hinduism/Christianity/Buddhism/Other)",
+            "Blood Group (A+/A-/B+/B-/O+/O-/AB+/AB-)",
+            "Nationality",
+            "National ID / NID",
+            "Passport Number",
+            "TIN (Tax ID)",
+            # Family Information
+            "Father's Name",
+            "Mother's Name",
+            "Spouse's Name",
+            # Emergency Contact
+            "Emergency Contact Name",
+            "Emergency Contact Relation",
+            "Emergency Contact Phone",
+            # Present Address
+            "Present Address",
+            "Present Thana / Upazila",
+            "Present District",
+            "Present Division",
+            "Present Post Code",
+            # Permanent Address
+            "Permanent Address",
+            "Permanent Thana / Upazila",
+            "Permanent District",
+            "Permanent Division",
+            "Permanent Post Code",
+            # Organization & Job
+            "Department (Name or Code)",
+            "Job Title / Designation (Name or Code)",
+            "Branch / Location (Name or Code)",
+            "Salary Grade (Name or Code)",
+            "Team",
+            "Employee Category (management/executive/officer/staff/worker/trainee/contractual)",
             "Employment Type (full_time/part_time/contract/intern)",
             "Work Arrangement (onsite/remote/hybrid)",
             "Start Date (YYYY-MM-DD)",
-            "Gender (male/female/other)",
+            "Confirmation Date (YYYY-MM-DD)",
+            "Probation Period (Months)",
+            "Notice Period (Days)",
+            "Overtime Eligible (Yes/No)",
+            # Access & Biometrics
+            "Biometric ID",
+            "RFID Card Number",
+            # Salary Disbursement
+            "Disbursement Method (bank_transfer/cash/mfs)",
+            "Bank Name",
+            "Bank Branch",
+            "Bank Account Number",
+            "Bank Account Title",
+            "Bank Routing Number",
+            "MFS Provider (bkash/nagad/rocket)",
+            "MFS Number",
         ]
-        ws.append(headers)
 
-        # Sample rows
-        departments = self.department_repository.get_all(db, business_id=business_id, limit=10)
-        sample_dept = departments[0].name if departments else "Engineering"
+        # Title Row
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+        title_cell = ws.cell(row=1, column=1, value="ProERP Enterprise HRIS - Employee Master Onboarding & Import Template")
+        title_cell.font = title_font
+        title_cell.alignment = left_align
 
-        job_titles = self.job_title_repository.get_all(db, business_id=business_id, limit=10)
-        sample_jt = job_titles[0].name if job_titles else "Software Engineer"
+        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+        sub_cell = ws.cell(row=2, column=1, value="Instructions: Required fields marked with (*). You can fill in full details for Bangladesh statutory compliance (Form 33, NID, Biometrics, Banking/MFS). Delete demo rows before importing.")
+        sub_cell.font = subtitle_font
+        sub_cell.alignment = left_align
 
-        ws.append([
-            "EMP101",
-            "John",
-            "A.",
-            "Doe",
-            "john.doe@example.com",
-            "+1234567890",
-            sample_dept,
-            sample_jt,
+        # Header Row (Row 4)
+        for col_idx, h in enumerate(headers, start=1):
+            cell = ws.cell(row=4, column=col_idx, value=h)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_align
+            cell.border = border_thin
+
+        # Demo Row 1: Executive / Tech Professional
+        demo_row_1 = [
+            "EMP-1001",
+            "Tanvir",
+            "Hasan",
+            "Chowdhury",
+            "তানভীর হাসান চৌধুরী",
+            "tanvir.chowdhury@example.com",
+            "tanvir.personal@gmail.com",
+            "+8801711223344",
+            "1990-05-15",
+            "male",
+            "married",
+            "Islam",
+            "B+",
+            "Bangladeshi",
+            "19902692015000123",
+            "A01234567",
+            "123456789012",
+            "Late Kamal Chowdhury",
+            "Rokeya Begum",
+            "Farhana Yasmin",
+            "Farhana Yasmin",
+            "Spouse",
+            "+8801722334455",
+            "House 42, Road 11, Sector 4",
+            "Uttara",
+            "Dhaka",
+            "Dhaka",
+            "1230",
+            "Village Rampur, P.O. Chandpur",
+            "Chandpur Sadar",
+            "Chandpur",
+            "Chittagong",
+            "3600",
+            dept_1,
+            jt_1,
+            branch_1,
+            grade_1,
+            "Core Architecture",
+            "executive",
+            "full_time",
+            "hybrid",
+            "2023-01-15",
+            "2023-07-15",
+            6,
+            60,
+            "No",
+            "BIO-1001",
+            "RF-882910",
+            "bank_transfer",
+            "Eastern Bank PLC",
+            "Gulshan Branch",
+            "1041060123456",
+            "Tanvir Hasan Chowdhury",
+            "090271345",
+            "",
+            "",
+        ]
+
+        # Demo Row 2: Operational Officer / Associate
+        demo_row_2 = [
+            "EMP-1002",
+            "Tahmina",
+            "Akter",
+            "Sultana",
+            "তাহমিনা আক্তার সুলতানা",
+            "tahmina.akter@example.com",
+            "tahmina.personal@yahoo.com",
+            "+8801819876543",
+            "1994-11-20",
+            "female",
+            "single",
+            "Islam",
+            "A+",
+            "Bangladeshi",
+            "19942692018000456",
+            "",
+            "987654321098",
+            "Kabir Ahmed",
+            "Salma Begum",
+            "",
+            "Kabir Ahmed",
+            "Father",
+            "+8801811223344",
+            "Plot 18, Block B, Bashundhara R/A",
+            "Vatara",
+            "Dhaka",
+            "Dhaka",
+            "1229",
+            "Chowdhury Bari, South Agrabad",
+            "Double Mooring",
+            "Chittagong",
+            "Chittagong",
+            "4100",
+            dept_2,
+            jt_2,
+            branch_2,
+            grade_2,
+            "Quality Assurance Team",
+            "officer",
             "full_time",
             "onsite",
-            date.today().strftime("%Y-%m-%d"),
-            "male",
-        ])
+            "2024-03-01",
+            "2024-09-01",
+            6,
+            30,
+            "Yes",
+            "BIO-1002",
+            "RF-882911",
+            "mfs",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "bkash",
+            "01819876543",
+        ]
 
+        ws.append(demo_row_1)
+        ws.append(demo_row_2)
+
+        # Style data rows
+        for r_idx in range(5, 7):
+            for c_idx in range(1, len(headers) + 1):
+                cell = ws.cell(row=r_idx, column=c_idx)
+                cell.border = border_thin
+                cell.alignment = left_align
+
+        # Auto column dimensions
         for col in ws.columns:
-            max_len = max(len(str(cell.value or "")) for cell in col)
-            col_letter = openpyxl.utils.get_column_letter(col[0].column)
-            ws.column_dimensions[col_letter].width = max(max_len + 3, 14)
+            header_val = str(col[3].value or "") if len(col) >= 4 else ""
+            max_len = max(len(str(cell.value or "")) for cell in col[3:]) if len(col) >= 4 else 12
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, len(header_val) + 3, 15)
+
+        # ── Worksheet 2: Guidelines & Field Values ──
+        ws_guide = wb.create_sheet(title="Field Guide & Accepted Values")
+        guide_headers = ["Field Name", "Required?", "Accepted Values / Options", "Bangladesh Context & Statutory Description"]
+        ws_guide.append(guide_headers)
+
+        for col_idx, gh in enumerate(guide_headers, start=1):
+            c = ws_guide.cell(row=1, column=col_idx)
+            c.fill = sub_header_fill
+            c.font = header_font
+            c.alignment = center_align
+            c.border = border_thin
+
+        guide_data = [
+            ("Employee ID", "YES (Mandatory)", "Unique string (e.g. EMP-1001, HQ-042)", "Mandatory unique code for punch machines and ERP records."),
+            ("First Name", "YES (Mandatory)", "Text", "Employee primary legal name."),
+            ("Work Email", "YES (Mandatory)", "Valid email (e.g. name@company.com)", "Corporate email for system login and notifications."),
+            ("Bangla Name", "Optional", "Unicode Bengali text (e.g. তানভীর হাসান)", "Required for statutory Bangladesh Form 33 and service books."),
+            ("Gender", "Optional", "male, female, other", "Demographic categorization."),
+            ("Marital Status", "Optional", "single, married, divorced, widowed", "Used for statutory nominee guardianship considerations."),
+            ("Religion", "Optional", "Islam, Hinduism, Christianity, Buddhism, Other", "Used for official holiday entitlement and festival bonus calculation."),
+            ("Blood Group", "Optional", "A+, A-, B+, B-, O+, O-, AB+, AB-", "Printed on plastic ID cards for medical emergency preparedness."),
+            ("National ID / NID", "Recommended", "10, 13, or 17 digit national ID number", "Bangladesh National Identity Card number."),
+            ("Father / Mother / Spouse", "Optional", "Text", "Family record compliance under Bangladesh Labour Act 2006."),
+            ("Address Hierarchy", "Recommended", "Address line, Thana, District, Division, Post Code", "Maintains dual Present and Permanent addresses for police/background check."),
+            ("Department", "Recommended", "Exact Department Name or Code from Organization Hub", "Automatically links employee to active department."),
+            ("Job Title", "Recommended", "Exact Job Title / Designation from Organization Hub", "Automatically links designation and seniority level rank."),
+            ("Branch / Location", "Recommended", "Exact Branch Name or Code (e.g. Corporate HQ, Plant 1)", "Stationing branch location for physical operations."),
+            ("Salary Grade", "Recommended", "Exact Salary Grade Name or Code (e.g. Grade 1, Grade 3)", "Mapped to compensation bands and minimum wage tiers."),
+            ("Employee Category", "Optional", "management, executive, officer, staff, worker, trainee, contractual", "BLA 2006 workforce category."),
+            ("Employment Type", "Optional", "full_time, part_time, contract, intern", "Standard contract type."),
+            ("Work Arrangement", "Optional", "onsite, remote, hybrid", "Workplace operational structure."),
+            ("Overtime Eligible", "Optional", "Yes, No", "Defines eligibility for double-hourly overtime calculation."),
+            ("Disbursement Method", "Optional", "bank_transfer, cash, mfs", "Salary payout channel."),
+            ("MFS Provider", "Optional", "bkash, nagad, rocket", "Mobile Financial Services provider in Bangladesh."),
+            ("Date Format", "Format", "YYYY-MM-DD (e.g. 2024-01-15)", "Standard ISO date format."),
+        ]
+
+        for item in guide_data:
+            ws_guide.append(list(item))
+
+        for row in ws_guide.iter_rows(min_row=2, max_row=len(guide_data) + 1):
+            for cell in row:
+                cell.border = border_thin
+                cell.alignment = left_align
+
+        ws_guide.column_dimensions["A"].width = 25
+        ws_guide.column_dimensions["B"].width = 18
+        ws_guide.column_dimensions["C"].width = 35
+        ws_guide.column_dimensions["D"].width = 60
 
         output = BytesIO()
         wb.save(output)
@@ -521,31 +794,91 @@ class EmployeeService:
         ws = wb.active
         ws.title = "Employees Directory"
 
+        header_fill = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        border_thin = Border(
+            left=Side(style="thin", color="CBD5E1"),
+            right=Side(style="thin", color="CBD5E1"),
+            top=Side(style="thin", color="CBD5E1"),
+            bottom=Side(style="thin", color="CBD5E1"),
+        )
+        center_align = Alignment(horizontal="center", vertical="center")
+        left_align = Alignment(horizontal="left", vertical="center")
+
         headers = [
             "Employee ID",
             "First Name",
             "Middle Name",
             "Last Name",
             "Full Name",
+            "Bangla Name",
             "Work Email",
             "Personal Email",
-            "Phone",
+            "Phone Number",
+            "Date of Birth",
+            "Gender",
+            "Marital Status",
+            "Religion",
+            "Blood Group",
+            "Nationality",
+            "National ID / NID",
+            "Passport Number",
+            "TIN",
+            "Father's Name",
+            "Mother's Name",
+            "Spouse's Name",
+            "Emergency Contact Name",
+            "Emergency Contact Relation",
+            "Emergency Contact Phone",
+            "Present Address",
+            "Present Thana",
+            "Present District",
+            "Present Division",
+            "Present Post Code",
+            "Permanent Address",
+            "Permanent Thana",
+            "Permanent District",
+            "Permanent Division",
+            "Permanent Post Code",
             "Department",
-            "Job Title",
-            "Business Profile ID",
-            "Business Profile Name",
+            "Job Title / Designation",
+            "Branch / Location",
+            "Salary Grade",
+            "Team",
+            "Employee Category",
             "Employment Type",
             "Work Arrangement",
             "Start Date",
+            "Confirmation Date",
+            "Probation Period (Months)",
+            "Notice Period (Days)",
+            "Overtime Eligible",
+            "Biometric ID",
+            "RFID Card Number",
+            "Disbursement Method",
+            "Bank Name",
+            "Bank Branch",
+            "Bank Account Number",
+            "Bank Account Title",
+            "Bank Routing Number",
+            "MFS Provider",
+            "MFS Number",
             "Status",
         ]
-        ws.append(headers)
 
-        employees = self.repository.get_all(db, skip=0, limit=2000, business_id=business_id)
-        departments = {d.id: d.name for d in self.department_repository.get_all(db, limit=1000)}
-        job_titles = {j.id: j.name for j in self.job_title_repository.get_all(db, limit=1000)}
-        biz_repo = BusinessRepository()
-        businesses = {b.id: b.name_en for b in biz_repo.get_all(db, skip=0, limit=1000)}
+        ws.append(headers)
+        for col_idx in range(1, len(headers) + 1):
+            cell = ws.cell(row=1, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = center_align
+            cell.border = border_thin
+
+        employees = self.repository.get_all(db, skip=0, limit=5000, business_id=business_id)
+        departments = {d.id: d.name for d in self.department_repository.get_all(db, limit=2000)}
+        job_titles = {j.id: j.name for j in self.job_title_repository.get_all(db, limit=2000)}
+        branches = {b.id: b.name for b in self.branch_repository.get_all(db, limit=2000)}
+        salary_grades = {g.id: g.name for g in self.salary_grade_repository.get_all(db, limit=2000)}
 
         for emp in employees:
             ws.append([
@@ -554,23 +887,71 @@ class EmployeeService:
                 emp.middle_name or "",
                 emp.last_name or "",
                 emp.full_name or "",
+                emp.bangla_name or "",
                 emp.work_email or "",
                 emp.personal_email or "",
                 emp.phone or "",
+                emp.date_of_birth.strftime("%Y-%m-%d") if emp.date_of_birth else "",
+                emp.gender.value if emp.gender else "",
+                emp.marital_status.value if emp.marital_status else "",
+                emp.religion or "",
+                emp.blood_group or "",
+                emp.nationality or "",
+                emp.national_id or "",
+                emp.passport_no or "",
+                emp.tin or "",
+                emp.father_name or "",
+                emp.mother_name or "",
+                emp.spouse_name or "",
+                emp.emergency_contact_name or "",
+                emp.emergency_contact_relation or "",
+                emp.emergency_contact_phone or "",
+                emp.present_address or "",
+                emp.present_thana or "",
+                emp.present_district or "",
+                emp.present_division or "",
+                emp.present_post_code or "",
+                emp.permanent_address or "",
+                emp.permanent_thana or "",
+                emp.permanent_district or "",
+                emp.permanent_division or "",
+                emp.permanent_post_code or "",
                 departments.get(emp.department_id, "") if emp.department_id else "",
                 job_titles.get(emp.job_title_id, "") if emp.job_title_id else "",
-                str(emp.business_id) if emp.business_id else "",
-                businesses.get(emp.business_id, "") if emp.business_id else "Global",
+                branches.get(emp.branch_id, "") if emp.branch_id else "",
+                salary_grades.get(emp.salary_grade_id, "") if emp.salary_grade_id else "",
+                emp.team or "",
+                emp.employee_category or "",
                 emp.employment_type.value if emp.employment_type else "",
                 emp.work_arrangement.value if emp.work_arrangement else "",
                 emp.start_date.strftime("%Y-%m-%d") if emp.start_date else "",
+                emp.confirmation_date.strftime("%Y-%m-%d") if emp.confirmation_date else "",
+                emp.probation_period_months if emp.probation_period_months is not None else "",
+                emp.notice_period_days if emp.notice_period_days is not None else "",
+                "Yes" if emp.is_overtime_eligible else "No",
+                emp.biometric_user_id or "",
+                emp.rfid_card_number or "",
+                emp.disbursement_method or "",
+                emp.bank_name or "",
+                emp.bank_branch or "",
+                emp.bank_account_no or "",
+                emp.bank_account_title or "",
+                emp.bank_routing_number or "",
+                emp.mfs_provider or "",
+                emp.mfs_number or "",
                 "Active" if emp.is_active else "Inactive",
             ])
 
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+            for cell in row:
+                cell.border = border_thin
+                cell.alignment = left_align
+
         for col in ws.columns:
+            header_val = str(col[0].value or "")
             max_len = max(len(str(cell.value or "")) for cell in col)
-            col_letter = openpyxl.utils.get_column_letter(col[0].column)
-            ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = max(max_len + 3, len(header_val) + 3, 12)
 
         output = BytesIO()
         wb.save(output)
@@ -578,12 +959,9 @@ class EmployeeService:
 
     def start_import_job(
         self, db: Session, business_id: int, file_bytes: bytes, created_by: str | None = None
-    ) -> ImportJob:
+    ) -> tuple[ImportJob, list, int]:
         if not business_id or business_id <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Business profile ID is mandatory.",
-            )
+            business_id = 1
         try:
             wb = openpyxl.load_workbook(filename=BytesIO(file_bytes), data_only=True)
             ws = wb.active
@@ -600,8 +978,15 @@ class EmployeeService:
                 detail="Excel file is empty.",
             )
 
-        header = [str(cell or "").strip().lower() for cell in rows[0]]
-        start_idx = 1 if "employee id" in header or "employee_id" in header or "first name" in header else 0
+        # Look for header row (may be row 1 or row 4 if template title exists)
+        start_idx = 0
+        for r_idx, r in enumerate(rows[:6]):
+            if not r:
+                continue
+            r_str = " ".join(str(cell or "").lower() for cell in r)
+            if "employee id" in r_str or "first name" in r_str or "work email" in r_str:
+                start_idx = r_idx + 1
+                break
 
         valid_rows = [r for r in rows[start_idx:] if r and any(r)]
         total_rows = len(valid_rows)
@@ -646,82 +1031,149 @@ class EmployeeService:
                 db.commit()
                 return
 
-            departments = self.department_repository.get_all(db, business_id=business_id, limit=500)
-            dept_map = {d.name.strip().lower(): d for d in departments if d.name}
+            # Lookup mapping dictionaries
+            departments = self.department_repository.get_all(db, business_id=business_id, limit=1000)
+            dept_map = {}
+            for d in departments:
+                if d.name:
+                    dept_map[d.name.strip().lower()] = d
+                if getattr(d, "code", None):
+                    dept_map[str(d.code).strip().lower()] = d
 
-            job_titles = self.job_title_repository.get_all(db, business_id=business_id, limit=500)
-            jt_map = {j.name.strip().lower(): j for j in job_titles if j.name}
+            job_titles = self.job_title_repository.get_all(db, business_id=business_id, limit=1000)
+            jt_map = {}
+            for j in job_titles:
+                if j.name:
+                    jt_map[j.name.strip().lower()] = j
+                if getattr(j, "short_name", None):
+                    jt_map[str(j.short_name).strip().lower()] = j
+
+            branches = self.branch_repository.get_all(db, business_id=business_id, limit=1000)
+            branch_map = {}
+            for b in branches:
+                if b.name:
+                    branch_map[b.name.strip().lower()] = b
+                if getattr(b, "code", None):
+                    branch_map[str(b.code).strip().lower()] = b
+
+            grades = self.salary_grade_repository.get_all(db, business_id=business_id, limit=1000)
+            grade_map = {}
+            for g in grades:
+                if g.name:
+                    grade_map[g.name.strip().lower()] = g
+                if getattr(g, "code", None):
+                    grade_map[str(g.code).strip().lower()] = g
+
+            # Header detection
+            header_row_idx = max(0, start_idx - 1)
+            raw_header = [str(cell or "").strip().lower() for cell in rows[header_row_idx]] if header_row_idx < len(rows) else []
+
+            def clean_h(h: str) -> str:
+                return "".join(c for c in h if c.isalnum())
+
+            cleaned_header = [clean_h(h) for h in raw_header]
+
+            def find_col(*aliases) -> int | None:
+                for alias in aliases:
+                    cleaned_alias = clean_h(alias)
+                    for idx, ch in enumerate(cleaned_header):
+                        if cleaned_alias == ch or cleaned_alias in ch:
+                            return idx
+                return None
+
+            col_map = {
+                "emp_code": find_col("employeeid", "empcode", "code"),
+                "first_name": find_col("firstname", "first"),
+                "middle_name": find_col("middlename", "middle"),
+                "last_name": find_col("lastname", "last"),
+                "bangla_name": find_col("banglaname", "bengaliname"),
+                "work_email": find_col("workemail", "email", "officeemail"),
+                "personal_email": find_col("personalemail"),
+                "phone": find_col("phonenumber", "phone", "mobile"),
+                "dob": find_col("dateofbirth", "dob", "birthdate"),
+                "gender": find_col("gender", "sex"),
+                "marital_status": find_col("maritalstatus", "marital"),
+                "religion": find_col("religion"),
+                "blood_group": find_col("bloodgroup", "blood"),
+                "nationality": find_col("nationality"),
+                "national_id": find_col("nationalid", "nid"),
+                "passport_no": find_col("passportnumber", "passport"),
+                "tin": find_col("tin", "taxid"),
+                "father_name": find_col("fathersname", "fathername", "father"),
+                "mother_name": find_col("mothersname", "mothername", "mother"),
+                "spouse_name": find_col("spousesname", "spousename", "spouse"),
+                "emergency_name": find_col("emergencycontactname", "emergencyname"),
+                "emergency_relation": find_col("emergencycontactrelation", "emergencyrelation"),
+                "emergency_phone": find_col("emergencycontactphone", "emergencyphone"),
+                "present_address": find_col("presentaddress"),
+                "present_thana": find_col("presentthana", "presentupazila"),
+                "present_district": find_col("presentdistrict"),
+                "present_division": find_col("presentdivision"),
+                "present_post_code": find_col("presentpostcode", "presentpostalcode", "presentzip"),
+                "permanent_address": find_col("permanentaddress"),
+                "permanent_thana": find_col("permanentthana", "permanentupazila"),
+                "permanent_district": find_col("permanentdistrict"),
+                "permanent_division": find_col("permanentdivision"),
+                "permanent_post_code": find_col("permanentpostcode", "permanentpostalcode", "permanentzip"),
+                "department": find_col("department", "dept"),
+                "job_title": find_col("jobtitle", "designation", "title"),
+                "branch": find_col("branch", "location", "office"),
+                "salary_grade": find_col("salarygrade", "grade", "paygrade"),
+                "team": find_col("team"),
+                "category": find_col("employeecategory", "category"),
+                "emp_type": find_col("employmenttype", "type"),
+                "arrangement": find_col("workarrangement", "arrangement"),
+                "start_date": find_col("startdate", "joiningdate"),
+                "confirmation_date": find_col("confirmationdate"),
+                "probation_months": find_col("probationperiod", "probationmonths", "probation"),
+                "notice_days": find_col("noticeperiod", "noticedays", "notice"),
+                "overtime": find_col("overtimeeligible", "overtime", "ot"),
+                "biometric_id": find_col("biometricid", "biometricuserid", "biometric"),
+                "rfid": find_col("rfidcardnumber", "rfid"),
+                "disbursement": find_col("disbursementmethod", "paymentmethod", "disbursement"),
+                "bank_name": find_col("bankname"),
+                "bank_branch": find_col("bankbranch"),
+                "bank_account_no": find_col("bankaccountnumber", "bankaccountno", "accountno"),
+                "bank_account_title": find_col("bankaccounttitle", "accounttitle"),
+                "bank_routing": find_col("bankroutingnumber", "routingnumber", "routingno"),
+                "mfs_provider": find_col("mfsprovider", "mfs"),
+                "mfs_number": find_col("mfsnumber", "walletnumber", "mfsphone"),
+            }
 
             errors_list = []
-
-            header = [str(cell or "").strip().lower() for cell in rows[0]] if rows else []
-            has_header = any(h in header for h in ["employee id", "employee_id", "first name", "work email", "email"])
-
-            col_map = {}
-            if has_header:
-                for idx, h in enumerate(header):
-                    if h in ["employee id", "employee_id", "code"]:
-                        col_map["emp_code"] = idx
-                    elif h in ["first name", "first_name"]:
-                        col_map["first_name"] = idx
-                    elif h in ["middle name", "middle_name"]:
-                        col_map["middle_name"] = idx
-                    elif h in ["last name", "last_name"]:
-                        col_map["last_name"] = idx
-                    elif h in ["work email", "work_email", "email"]:
-                        col_map["work_email"] = idx
-                    elif h in ["phone", "phone_number"]:
-                        col_map["phone"] = idx
-                    elif h in ["department", "department_id", "department name"]:
-                        col_map["department"] = idx
-                    elif h in ["job title", "job_title", "job title name"]:
-                        col_map["job_title"] = idx
-                    elif "employment type" in h or h in ["employment_type"]:
-                        col_map["emp_type"] = idx
-                    elif "work arrangement" in h or h in ["work_arrangement"]:
-                        col_map["arrangement"] = idx
-                    elif "start date" in h or h in ["start_date"]:
-                        col_map["start_date"] = idx
-                    elif "gender" in h:
-                        col_map["gender"] = idx
 
             for row_idx, row in enumerate(rows[start_idx:], start=start_idx + 1):
                 if not row or not any(row):
                     continue
 
-                # Check if cancelled before processing row
                 db.refresh(job)
                 if job.cancelled:
                     job.status = "cancelled"
                     db.commit()
                     return
 
-                def get_val(key, default_idx):
-                    idx = col_map.get(key, default_idx)
+                def get_val(key: str, default_idx: int | None = None) -> Any:
+                    idx = col_map.get(key)
+                    if idx is None:
+                        idx = default_idx
                     if idx is not None and idx < len(row) and row[idx] is not None:
-                        return row[idx]
+                        val = row[idx]
+                        if isinstance(val, str):
+                            val = val.strip()
+                        return val
                     return None
 
                 emp_code_raw = str(get_val("emp_code", 0) or "").strip()
                 first_name_raw = str(get_val("first_name", 1) or "").strip()
-                middle_name_raw = str(get_val("middle_name", 2) or "").strip() if get_val("middle_name", 2) else None
-                last_name_raw = str(get_val("last_name", 3) or "").strip() if get_val("last_name", 3) else None
-                work_email_raw = str(get_val("work_email", 4) or "").strip()
-                phone_raw = str(get_val("phone", 5) or "").strip() if get_val("phone", 5) else None
-                dept_raw = str(get_val("department", 6) or "").strip() if get_val("department", 6) else None
-                jt_raw = str(get_val("job_title", 7) or "").strip() if get_val("job_title", 7) else None
-                emp_type_raw = str(get_val("emp_type", 8) or "").strip().lower() if get_val("emp_type", 8) else None
-                arrangement_raw = str(get_val("arrangement", 9) or "").strip().lower() if get_val("arrangement", 9) else None
-                start_date_raw = get_val("start_date", 10)
-                gender_raw = str(get_val("gender", 11) or "").strip().lower() if get_val("gender", 11) else None
+                work_email_raw = str(get_val("work_email", 5) or "").strip()
 
                 row_error = None
                 if not emp_code_raw:
-                    row_error = "Missing Employee ID."
+                    row_error = "Missing required Employee ID."
                 elif not first_name_raw:
-                    row_error = "Missing First Name."
+                    row_error = "Missing required First Name."
                 elif not work_email_raw:
-                    row_error = "Missing Work Email."
+                    row_error = "Missing required Work Email."
 
                 if row_error:
                     errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "email": work_email_raw, "error": row_error})
@@ -731,16 +1183,17 @@ class EmployeeService:
                     db.commit()
                     continue
 
+                # Check duplicates
                 existing_by_id = self.repository.get_by_employee_id(db, emp_code_raw, business_id)
                 existing_by_email = self.repository.get_by_work_email(db, work_email_raw, business_id)
 
                 if existing_by_id or existing_by_email:
-                    warning_reason = []
+                    reasons = []
                     if existing_by_id:
-                        warning_reason.append(f"Employee ID '{emp_code_raw}' already exists")
+                        reasons.append(f"Employee ID '{emp_code_raw}' already exists")
                     if existing_by_email:
-                        warning_reason.append(f"Work Email '{work_email_raw}' already exists")
-                    row_error = f"Skipped - {', '.join(warning_reason)}."
+                        reasons.append(f"Work Email '{work_email_raw}' already exists")
+                    row_error = f"Skipped - {', '.join(reasons)}."
                     errors_list.append({"row": row_idx, "employee_id": emp_code_raw, "email": work_email_raw, "error": row_error})
                     job.error_count += 1
                     job.processed += 1
@@ -748,59 +1201,157 @@ class EmployeeService:
                     db.commit()
                     continue
 
-                dept_obj = dept_map.get(dept_raw.lower()) if dept_raw else None
-                dept_id = dept_obj.id if dept_obj else None
-
-                jt_obj = jt_map.get(jt_raw.lower()) if jt_raw else None
-                jt_id = jt_obj.id if jt_obj else None
-
-                parsed_start_date: date | None = None
-                if isinstance(start_date_raw, (datetime, date)):
-                    parsed_start_date = start_date_raw.date() if isinstance(start_date_raw, datetime) else start_date_raw
-                elif isinstance(start_date_raw, str) and start_date_raw.strip():
-                    try:
-                        parsed_start_date = datetime.strptime(start_date_raw.strip(), "%Y-%m-%d").date()
-                    except ValueError:
+                # Helper to parse dates
+                def parse_date(val: Any) -> date | None:
+                    if not val:
+                        return None
+                    if isinstance(val, (datetime, date)):
+                        return val.date() if isinstance(val, datetime) else val
+                    val_str = str(val).strip()
+                    for fmt in ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y"):
                         try:
-                            parsed_start_date = datetime.strptime(start_date_raw.strip(), "%m/%d/%Y").date()
+                            return datetime.strptime(val_str, fmt).date()
                         except ValueError:
                             pass
+                    return None
 
-                emp_type_enum = None
-                if emp_type_raw:
-                    try:
-                        emp_type_enum = EmploymentTypeEnum(emp_type_raw)
-                    except ValueError:
-                        pass
+                # Lookups
+                dept_raw = str(get_val("department") or "").strip().lower()
+                dept_obj = dept_map.get(dept_raw) if dept_raw else None
 
-                arrangement_enum = None
-                if arrangement_raw:
-                    try:
-                        arrangement_enum = WorkArrangementEnum(arrangement_raw)
-                    except ValueError:
-                        pass
+                jt_raw = str(get_val("job_title") or "").strip().lower()
+                jt_obj = jt_map.get(jt_raw) if jt_raw else None
 
+                branch_raw = str(get_val("branch") or "").strip().lower()
+                branch_obj = branch_map.get(branch_raw) if branch_raw else None
+
+                grade_raw = str(get_val("salary_grade") or "").strip().lower()
+                grade_obj = grade_map.get(grade_raw) if grade_raw else None
+
+                # Enums & Options
+                gender_raw = str(get_val("gender") or "").strip().lower()
                 gender_enum = None
-                if gender_raw:
-                    try:
-                        gender_enum = GenderEnum(gender_raw)
-                    except ValueError:
-                        pass
+                if gender_raw in ("male", "female", "other"):
+                    gender_enum = GenderEnum(gender_raw)
+
+                marital_raw = str(get_val("marital_status") or "").strip().lower()
+                marital_enum = None
+                if marital_raw in ("single", "married", "divorced", "widowed"):
+                    marital_enum = MaritalStatusEnum(marital_raw)
+
+                emp_type_raw = str(get_val("emp_type") or "").strip().lower()
+                emp_type_enum = None
+                if emp_type_raw in ("full_time", "part_time", "contract", "intern"):
+                    emp_type_enum = EmploymentTypeEnum(emp_type_raw)
+                elif "full" in emp_type_raw:
+                    emp_type_enum = EmploymentTypeEnum.FULL_TIME
+                elif "part" in emp_type_raw:
+                    emp_type_enum = EmploymentTypeEnum.PART_TIME
+                elif "contract" in emp_type_raw:
+                    emp_type_enum = EmploymentTypeEnum.CONTRACT
+                elif "intern" in emp_type_raw:
+                    emp_type_enum = EmploymentTypeEnum.INTERN
+
+                arrangement_raw = str(get_val("arrangement") or "").strip().lower()
+                arrangement_enum = None
+                if arrangement_raw in ("onsite", "remote", "hybrid"):
+                    arrangement_enum = WorkArrangementEnum(arrangement_raw)
+
+                # Numbers & booleans
+                overtime_raw = str(get_val("overtime") or "").strip().lower()
+                is_ot = overtime_raw in ("yes", "true", "1", "y")
+
+                probation_raw = get_val("probation_months")
+                try:
+                    probation_months = int(probation_raw) if probation_raw is not None and str(probation_raw).strip() != "" else 3
+                except (ValueError, TypeError):
+                    probation_months = 3
+
+                notice_raw = get_val("notice_days")
+                try:
+                    notice_days = int(notice_raw) if notice_raw is not None and str(notice_raw).strip() != "" else 30
+                except (ValueError, TypeError):
+                    notice_days = 30
+
+                # Disbursement
+                disburse_raw = str(get_val("disbursement") or "").strip().lower()
+                if "bank" in disburse_raw:
+                    disbursement_method = "bank_transfer"
+                elif "mfs" in disburse_raw or "bkash" in disburse_raw or "nagad" in disburse_raw:
+                    disbursement_method = "mfs"
+                elif "cash" in disburse_raw:
+                    disbursement_method = "cash"
+                else:
+                    disbursement_method = disburse_raw or "bank_transfer"
+
+                mfs_provider_raw = str(get_val("mfs_provider") or "").strip().lower()
+                if mfs_provider_raw in ("bkash", "nagad", "rocket"):
+                    mfs_provider = mfs_provider_raw
+                else:
+                    mfs_provider = mfs_provider_raw or None
+
+                category_raw = str(get_val("category") or "").strip().lower()
+                valid_categories = ("management", "executive", "officer", "staff", "worker", "trainee", "contractual")
+                category = category_raw if category_raw in valid_categories else "executive"
 
                 create_data = EmployeeCreate(
                     business_id=business_id,
                     employee_id=emp_code_raw,
                     first_name=first_name_raw,
-                    middle_name=middle_name_raw,
-                    last_name=last_name_raw,
+                    middle_name=str(get_val("middle_name") or "") or None,
+                    last_name=str(get_val("last_name") or "") or None,
+                    bangla_name=str(get_val("bangla_name") or "") or None,
                     work_email=work_email_raw,
-                    phone=phone_raw,
-                    department_id=dept_id,
-                    job_title_id=jt_id,
+                    personal_email=str(get_val("personal_email") or "") or None,
+                    phone=str(get_val("phone") or "") or None,
+                    date_of_birth=parse_date(get_val("dob")),
+                    gender=gender_enum,
+                    marital_status=marital_enum,
+                    religion=str(get_val("religion") or "") or None,
+                    blood_group=str(get_val("blood_group") or "") or None,
+                    nationality=str(get_val("nationality") or "") or "Bangladeshi",
+                    national_id=str(get_val("national_id") or "") or None,
+                    passport_no=str(get_val("passport_no") or "") or None,
+                    tin=str(get_val("tin") or "") or None,
+                    father_name=str(get_val("father_name") or "") or None,
+                    mother_name=str(get_val("mother_name") or "") or None,
+                    spouse_name=str(get_val("spouse_name") or "") or None,
+                    emergency_contact_name=str(get_val("emergency_name") or "") or None,
+                    emergency_contact_relation=str(get_val("emergency_relation") or "") or None,
+                    emergency_contact_phone=str(get_val("emergency_phone") or "") or None,
+                    present_address=str(get_val("present_address") or "") or None,
+                    present_thana=str(get_val("present_thana") or "") or None,
+                    present_district=str(get_val("present_district") or "") or None,
+                    present_division=str(get_val("present_division") or "") or None,
+                    present_post_code=str(get_val("present_post_code") or "") or None,
+                    permanent_address=str(get_val("permanent_address") or "") or None,
+                    permanent_thana=str(get_val("permanent_thana") or "") or None,
+                    permanent_district=str(get_val("permanent_district") or "") or None,
+                    permanent_division=str(get_val("permanent_division") or "") or None,
+                    permanent_post_code=str(get_val("permanent_post_code") or "") or None,
+                    department_id=dept_obj.id if dept_obj else None,
+                    job_title_id=jt_obj.id if jt_obj else None,
+                    branch_id=branch_obj.id if branch_obj else None,
+                    salary_grade_id=grade_obj.id if grade_obj else None,
+                    team=str(get_val("team") or "") or None,
+                    employee_category=category,
                     employment_type=emp_type_enum,
                     work_arrangement=arrangement_enum,
-                    start_date=parsed_start_date,
-                    gender=gender_enum,
+                    start_date=parse_date(get_val("start_date")),
+                    confirmation_date=parse_date(get_val("confirmation_date")),
+                    probation_period_months=probation_months,
+                    notice_period_days=notice_days,
+                    is_overtime_eligible=is_ot,
+                    biometric_user_id=str(get_val("biometric_id") or "") or None,
+                    rfid_card_number=str(get_val("rfid") or "") or None,
+                    disbursement_method=disbursement_method,
+                    bank_name=str(get_val("bank_name") or "") or None,
+                    bank_branch=str(get_val("bank_branch") or "") or None,
+                    bank_account_no=str(get_val("bank_account_no") or "") or None,
+                    bank_account_title=str(get_val("bank_account_title") or "") or None,
+                    bank_routing_number=str(get_val("bank_routing") or "") or None,
+                    mfs_provider=mfs_provider,
+                    mfs_number=str(get_val("mfs_number") or "") or None,
                     is_active=True,
                 )
 

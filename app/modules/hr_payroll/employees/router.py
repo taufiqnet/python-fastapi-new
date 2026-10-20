@@ -45,11 +45,18 @@ def export_employees_excel(
 
 @router.get("/employees/template-excel")
 def download_employees_excel_template(
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("hrm", "employees", "create")),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
+    if business_id is not None and business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
+    if not resolved_business_id or resolved_business_id <= 0:
+        resolved_business_id = getattr(current_user, "business_id", None) or (1 if getattr(current_user, "is_superuser", False) else None)
     if not resolved_business_id or resolved_business_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -67,12 +74,19 @@ def download_employees_excel_template(
 @router.post("/employees/import-excel", status_code=status.HTTP_202_ACCEPTED)
 async def import_employees_excel(
     background_tasks: BackgroundTasks,
-    business_id: int = Query(...),
+    business_id: int | None = Query(None),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("hrm", "employees", "create")),
 ):
     resolved_business_id = resolve_business_id(current_user, business_id)
+    if business_id is not None and business_id <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Business profile ID is mandatory.",
+        )
+    if not resolved_business_id or resolved_business_id <= 0:
+        resolved_business_id = getattr(current_user, "business_id", None) or (1 if getattr(current_user, "is_superuser", False) else None)
     if not resolved_business_id or resolved_business_id <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

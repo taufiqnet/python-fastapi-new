@@ -29,11 +29,16 @@ import {
   ChevronsRight,
   Mail,
   Phone,
+  Download,
+  UploadCloud,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/context/toast-context";
 import { DeleteEmployeeDialog } from "@/components/hr-payroll/delete-employee-dialog";
 import { OrgChartView } from "@/components/hr-payroll/employees/org-chart-view";
+import { EmployeeImportModal } from "@/components/hr-payroll/employees/employee-import-modal";
 import { Network, Droplet } from "lucide-react";
 
 export default function EmployeesPage() {
@@ -59,6 +64,41 @@ export default function EmployeesPage() {
   // Delete Dialog State
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState<EmployeeOut | null>(null);
+
+  // Import & Export State
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      const response = await apiClient.get("/employees/export-excel", {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `employees_master_${new Date().toISOString().slice(0, 10)}.xlsx`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(
+        "Export Completed",
+        "Employee master directory downloaded successfully."
+      );
+    } catch {
+      toast.error(
+        "Export Failed",
+        "Unable to generate employee Excel export."
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -198,24 +238,51 @@ export default function EmployeesPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
+            {/* Export Excel Button */}
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              disabled={isExporting || loading}
+              className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs transition-colors shadow-xs disabled:opacity-60"
+              title="Export complete employee roster to Excel"
+            >
+              {isExporting ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-emerald-600" />
+              )}
+              <span className="hidden sm:inline">Export Excel</span>
+            </button>
+
+            {/* Import Excel Button */}
+            <button
+              type="button"
+              onClick={() => setIsImportModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-3.5 sm:py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl text-xs transition-colors shadow-xs"
+              title="Bulk import employees via Excel template"
+            >
+              <UploadCloud className="w-3.5 h-3.5 text-indigo-600" />
+              <span className="hidden sm:inline">Import Excel</span>
+            </button>
+
             <button
               type="button"
               onClick={loadData}
               disabled={loading}
-              className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-xs"
+              className="p-2 sm:p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-xs"
               title="Refresh Roster"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
             </button>
 
             {/* Dedicated Page Link for Employee Add */}
             <Link
               href="/hr-payroll/employees/create"
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-all shadow-md shadow-indigo-600/25 active:scale-95"
+              className="inline-flex items-center gap-1.5 sm:gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition-all shadow-md shadow-indigo-600/25 active:scale-95"
             >
               <UserPlus className="w-4 h-4" />
-              Add Employee
+              <span>Add Employee</span>
             </Link>
           </div>
         </div>
@@ -807,6 +874,16 @@ export default function EmployeesPage() {
           }}
           onSuccess={loadData}
           employee={employeeToDelete}
+        />
+
+        {/* Bulk Import Excel Modal */}
+        <EmployeeImportModal
+          isOpen={isImportModalOpen}
+          onClose={() => setIsImportModalOpen(false)}
+          onSuccess={() => {
+            setIsImportModalOpen(false);
+            loadData();
+          }}
         />
       </div>
     </DashboardLayout>
