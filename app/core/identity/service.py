@@ -51,10 +51,17 @@ class UserService:
             if has_hr and not has_ecom:
                 res = await db.execute(
                     select(SubscriptionPlan).where(
-                        SubscriptionPlan.name == "hr payroll module (free tier)"
+                        SubscriptionPlan.name == "HR Payroll (Basic)"
                     )
                 )
                 selected_plan = res.scalars().first()
+                if not selected_plan:
+                    res = await db.execute(
+                        select(SubscriptionPlan).where(
+                            SubscriptionPlan.name == "hr payroll module (free tier)"
+                        )
+                    )
+                    selected_plan = res.scalars().first()
             elif has_ecom and not has_hr:
                 res = await db.execute(
                     select(SubscriptionPlan).where(
@@ -101,10 +108,12 @@ class UserService:
             await db.commit()
             await db.refresh(user)
         elif is_company_owner:
-            # Assign specific module free tier roles (hr_payroll / ecommerce), NEVER admin role
+            # Assign specific module basic tier roles (hr_basic / ecommerce), NEVER admin role
             assigned_any_role = False
             if has_hr:
-                hr_role = await self.repository.get_role_by_name(db, "hr_payroll")
+                hr_role = await self.repository.get_role_by_name(db, "hr_basic")
+                if not hr_role:
+                    hr_role = await self.repository.get_role_by_name(db, "hr_payroll")
                 if hr_role:
                     user = await self.repository.assign_role(db, user, hr_role)
                     assigned_any_role = True
@@ -115,8 +124,10 @@ class UserService:
                     assigned_any_role = True
 
             if not assigned_any_role:
-                # Default to hr_payroll role if no explicit module was checked during company registration
-                hr_role = await self.repository.get_role_by_name(db, "hr_payroll")
+                # Default to hr_basic role if no explicit module was checked during company registration
+                hr_role = await self.repository.get_role_by_name(db, "hr_basic")
+                if not hr_role:
+                    hr_role = await self.repository.get_role_by_name(db, "hr_payroll")
                 if hr_role:
                     user = await self.repository.assign_role(db, user, hr_role)
         else:

@@ -253,6 +253,43 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
 
     db_all_perms = db.query(Permission).all()
 
+    # Feature partition sets for HR & Payroll tiers
+    HR_BASIC_FEATURES = {
+        "departments",
+        "job_titles",
+        "employees",
+        "attendance",
+        "leave_types",
+        "leave_applications",
+        "holidays",
+        "notice_board",
+    }
+    HR_PRO_FEATURES = HR_BASIC_FEATURES | {
+        "leave_allocations",
+        "compensation",
+        "payroll_settings",
+        "payroll_periods",
+        "offer_letters",
+        "appointment_letters",
+        "payroll_records",
+        "salary_certificates",
+        "experience_letters",
+    }
+    HR_ENTERPRISE_FEATURES = HR_PRO_FEATURES | {
+        "recruitment",
+    }
+
+    perms_hr_basic = [p for p in db_all_perms if p.module == "hrm" and p.feature in HR_BASIC_FEATURES]
+    perms_hr_pro = [
+        p for p in db_all_perms
+        if (p.module == "hrm" and p.feature in HR_PRO_FEATURES)
+        or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")
+    ]
+    perms_hr_enterprise = [
+        p for p in db_all_perms
+        if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")
+    ]
+
     # 2. Seed Default System Roles
     admin_role = db.query(Role).filter(Role.name == "admin", Role.business_id.is_(None)).first()
     if not admin_role:
@@ -265,16 +302,51 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         db.flush()
     admin_role.permissions = list(db_all_perms)
 
+    # Tiered HR & Payroll Roles
+    hr_basic_role = db.query(Role).filter(Role.name == "hr_basic", Role.business_id.is_(None)).first()
+    if not hr_basic_role:
+        hr_basic_role = Role(
+            name="hr_basic",
+            description="HR & Payroll Basic Tier (Directory, Attendance & Leave Requests)",
+            business_id=None,
+        )
+        db.add(hr_basic_role)
+        db.flush()
+    hr_basic_role.permissions = perms_hr_basic
+
+    hr_pro_role = db.query(Role).filter(Role.name == "hr_pro", Role.business_id.is_(None)).first()
+    if not hr_pro_role:
+        hr_pro_role = Role(
+            name="hr_pro",
+            description="HR & Payroll Pro Tier (Compensation, Payroll Processing & Documents)",
+            business_id=None,
+        )
+        db.add(hr_pro_role)
+        db.flush()
+    hr_pro_role.permissions = perms_hr_pro
+
+    hr_enterprise_role = db.query(Role).filter(Role.name == "hr_enterprise", Role.business_id.is_(None)).first()
+    if not hr_enterprise_role:
+        hr_enterprise_role = Role(
+            name="hr_enterprise",
+            description="HR & Payroll Enterprise Tier (Full Suite, Recruitment & Compliance)",
+            business_id=None,
+        )
+        db.add(hr_enterprise_role)
+        db.flush()
+    hr_enterprise_role.permissions = perms_hr_enterprise
+
+    # Backward-compatible hr_payroll alias role
     hr_payroll_role = db.query(Role).filter(Role.name == "hr_payroll", Role.business_id.is_(None)).first()
     if not hr_payroll_role:
         hr_payroll_role = Role(
             name="hr_payroll",
-            description="HR & Payroll Module Access with full CRUD",
+            description="HR & Payroll Module Access (Legacy Pro Bundle)",
             business_id=None,
         )
         db.add(hr_payroll_role)
         db.flush()
-    hr_payroll_role.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
+    hr_payroll_role.permissions = perms_hr_pro
 
     ecommerce_role = db.query(Role).filter(Role.name == "ecommerce", Role.business_id.is_(None)).first()
     if not ecommerce_role:
@@ -324,16 +396,16 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
             is_superuser=False,
             business_id=None,
         )
-        if hr_payroll_role and hr_payroll_role not in demo_user.roles:
-            demo_user.roles.append(hr_payroll_role)
+        if hr_basic_role and hr_basic_role not in demo_user.roles:
+            demo_user.roles.append(hr_basic_role)
         db.add(demo_user)
     else:
         demo_user.is_active = True
         demo_user.password_hash = hash_password("12345678")
-        if not demo_user.roles and hr_payroll_role:
-            demo_user.roles.append(hr_payroll_role)
+        if not demo_user.roles and hr_basic_role:
+            demo_user.roles.append(hr_basic_role)
 
-    # 4. Seed Default Subscription Plans
+    # 4. Seed Default Subscription Plans (Tiered & Modular)
     free_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "Free").first()
     if not free_plan:
         free_plan = SubscriptionPlan(
@@ -344,18 +416,55 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         free_plan.permissions = [p for p in db_all_perms if p.action == "view"]
         db.add(free_plan)
 
-    hr_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "hr payroll module (free tier)").first()
-    if not hr_plan:
-        hr_plan = SubscriptionPlan(
-            name="hr payroll module (free tier)",
-            description="Free tier with all HR & Payroll permissions",
+    # Module-wise Tiered HR Subscription Plans
+    hr_basic_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "HR Payroll (Basic)").first()
+    if not hr_basic_plan:
+        hr_basic_plan = SubscriptionPlan(
+            name="HR Payroll (Basic)",
+            description="Starter HR & Payroll tier (Directory, Attendance & Leave Requests)",
             is_active=True,
         )
-        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
-        db.add(hr_plan)
-
+        hr_basic_plan.permissions = perms_hr_basic
+        db.add(hr_basic_plan)
     else:
-        hr_plan.permissions = [p for p in db_all_perms if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")]
+        hr_basic_plan.permissions = perms_hr_basic
+
+    hr_pro_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "HR Payroll (Pro)").first()
+    if not hr_pro_plan:
+        hr_pro_plan = SubscriptionPlan(
+            name="HR Payroll (Pro)",
+            description="Professional HR & Payroll tier (Compensation, Payroll Processing & Documents)",
+            is_active=True,
+        )
+        hr_pro_plan.permissions = perms_hr_pro
+        db.add(hr_pro_plan)
+    else:
+        hr_pro_plan.permissions = perms_hr_pro
+
+    hr_ent_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "HR Payroll (Enterprise)").first()
+    if not hr_ent_plan:
+        hr_ent_plan = SubscriptionPlan(
+            name="HR Payroll (Enterprise)",
+            description="Enterprise HR & Payroll tier (Full Suite, Recruitment & Compliance)",
+            is_active=True,
+        )
+        hr_ent_plan.permissions = perms_hr_enterprise
+        db.add(hr_ent_plan)
+    else:
+        hr_ent_plan.permissions = perms_hr_enterprise
+
+    # Legacy plan aliases
+    hr_legacy_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "hr payroll module (free tier)").first()
+    if not hr_legacy_plan:
+        hr_legacy_plan = SubscriptionPlan(
+            name="hr payroll module (free tier)",
+            description="Free tier with basic HR & Payroll permissions",
+            is_active=True,
+        )
+        hr_legacy_plan.permissions = perms_hr_basic
+        db.add(hr_legacy_plan)
+    else:
+        hr_legacy_plan.permissions = perms_hr_basic
 
     ecom_plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.name == "ecommerce module (free tier)").first()
     if not ecom_plan:
@@ -478,15 +587,13 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         test_user.is_active = True
         test_user.is_verified = True
 
-    # Give test@test.com full access to all modules and features
+    # Assign test@test.com to HR Basic Tier with 0 direct permissions for pure role inheritance
     test_user.roles.clear()
-    if hr_payroll_role and hr_payroll_role not in test_user.roles:
-        test_user.roles.append(hr_payroll_role)
-    if ecommerce_role and ecommerce_role not in test_user.roles:
-        test_user.roles.append(ecommerce_role)
+    if hr_basic_role and hr_basic_role not in test_user.roles:
+        test_user.roles.append(hr_basic_role)
 
-    # Assign all permissions as direct permissions to test@test.com
-    test_user.direct_permissions = list(db_all_perms)
+    # Clean direct permissions to ensure pure role-based and subscription-based access control
+    test_user.direct_permissions = []
     db.flush()
 
     # 7. Seed Warehouses under WBSOFT

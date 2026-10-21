@@ -33,6 +33,8 @@ import {
   AlertCircle,
   CreditCard,
   ExternalLink,
+  RotateCcw,
+  Sparkles,
 } from "lucide-react";
 
 interface UserEditPageProps {
@@ -460,22 +462,62 @@ export default function UserEditPage({ params }: UserEditPageProps) {
           <div className="mb-4">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-indigo-600" />
-              Assigned Roles
+              Assigned Roles &amp; Subscription Tiers
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Select one or more roles. Roles grant predefined sets of permissions to the user.
+              Select one or more roles. Roles grant predefined sets of permissions corresponding to module subscription tiers.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {roles.map((r) => {
               const isChecked = selectedRoleIds.includes(r.id);
+              let tierBadge = null;
+              let roleTitle = r.name;
+
+              if (r.name === "hr_basic") {
+                roleTitle = "HR Basic Tier";
+                tierBadge = (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">
+                    Starter Tier
+                  </span>
+                );
+              } else if (r.name === "hr_pro") {
+                roleTitle = "HR Pro Tier";
+                tierBadge = (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    Pro Tier
+                  </span>
+                );
+              } else if (r.name === "hr_enterprise") {
+                roleTitle = "HR Enterprise Tier";
+                tierBadge = (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                    Enterprise Tier
+                  </span>
+                );
+              } else if (r.name === "admin") {
+                roleTitle = "System Administrator";
+                tierBadge = (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                    Superadmin
+                  </span>
+                );
+              } else if (r.name === "ecommerce") {
+                roleTitle = "Ecommerce & POS";
+                tierBadge = (
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    Commerce Tier
+                  </span>
+                );
+              }
+
               return (
                 <label
                   key={r.id}
                   className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition ${
                     isChecked
-                      ? "bg-indigo-50/60 border-indigo-300 shadow-xs"
+                      ? "bg-indigo-50/60 border-indigo-300 shadow-xs ring-1 ring-indigo-400/20"
                       : "bg-slate-50/50 border-slate-200 hover:bg-slate-50"
                   }`}
                 >
@@ -485,16 +527,24 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                     onChange={() => handleToggleRole(r.id)}
                     className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
                   />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 leading-tight">
-                      {r.name}
-                    </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1.5 mb-1">
+                      <p className="text-xs font-bold text-slate-900 leading-tight">
+                        {roleTitle}
+                      </p>
+                      {tierBadge}
+                    </div>
                     <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
                       {r.description || "No description provided"}
                     </p>
-                    <span className="inline-block mt-1.5 text-[10px] font-mono text-indigo-600">
-                      {r.permissions ? r.permissions.length : 0} permissions
-                    </span>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-[10px] font-mono text-indigo-600 font-semibold bg-indigo-50/80 px-1.5 py-0.5 rounded">
+                        {r.permissions ? r.permissions.length : 0} permissions
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        ({r.name})
+                      </span>
+                    </div>
                   </div>
                 </label>
               );
@@ -515,19 +565,42 @@ export default function UserEditPage({ params }: UserEditPageProps) {
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Grant fine-grained module permissions directly to this user beyond role inheritance
-                {selectedPermissionIds.length > 0 && (
-                  <span className="font-semibold text-indigo-600 ml-1">
+                {selectedPermissionIds.length > 0 ? (
+                  <span className="font-semibold text-rose-600 ml-1">
                     ({selectedPermissionIds.length} custom permissions active)
+                  </span>
+                ) : (
+                  <span className="font-semibold text-emerald-600 ml-1">
+                    (Pure Role-Inherited — 0 direct overrides)
                   </span>
                 )}
               </p>
             </div>
 
-            <ChevronDown
-              className={`w-5 h-5 text-slate-400 transition-transform ${
-                showDirectPermissions ? "rotate-180" : ""
-              }`}
-            />
+            <div className="flex items-center gap-3">
+              {selectedPermissionIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPermissionIds([]);
+                    toast.info(
+                      "Direct Permissions Cleared",
+                      "All direct permissions cleared. Click 'Save User Account' to commit."
+                    );
+                  }}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition shadow-xs"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Clear All Direct ({selectedPermissionIds.length})
+                </button>
+              )}
+              <ChevronDown
+                className={`w-5 h-5 text-slate-400 transition-transform ${
+                  showDirectPermissions ? "rotate-180" : ""
+                }`}
+              />
+            </div>
           </div>
 
           {showDirectPermissions && (

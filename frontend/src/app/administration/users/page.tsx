@@ -486,14 +486,37 @@ export default function UsersPage() {
                         <td className="py-3.5 px-5">
                           {user.roles && user.roles.length > 0 ? (
                             <div className="flex flex-wrap gap-1 max-w-xs">
-                              {user.roles.map((r) => (
-                                <span
-                                  key={r.id}
-                                  className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"
-                                >
-                                  {r.name}
-                                </span>
-                              ))}
+                              {user.roles.map((r) => {
+                                let badgeColor = "bg-slate-100 text-slate-700 border-slate-200";
+                                let displayName = r.name;
+                                if (r.name === "admin") {
+                                  badgeColor = "bg-rose-50 text-rose-700 border-rose-200";
+                                } else if (r.name === "hr_basic") {
+                                  badgeColor = "bg-sky-50 text-sky-700 border-sky-200 font-bold";
+                                  displayName = "HR Basic";
+                                } else if (r.name === "hr_pro") {
+                                  badgeColor = "bg-indigo-50 text-indigo-700 border-indigo-200 font-bold";
+                                  displayName = "HR Pro";
+                                } else if (r.name === "hr_enterprise") {
+                                  badgeColor = "bg-purple-50 text-purple-700 border-purple-200 font-bold";
+                                  displayName = "HR Enterprise";
+                                } else if (r.name === "hr_payroll") {
+                                  badgeColor = "bg-indigo-50 text-indigo-700 border-indigo-200";
+                                  displayName = "HR Payroll";
+                                } else if (r.name === "ecommerce") {
+                                  badgeColor = "bg-amber-50 text-amber-700 border-amber-200";
+                                  displayName = "Ecommerce";
+                                }
+
+                                return (
+                                  <span
+                                    key={r.id}
+                                    className={`px-2 py-0.5 rounded-md text-[11px] font-semibold border ${badgeColor}`}
+                                  >
+                                    {displayName}
+                                  </span>
+                                );
+                              })}
                             </div>
                           ) : (
                             <span className="text-slate-400 text-xs italic">No roles</span>
