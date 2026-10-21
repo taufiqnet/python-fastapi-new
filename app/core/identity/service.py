@@ -84,12 +84,23 @@ class UserService:
             password_hash=hash_password(data.password),
             phone=data.phone,
             business_id=business_id,
-            is_superuser=False,  # Registering users are NEVER superusers
+            is_active=data.is_active,
+            is_superuser=data.is_superuser,
+            can_use_offline_mode=data.can_use_offline_mode,
         )
 
         user = await self.repository.create(db, user)
 
-        if is_company_owner:
+        if data.role_ids:
+            roles = []
+            for r_id in data.role_ids:
+                r = await self.repository.get_role_by_id(db, r_id)
+                if r:
+                    roles.append(r)
+            user.roles = roles
+            await db.commit()
+            await db.refresh(user)
+        elif is_company_owner:
             # Assign specific module free tier roles (hr_payroll / ecommerce), NEVER admin role
             assigned_any_role = False
             if has_hr:
@@ -115,6 +126,14 @@ class UserService:
                     db, name="customer", description="Default customer role"
                 )
             user = await self.repository.assign_role(db, user, customer_role)
+
+        if data.permission_ids:
+            permissions = await self.repository.get_permissions_by_ids(
+                db, data.permission_ids
+            )
+            user.direct_permissions = permissions
+            await db.commit()
+            await db.refresh(user)
 
         if not user.customer_profile:
             await self.repository.create_customer_profile(db, user_id=user.id)

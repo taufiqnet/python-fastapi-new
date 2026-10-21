@@ -88,6 +88,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     }
 
+    if (user.direct_permissions) {
+      for (const perm of user.direct_permissions) {
+        if (
+          perm.code === targetCode ||
+          (perm.module === module && perm.feature === feature && perm.action === action)
+        ) {
+          return true;
+        }
+      }
+    }
+
     if (user.roles) {
       for (const role of user.roles) {
         if (role.permissions) {

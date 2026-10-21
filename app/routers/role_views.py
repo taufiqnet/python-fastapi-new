@@ -24,6 +24,11 @@ async def list_permissions_api(db: AsyncSession = Depends(get_async_db)):
     return permissions
 
 
+@router.get("/permissions/system-modules/api")
+async def get_system_modules_api():
+    return SYSTEM_MODULES
+
+
 @router.get("/roles/manage", response_class=HTMLResponse)
 async def role_list_page(
     request: Request,

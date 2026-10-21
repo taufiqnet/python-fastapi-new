@@ -22,6 +22,11 @@ class UserCreate(BaseModel):
     business_id: int | None = None
     company_name: str | None = None
     modules: list[str] = []
+    role_ids: list[int] = []
+    permission_ids: list[int] = []
+    is_active: bool = True
+    is_superuser: bool = False
+    can_use_offline_mode: bool = False
 
 
 class ChangePasswordRequest(BaseModel):

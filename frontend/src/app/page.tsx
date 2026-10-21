@@ -150,6 +150,25 @@ export default function DashboardPage() {
               </Link>
             </div>
           </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-4">
+              <span className="p-3 bg-rose-50 rounded-xl text-rose-600">
+                <ShieldCheck className="w-6 h-6" />
+              </span>
+              <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full">
+                RBAC Access
+              </span>
+            </div>
+            <h3 className="text-sm font-medium text-slate-500">Administration</h3>
+            <p className="text-2xl font-bold text-slate-900 mt-1">Users & Roles</p>
+            <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span className="text-slate-500">Accounts & permissions</span>
+              <Link href="/administration/users" className="text-indigo-600 font-semibold hover:underline flex items-center gap-0.5">
+                Manage <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
         </div>
 
         {/* System Architecture Overview for the Team */}

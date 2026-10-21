@@ -19,6 +19,7 @@ import {
   CreditCard,
   ChevronDown,
   Building2,
+  ShieldCheck,
 } from "lucide-react";
 
 interface NavItem {
@@ -42,6 +43,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
     ecommerce: true,
     hr: true,
     finance: true,
+    administration: true,
   });
 
   const toggleSection = (key: string) => {
@@ -90,6 +92,16 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
         { name: "Vouchers", href: "/finance/vouchers" },
         { name: "Ledger", href: "/finance/ledger" },
         { name: "Financial Reports", href: "/finance/reports" },
+      ],
+    },
+    {
+      name: "Administration",
+      href: "/administration/users",
+      icon: ShieldCheck,
+      sectionKey: "administration",
+      children: [
+        { name: "User Accounts", href: "/administration/users" },
+        { name: "Roles & Permissions", href: "/administration/roles" },
       ],
     },
     {

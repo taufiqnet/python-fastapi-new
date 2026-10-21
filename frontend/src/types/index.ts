@@ -11,21 +11,28 @@ export interface User {
   id: number;
   email: string;
   username: string;
+  phone?: string | null;
   first_name?: string;
   last_name?: string;
   is_active: boolean;
   is_superuser: boolean;
+  is_verified?: boolean;
+  can_use_offline_mode?: boolean;
+  is_offline_sync_enabled?: boolean;
+  created_at?: string;
   business_id?: number | null;
   business?: BusinessProfile;
   roles?: Role[];
+  direct_permissions?: Permission[];
   permissions?: string[];
 }
 
 export interface Role {
   id: number;
   name: string;
-  slug: string;
-  description?: string;
+  slug?: string;
+  description?: string | null;
+  business_id?: number | null;
   permissions?: Permission[];
 }
 
@@ -35,6 +42,61 @@ export interface Permission {
   feature: string;
   action: string;
   code: string;
+  name?: string | null;
+}
+
+export interface SystemModuleCategory {
+  category: string;
+  features: [string, string][];
+}
+
+export interface SystemModule {
+  title: string;
+  icon: string;
+  categories?: SystemModuleCategory[];
+  features?: [string, string][];
+}
+
+export type SystemModulesMap = Record<string, SystemModule>;
+
+export interface RoleCreateInput {
+  name: string;
+  description?: string;
+  business_id?: number | null;
+  permission_ids: number[];
+}
+
+export interface RoleUpdateInput {
+  name?: string;
+  description?: string;
+  business_id?: number | null;
+  permission_ids?: number[];
+}
+
+export interface UserCreateInput {
+  username: string;
+  email: string;
+  password: string;
+  phone?: string;
+  business_id?: number | null;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  can_use_offline_mode?: boolean;
+  role_ids?: number[];
+  permission_ids?: number[];
+}
+
+export interface UserUpdateInput {
+  username?: string;
+  email?: string;
+  password?: string;
+  phone?: string;
+  business_id?: number | null;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  can_use_offline_mode?: boolean;
+  role_ids?: number[];
+  permission_ids?: number[];
 }
 
 export interface AuthTokenResponse {
