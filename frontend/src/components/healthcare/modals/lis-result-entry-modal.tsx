@@ -77,9 +77,9 @@ export function LISResultEntryModal({
             observed_value: p.default_value || "",
             unit: p.unit || "",
             ref_range:
-              p.min_ref_value !== null && p.max_ref_value !== null
+              p.min_ref_value != null && p.max_ref_value != null
                 ? `${p.min_ref_value} - ${p.max_ref_value}`
-                : undefined,
+                : p.male_ref_range || undefined,
             min_ref_value: p.min_ref_value ?? undefined,
             max_ref_value: p.max_ref_value ?? undefined,
             critical_low: p.critical_low ?? undefined,

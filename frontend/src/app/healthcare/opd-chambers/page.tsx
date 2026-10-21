@@ -7,7 +7,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { apiClient } from "@/lib/api-client";
 import {
   AppointmentOut,
-  AppointmentStatus,
+  HealthcareAppointmentStatus,
   DoctorProfileOut,
   DoctorScheduleSlotOut,
   PatientOut,
@@ -124,7 +124,7 @@ export default function OPDChambersPage() {
   }, [activeTab, selectedDoctorId]);
 
   // Handle status transitions
-  const handleUpdateStatus = async (appId: string, newStatus: AppointmentStatus) => {
+  const handleUpdateStatus = async (appId: string, newStatus: HealthcareAppointmentStatus) => {
     try {
       setIsFetching(true);
       await apiClient.patch<AppointmentOut>(`/healthcare/appointments/${appId}`, {

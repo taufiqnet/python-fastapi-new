@@ -243,7 +243,7 @@ export default function DoctorDeskEMRPage() {
     if (!testSearch.trim()) return [];
     const q = testSearch.toLowerCase();
     return catalogTests
-      .filter((t) => t.test_name.toLowerCase().includes(q) || t.test_code.toLowerCase().includes(q))
+      .filter((t) => (t.name || t.test_name || "").toLowerCase().includes(q) || t.test_code.toLowerCase().includes(q))
       .slice(0, 8);
   }, [catalogTests, testSearch]);
 
@@ -566,10 +566,10 @@ export default function DoctorDeskEMRPage() {
                       <button
                         type="button"
                         key={t.id}
-                        onClick={() => handleAddTest(t.test_name)}
+                        onClick={() => handleAddTest(t.name)}
                         className="w-full px-3 py-2 text-left text-xs hover:bg-emerald-50 flex items-center justify-between"
                       >
-                        <span className="font-semibold text-slate-900">{t.test_name}</span>
+                        <span className="font-semibold text-slate-900">{t.name}</span>
                         <span className="font-mono text-slate-400">{t.test_code}</span>
                       </button>
                     ))}

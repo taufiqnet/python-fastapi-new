@@ -1323,6 +1323,7 @@ export interface PatientOut {
   phone: string;
   email?: string | null;
   date_of_birth?: string | null;
+  age?: number | null;
   gender: PatientGender;
   blood_group?: PatientBloodGroup | null;
   emergency_contact_name?: string | null;
@@ -1393,10 +1394,17 @@ export interface DiagnosticTestParameterOut {
   female_ref_range?: string | null;
   child_ref_range?: string | null;
   default_formula?: string | null;
+  default_value?: string | null;
+  min_ref_value?: number | null;
+  max_ref_value?: number | null;
+  critical_low?: number | null;
+  critical_high?: number | null;
   display_order: number;
   created_at: string;
   updated_at: string;
 }
+
+export type DiagnosticTestParameter = DiagnosticTestParameterOut;
 
 export interface DiagnosticTestParameterCreatePayload {
   parameter_name: string;
@@ -1414,6 +1422,7 @@ export interface DiagnosticTestOut {
   department: DiagnosticDepartment;
   test_code: string;
   name: string;
+  test_name?: string;
   category_name?: string | null;
   sample_type?: string | null;
   cost_price: number;
@@ -1503,7 +1512,7 @@ export interface DiagnosticCheckoutRequest {
 }
 
 // ── Phase 2 Healthcare Types ─────────────────────────────────────────────
-export type AppointmentStatus =
+export type HealthcareAppointmentStatus =
   | "booked"
   | "checked_in"
   | "with_doctor"
@@ -1558,7 +1567,7 @@ export interface AppointmentOut {
   appointment_date: string;
   serial_number: number;
   scheduled_time?: string | null;
-  status: AppointmentStatus;
+  status: HealthcareAppointmentStatus;
   visit_type: VisitType;
   consultation_fee: number;
   is_paid: boolean;
@@ -1584,7 +1593,7 @@ export interface AppointmentCreatePayload {
 }
 
 export interface AppointmentUpdatePayload {
-  status?: AppointmentStatus;
+  status?: HealthcareAppointmentStatus;
   scheduled_time?: string | null;
   is_paid?: boolean;
   chief_complaints?: string | null;
