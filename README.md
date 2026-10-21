@@ -4,6 +4,16 @@ An Enterprise SaaS Platform built with FastAPI, SQLAlchemy, Jinja2 Templates, an
 
 ---
 
+## Documentation
+
+Comprehensive architecture specifications, implementation plans, operational guides, and developer prompts are organized under the [`docs/`](docs/README.md) directory:
+- 📐 [Architecture & Implementation Plans](docs/README.md#-architecture--implementation-plans-docsplans) (`docs/plans/`)
+- 📋 [System Specifications & SRS](docs/README.md#-system-specifications-docsspecifications) (`docs/specifications/`)
+- 💬 [Development Prompts & Templates](docs/README.md#-prompts--templates-docsprompts) (`docs/prompts/`)
+- 📖 [Operational Guides & Commands](docs/README.md#-operational-guides--manuals-docsguides) (`docs/guides/`)
+
+---
+
 ## Native Application AI Assistant
 
 The platform includes an in-app AI Assistant for HR & Payroll analytics and reporting, replacing external clients like Claude Desktop entirely.
