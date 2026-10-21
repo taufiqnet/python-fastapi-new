@@ -38,6 +38,7 @@ interface LeaveApplicationsTabProps {
   onRefresh: () => void;
   onOpenApplyModal: () => void;
   onReviewApplication: (app: LeaveApplicationOut) => void;
+  onRollbackApplication?: (app: LeaveApplicationOut) => void;
 }
 
 export function LeaveApplicationsTab({
@@ -48,6 +49,7 @@ export function LeaveApplicationsTab({
   onRefresh,
   onOpenApplyModal,
   onReviewApplication,
+  onRollbackApplication,
 }: LeaveApplicationsTabProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -417,6 +419,18 @@ export function LeaveApplicationsTab({
                             <span>{app.status}</span>
                           </span>
 
+                          {app.rolled_back_at && (
+                            <div className="pt-0.5">
+                              <span
+                                className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200"
+                                title={`Rolled back rationale: ${app.rollback_reason || "N/A"}`}
+                              >
+                                <RotateCcw className="w-2.5 h-2.5" />
+                                <span>Rolled Back</span>
+                              </span>
+                            </div>
+                          )}
+
                           {reviewer && (
                             <p className="text-[10px] text-slate-400" title={app.review_note || ""}>
                               By: {reviewer.full_name}
@@ -440,16 +454,29 @@ export function LeaveApplicationsTab({
                           )}
 
                           {app.status === "approved" && (
-                            <button
-                              type="button"
-                              disabled={cancellingId === app.id}
-                              onClick={() => handleCancelApplication(app)}
-                              title="Cancel approved leave and restore quota"
-                              className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 disabled:opacity-50"
-                            >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              <span>{cancellingId === app.id ? "Restoring..." : "Cancel"}</span>
-                            </button>
+                            <>
+                              {onRollbackApplication && (
+                                <button
+                                  type="button"
+                                  onClick={() => onRollbackApplication(app)}
+                                  title="Rollback approval back to pending & restore quota"
+                                  className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                  <span>Rollback</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                disabled={cancellingId === app.id}
+                                onClick={() => handleCancelApplication(app)}
+                                title="Cancel approved leave and restore quota"
+                                className="px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 disabled:opacity-50"
+                              >
+                                <span>{cancellingId === app.id ? "Restoring..." : "Cancel"}</span>
+                              </button>
+                            </>
                           )}
 
                           <button

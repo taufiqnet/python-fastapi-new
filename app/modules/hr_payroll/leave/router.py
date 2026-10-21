@@ -15,7 +15,16 @@ from app.modules.hr_payroll.leave.schemas import (
     LeaveApplicationCreate,
     LeaveApplicationOut,
     LeaveApplicationReview,
+    LeaveApplicationRollback,
     LeaveApplicationUpdate,
+    LeaveCarryForwardExecuteRequest,
+    LeaveCarryForwardExecuteResponse,
+    LeaveCarryForwardPreviewRequest,
+    LeaveCarryForwardPreviewResponse,
+    LeaveEncashmentCreate,
+    LeaveEncashmentDisburse,
+    LeaveEncashmentOut,
+    LeaveEncashmentReview,
     LeaveTypeCreate,
     LeaveTypeOut,
     LeaveTypeUpdate,
@@ -23,6 +32,8 @@ from app.modules.hr_payroll.leave.schemas import (
 from app.modules.hr_payroll.leave.service import (
     LeaveAllocationService,
     LeaveApplicationService,
+    LeaveCarryForwardService,
+    LeaveEncashmentService,
     LeaveTypeService,
 )
 
@@ -31,10 +42,11 @@ router = APIRouter(tags=["Leave Management"])
 leave_type_service = LeaveTypeService()
 leave_allocation_service = LeaveAllocationService()
 leave_application_service = LeaveApplicationService()
+leave_encashment_service = LeaveEncashmentService()
+leave_carry_forward_service = LeaveCarryForwardService()
 
 
-# TODO: move this into schemas.py as LeaveApplicationCancel once that file
-# is available to edit — kept local here so this router is self-contained.
+# Keep LeaveApplicationCancelRequest backwards-compatible
 class LeaveApplicationCancelRequest(BaseModel):
     actor_id: uuid.UUID
 
@@ -373,6 +385,25 @@ def cancel_leave_application(
     )
 
 
+@router.post(
+    "/leave-applications/{application_id}/rollback",
+    response_model=LeaveApplicationOut,
+)
+def rollback_leave_application(
+    application_id: uuid.UUID,
+    rollback_data: LeaveApplicationRollback,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_applications", "update")),
+):
+    """Rollback an APPROVED application back to PENDING. Restores employee quota,
+    reverts auto-synced attendance, and guards against locked/paid payroll periods."""
+    if not current_user.is_superuser:
+        rollback_data.force_override = False
+    return leave_application_service.rollback_application_approval(
+        db, application_id, rollback_data, current_user=current_user
+    )
+
+
 @router.delete(
     "/leave-applications/{application_id}", status_code=status.HTTP_204_NO_CONTENT
 )
@@ -382,4 +413,150 @@ def delete_leave_application(
     current_user: User = Depends(require_permission("hrm", "leave_applications", "delete")),
 ):
     leave_application_service.delete_application(db, application_id, current_user=current_user)
+    return None
+
+
+# ── Yearly Leave Carry Forward Endpoints ─────────────────────────────────
+@router.post(
+    "/leave-allocations/carry-forward/preview",
+    response_model=LeaveCarryForwardPreviewResponse,
+)
+def preview_leave_carry_forward(
+    preview_data: LeaveCarryForwardPreviewRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "view")),
+):
+    """Dry-run simulation of yearly carry forward without modifying balances."""
+    resolved_business_id = resolve_business_id(current_user, preview_data.business_id)
+    return leave_carry_forward_service.preview_carry_forward(
+        db, preview_data, business_id=resolved_business_id
+    )
+
+
+@router.post(
+    "/leave-allocations/carry-forward/execute",
+    response_model=LeaveCarryForwardExecuteResponse,
+)
+def execute_leave_carry_forward(
+    execute_data: LeaveCarryForwardExecuteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "create")),
+):
+    """Execute yearly leave carry forward batch process for target year."""
+    resolved_business_id = resolve_business_id(current_user, execute_data.business_id)
+    return leave_carry_forward_service.execute_carry_forward(
+        db, execute_data, business_id=resolved_business_id, current_user=current_user
+    )
+
+
+@router.get("/leave-allocations/carry-forward/logs")
+def get_leave_carry_forward_logs(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return leave_carry_forward_service.get_logs(
+        db, skip=skip, limit=limit, business_id=resolved_business_id
+    )
+
+
+# ── Leave Encashment Endpoints (BLA 2006 § 117) ──────────────────────────
+@router.get("/leave-encashments", response_model=list[LeaveEncashmentOut])
+def get_leave_encashments(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    business_id: int | None = Query(None),
+    employee_id: uuid.UUID | None = Query(None),
+    year: int | None = Query(None),
+    status_filter: str | None = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return leave_encashment_service.get_encashments(
+        db,
+        skip=skip,
+        limit=limit,
+        business_id=resolved_business_id,
+        employee_id=employee_id,
+        year=year,
+        status=status_filter,
+    )
+
+
+@router.get("/leave-encashments/{encashment_id}", response_model=LeaveEncashmentOut)
+def get_leave_encashment(
+    encashment_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "view")),
+):
+    return leave_encashment_service.get_encashment(
+        db, encashment_id, current_user=current_user
+    )
+
+
+@router.post(
+    "/leave-encashments",
+    response_model=LeaveEncashmentOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_leave_encashment(
+    encashment_data: LeaveEncashmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, encashment_data.business_id)
+    if not current_user.is_superuser:
+        encashment_data.business_id = current_user.business_id
+    elif encashment_data.business_id is None:
+        encashment_data.business_id = resolved_business_id
+
+    return leave_encashment_service.create_encashment(db, encashment_data)
+
+
+@router.post(
+    "/leave-encashments/{encashment_id}/review",
+    response_model=LeaveEncashmentOut,
+)
+def review_leave_encashment(
+    encashment_id: uuid.UUID,
+    review_data: LeaveEncashmentReview,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "update")),
+):
+    return leave_encashment_service.review_encashment(
+        db, encashment_id, review_data, current_user=current_user
+    )
+
+
+@router.post(
+    "/leave-encashments/{encashment_id}/disburse",
+    response_model=LeaveEncashmentOut,
+)
+def disburse_leave_encashment(
+    encashment_id: uuid.UUID,
+    disburse_data: LeaveEncashmentDisburse,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "update")),
+):
+    return leave_encashment_service.disburse_encashment(
+        db, encashment_id, disburse_data, current_user=current_user
+    )
+
+
+@router.delete(
+    "/leave-encashments/{encashment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_leave_encashment(
+    encashment_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "leave_allocations", "delete")),
+):
+    leave_encashment_service.delete_encashment(
+        db, encashment_id, current_user=current_user
+    )
     return None

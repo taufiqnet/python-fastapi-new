@@ -24,6 +24,7 @@ export function LeaveReviewModal({
 }: LeaveReviewModalProps) {
   const [reviewerId, setReviewerId] = useState<string>(employees[0]?.id || "");
   const [reviewNote, setReviewNote] = useState<string>("");
+  const [syncAttendance, setSyncAttendance] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +46,7 @@ export function LeaveReviewModal({
       status,
       reviewed_by_id: reviewerId,
       review_note: reviewNote.trim() || null,
+      sync_attendance: syncAttendance,
     };
 
     try {
@@ -191,6 +193,19 @@ export function LeaveReviewModal({
               placeholder="State any manager instructions, conditions, or reason for decision..."
               className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 resize-none"
             />
+          </div>
+
+          <div className="flex items-center gap-2 pt-1">
+            <input
+              type="checkbox"
+              id="syncAttendanceReview"
+              checked={syncAttendance}
+              onChange={(e) => setSyncAttendance(e.target.checked)}
+              className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+            />
+            <label htmlFor="syncAttendanceReview" className="text-xs text-slate-600 cursor-pointer select-none">
+              Automatically sync employee daily attendance as <strong>On Leave</strong> during this date range
+            </label>
           </div>
 
           {/* Action Buttons */}

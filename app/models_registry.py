@@ -102,6 +102,8 @@ from app.modules.hr_payroll.employees.models import Employee, ImportJob  # noqa:
 from app.modules.hr_payroll.leave.models import (  # noqa: F401
     LeaveAllocation,
     LeaveApplication,
+    LeaveCarryForwardLog,
+    LeaveEncashment,
     LeaveType,
 )
 from app.modules.hr_payroll.notice_board.models import Notice, NoticeReadReceipt  # noqa: F401

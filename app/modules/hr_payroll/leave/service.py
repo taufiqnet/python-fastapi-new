@@ -1,21 +1,35 @@
 import uuid
+from datetime import date, datetime, timedelta, timezone
+from io import BytesIO
 
 from fastapi import HTTPException, status
+import openpyxl
 from sqlalchemy.orm import Session
 
 from app.core.tenancy.repository import BusinessRepository
 from app.core.tenancy.scoping import verify_record_ownership
+from app.modules.hr_payroll.attendance.models import (
+    Attendance,
+    AttendanceSourceEnum,
+    AttendanceStatusEnum,
+)
+from app.modules.hr_payroll.compensation.repository import EmployeeSalaryRepository
 from app.modules.hr_payroll.employees.repository import EmployeeRepository
 from app.modules.hr_payroll.leave.models import (
     GenderApplicabilityEnum,
     LeaveAllocation,
     LeaveApplication,
+    LeaveCarryForwardLog,
+    LeaveEncashment,
+    LeaveEncashmentStatusEnum,
     LeaveStatusEnum,
     LeaveType,
 )
 from app.modules.hr_payroll.leave.repository import (
     LeaveAllocationRepository,
     LeaveApplicationRepository,
+    LeaveCarryForwardLogRepository,
+    LeaveEncashmentRepository,
     LeaveTypeRepository,
 )
 from app.modules.hr_payroll.leave.schemas import (
@@ -23,12 +37,23 @@ from app.modules.hr_payroll.leave.schemas import (
     LeaveAllocationUpdate,
     LeaveApplicationCreate,
     LeaveApplicationReview,
+    LeaveApplicationRollback,
     LeaveApplicationUpdate,
+    LeaveCarryForwardExecuteRequest,
+    LeaveCarryForwardExecuteResponse,
+    LeaveCarryForwardPreviewItem,
+    LeaveCarryForwardPreviewRequest,
+    LeaveCarryForwardPreviewResponse,
+    LeaveEncashmentCreate,
+    LeaveEncashmentDisburse,
+    LeaveEncashmentReview,
     LeaveTypeCreate,
     LeaveTypeUpdate,
 )
-from io import BytesIO
-import openpyxl
+from app.modules.hr_payroll.payroll.models import (
+    PayrollPeriod,
+    PayrollPeriodStatusEnum,
+)
 
 
 class LeaveTypeService:
@@ -673,6 +698,7 @@ class LeaveApplicationService:
                     float(allocation.allocated_days)
                     + float(allocation.carried_forward)
                     - float(allocation.used_days)
+                    - float(allocation.encashed_days)
                 )
                 if remaining < application.total_days:
                     raise HTTPException(
@@ -688,15 +714,130 @@ class LeaveApplicationService:
                 )
                 db.add(allocation)
 
-        # NOTE: allocation change above is staged, not committed. update_status()
-        # commits it together with the application status change in one
-        # transaction. Do not insert a db.commit() between the two.
+            # Bidirectional Attendance Synchronization
+            if getattr(data, "sync_attendance", True):
+                cur_d = application.start_date
+                while cur_d <= application.end_date:
+                    att = (
+                        db.query(Attendance)
+                        .filter(
+                            Attendance.business_id == application.business_id,
+                            Attendance.employee_id == application.employee_id,
+                            Attendance.date == cur_d,
+                        )
+                        .first()
+                    )
+                    if att:
+                        att.status = AttendanceStatusEnum.ON_LEAVE
+                        att.note = f"Approved Leave ({leave_type.code}): {application.reason or ''}".strip()[:250]
+                        db.add(att)
+                    else:
+                        new_att = Attendance(
+                            business_id=application.business_id,
+                            employee_id=application.employee_id,
+                            date=cur_d,
+                            status=AttendanceStatusEnum.ON_LEAVE,
+                            source=AttendanceSourceEnum.SYSTEM,
+                            work_hours=0.0,
+                            overtime_hours=0.0,
+                            note=f"Approved Leave ({leave_type.code}): {application.reason or ''}".strip()[:250],
+                        )
+                        db.add(new_att)
+                    cur_d += timedelta(days=1)
+
+        # NOTE: allocation and attendance changes above are staged, not committed.
+        # update_status() commits them together with the application status
+        # change in one transaction. Do not insert a db.commit() between the two.
         return self.repository.update_status(
             db,
             application=application,
             status=target_status,
             reviewed_by_id=data.reviewed_by_id,
             review_note=data.review_note,
+        )
+
+    def rollback_application_approval(
+        self,
+        db: Session,
+        application_uuid: uuid.UUID,
+        data: LeaveApplicationRollback,
+        current_user=None,
+    ) -> LeaveApplication:
+        """Rollback an APPROVED application back to PENDING status,
+        restores the balance, reverts attendance, and logs audit details."""
+        application = self.get_application(db, application_uuid, current_user=current_user)
+
+        if application.status != LeaveStatusEnum.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot rollback leave application with status '{application.status}'. Only APPROVED requests can be rolled back.",
+            )
+
+        # Check if any date of the leave application falls into a LOCKED or PAID PayrollPeriod
+        if not data.force_override:
+            locked_period = (
+                db.query(PayrollPeriod)
+                .filter(
+                    PayrollPeriod.business_id == application.business_id,
+                    PayrollPeriod.status.in_([PayrollPeriodStatusEnum.LOCKED, PayrollPeriodStatusEnum.PAID]),
+                    PayrollPeriod.start_date <= application.end_date,
+                    PayrollPeriod.end_date >= application.start_date,
+                )
+                .first()
+            )
+            if locked_period:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Cannot rollback leave approval: This leave period overlaps with a "
+                        f"locked or paid payroll period '{locked_period.name}'. "
+                        f"Retroactive modification is restricted unless explicitly overridden."
+                    ),
+                )
+
+        # Restore quota in LeaveAllocation
+        leave_type = self.leave_type_repository.get_by_id(db, application.leave_type_id)
+        if leave_type and leave_type.max_days_per_year != 0:
+            year = application.start_date.year
+            allocation = self.allocation_repository.get_by_emp_type_year_locked(
+                db,
+                employee_id=application.employee_id,
+                leave_type_id=application.leave_type_id,
+                year=year,
+                business_id=application.business_id,
+            )
+            if allocation:
+                restored = float(allocation.used_days) - application.total_days
+                allocation.used_days = max(restored, 0)
+                db.add(allocation)
+
+        # Rollback synchronized attendance records
+        cur_d = application.start_date
+        while cur_d <= application.end_date:
+            att = (
+                db.query(Attendance)
+                .filter(
+                    Attendance.business_id == application.business_id,
+                    Attendance.employee_id == application.employee_id,
+                    Attendance.date == cur_d,
+                    Attendance.status == AttendanceStatusEnum.ON_LEAVE,
+                )
+                .first()
+            )
+            if att:
+                if att.source == AttendanceSourceEnum.SYSTEM and (att.work_hours or 0.0) == 0.0:
+                    db.delete(att)
+                else:
+                    att.status = AttendanceStatusEnum.ABSENT
+                    att.note = "Leave approval rolled back"
+                    db.add(att)
+            cur_d += timedelta(days=1)
+
+        return self.repository.rollback_status(
+            db,
+            application=application,
+            rolled_back_by_id=data.actor_id,
+            reason=data.reason,
         )
 
     def cancel_application(
@@ -848,3 +989,408 @@ class LeaveApplicationService:
             "total_applications": len(filtered_apps),
             "by_leave_type": summary_by_type,
         }
+
+
+class LeaveEncashmentService:
+    def __init__(
+        self,
+        repository: LeaveEncashmentRepository | None = None,
+        allocation_repository: LeaveAllocationRepository | None = None,
+        leave_type_repository: LeaveTypeRepository | None = None,
+        employee_repository: EmployeeRepository | None = None,
+        salary_repository: EmployeeSalaryRepository | None = None,
+    ):
+        self.repository = repository or LeaveEncashmentRepository()
+        self.allocation_repository = (
+            allocation_repository or LeaveAllocationRepository()
+        )
+        self.leave_type_repository = leave_type_repository or LeaveTypeRepository()
+        self.employee_repository = employee_repository or EmployeeRepository()
+        self.salary_repository = salary_repository or EmployeeSalaryRepository()
+
+    def get_encashments(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+        employee_id: uuid.UUID | None = None,
+        year: int | None = None,
+        status: str | LeaveEncashmentStatusEnum | None = None,
+    ) -> list[LeaveEncashment]:
+        return self.repository.get_all(
+            db,
+            skip=skip,
+            limit=limit,
+            business_id=business_id,
+            employee_id=employee_id,
+            year=year,
+            status=status,
+        )
+
+    def get_encashment(
+        self, db: Session, encashment_uuid: uuid.UUID, current_user=None
+    ) -> LeaveEncashment:
+        encashment = self.repository.get_by_id(db, encashment_uuid)
+        verify_record_ownership(encashment, current_user, detail="Leave encashment not found")
+        return encashment
+
+    def create_encashment(
+        self, db: Session, data: LeaveEncashmentCreate
+    ) -> LeaveEncashment:
+        employee = self.employee_repository.get_by_id(db, data.employee_id)
+        if not employee:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Employee with id '{data.employee_id}' not found",
+            )
+
+        leave_type = self.leave_type_repository.get_by_id(db, data.leave_type_id)
+        if not leave_type:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Leave type with id '{data.leave_type_id}' not found",
+            )
+
+        # Under BLA 2006, only cumulative / annual leave can be encashed (or leave types explicitly marked carry_forward)
+        if not leave_type.carry_forward and leave_type.code not in ("AL", "EL"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Leave type '{leave_type.name}' ({leave_type.code}) is not eligible for encashment. "
+                    f"Only cumulative / annual leave (BLA 2006 § 117) may be encashed."
+                ),
+            )
+
+        # Check balance
+        allocation = self.allocation_repository.get_by_emp_type_year_locked(
+            db,
+            employee_id=data.employee_id,
+            leave_type_id=data.leave_type_id,
+            year=data.year,
+            business_id=data.business_id,
+        )
+        if not allocation:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No leave allocation configured for this employee, leave type, and year.",
+            )
+
+        remaining = allocation.remaining_days
+        if remaining < data.encashable_days:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Insufficient leave balance: {remaining} day(s) remaining, "
+                    f"{data.encashable_days} day(s) requested for encashment."
+                ),
+            )
+
+        # Calculate daily rate from employee salary (basic_salary / 30.0 per BLA 2006 § 117)
+        salary_rec = self.salary_repository.get_by_employee_id(
+            db, employee_id=data.employee_id, business_id=data.business_id
+        )
+        if salary_rec and float(salary_rec.basic_salary or 0.0) > 0.0:
+            daily_rate = round(float(salary_rec.basic_salary) / 30.0, 2)
+        elif salary_rec and float(salary_rec.gross_salary or 0.0) > 0.0:
+            daily_rate = round(float(salary_rec.gross_salary) / 30.0, 2)
+        else:
+            daily_rate = 500.0  # standard fallback minimum rate
+
+        total_amount = round(data.encashable_days * daily_rate, 2)
+
+        return self.repository.create(
+            db,
+            data=data,
+            daily_rate=daily_rate,
+            total_amount=total_amount,
+        )
+
+    def review_encashment(
+        self,
+        db: Session,
+        encashment_uuid: uuid.UUID,
+        data: LeaveEncashmentReview,
+        current_user=None,
+    ) -> LeaveEncashment:
+        encashment = self.get_encashment(db, encashment_uuid, current_user=current_user)
+
+        if encashment.status != LeaveEncashmentStatusEnum.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot review leave encashment with status '{encashment.status}'.",
+            )
+
+        reviewer = self.employee_repository.get_by_id(db, data.reviewed_by_id)
+        if not reviewer:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Reviewer with id '{data.reviewed_by_id}' not found",
+            )
+
+        target_status = (
+            data.status
+            if isinstance(data.status, LeaveEncashmentStatusEnum)
+            else LeaveEncashmentStatusEnum(data.status)
+        )
+
+        if target_status == LeaveEncashmentStatusEnum.APPROVED:
+            allocation = self.allocation_repository.get_by_emp_type_year_locked(
+                db,
+                employee_id=encashment.employee_id,
+                leave_type_id=encashment.leave_type_id,
+                year=encashment.year,
+                business_id=encashment.business_id,
+            )
+            if not allocation:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Leave allocation row not found for encashment deduction.",
+                )
+
+            remaining = allocation.remaining_days
+            if remaining < float(encashment.encashable_days):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=(
+                        f"Cannot approve: Insufficient balance. Remaining: {remaining} day(s), "
+                        f"requested: {encashment.encashable_days} day(s)."
+                    ),
+                )
+
+            allocation.encashed_days = (
+                float(allocation.encashed_days) + float(encashment.encashable_days)
+            )
+            db.add(allocation)
+
+        return self.repository.update_status(
+            db,
+            encashment=encashment,
+            status=target_status,
+            reviewed_by_id=data.reviewed_by_id,
+            review_note=data.review_note,
+        )
+
+    def disburse_encashment(
+        self,
+        db: Session,
+        encashment_uuid: uuid.UUID,
+        data: LeaveEncashmentDisburse,
+        current_user=None,
+    ) -> LeaveEncashment:
+        encashment = self.get_encashment(db, encashment_uuid, current_user=current_user)
+
+        if encashment.status != LeaveEncashmentStatusEnum.APPROVED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot disburse encashment with status '{encashment.status}'. Must be APPROVED first.",
+            )
+
+        encashment.status = LeaveEncashmentStatusEnum.PAID
+        encashment.payment_date = data.payment_date
+        encashment.payment_reference = data.payment_reference
+        encashment.payroll_period_id = data.payroll_period_id
+        db.commit()
+        db.refresh(encashment)
+        return encashment
+
+    def delete_encashment(
+        self, db: Session, encashment_uuid: uuid.UUID, current_user=None
+    ) -> None:
+        encashment = self.get_encashment(db, encashment_uuid, current_user=current_user)
+
+        if encashment.status == LeaveEncashmentStatusEnum.APPROVED:
+            # Restore quota before delete
+            allocation = self.allocation_repository.get_by_emp_type_year_locked(
+                db,
+                employee_id=encashment.employee_id,
+                leave_type_id=encashment.leave_type_id,
+                year=encashment.year,
+                business_id=encashment.business_id,
+            )
+            if allocation:
+                restored = float(allocation.encashed_days) - float(encashment.encashable_days)
+                allocation.encashed_days = max(restored, 0)
+                db.add(allocation)
+
+        self.repository.delete(db, encashment)
+
+
+class LeaveCarryForwardService:
+    def __init__(
+        self,
+        allocation_repository: LeaveAllocationRepository | None = None,
+        leave_type_repository: LeaveTypeRepository | None = None,
+        employee_repository: EmployeeRepository | None = None,
+        log_repository: LeaveCarryForwardLogRepository | None = None,
+    ):
+        self.allocation_repository = (
+            allocation_repository or LeaveAllocationRepository()
+        )
+        self.leave_type_repository = leave_type_repository or LeaveTypeRepository()
+        self.employee_repository = employee_repository or EmployeeRepository()
+        self.log_repository = log_repository or LeaveCarryForwardLogRepository()
+
+    def preview_carry_forward(
+        self,
+        db: Session,
+        data: LeaveCarryForwardPreviewRequest,
+        business_id: int,
+    ) -> LeaveCarryForwardPreviewResponse:
+        employees = [
+            e for e in self.employee_repository.get_all(db, business_id=business_id, limit=2000)
+            if e.is_active
+        ]
+        if data.leave_type_id:
+            target_type = self.leave_type_repository.get_by_id(db, data.leave_type_id)
+            leave_types = [target_type] if target_type else []
+        else:
+            leave_types = [
+                lt for lt in self.leave_type_repository.get_all(db, business_id=business_id, limit=200)
+                if lt.is_active
+            ]
+
+        # Map existing allocations for from_year
+        allocations_list = self.allocation_repository.get_all(
+            db, business_id=business_id, year=data.from_year, limit=5000
+        )
+        alloc_map = {(a.employee_id, a.leave_type_id): a for a in allocations_list}
+
+        preview_items: list[LeaveCarryForwardPreviewItem] = []
+        total_carried = 0.0
+        total_lapsed = 0.0
+
+        for emp in employees:
+            for lt in leave_types:
+                alloc = alloc_map.get((emp.id, lt.id))
+                balance = alloc.remaining_days if alloc else 0.0
+
+                if lt.carry_forward:
+                    # Apply statutory/custom cap
+                    statutory_cap = (
+                        data.max_cap
+                        if data.max_cap is not None
+                        else (float(lt.max_days_per_year * 2) if lt.max_days_per_year > 0 else 60.0)
+                    )
+                    proposed_carry = min(max(balance, 0.0), statutory_cap)
+                    proposed_lapsed = max(balance - proposed_carry, 0.0)
+                else:
+                    proposed_carry = 0.0
+                    proposed_lapsed = max(balance, 0.0)
+
+                new_annual = float(lt.max_days_per_year or 0.0)
+                projected_starting = proposed_carry + new_annual
+
+                total_carried += proposed_carry
+                total_lapsed += proposed_lapsed
+
+                preview_items.append(
+                    LeaveCarryForwardPreviewItem(
+                        employee_id=emp.id,
+                        employee_code=emp.employee_id or "",
+                        employee_name=emp.full_name,
+                        department_name=getattr(emp, "department_name", None) or (emp.department.name if getattr(emp, "department", None) else "General"),
+                        leave_type_id=lt.id,
+                        leave_type_name=lt.name,
+                        leave_type_code=lt.code,
+                        carry_forward_allowed=lt.carry_forward,
+                        from_year_balance=round(balance, 2),
+                        proposed_carry_forward=round(proposed_carry, 2),
+                        proposed_lapsed=round(proposed_lapsed, 2),
+                        new_annual_allocation=round(new_annual, 2),
+                        projected_starting_balance=round(projected_starting, 2),
+                    )
+                )
+
+        return LeaveCarryForwardPreviewResponse(
+            from_year=data.from_year,
+            to_year=data.to_year,
+            total_employees=len(employees),
+            total_carried_days=round(total_carried, 2),
+            total_lapsed_days=round(total_lapsed, 2),
+            items=preview_items,
+        )
+
+    def execute_carry_forward(
+        self,
+        db: Session,
+        data: LeaveCarryForwardExecuteRequest,
+        business_id: int,
+        current_user=None,
+    ) -> LeaveCarryForwardExecuteResponse:
+        preview_req = LeaveCarryForwardPreviewRequest(
+            from_year=data.from_year,
+            to_year=data.to_year,
+            leave_type_id=data.leave_type_id,
+            max_cap=data.max_cap,
+            business_id=business_id,
+        )
+        sim = self.preview_carry_forward(db, preview_req, business_id=business_id)
+
+        count_mutated = 0
+        for item in sim.items:
+            existing_target = self.allocation_repository.get_by_emp_type_year_locked(
+                db,
+                employee_id=item.employee_id,
+                leave_type_id=item.leave_type_id,
+                year=data.to_year,
+                business_id=business_id,
+            )
+            if existing_target:
+                existing_target.carried_forward = item.proposed_carry_forward
+                existing_target.allocated_days = item.new_annual_allocation
+                db.add(existing_target)
+            else:
+                new_alloc = LeaveAllocation(
+                    business_id=business_id,
+                    employee_id=item.employee_id,
+                    leave_type_id=item.leave_type_id,
+                    year=data.to_year,
+                    allocated_days=item.new_annual_allocation,
+                    carried_forward=item.proposed_carry_forward,
+                    used_days=0.0,
+                    encashed_days=0.0,
+                )
+                db.add(new_alloc)
+            count_mutated += 1
+
+        # Audit logging
+        self.log_repository.create(
+            db,
+            business_id=business_id,
+            from_year=data.from_year,
+            to_year=data.to_year,
+            leave_type_id=data.leave_type_id,
+            total_employees=sim.total_employees,
+            total_days_carried=sim.total_carried_days,
+            total_days_lapsed=sim.total_lapsed_days,
+            executed_by_id=data.executed_by_id,
+            notes=data.notes,
+        )
+
+        db.commit()
+
+        return LeaveCarryForwardExecuteResponse(
+            from_year=data.from_year,
+            to_year=data.to_year,
+            total_employees=sim.total_employees,
+            total_carried_days=sim.total_carried_days,
+            total_lapsed_days=sim.total_lapsed_days,
+            allocations_created_or_updated=count_mutated,
+            message=(
+                f"Successfully completed yearly leave carry forward from {data.from_year} to {data.to_year}. "
+                f"{count_mutated} quota allocation(s) updated ({sim.total_carried_days} days carried forward, "
+                f"{sim.total_lapsed_days} days lapsed)."
+            ),
+        )
+
+    def get_logs(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+    ) -> list[LeaveCarryForwardLog]:
+        return self.log_repository.get_all(
+            db, skip=skip, limit=limit, business_id=business_id
+        )

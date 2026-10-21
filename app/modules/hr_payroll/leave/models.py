@@ -143,6 +143,16 @@ class LeaveApplication(Base, UUIDMixin, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    rolled_back_at: Mapped["DateTime | None"] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    rolled_back_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("employees.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    rollback_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Relationships
     business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
         "BusinessProfile",
@@ -161,6 +171,11 @@ class LeaveApplication(Base, UUIDMixin, TimestampMixin):
     reviewed_by: Mapped["Employee | None"] = relationship(  # noqa: F821
         "Employee",
         foreign_keys=[reviewed_by_id],
+        lazy="selectin",
+    )
+    rolled_back_by: Mapped["Employee | None"] = relationship(  # noqa: F821
+        "Employee",
+        foreign_keys=[rolled_back_by_id],
         lazy="selectin",
     )
 
@@ -206,6 +221,9 @@ class LeaveAllocation(Base, UUIDMixin, TimestampMixin):
     carried_forward: Mapped[float] = mapped_column(
         Numeric(5, 2), default=0, nullable=False
     )
+    encashed_days: Mapped[float] = mapped_column(
+        Numeric(5, 2), default=0, nullable=False
+    )
 
     # Relationships
     business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
@@ -228,9 +246,141 @@ class LeaveAllocation(Base, UUIDMixin, TimestampMixin):
             float(self.allocated_days)
             + float(self.carried_forward)
             - float(self.used_days)
+            - float(self.encashed_days)
         )
 
     def __repr__(self) -> str:
         return (
             f"<LeaveAllocation {self.employee_id} | {self.leave_type_id} | {self.year}>"
         )
+
+
+class LeaveEncashmentStatusEnum(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PAID = "paid"
+    CANCELLED = "cancelled"
+
+
+class LeaveEncashment(Base, UUIDMixin, TimestampMixin):
+    """Leave encashment request and payout record (BLA 2006 § 117)."""
+
+    __tablename__ = "leave_encashments"
+
+    business_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    employee_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("employees.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    leave_type_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("leave_types.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    year: Mapped[int] = mapped_column(Integer, nullable=False)
+    encashable_days: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    daily_rate: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    total_amount: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    status: Mapped[LeaveEncashmentStatusEnum] = mapped_column(
+        SAEnum(LeaveEncashmentStatusEnum, name="leave_encashment_status"),
+        default=LeaveEncashmentStatusEnum.PENDING,
+        nullable=False,
+    )
+    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payroll_period_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("payroll_periods.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    reviewed_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("employees.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    reviewed_at: Mapped["DateTime | None"] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    payment_date: Mapped["Date | None"] = mapped_column(Date, nullable=True)
+    payment_reference: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    # Relationships
+    business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
+        "BusinessProfile",
+        lazy="selectin",
+    )
+    employee: Mapped["Employee"] = relationship(  # noqa: F821
+        "Employee",
+        foreign_keys=[employee_id],
+        lazy="selectin",
+    )
+    leave_type: Mapped["LeaveType"] = relationship(
+        "LeaveType",
+        lazy="selectin",
+    )
+    reviewed_by: Mapped["Employee | None"] = relationship(  # noqa: F821
+        "Employee",
+        foreign_keys=[reviewed_by_id],
+        lazy="selectin",
+    )
+
+    def __repr__(self) -> str:
+        return f"<LeaveEncashment {self.employee_id} | {self.encashable_days}d -> {self.total_amount} [{self.status}]>"
+
+
+class LeaveCarryForwardLog(Base, UUIDMixin, TimestampMixin):
+    """Audit log of yearly leave carry forward batch executions."""
+
+    __tablename__ = "leave_carry_forward_logs"
+
+    business_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("business_profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    from_year: Mapped[int] = mapped_column(Integer, nullable=False)
+    to_year: Mapped[int] = mapped_column(Integer, nullable=False)
+    leave_type_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("leave_types.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    total_employees: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_days_carried: Mapped[float] = mapped_column(
+        Numeric(8, 2), default=0, nullable=False
+    )
+    total_days_lapsed: Mapped[float] = mapped_column(
+        Numeric(8, 2), default=0, nullable=False
+    )
+    executed_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("employees.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    business_profile: Mapped["BusinessProfile"] = relationship(  # noqa: F821
+        "BusinessProfile",
+        lazy="selectin",
+    )
+    leave_type: Mapped["LeaveType | None"] = relationship(
+        "LeaveType",
+        lazy="selectin",
+    )
+    executed_by: Mapped["Employee | None"] = relationship(  # noqa: F821
+        "Employee",
+        lazy="selectin",
+    )
+
+    def __repr__(self) -> str:
+        return f"<LeaveCarryForwardLog {self.from_year}->{self.to_year} [{self.total_employees} emps]>"

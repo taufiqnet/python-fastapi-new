@@ -27,6 +27,7 @@ interface LeaveAllocationsTabProps {
   onRefresh: () => void;
   onOpenNewAllocation: () => void;
   onOpenBulkAllocation: () => void;
+  onOpenCarryForward?: () => void;
   onOpenExport: () => void;
   onEditAllocation: (allocation: LeaveAllocationOut) => void;
 }
@@ -38,6 +39,7 @@ export function LeaveAllocationsTab({
   onRefresh,
   onOpenNewAllocation,
   onOpenBulkAllocation,
+  onOpenCarryForward,
   onOpenExport,
   onEditAllocation,
 }: LeaveAllocationsTabProps) {
@@ -194,6 +196,16 @@ export function LeaveAllocationsTab({
               <span>Bulk Annual Allocation</span>
             </button>
 
+            {onOpenCarryForward && (
+              <button
+                onClick={onOpenCarryForward}
+                className="px-3.5 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs"
+              >
+                <Sparkles className="w-4 h-4 text-purple-600" />
+                <span>Year-End Carry Forward</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenNewAllocation}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5"
@@ -259,6 +271,7 @@ export function LeaveAllocationsTab({
                 <th className="py-3 px-4">Leave Policy</th>
                 <th className="py-3 px-4">Entitled</th>
                 <th className="py-3 px-4">Used</th>
+                <th className="py-3 px-4">Encashed</th>
                 <th className="py-3 px-4">Remaining</th>
                 <th className="py-3 px-4 min-w-[140px]">Usage Meter</th>
                 <th className="py-3 px-4 text-right">Actions</th>
@@ -267,7 +280,7 @@ export function LeaveAllocationsTab({
             <tbody className="divide-y divide-slate-100 text-xs">
               {filteredAllocations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400">
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
                     <PieChart className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                     <p className="font-semibold text-slate-600">
                       No leave allocations found for Year {selectedYear}.
@@ -330,6 +343,17 @@ export function LeaveAllocationsTab({
 
                       {/* Used */}
                       <td className="py-3.5 px-4 font-bold text-slate-700">{used}d</td>
+
+                      {/* Encashed (BLA § 117) */}
+                      <td className="py-3.5 px-4">
+                        {Number(alloc.encashed_days || 0) > 0 ? (
+                          <span className="font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 text-[11px]">
+                            {alloc.encashed_days}d
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 font-medium">0d</span>
+                        )}
+                      </td>
 
                       {/* Remaining */}
                       <td className="py-3.5 px-4">

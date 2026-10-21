@@ -7,16 +7,21 @@ import {
   LeaveTypeOut,
   LeaveAllocationOut,
   LeaveApplicationOut,
+  LeaveEncashmentOut,
   EmployeeOut,
 } from "@/types";
 import { LeaveApplicationsTab } from "@/components/hr-payroll/leave/leave-applications-tab";
 import { LeaveAllocationsTab } from "@/components/hr-payroll/leave/leave-allocations-tab";
+import { LeaveEncashmentTab } from "@/components/hr-payroll/leave/leave-encashment-tab";
 import { LeaveTypesTab } from "@/components/hr-payroll/leave/leave-types-tab";
 import { LeaveCalendarTab } from "@/components/hr-payroll/leave/leave-calendar-tab";
 
 // Modals
 import { LeaveApplicationModal } from "@/components/hr-payroll/leave/modals/leave-application-modal";
 import { LeaveReviewModal } from "@/components/hr-payroll/leave/modals/leave-review-modal";
+import { LeaveRollbackModal } from "@/components/hr-payroll/leave/modals/leave-rollback-modal";
+import { CarryForwardModal } from "@/components/hr-payroll/leave/modals/carry-forward-modal";
+import { LeaveEncashmentModal } from "@/components/hr-payroll/leave/modals/leave-encashment-modal";
 import { LeaveAllocationModal } from "@/components/hr-payroll/leave/modals/leave-allocation-modal";
 import { BulkAllocationModal } from "@/components/hr-payroll/leave/modals/bulk-allocation-modal";
 import { LeaveTypeModal } from "@/components/hr-payroll/leave/modals/leave-type-modal";
@@ -26,16 +31,14 @@ import {
   CalendarDays,
   FileText,
   PieChart,
+  Banknote,
   BookOpen,
   Calendar,
   RefreshCw,
   AlertCircle,
-  Plus,
-  Layers,
-  FileSpreadsheet,
 } from "lucide-react";
 
-type ActiveTabType = "requests" | "allocations" | "policies" | "calendar";
+type ActiveTabType = "requests" | "allocations" | "encashment" | "policies" | "calendar";
 
 export default function LeaveManagementPage() {
   const [activeTab, setActiveTab] = useState<ActiveTabType>("requests");
@@ -44,6 +47,7 @@ export default function LeaveManagementPage() {
   const [leaveTypes, setLeaveTypes] = useState<LeaveTypeOut[]>([]);
   const [allocations, setAllocations] = useState<LeaveAllocationOut[]>([]);
   const [applications, setApplications] = useState<LeaveApplicationOut[]>([]);
+  const [encashments, setEncashments] = useState<LeaveEncashmentOut[]>([]);
   const [employees, setEmployees] = useState<EmployeeOut[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -53,6 +57,14 @@ export default function LeaveManagementPage() {
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewingApp, setReviewingApp] = useState<LeaveApplicationOut | null>(null);
+
+  const [isRollbackModalOpen, setIsRollbackModalOpen] = useState(false);
+  const [rollbackApp, setRollbackApp] = useState<LeaveApplicationOut | null>(null);
+
+  const [isCarryForwardModalOpen, setIsCarryForwardModalOpen] = useState(false);
+
+  const [isEncashmentModalOpen, setIsEncashmentModalOpen] = useState(false);
+  const [reviewingEncashment, setReviewingEncashment] = useState<LeaveEncashmentOut | null>(null);
 
   const [isAllocModalOpen, setIsAllocModalOpen] = useState(false);
   const [editingAlloc, setEditingAlloc] = useState<LeaveAllocationOut | null>(null);
@@ -70,16 +82,18 @@ export default function LeaveManagementPage() {
     setError(null);
 
     try {
-      const [typesRes, allocRes, appRes, empRes] = await Promise.allSettled([
+      const [typesRes, allocRes, appRes, encashRes, empRes] = await Promise.allSettled([
         apiClient.get<LeaveTypeOut[]>("/leave-types?limit=500"),
         apiClient.get<LeaveAllocationOut[]>("/leave-allocations?limit=500"),
         apiClient.get<LeaveApplicationOut[]>("/leave-applications?limit=500"),
+        apiClient.get<LeaveEncashmentOut[]>("/leave-encashments?limit=500"),
         apiClient.get<EmployeeOut[]>("/employees?limit=500"),
       ]);
 
       if (typesRes.status === "fulfilled") setLeaveTypes(typesRes.value.data || []);
       if (allocRes.status === "fulfilled") setAllocations(allocRes.value.data || []);
       if (appRes.status === "fulfilled") setApplications(appRes.value.data || []);
+      if (encashRes.status === "fulfilled") setEncashments(encashRes.value.data || []);
       if (empRes.status === "fulfilled") setEmployees(empRes.value.data || []);
     } catch {
       setError("Failed to communicate with leave management API endpoints.");
@@ -96,9 +110,18 @@ export default function LeaveManagementPage() {
     return applications.filter((a) => a.status === "pending").length;
   }, [applications]);
 
+  const pendingEncashmentsCount = useMemo(() => {
+    return encashments.filter((e) => e.status === "pending").length;
+  }, [encashments]);
+
   const handleOpenReview = (app: LeaveApplicationOut) => {
     setReviewingApp(app);
     setIsReviewModalOpen(true);
+  };
+
+  const handleOpenRollback = (app: LeaveApplicationOut) => {
+    setRollbackApp(app);
+    setIsRollbackModalOpen(true);
   };
 
   const handleEditAllocation = (alloc: LeaveAllocationOut) => {
@@ -129,7 +152,7 @@ export default function LeaveManagementPage() {
               </h1>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Manage statutory leave policies, annual quota allocations, and approval workflows.
+              Manage statutory leave policies, annual quota allocations, encashment, year-end carry forward, and approval workflows.
             </p>
           </div>
         </div>
@@ -163,6 +186,12 @@ export default function LeaveManagementPage() {
               id: "allocations" as ActiveTabType,
               label: "Balances & Quotas",
               icon: PieChart,
+            },
+            {
+              id: "encashment" as ActiveTabType,
+              label: "Leave Encashment",
+              icon: Banknote,
+              badge: pendingEncashmentsCount > 0 ? pendingEncashmentsCount : undefined,
             },
             {
               id: "policies" as ActiveTabType,
@@ -204,7 +233,7 @@ export default function LeaveManagementPage() {
           <div className="py-24 text-center text-slate-400">
             <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mx-auto mb-2" />
             <p className="font-semibold text-slate-700">Loading Leave Management Data...</p>
-            <p className="text-xs text-slate-400 mt-0.5">Fetching policies, employee quotas, and requests.</p>
+            <p className="text-xs text-slate-400 mt-0.5">Fetching policies, employee quotas, encashments, and requests.</p>
           </div>
         ) : (
           <>
@@ -217,6 +246,7 @@ export default function LeaveManagementPage() {
                 onRefresh={loadData}
                 onOpenApplyModal={() => setIsApplyModalOpen(true)}
                 onReviewApplication={handleOpenReview}
+                onRollbackApplication={handleOpenRollback}
               />
             )}
 
@@ -231,8 +261,27 @@ export default function LeaveManagementPage() {
                   setIsAllocModalOpen(true);
                 }}
                 onOpenBulkAllocation={() => setIsBulkModalOpen(true)}
+                onOpenCarryForward={() => setIsCarryForwardModalOpen(true)}
                 onOpenExport={() => handleOpenExportWithScope("allocations")}
                 onEditAllocation={handleEditAllocation}
+              />
+            )}
+
+            {activeTab === "encashment" && (
+              <LeaveEncashmentTab
+                encashments={encashments}
+                employees={employees}
+                allocations={allocations}
+                leaveTypes={leaveTypes}
+                onRefresh={loadData}
+                onOpenCreateModal={() => {
+                  setReviewingEncashment(null);
+                  setIsEncashmentModalOpen(true);
+                }}
+                onReviewEncashment={(enc) => {
+                  setReviewingEncashment(enc);
+                  setIsEncashmentModalOpen(true);
+                }}
               />
             )}
 
@@ -281,6 +330,38 @@ export default function LeaveManagementPage() {
           employees={employees}
         />
 
+        <LeaveRollbackModal
+          isOpen={isRollbackModalOpen}
+          onClose={() => {
+            setIsRollbackModalOpen(false);
+            setRollbackApp(null);
+          }}
+          onSuccess={loadData}
+          application={rollbackApp}
+          employees={employees}
+          leaveTypes={leaveTypes}
+        />
+
+        <CarryForwardModal
+          isOpen={isCarryForwardModalOpen}
+          onClose={() => setIsCarryForwardModalOpen(false)}
+          onSuccess={loadData}
+          leaveTypes={leaveTypes}
+        />
+
+        <LeaveEncashmentModal
+          isOpen={isEncashmentModalOpen}
+          onClose={() => {
+            setIsEncashmentModalOpen(false);
+            setReviewingEncashment(null);
+          }}
+          onSuccess={loadData}
+          employees={employees}
+          allocations={allocations}
+          leaveTypes={leaveTypes}
+          encashmentToReview={reviewingEncashment}
+        />
+
         <LeaveAllocationModal
           isOpen={isAllocModalOpen}
           onClose={() => {
@@ -322,3 +403,4 @@ export default function LeaveManagementPage() {
     </DashboardLayout>
   );
 }
+

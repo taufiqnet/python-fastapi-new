@@ -880,6 +880,7 @@ export interface LeaveAllocationOut {
   allocated_days: number;
   used_days: number;
   carried_forward: number;
+  encashed_days?: number;
   remaining_days: number;
   business_id: number;
   created_at?: string;
@@ -900,9 +901,70 @@ export interface LeaveApplicationOut {
   review_note?: string | null;
   applied_at?: string | null;
   reviewed_at?: string | null;
+  rolled_back_at?: string | null;
+  rolled_back_by_id?: string | null;
+  rollback_reason?: string | null;
   business_id: number;
   created_at?: string;
   updated_at?: string;
+}
+
+export type LeaveEncashmentStatus = "pending" | "approved" | "rejected" | "paid" | "cancelled";
+
+export interface LeaveEncashmentOut {
+  id: string;
+  employee_id: string;
+  leave_type_id: string;
+  year: number;
+  encashable_days: number;
+  daily_rate: number;
+  total_amount: number;
+  status: LeaveEncashmentStatus;
+  reason?: string | null;
+  payroll_period_id?: string | null;
+  reviewed_by_id?: string | null;
+  reviewed_at?: string | null;
+  review_note?: string | null;
+  payment_date?: string | null;
+  payment_reference?: string | null;
+  business_id: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface LeaveCarryForwardPreviewItem {
+  employee_id: string;
+  employee_code: string;
+  employee_name: string;
+  department_name: string;
+  leave_type_id: string;
+  leave_type_name: string;
+  leave_type_code: string;
+  carry_forward_allowed: boolean;
+  from_year_balance: number;
+  proposed_carry_forward: number;
+  proposed_lapsed: number;
+  new_annual_allocation: number;
+  projected_starting_balance: number;
+}
+
+export interface LeaveCarryForwardPreviewResponse {
+  from_year: number;
+  to_year: number;
+  total_employees: number;
+  total_carried_days: number;
+  total_lapsed_days: number;
+  items: LeaveCarryForwardPreviewItem[];
+}
+
+export interface LeaveCarryForwardExecuteResponse {
+  from_year: number;
+  to_year: number;
+  total_employees: number;
+  total_carried_days: number;
+  total_lapsed_days: number;
+  allocations_created_or_updated: number;
+  message: string;
 }
 
 // ── Payroll Types ───────────────────────────────────────────────────────

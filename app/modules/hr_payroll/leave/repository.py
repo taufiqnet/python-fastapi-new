@@ -6,6 +6,9 @@ from sqlalchemy.orm import Session
 from app.modules.hr_payroll.leave.models import (
     LeaveAllocation,
     LeaveApplication,
+    LeaveCarryForwardLog,
+    LeaveEncashment,
+    LeaveEncashmentStatusEnum,
     LeaveStatusEnum,
     LeaveType,
 )
@@ -14,6 +17,7 @@ from app.modules.hr_payroll.leave.schemas import (
     LeaveAllocationUpdate,
     LeaveApplicationCreate,
     LeaveApplicationUpdate,
+    LeaveEncashmentCreate,
     LeaveTypeCreate,
     LeaveTypeUpdate,
 )
@@ -242,7 +246,25 @@ class LeaveApplicationRepository:
         )
         application.reviewed_by_id = reviewed_by_id
         application.review_note = review_note
-        application.reviewed_at = datetime.now(timezone.utc)
+        db.commit()
+        db.refresh(application)
+        return application
+
+    def rollback_status(
+        self,
+        db: Session,
+        application: LeaveApplication,
+        rolled_back_by_id: uuid.UUID,
+        reason: str,
+    ) -> LeaveApplication:
+        """Rolls back an approved application back to PENDING status,
+        logging audit fields. Commits staged session changes (such as quota
+        restoration) in the same atomic transaction.
+        """
+        application.status = LeaveStatusEnum.PENDING
+        application.rolled_back_by_id = rolled_back_by_id
+        application.rollback_reason = reason
+        application.rolled_back_at = datetime.now(timezone.utc)
         db.commit()
         db.refresh(application)
         return application
@@ -250,3 +272,118 @@ class LeaveApplicationRepository:
     def delete(self, db: Session, application: LeaveApplication) -> None:
         db.delete(application)
         db.commit()
+
+
+class LeaveEncashmentRepository:
+    def get_by_id(
+        self, db: Session, encashment_uuid: uuid.UUID
+    ) -> LeaveEncashment | None:
+        return (
+            db.query(LeaveEncashment)
+            .filter(LeaveEncashment.id == encashment_uuid)
+            .first()
+        )
+
+    def get_all(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+        employee_id: uuid.UUID | None = None,
+        year: int | None = None,
+        status: str | LeaveEncashmentStatusEnum | None = None,
+    ) -> list[LeaveEncashment]:
+        query = db.query(LeaveEncashment)
+        if business_id is not None:
+            query = query.filter(LeaveEncashment.business_id == business_id)
+        if employee_id is not None:
+            query = query.filter(LeaveEncashment.employee_id == employee_id)
+        if year is not None:
+            query = query.filter(LeaveEncashment.year == year)
+        if status is not None:
+            query = query.filter(LeaveEncashment.status == status)
+        return query.order_by(LeaveEncashment.created_at.desc()).offset(skip).limit(limit).all()
+
+    def create(
+        self,
+        db: Session,
+        data: LeaveEncashmentCreate,
+        daily_rate: float,
+        total_amount: float,
+    ) -> LeaveEncashment:
+        encashment_data = data.model_dump()
+        encashment = LeaveEncashment(
+            **encashment_data,
+            daily_rate=daily_rate,
+            total_amount=total_amount,
+        )
+        db.add(encashment)
+        db.commit()
+        db.refresh(encashment)
+        return encashment
+
+    def update_status(
+        self,
+        db: Session,
+        encashment: LeaveEncashment,
+        status: LeaveEncashmentStatusEnum,
+        reviewed_by_id: uuid.UUID | None = None,
+        review_note: str | None = None,
+    ) -> LeaveEncashment:
+        encashment.status = status
+        if reviewed_by_id:
+            encashment.reviewed_by_id = reviewed_by_id
+            encashment.reviewed_at = datetime.now(timezone.utc)
+        if review_note:
+            encashment.review_note = review_note
+        db.commit()
+        db.refresh(encashment)
+        return encashment
+
+    def delete(self, db: Session, encashment: LeaveEncashment) -> None:
+        db.delete(encashment)
+        db.commit()
+
+
+class LeaveCarryForwardLogRepository:
+    def create(
+        self,
+        db: Session,
+        business_id: int,
+        from_year: int,
+        to_year: int,
+        total_employees: int,
+        total_days_carried: float,
+        total_days_lapsed: float,
+        leave_type_id: uuid.UUID | None = None,
+        executed_by_id: uuid.UUID | None = None,
+        notes: str | None = None,
+    ) -> LeaveCarryForwardLog:
+        log = LeaveCarryForwardLog(
+            business_id=business_id,
+            from_year=from_year,
+            to_year=to_year,
+            leave_type_id=leave_type_id,
+            total_employees=total_employees,
+            total_days_carried=total_days_carried,
+            total_days_lapsed=total_days_lapsed,
+            executed_by_id=executed_by_id,
+            notes=notes,
+        )
+        db.add(log)
+        db.commit()
+        db.refresh(log)
+        return log
+
+    def get_all(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+    ) -> list[LeaveCarryForwardLog]:
+        query = db.query(LeaveCarryForwardLog)
+        if business_id is not None:
+            query = query.filter(LeaveCarryForwardLog.business_id == business_id)
+        return query.order_by(LeaveCarryForwardLog.created_at.desc()).offset(skip).limit(limit).all()
