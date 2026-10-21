@@ -7,6 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.core.tenancy.scoping import verify_record_ownership
 from app.modules.healthcare.models import (
+    Appointment,
+    AppointmentStatusEnum,
+    CommissionStatusEnum,
+    DayOfWeekEnum,
     DiagnosticDepartmentEnum,
     DiagnosticOrder,
     DiagnosticOrderItem,
@@ -14,25 +18,48 @@ from app.modules.healthcare.models import (
     DiagnosticSample,
     DiagnosticTest,
     DoctorProfile,
+    DoctorScheduleSlot,
+    LabTestResult,
     Patient,
+    Prescription,
+    RadiologyReport,
+    ReferralDoctorCommission,
+    ResultStatusEnum,
     SampleStatusEnum,
+    VisitTypeEnum,
 )
 from app.modules.healthcare.repository import (
+    AppointmentRepository,
     DiagnosticOrderRepository,
     DiagnosticSampleRepository,
     DiagnosticTestRepository,
     DoctorProfileRepository,
+    DoctorScheduleSlotRepository,
+    LabTestResultRepository,
     PatientRepository,
+    PrescriptionRepository,
+    RadiologyReportRepository,
+    ReferralCommissionRepository,
 )
 from app.modules.healthcare.schemas import (
+    AppointmentCreate,
+    AppointmentUpdate,
     DiagnosticCheckoutRequest,
     DiagnosticSampleCollect,
     DiagnosticTestCreate,
     DiagnosticTestUpdate,
     DoctorProfileCreate,
     DoctorProfileUpdate,
+    DoctorScheduleSlotCreate,
+    LabResultBatchRequest,
+    LabVerificationRequest,
     PatientCreate,
     PatientUpdate,
+    PrescriptionCreate,
+    PrescriptionUpdate,
+    RadiologyReportCreate,
+    RadiologyReportUpdate,
+    ReferralPayoutRequest,
 )
 
 
@@ -374,6 +401,22 @@ class DiagnosticOrderService:
 
         order.samples = samples
 
+        # 7. Generate Referral Commission if referring doctor has referral commission rate
+        if request.referring_doctor_id:
+            doctor = self.doctor_repository.get_by_id(db, request.referring_doctor_id)
+            if doctor and doctor.is_referral_doctor and doctor.referral_commission_rate > Decimal("0.0"):
+                comm_pct = Decimal(str(doctor.referral_commission_rate))
+                comm_amount = (net_amount * comm_pct) / Decimal("100.0")
+                comm = ReferralDoctorCommission(
+                    business_id=bid,
+                    referring_doctor_id=doctor.id,
+                    bill_amount=net_amount,
+                    commission_rate=comm_pct,
+                    commission_amount=comm_amount.quantize(Decimal("0.01")),
+                    payment_status=CommissionStatusEnum.accrued,
+                )
+                order.referral_commissions = [comm]
+
         return self.order_repository.create(db, order)
 
 
@@ -428,9 +471,461 @@ class DiagnosticSampleService:
         )
 
 
+# ── Phase 2 Services ────────────────────────────────────────────────────────
+
+class DoctorScheduleService:
+    def __init__(self, repository: DoctorScheduleSlotRepository | None = None):
+        self.repository = repository or DoctorScheduleSlotRepository()
+
+    def list_slots(
+        self, db: Session, doctor_id: uuid.UUID, is_active: bool | None = None
+    ) -> list[DoctorScheduleSlot]:
+        return self.repository.get_by_doctor(db, doctor_id, is_active=is_active)
+
+    def create_slot(
+        self, db: Session, data: DoctorScheduleSlotCreate, current_user=None
+    ) -> DoctorScheduleSlot:
+        if current_user and not current_user.is_superuser:
+            data.business_id = current_user.business_id
+        return self.repository.create(db, data)
+
+    def delete_slot(self, db: Session, slot_id: uuid.UUID, current_user=None) -> None:
+        slot = self.repository.get_by_id(db, slot_id)
+        if not slot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Doctor schedule slot with id '{slot_id}' not found",
+            )
+        verify_record_ownership(slot, current_user)
+        self.repository.delete(db, slot)
+
+
+class AppointmentService:
+    def __init__(
+        self,
+        repository: AppointmentRepository | None = None,
+        doctor_repository: DoctorProfileRepository | None = None,
+        patient_repository: PatientRepository | None = None,
+    ):
+        self.repository = repository or AppointmentRepository()
+        self.doctor_repository = doctor_repository or DoctorProfileRepository()
+        self.patient_repository = patient_repository or PatientRepository()
+
+    def get_appointment(self, db: Session, appointment_id: uuid.UUID, current_user=None) -> Appointment:
+        appt = self.repository.get_by_id(db, appointment_id)
+        if not appt:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Appointment with id '{appointment_id}' not found",
+            )
+        verify_record_ownership(appt, current_user)
+        return appt
+
+    def book_appointment(
+        self, db: Session, data: AppointmentCreate, current_user=None
+    ) -> Appointment:
+        bid = data.business_id
+        if current_user and not current_user.is_superuser:
+            bid = current_user.business_id
+            data.business_id = bid
+
+        patient = self.patient_repository.get_by_id(db, data.patient_id)
+        if not patient or patient.business_id != bid:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Patient with id '{data.patient_id}' not found",
+            )
+
+        doctor = self.doctor_repository.get_by_id(db, data.doctor_id)
+        if not doctor or doctor.business_id != bid:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Doctor with id '{data.doctor_id}' not found",
+            )
+
+        serial = self.repository.get_next_serial(db, bid, doctor.id, data.appointment_date)
+        return self.repository.create(db, data, serial_number=serial)
+
+    def list_appointments(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        doctor_id: uuid.UUID | None = None,
+        patient_id: uuid.UUID | None = None,
+        appointment_date=None,
+        status: AppointmentStatusEnum | None = None,
+        search: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+        current_user=None,
+    ) -> list[Appointment]:
+        bid = business_id
+        if current_user and not current_user.is_superuser:
+            bid = current_user.business_id
+        return self.repository.get_all(
+            db,
+            business_id=bid,
+            doctor_id=doctor_id,
+            patient_id=patient_id,
+            appointment_date=appointment_date,
+            status=status,
+            search=search,
+            skip=skip,
+            limit=limit,
+        )
+
+    def update_appointment(
+        self, db: Session, appointment_id: uuid.UUID, data: AppointmentUpdate, current_user=None
+    ) -> Appointment:
+        appt = self.get_appointment(db, appointment_id, current_user=current_user)
+        return self.repository.update(db, appt, data)
+
+    def delete_appointment(self, db: Session, appointment_id: uuid.UUID, current_user=None) -> None:
+        appt = self.get_appointment(db, appointment_id, current_user=current_user)
+        self.repository.delete(db, appt)
+
+
+class PrescriptionService:
+    def __init__(
+        self,
+        repository: PrescriptionRepository | None = None,
+        appointment_repository: AppointmentRepository | None = None,
+        patient_repository: PatientRepository | None = None,
+        doctor_repository: DoctorProfileRepository | None = None,
+    ):
+        self.repository = repository or PrescriptionRepository()
+        self.appointment_repository = appointment_repository or AppointmentRepository()
+        self.patient_repository = patient_repository or PatientRepository()
+        self.doctor_repository = doctor_repository or DoctorProfileRepository()
+
+    def get_prescription(self, db: Session, prescription_id: uuid.UUID, current_user=None) -> Prescription:
+        rx = self.repository.get_by_id(db, prescription_id)
+        if not rx:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Prescription with id '{prescription_id}' not found",
+            )
+        verify_record_ownership(rx, current_user)
+        return rx
+
+    def create_prescription(
+        self, db: Session, data: PrescriptionCreate, current_user=None
+    ) -> Prescription:
+        bid = data.business_id
+        if current_user and not current_user.is_superuser:
+            bid = current_user.business_id
+            data.business_id = bid
+
+        patient = self.patient_repository.get_by_id(db, data.patient_id)
+        if not patient or patient.business_id != bid:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Patient with id '{data.patient_id}' not found",
+            )
+
+        doctor = self.doctor_repository.get_by_id(db, data.doctor_id)
+        if not doctor or doctor.business_id != bid:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Doctor with id '{data.doctor_id}' not found",
+            )
+
+        year = datetime.now(timezone.utc).year
+        seq = self.repository.get_next_sequence(db, bid, year)
+        rx_number = f"RX-{bid}-{year}-{seq:06d}"
+        while self.repository.get_by_number(db, bid, rx_number):
+            seq += 1
+            rx_number = f"RX-{bid}-{year}-{seq:06d}"
+
+        prescription = Prescription(
+            **data.model_dump(),
+            prescription_number=rx_number,
+        )
+
+        created_rx = self.repository.create(db, prescription)
+
+        # If linked to an appointment, mark appointment as completed
+        if data.appointment_id:
+            appt = self.appointment_repository.get_by_id(db, data.appointment_id)
+            if appt and appt.business_id == bid:
+                appt.status = AppointmentStatusEnum.completed
+                db.commit()
+
+        return created_rx
+
+    def list_prescriptions(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        patient_id: uuid.UUID | None = None,
+        doctor_id: uuid.UUID | None = None,
+        search: str | None = None,
+        skip: int = 0,
+        limit: int = 100,
+        current_user=None,
+    ) -> list[Prescription]:
+        bid = business_id
+        if current_user and not current_user.is_superuser:
+            bid = current_user.business_id
+        return self.repository.get_all(
+            db,
+            business_id=bid,
+            patient_id=patient_id,
+            doctor_id=doctor_id,
+            search=search,
+            skip=skip,
+            limit=limit,
+        )
+
+    def update_prescription(
+        self, db: Session, prescription_id: uuid.UUID, data: PrescriptionUpdate, current_user=None
+    ) -> Prescription:
+        rx = self.get_prescription(db, prescription_id, current_user=current_user)
+        return self.repository.update(db, rx, data)
+
+
+class LISService:
+    def __init__(
+        self,
+        repository: LabTestResultRepository | None = None,
+        order_repository: DiagnosticOrderRepository | None = None,
+    ):
+        self.repository = repository or LabTestResultRepository()
+        self.order_repository = order_repository or DiagnosticOrderRepository()
+
+    def get_order_item_results(
+        self, db: Session, order_item_id: uuid.UUID, current_user=None
+    ) -> list[LabTestResult]:
+        order_item = (
+            db.query(DiagnosticOrderItem).filter(DiagnosticOrderItem.id == order_item_id).first()
+        )
+        if not order_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Order item with id '{order_item_id}' not found",
+            )
+        order = self.order_repository.get_by_id(db, order_item.order_id)
+        if order:
+            verify_record_ownership(order, current_user)
+        return self.repository.get_by_order_item(db, order_item_id)
+
+    def batch_enter_results(
+        self, db: Session, request: LabResultBatchRequest, current_user=None
+    ) -> list[LabTestResult]:
+        bid = request.business_id
+        if current_user and not current_user.is_superuser:
+            bid = current_user.business_id
+            request.business_id = bid
+
+        order_item = (
+            db.query(DiagnosticOrderItem).filter(DiagnosticOrderItem.id == request.order_item_id).first()
+        )
+        if not order_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Order item with id '{request.order_item_id}' not found",
+            )
+        order = self.order_repository.get_by_id(db, order_item.order_id)
+        if not order or order.business_id != bid:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Parent diagnostic order not found for this item",
+            )
+
+        # Automatic reference range analysis
+        for it in request.results:
+            if it.ref_range and not it.is_abnormal:
+                # Try parsing numeric range e.g. "12.0 - 15.5" or "10-20"
+                parts = it.ref_range.replace("–", "-").split("-")
+                if len(parts) == 2:
+                    try:
+                        low = float(parts[0].strip())
+                        high = float(parts[1].strip())
+                        val = float(it.observed_value.strip())
+                        if val < low or val > high:
+                            it.is_abnormal = True
+                    except (ValueError, TypeError):
+                        pass
+
+        results = self.repository.batch_save(
+            db,
+            business_id=bid,
+            order_id=order.id,
+            order_item_id=order_item.id,
+            technician_name=request.technician_name,
+            items=request.results,
+        )
+
+        order_item.status = "reported"
+        db.commit()
+        return results
+
+    def verify_results(
+        self, db: Session, order_item_id: uuid.UUID, req: LabVerificationRequest, current_user=None
+    ) -> list[LabTestResult]:
+        order_item = (
+            db.query(DiagnosticOrderItem).filter(DiagnosticOrderItem.id == order_item_id).first()
+        )
+        if not order_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Order item with id '{order_item_id}' not found",
+            )
+        order = self.order_repository.get_by_id(db, order_item.order_id)
+        if order:
+            verify_record_ownership(order, current_user)
+
+        verified_results = self.repository.verify_order_item_results(
+            db, order_item_id, verified_by_name=req.verified_by_name, remarks=req.remarks
+        )
+        order_item.status = "verified"
+
+        # Check if all items on the order are completed/verified
+        all_items = (
+            db.query(DiagnosticOrderItem)
+            .filter(DiagnosticOrderItem.order_id == order_item.order_id)
+            .all()
+        )
+        if all(i.status == "verified" for i in all_items):
+            if order:
+                order.status = DiagnosticOrderStatusEnum.completed
+
+        db.commit()
+        return verified_results
+
+
+class RadiologyService:
+    def __init__(
+        self,
+        repository: RadiologyReportRepository | None = None,
+        order_repository: DiagnosticOrderRepository | None = None,
+    ):
+        self.repository = repository or RadiologyReportRepository()
+        self.order_repository = order_repository or DiagnosticOrderRepository()
+
+    def get_report(self, db: Session, order_item_id: uuid.UUID, current_user=None) -> RadiologyReport | None:
+        order_item = (
+            db.query(DiagnosticOrderItem).filter(DiagnosticOrderItem.id == order_item_id).first()
+        )
+        if not order_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Order item with id '{order_item_id}' not found",
+            )
+        order = self.order_repository.get_by_id(db, order_item.order_id)
+        if order:
+            verify_record_ownership(order, current_user)
+        return self.repository.get_by_order_item(db, order_item_id)
+
+    def save_report(
+        self, db: Session, data: RadiologyReportCreate, current_user=None
+    ) -> RadiologyReport:
+        bid = data.business_id
+        if current_user and not current_user.is_superuser:
+            bid = current_user.business_id
+            data.business_id = bid
+
+        order_item = (
+            db.query(DiagnosticOrderItem).filter(DiagnosticOrderItem.id == data.order_item_id).first()
+        )
+        if not order_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Order item with id '{data.order_item_id}' not found",
+            )
+        order = self.order_repository.get_by_id(db, order_item.order_id)
+        if not order or order.business_id != bid:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Parent diagnostic order not found for this item",
+            )
+
+        report = self.repository.create_or_update(db, data)
+        order_item.status = "reported"
+        db.commit()
+        return report
+
+    def verify_report(
+        self, db: Session, order_item_id: uuid.UUID, verified_by_name: str, current_user=None
+    ) -> RadiologyReport:
+        report = self.get_report(db, order_item_id, current_user=current_user)
+        if not report:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Radiology report has not been written yet",
+            )
+
+        verified = self.repository.verify_report(db, report, verified_by_name=verified_by_name)
+        order_item = (
+            db.query(DiagnosticOrderItem).filter(DiagnosticOrderItem.id == order_item_id).first()
+        )
+        if order_item:
+            order_item.status = "verified"
+
+            all_items = (
+                db.query(DiagnosticOrderItem)
+                .filter(DiagnosticOrderItem.order_id == order_item.order_id)
+                .all()
+            )
+            if all(i.status == "verified" for i in all_items):
+                order = self.order_repository.get_by_id(db, order_item.order_id)
+                if order:
+                    order.status = DiagnosticOrderStatusEnum.completed
+
+        db.commit()
+        return verified
+
+
+class ReferralCommissionService:
+    def __init__(self, repository: ReferralCommissionRepository | None = None):
+        self.repository = repository or ReferralCommissionRepository()
+
+    def list_commissions(
+        self,
+        db: Session,
+        business_id: int | None = None,
+        referring_doctor_id: uuid.UUID | None = None,
+        status: CommissionStatusEnum | None = None,
+        skip: int = 0,
+        limit: int = 100,
+        current_user=None,
+    ) -> list[ReferralDoctorCommission]:
+        bid = business_id
+        if current_user and not current_user.is_superuser:
+            bid = current_user.business_id
+        return self.repository.get_all(
+            db,
+            business_id=bid,
+            referring_doctor_id=referring_doctor_id,
+            payment_status=status,
+            skip=skip,
+            limit=limit,
+        )
+
+    def record_payout(
+        self, db: Session, commission_id: uuid.UUID, data: ReferralPayoutRequest, current_user=None
+    ) -> ReferralDoctorCommission:
+        comm = self.repository.get_by_id(db, commission_id)
+        if not comm:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Referral commission with id '{commission_id}' not found",
+            )
+        verify_record_ownership(comm, current_user)
+        return self.repository.record_payout(
+            db, comm, payment_reference=data.payment_reference, notes=data.notes
+        )
+
+
 # Singletons
 patient_service = PatientService()
 doctor_service = DoctorProfileService()
+doctor_schedule_service = DoctorScheduleService()
+appointment_service = AppointmentService()
+prescription_service = PrescriptionService()
 diagnostic_catalog_service = DiagnosticCatalogService()
 diagnostic_order_service = DiagnosticOrderService()
 diagnostic_sample_service = DiagnosticSampleService()
+lis_service = LISService()
+radiology_service = RadiologyService()
+referral_commission_service = ReferralCommissionService()

@@ -23,6 +23,10 @@ import {
   AlertCircle,
   RefreshCw,
   ArrowUpRight,
+  ShieldCheck,
+  DollarSign,
+  Activity,
+  Layers,
 } from "lucide-react";
 
 export default function HealthcareHubPage() {
@@ -244,6 +248,65 @@ export default function HealthcareHubPage() {
               </div>
               <h3 className="font-bold text-sm text-slate-900 pt-2">Test Master Catalog</h3>
               <p className="text-xs text-slate-500">LIS parameters, prices & ref. ranges</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
+          </Link>
+        </div>
+
+        {/* Phase 2: OPD Chambers, LIS & Verification Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link
+            href="/healthcare/opd-chambers"
+            className="p-4 bg-white border border-slate-200/80 hover:border-emerald-500 rounded-2xl shadow-2xs hover:shadow-md transition-all group flex items-start justify-between"
+          >
+            <div className="space-y-1">
+              <div className="p-2.5 bg-teal-50 text-teal-700 rounded-xl w-fit group-hover:bg-teal-600 group-hover:text-white transition-colors">
+                <Stethoscope className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 pt-2">OPD Chamber Queue</h3>
+              <p className="text-xs text-slate-500">Doctor schedules & live token queue</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
+          </Link>
+
+          <Link
+            href="/healthcare/diagnostic/lis-worklist"
+            className="p-4 bg-white border border-slate-200/80 hover:border-emerald-500 rounded-2xl shadow-2xs hover:shadow-md transition-all group flex items-start justify-between"
+          >
+            <div className="space-y-1">
+              <div className="p-2.5 bg-purple-50 text-purple-700 rounded-xl w-fit group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                <Activity className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 pt-2">LIS Result Console</h3>
+              <p className="text-xs text-slate-500">Lab findings & auto range flags</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
+          </Link>
+
+          <Link
+            href="/healthcare/diagnostic/verification"
+            className="p-4 bg-white border border-slate-200/80 hover:border-emerald-500 rounded-2xl shadow-2xs hover:shadow-md transition-all group flex items-start justify-between"
+          >
+            <div className="space-y-1">
+              <div className="p-2.5 bg-emerald-50 text-emerald-700 rounded-xl w-fit group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 pt-2">Report Verification</h3>
+              <p className="text-xs text-slate-500">Pathologist sign-off & A4 print</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
+          </Link>
+
+          <Link
+            href="/healthcare/referrals"
+            className="p-4 bg-white border border-slate-200/80 hover:border-emerald-500 rounded-2xl shadow-2xs hover:shadow-md transition-all group flex items-start justify-between"
+          >
+            <div className="space-y-1">
+              <div className="p-2.5 bg-rose-50 text-rose-700 rounded-xl w-fit group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                <DollarSign className="w-5 h-5" />
+              </div>
+              <h3 className="font-bold text-sm text-slate-900 pt-2">Referral Ledger</h3>
+              <p className="text-xs text-slate-500">Doctor commissions & payout vouchers</p>
             </div>
             <ArrowUpRight className="w-4 h-4 text-slate-300 group-hover:text-emerald-600 transition-colors" />
           </Link>

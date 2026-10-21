@@ -1502,6 +1502,240 @@ export interface DiagnosticCheckoutRequest {
   notes?: string | null;
 }
 
+// ── Phase 2 Healthcare Types ─────────────────────────────────────────────
+export type AppointmentStatus =
+  | "booked"
+  | "checked_in"
+  | "with_doctor"
+  | "completed"
+  | "cancelled"
+  | "no_show";
+
+export type VisitType = "new" | "follow_up" | "report_review";
+
+export type DayOfWeek =
+  | "saturday"
+  | "sunday"
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday";
+
+export type CommissionStatus = "accrued" | "paid" | "cancelled";
+
+export type ResultStatus = "entered" | "verified" | "critical";
+
+export interface DoctorScheduleSlotOut {
+  id: string;
+  business_id: number;
+  doctor_id: string;
+  day_of_week: DayOfWeek;
+  start_time: string;
+  end_time: string;
+  max_patients: number;
+  slot_duration_minutes: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface DoctorScheduleSlotCreatePayload {
+  business_id: number;
+  doctor_id: string;
+  day_of_week: DayOfWeek;
+  start_time: string;
+  end_time: string;
+  max_patients?: number;
+  slot_duration_minutes?: number;
+  is_active?: boolean;
+}
+
+export interface AppointmentOut {
+  id: string;
+  business_id: number;
+  patient_id: string;
+  doctor_id: string;
+  appointment_date: string;
+  serial_number: number;
+  scheduled_time?: string | null;
+  status: AppointmentStatus;
+  visit_type: VisitType;
+  consultation_fee: number;
+  is_paid: boolean;
+  chief_complaints?: string | null;
+  notes?: string | null;
+  patient?: PatientOut | null;
+  doctor?: DoctorProfileOut | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AppointmentCreatePayload {
+  business_id: number;
+  patient_id: string;
+  doctor_id: string;
+  appointment_date: string;
+  scheduled_time?: string | null;
+  visit_type?: VisitType;
+  consultation_fee?: number;
+  is_paid?: boolean;
+  chief_complaints?: string | null;
+  notes?: string | null;
+}
+
+export interface AppointmentUpdatePayload {
+  status?: AppointmentStatus;
+  scheduled_time?: string | null;
+  is_paid?: boolean;
+  chief_complaints?: string | null;
+  notes?: string | null;
+}
+
+export interface MedicineItem {
+  drug_name: string;
+  dosage_form: string;
+  strength?: string | null;
+  frequency: string;
+  timing: string;
+  duration: string;
+  instructions?: string | null;
+}
+
+export interface VitalsData {
+  bp_systolic?: number | null;
+  bp_diastolic?: number | null;
+  pulse?: number | null;
+  temperature?: number | null;
+  spo2?: number | null;
+  weight_kg?: number | null;
+  height_cm?: number | null;
+  bmi?: number | null;
+}
+
+export interface PrescriptionOut {
+  id: string;
+  business_id: number;
+  prescription_number: string;
+  patient_id: string;
+  doctor_id: string;
+  appointment_id?: string | null;
+  vitals: VitalsData;
+  clinical_findings?: string | null;
+  provisional_diagnosis?: string | null;
+  medicines: MedicineItem[];
+  advised_investigations: string[];
+  special_advice?: string | null;
+  follow_up_date?: string | null;
+  patient?: PatientOut | null;
+  doctor?: DoctorProfileOut | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PrescriptionCreatePayload {
+  business_id: number;
+  patient_id: string;
+  doctor_id: string;
+  appointment_id?: string | null;
+  vitals?: VitalsData;
+  clinical_findings?: string | null;
+  provisional_diagnosis?: string | null;
+  medicines?: MedicineItem[];
+  advised_investigations?: string[];
+  special_advice?: string | null;
+  follow_up_date?: string | null;
+}
+
+export interface LabResultBatchEntryItem {
+  parameter_id?: string | null;
+  parameter_name: string;
+  observed_value: string;
+  unit?: string | null;
+  ref_range?: string | null;
+  is_abnormal?: boolean;
+  is_critical?: boolean;
+  remarks?: string | null;
+}
+
+export interface LabResultBatchPayload {
+  business_id: number;
+  order_item_id: string;
+  technician_name?: string | null;
+  results: LabResultBatchEntryItem[];
+}
+
+export interface LabVerificationPayload {
+  verified_by_name: string;
+  remarks?: string | null;
+}
+
+export interface LabTestResultOut {
+  id: string;
+  business_id: number;
+  order_id: string;
+  order_item_id: string;
+  parameter_id?: string | null;
+  parameter_name: string;
+  observed_value: string;
+  unit?: string | null;
+  ref_range?: string | null;
+  is_abnormal: boolean;
+  is_critical: boolean;
+  result_status: ResultStatus;
+  technician_name?: string | null;
+  verified_by_name?: string | null;
+  verified_at?: string | null;
+  remarks?: string | null;
+  created_at: string;
+}
+
+export interface RadiologyReportCreatePayload {
+  business_id: number;
+  order_id: string;
+  order_item_id: string;
+  clinical_history?: string | null;
+  findings_text: string;
+  impression_text: string;
+  verified_by_name?: string | null;
+  report_url?: string | null;
+}
+
+export interface RadiologyReportOut {
+  id: string;
+  business_id: number;
+  order_id: string;
+  order_item_id: string;
+  clinical_history?: string | null;
+  findings_text: string;
+  impression_text: string;
+  verified_by_name?: string | null;
+  verified_at?: string | null;
+  report_url?: string | null;
+  created_at: string;
+}
+
+export interface ReferralDoctorCommissionOut {
+  id: string;
+  business_id: number;
+  referring_doctor_id: string;
+  order_id: string;
+  bill_amount: number;
+  commission_rate: number;
+  commission_amount: number;
+  payment_status: CommissionStatus;
+  paid_at?: string | null;
+  payment_reference?: string | null;
+  notes?: string | null;
+  referring_doctor?: DoctorProfileOut | null;
+  created_at: string;
+}
+
+export interface ReferralPayoutPayload {
+  payment_reference: string;
+  notes?: string | null;
+}
+
+
 
 
 

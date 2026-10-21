@@ -398,6 +398,7 @@ app.include_router(notices_router)
 app.include_router(recruitment_router)
 
 # healthcare router
+app.include_router(healthcare_router, prefix="/api/v1")
 app.include_router(healthcare_router)
 
 # project management router
