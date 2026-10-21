@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from fastapi import Request
 from app.core.config import settings
 from app.core.deps import get_current_user_optional, get_current_user
 from app.core.identity.models import Permission, User
@@ -36,10 +37,16 @@ def sync_db():
 
 @pytest_asyncio.fixture
 async def client(sync_db):
+    from app.database import get_async_db
+
     def _override_get_db():
         yield sync_db
 
+    async def _override_get_async_db():
+        yield None
+
     app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_async_db] = _override_get_async_db
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
@@ -90,7 +97,7 @@ async def test_permission_with_subscription_required_true(sync_db, client: Async
     db.add(user)
     db.commit()
 
-    async def _override_user(*args, **kwargs):
+    async def _override_user(request: Request = None):
         return user
 
     app.dependency_overrides[get_current_user_optional] = _override_user
@@ -105,7 +112,8 @@ async def test_permission_with_subscription_required_true(sync_db, client: Async
         assert response.status_code == 403
     finally:
         settings.subscription_required = original_setting
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_current_user_optional, None)
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.mark.asyncio
@@ -152,7 +160,7 @@ async def test_permission_with_subscription_required_false(sync_db, client: Asyn
     db.add(user)
     db.commit()
 
-    async def _override_user(*args, **kwargs):
+    async def _override_user(request: Request = None):
         return user
 
     app.dependency_overrides[get_current_user_optional] = _override_user
@@ -170,7 +178,8 @@ async def test_permission_with_subscription_required_false(sync_db, client: Asyn
         assert response_dept.status_code == 403
     finally:
         settings.subscription_required = original_setting
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_current_user_optional, None)
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 @pytest.mark.asyncio
@@ -205,7 +214,7 @@ async def test_business_without_subscription_plan_when_subscription_not_required
     db.add(user)
     db.commit()
 
-    async def _override_user(*args, **kwargs):
+    async def _override_user(request: Request = None):
         return user
 
     app.dependency_overrides[get_current_user_optional] = _override_user
@@ -219,4 +228,5 @@ async def test_business_without_subscription_plan_when_subscription_not_required
         assert response.status_code == 200
     finally:
         settings.subscription_required = original_setting
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_current_user_optional, None)
+        app.dependency_overrides.pop(get_current_user, None)

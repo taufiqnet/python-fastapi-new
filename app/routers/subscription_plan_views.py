@@ -12,7 +12,14 @@ from app.core.billing.schemas import (
     SubscriptionPlanUpdate,
 )
 from app.core.billing.service import SubscriptionPlanService
-from app.core.deps import get_current_admin, get_current_user_optional
+from app.core.config import settings
+from app.core.deps import (
+    get_current_admin,
+    get_current_plan_admin,
+    get_current_user,
+    get_current_user_optional,
+)
+from app.core.identity.models import User
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
 from app.database import get_async_db
@@ -146,10 +153,32 @@ async def subscription_plan_edit_page(
     )
 
 
+@router.get("/subscription-plans/api/tenant/current")
+async def get_current_tenant_plan_api(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
+    biz = current_user.business_profile
+    plan = biz.subscription_plan if biz else None
+    perm_count = len(plan.permissions) if plan and plan.permissions else 0
+    return {
+        "auth_strategy": getattr(settings, "auth_strategy", "rbac"),
+        "subscription_required": settings.subscription_required,
+        "has_business": biz is not None,
+        "business_name": (biz.name_en or biz.name_bn) if biz else None,
+        "business_short_name": biz.short_name if biz else None,
+        "plan_id": plan.id if plan else None,
+        "plan_name": plan.name if plan else "Domestic Enterprise Edition",
+        "plan_description": plan.description if plan else "Full ERP Access for Domestic Enterprise Staff",
+        "permissions_count": perm_count,
+        "is_active": plan.is_active if plan else True,
+    }
+
+
 @router.get("/subscription-plans/api", response_model=list[SubscriptionPlanOut])
 async def list_subscription_plans_api(
     db: AsyncSession = Depends(get_async_db),
-    admin=Depends(get_current_admin),
+    user: User = Depends(get_current_plan_admin),
 ):
     plans = await plan_service.list_plans(db)
     return [_format_plan_out(p) for p in plans]
@@ -163,7 +192,7 @@ async def list_subscription_plans_api(
 async def create_subscription_plan_api(
     data: SubscriptionPlanCreate,
     db: AsyncSession = Depends(get_async_db),
-    admin=Depends(get_current_admin),
+    user: User = Depends(get_current_plan_admin),
 ):
     plan = await plan_service.create_plan(db, data)
     return _format_plan_out(plan)
@@ -173,7 +202,7 @@ async def create_subscription_plan_api(
 async def get_subscription_plan_api(
     plan_id: int,
     db: AsyncSession = Depends(get_async_db),
-    admin=Depends(get_current_admin),
+    user: User = Depends(get_current_plan_admin),
 ):
     plan = await plan_service.get_plan(db, plan_id)
     return _format_plan_out(plan)
@@ -184,7 +213,7 @@ async def update_subscription_plan_api(
     plan_id: int,
     data: SubscriptionPlanUpdate,
     db: AsyncSession = Depends(get_async_db),
-    admin=Depends(get_current_admin),
+    user: User = Depends(get_current_plan_admin),
 ):
     plan = await plan_service.update_plan(db, plan_id, data)
     return _format_plan_out(plan)
@@ -196,6 +225,6 @@ async def update_subscription_plan_api(
 async def delete_subscription_plan_api(
     plan_id: int,
     db: AsyncSession = Depends(get_async_db),
-    admin=Depends(get_current_admin),
+    user: User = Depends(get_current_plan_admin),
 ):
     await plan_service.delete_plan(db, plan_id)

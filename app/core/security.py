@@ -111,6 +111,28 @@ async def get_current_admin(
     )
 
 
+async def get_current_plan_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """
+    Allow access to superusers, users with role 'admin',
+    or users granted general:subscription_plans permissions.
+    """
+    if current_user.is_superuser or current_user.has_role("admin"):
+        return current_user
+    if (
+        current_user.has_permission("general:subscription_plans:view")
+        or current_user.has_permission("general:subscription_plans:manage")
+        or current_user.has_permission("general:subscription_plans:create")
+        or current_user.has_permission("general:subscription_plans:update")
+    ):
+        return current_user
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Subscription plans administration access required",
+    )
+
+
 def require_permission(module: str, feature: str, action: str):
     async def permission_checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.is_superuser or current_user.has_role("admin"):
@@ -128,35 +150,33 @@ def require_permission(module: str, feature: str, action: str):
         elif feature == "coupons":
             candidate_codes.append(f"{module}:products:{action}")
 
-        has_any = any(current_user.has_permission(c) for c in candidate_codes)
-        if not has_any:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission denied. Required permission: {candidate_codes[0]}",
-            )
-        if settings.subscription_required and current_user.business_id:
-            from app.core.tenancy.models import BusinessProfile
-            from app.core.billing.models import SubscriptionPlan
-            from sqlalchemy import select
+        # Check authorization strategy
+        strategy = getattr(settings, "auth_strategy", "rbac").lower()
+
+        # In Pure RBAC or Dual Strategy: check user permissions
+        if strategy != "subscription":
+            has_any = any(current_user.has_permission(c) for c in candidate_codes)
+            if not has_any:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Permission denied. Required permission: {candidate_codes[0]}",
+                )
+
+        # In Subscription Plan Strategy or Dual Strategy: check business subscription plan
+        if (strategy in ("subscription", "dual") or settings.subscription_required) and current_user.business_id:
             biz_profile = current_user.business_profile
             if biz_profile:
                 plan_has_any = any(biz_profile.has_permission(c) for c in candidate_codes)
                 if not plan_has_any:
-                    if current_user.has_role("admin"):
-                        plan_name = (
-                            biz_profile.subscription_plan.name
-                            if biz_profile.subscription_plan
-                            else "Current"
-                        )
-                        raise HTTPException(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{candidate_codes[0]}'. Please upgrade your subscription.",
-                        )
-                    else:
-                        raise HTTPException(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            detail="This feature isn't included in your current plan. Upgrade to unlock it.",
-                        )
+                    plan_name = (
+                        biz_profile.subscription_plan.name
+                        if biz_profile.subscription_plan
+                        else "Current"
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Upgrade required: Your business subscription plan ({plan_name}) does not include feature '{candidate_codes[0]}'. Please upgrade your subscription.",
+                    )
         return current_user
 
     return permission_checker

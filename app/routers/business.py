@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.core.identity.models import User
+from app.core.tenancy.models import BusinessProfile
 from app.core.tenancy.schemas import BusinessProfileCreate, BusinessProfileResponse
 from app.core.tenancy.service import BusinessService
 from app.database import get_db
@@ -17,20 +18,7 @@ ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg"}
 MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB limit
 
 
-@router.post("/my-profile/logo", response_model=BusinessProfileResponse)
-async def upload_my_business_logo(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    if not current_user.business_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is not associated with any business profile",
-        )
-
-    business = service.get_business(db, current_user.business_id)
-
+async def _save_business_logo(business: BusinessProfile, file: UploadFile, db: Session) -> BusinessProfile:
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED_IMAGE_EXTENSIONS:
         raise HTTPException(
@@ -72,19 +60,7 @@ async def upload_my_business_logo(
     return business
 
 
-@router.delete("/my-profile/logo", response_model=BusinessProfileResponse)
-def remove_my_business_logo(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    if not current_user.business_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is not associated with any business profile",
-        )
-
-    business = service.get_business(db, current_user.business_id)
-
+def _remove_business_logo(business: BusinessProfile, db: Session) -> BusinessProfile:
     if business.logo and business.logo.startswith("/static/uploads/logos/"):
         upload_dir = "app/static/uploads/logos"
         filename = os.path.basename(business.logo)
@@ -100,6 +76,97 @@ def remove_my_business_logo(
     db.refresh(business)
 
     return business
+
+
+@router.get("/my-profile", response_model=BusinessProfileResponse)
+def get_my_business_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.business_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not associated with any business profile",
+        )
+    return service.get_business(db, current_user.business_id)
+
+
+@router.put("/my-profile", response_model=BusinessProfileResponse)
+def update_my_business_profile(
+    data: BusinessProfileCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.business_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not associated with any business profile",
+        )
+    return service.update_business(db, current_user.business_id, data)
+
+
+@router.post("/my-profile/logo", response_model=BusinessProfileResponse)
+async def upload_my_business_logo(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.business_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not associated with any business profile",
+        )
+
+    business = service.get_business(db, current_user.business_id)
+    return await _save_business_logo(business, file, db)
+
+
+@router.delete("/my-profile/logo", response_model=BusinessProfileResponse)
+def remove_my_business_logo(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.business_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is not associated with any business profile",
+        )
+
+    business = service.get_business(db, current_user.business_id)
+    return _remove_business_logo(business, db)
+
+
+@router.post("/{business_id}/logo", response_model=BusinessProfileResponse)
+async def upload_business_logo(
+    business_id: int,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.is_superuser and current_user.business_id != business_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this business logo",
+        )
+
+    business = service.get_business(db, business_id)
+    return await _save_business_logo(business, file, db)
+
+
+@router.delete("/{business_id}/logo", response_model=BusinessProfileResponse)
+def remove_business_logo(
+    business_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not current_user.is_superuser and current_user.business_id != business_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to update this business logo",
+        )
+
+    business = service.get_business(db, business_id)
+    return _remove_business_logo(business, db)
 
 
 @router.post("/", response_model=BusinessProfileResponse, status_code=201)

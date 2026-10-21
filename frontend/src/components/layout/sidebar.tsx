@@ -96,12 +96,15 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
     },
     {
       name: "Administration",
-      href: "/administration/users",
+      href: "/administration/business-profile",
       icon: ShieldCheck,
       sectionKey: "administration",
       children: [
+        { name: "Company Profile", href: "/administration/business-profile" },
         { name: "User Accounts", href: "/administration/users" },
         { name: "Roles & Permissions", href: "/administration/roles" },
+        { name: "Subscription Plans", href: "/administration/subscription-plans" },
+        { name: "Tenants Directory", href: "/administration/businesses" },
       ],
     },
     {

@@ -19,8 +19,12 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
-    # Subscription Enforcement Gating
-    subscription_required: bool = True
+    # Authorization Strategy & Subscription Enforcement Gating
+    # "rbac" (default for domestic enterprise software: pure user roles & permissions, subscription lockouts disabled)
+    # "subscription" (pure subscription plan tier gating)
+    # "dual" (both user role and subscription tier gating)
+    auth_strategy: str = "rbac"
+    subscription_required: bool = False
 
     # AI Assistant Feature Flag & OpenRouter Config
     ai_assistant_enabled: bool = True

@@ -1,11 +1,91 @@
 export interface BusinessProfile {
   id: number;
-  legal_name: string;
-  name_en?: string;
-  name_ar?: string;
-  cr_number?: string;
-  vat_number?: string;
+  name_en: string;
+  short_name?: string | null;
+  legal_name?: string | null;
+  company_tagline?: string | null;
+  description?: string | null;
+  logo?: string | null;
+  favicon?: string | null;
+
+  cr_number?: string | null;
+  vat_number?: string | null;
+  tax_number?: string | null;
+  license_number?: string | null;
+  license_expiry_date?: string | null;
+  chamber_of_commerce_no?: string | null;
+  national_address?: string | null;
+
+  building_no?: string | null;
+  street?: string | null;
+  district?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  zip_code?: string | null;
+  po_box?: string | null;
+  address_no?: string | null;
+  address_en?: string | null;
+
+  phone?: string | null;
+  mobile?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  support_email?: string | null;
+  sales_email?: string | null;
+  invoice_email?: string | null;
+  website?: string | null;
+
+  contact_person?: string | null;
+  contact_designation?: string | null;
+  contact_mobile?: string | null;
+
+  bank_name?: string | null;
+  bank_branch?: string | null;
+  bank_account_name?: string | null;
+  bank_account_number?: string | null;
+  bank_swift_code?: string | null;
+  bank_iban?: string | null;
+
+  facebook_url?: string | null;
+  linkedin_url?: string | null;
+  instagram_url?: string | null;
+  twitter_url?: string | null;
+  youtube_url?: string | null;
+  tiktok_url?: string | null;
+
+  currency_code: string;
+  currency_symbol: string;
+
+  invoice_prefix: string;
+  quotation_prefix: string;
+  credit_note_prefix: string;
+  purchase_order_prefix: string;
+  invoice_sequence_start: number;
+  vat_rate: number | string;
+  payment_terms?: string | null;
+  invoice_terms?: string | null;
+  invoice_footer?: string | null;
+
+  zatca_enabled: boolean;
+  e_invoice_enabled: boolean;
+
+  timezone: string;
+  language: string;
+
+  is_active: boolean;
+  subscription_plan_id?: number | null;
+  created_at?: string;
+  updated_at?: string;
 }
+
+export type BusinessProfileInput = Omit<
+  BusinessProfile,
+  "id" | "created_at" | "updated_at" | "logo" | "favicon"
+> & {
+  logo?: string | null;
+  favicon?: string | null;
+};
 
 export interface User {
   id: number;
@@ -71,6 +151,44 @@ export interface RoleUpdateInput {
   description?: string;
   business_id?: number | null;
   permission_ids?: number[];
+}
+
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  description?: string | null;
+  is_active: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
+  permission_ids: number[];
+  permission_codes?: string[];
+}
+
+export interface SubscriptionPlanCreateInput {
+  name: string;
+  description?: string | null;
+  is_active?: boolean;
+  permission_ids: number[];
+}
+
+export interface SubscriptionPlanUpdateInput {
+  name?: string;
+  description?: string | null;
+  is_active?: boolean;
+  permission_ids?: number[];
+}
+
+export interface TenantPlanStatus {
+  auth_strategy: string;
+  subscription_required: boolean;
+  has_business: boolean;
+  business_name?: string | null;
+  business_slug?: string | null;
+  plan_id?: number | null;
+  plan_name: string;
+  plan_description?: string | null;
+  permissions_count: number;
+  is_active: boolean;
 }
 
 export interface UserCreateInput {
