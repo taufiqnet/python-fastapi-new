@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   XCircle,
+  CreditCard,
   Wifi,
   ChevronLeft,
   ChevronRight,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/context/toast-context";
 import { DeleteConfirmDialog } from "@/components/administration/delete-confirm-dialog";
+import { SubscriptionPlan } from "@/types";
 
 export default function UsersPage() {
   const { toast } = useToast();
@@ -32,6 +34,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
   // Two-tier loading states per UI rule
   const [initialLoading, setInitialLoading] = useState(true);
@@ -75,10 +78,11 @@ export default function UsersPage() {
       const bizParam =
         selectedBusinessId !== "all" ? `?business_id=${selectedBusinessId}` : "";
 
-      const [usersRes, rolesRes, bizRes] = await Promise.allSettled([
+      const [usersRes, rolesRes, bizRes, plansRes] = await Promise.allSettled([
         apiClient.get<User[]>(`/users/api${bizParam}`),
         apiClient.get<Role[]>("/roles/api"),
         apiClient.get<BusinessProfile[]>("/business/"),
+        apiClient.get<SubscriptionPlan[]>("/subscription-plans/api"),
       ]);
 
       if (usersRes.status === "fulfilled") {
@@ -93,6 +97,10 @@ export default function UsersPage() {
 
       if (bizRes.status === "fulfilled") {
         setBusinesses(bizRes.value.data || []);
+      }
+
+      if (plansRes.status === "fulfilled") {
+        setPlans(plansRes.value.data || []);
       }
     } catch {
       setError("Failed to load user accounts from backend service.");
@@ -456,10 +464,18 @@ export default function UsersPage() {
 
                         <td className="py-3.5 px-5">
                           {user.business_id ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                              <Building2 className="w-3 h-3" />
-                              {matchedBiz?.name_en || matchedBiz?.legal_name || `Tenant #${user.business_id}`}
-                            </span>
+                            <div className="flex flex-col gap-1 items-start">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                <Building2 className="w-3 h-3" />
+                                {matchedBiz?.name_en || matchedBiz?.legal_name || `Tenant #${user.business_id}`}
+                              </span>
+                              {matchedBiz?.subscription_plan_id && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                  <CreditCard className="w-2.5 h-2.5" />
+                                  {plans.find((p) => p.id === matchedBiz.subscription_plan_id)?.name || "Tier"} Plan
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                               Global / Unscoped

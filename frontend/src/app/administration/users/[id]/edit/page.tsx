@@ -11,6 +11,7 @@ import {
   Permission,
   SystemModulesMap,
   BusinessProfile,
+  SubscriptionPlan,
   UserUpdateInput,
 } from "@/types";
 import { PermissionsMatrix } from "@/components/administration/permissions-matrix";
@@ -30,6 +31,8 @@ import {
   User as UserIcon,
   Phone,
   AlertCircle,
+  CreditCard,
+  ExternalLink,
 } from "lucide-react";
 
 interface UserEditPageProps {
@@ -64,6 +67,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [systemModules, setSystemModules] = useState<SystemModulesMap>({});
   const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -73,12 +77,13 @@ export default function UserEditPage({ params }: UserEditPageProps) {
     async function loadUserAndMetadata() {
       setLoading(true);
       try {
-        const [userRes, rolesRes, permsRes, modsRes, bizRes] = await Promise.allSettled([
+        const [userRes, rolesRes, permsRes, modsRes, bizRes, plansRes] = await Promise.allSettled([
           apiClient.get<User>(`/users/api/${userId}`),
           apiClient.get<Role[]>("/roles/api"),
           apiClient.get<Permission[]>("/permissions/api"),
           apiClient.get<SystemModulesMap>("/permissions/system-modules/api"),
           apiClient.get<BusinessProfile[]>("/business/"),
+          apiClient.get<SubscriptionPlan[]>("/subscription-plans/api"),
         ]);
 
         if (userRes.status === "fulfilled" && userRes.value.data) {
@@ -111,6 +116,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
         if (permsRes.status === "fulfilled") setPermissions(permsRes.value.data || []);
         if (modsRes.status === "fulfilled") setSystemModules(modsRes.value.data || {});
         if (bizRes.status === "fulfilled") setBusinesses(bizRes.value.data || []);
+        if (plansRes.status === "fulfilled") setPlans(plansRes.value.data || []);
       } catch {
         toast.error("Error", "Failed to retrieve user account details.");
       } finally {
@@ -184,6 +190,11 @@ export default function UserEditPage({ params }: UserEditPageProps) {
     );
   }
 
+  const matchedBiz = businesses.find((b) => b.id === Number(businessId));
+  const matchedPlan = matchedBiz?.subscription_plan_id
+    ? plans.find((p) => p.id === matchedBiz.subscription_plan_id)
+    : null;
+
   return (
     <DashboardLayout>
       <form onSubmit={handleSubmit} className="space-y-6 max-w-7xl mx-auto w-full">
@@ -233,6 +244,73 @@ export default function UserEditPage({ params }: UserEditPageProps) {
               )}
               Save Changes
             </button>
+          </div>
+        </div>
+
+        {/* Tenant Subscription & Strategy Context Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-purple-50 text-purple-600 border border-purple-200">
+                <CreditCard className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Tenant Subscription & Strategy Context</h3>
+                <p className="text-xs text-slate-500">How this user's access is governed in the system.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Pure RBAC Active (Domestic Software)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <p className="text-[11px] font-medium text-slate-500">Assigned Business Tenant</p>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs font-bold text-slate-800">
+                  {matchedBiz ? (matchedBiz.name_en || matchedBiz.legal_name) : "Global / Unassigned"}
+                </span>
+                {matchedBiz && (
+                  <Link
+                    href={`/administration/businesses/${matchedBiz.id}/edit`}
+                    className="text-[11px] text-indigo-600 hover:text-indigo-800 font-medium inline-flex items-center gap-1"
+                  >
+                    <span>Tenant Settings</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <p className="text-[11px] font-medium text-slate-500">Tenant Subscription Plan</p>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xs font-bold text-purple-700">
+                  {matchedPlan ? `${matchedPlan.name} Plan` : (matchedBiz?.subscription_plan_id ? `Plan #${matchedBiz.subscription_plan_id}` : "No Plan Assigned")}
+                </span>
+                {matchedPlan && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-purple-100 text-purple-800 font-semibold">
+                    {matchedPlan.permission_ids?.length || 0} features
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <p className="text-[11px] font-medium text-slate-500">Effective Authorization Mode</p>
+              <p className="text-xs font-bold text-emerald-700 mt-1">
+                Role-Based Access Control (RBAC)
+              </p>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-slate-600 bg-slate-50/70 p-3 rounded-xl border border-slate-200/80 leading-relaxed">
+            <span className="font-semibold text-slate-800">Superadmin Guidance:</span> In this domestic deployment, external subscription paywalls are bypassed. This user's actual system capabilities are governed strictly by the <strong>Roles and Custom Permissions</strong> assigned below. To adjust access for this user, simply toggle their roles.
           </div>
         </div>
 
