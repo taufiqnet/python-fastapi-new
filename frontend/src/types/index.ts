@@ -995,7 +995,243 @@ export interface PayrollRecordOut {
   note?: string | null;
   created_at: string;
   updated_at: string;
+  business_id: number;
+  provident_fund?: number;
+  unpaid_leave_deduction?: number;
+  loan_installment?: number;
+  other_deduction?: number;
+  employee?: EmployeeOut;
+  period?: PayrollPeriodOut;
 }
+
+export interface PayrollRecordCreatePayload {
+  business_id: number;
+  period_id: string;
+  employee_id: string;
+  working_days?: number;
+  present_days?: number;
+  absent_days?: number;
+  leave_days?: number;
+  holiday_days?: number;
+  overtime_hours?: number;
+  basic_salary?: number;
+  house_rent?: number;
+  transport_allowance?: number;
+  medical_allowance?: number;
+  food_allowance?: number;
+  other_allowance?: number;
+  overtime_pay?: number;
+  bonus?: number;
+  tax?: number;
+  provident_fund?: number;
+  unpaid_leave_deduction?: number;
+  loan_installment?: number;
+  other_deduction?: number;
+  payment_method?: string;
+  bank_account?: string | null;
+  is_paid?: boolean;
+  paid_at?: string | null;
+  note?: string | null;
+}
+
+export type PayrollRecordUpdatePayload = Partial<PayrollRecordCreatePayload>;
+
+// ==========================================
+// HR Letters & Certificates
+// ==========================================
+
+export type OfferLetterStatus = "draft" | "issued" | "revoked";
+
+export interface OfferLetterOut {
+  id: string;
+  business_id: number;
+  candidate_name: string;
+  candidate_email: string;
+  candidate_phone?: string | null;
+  job_title: string;
+  department?: string | null;
+  offered_salary: number;
+  joining_date: string;
+  issue_date: string;
+  valid_until?: string | null;
+  status: OfferLetterStatus;
+  terms?: string | null;
+  notes?: string | null;
+  letter_no: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OfferLetterCreatePayload {
+  business_id: number;
+  candidate_name: string;
+  candidate_email: string;
+  candidate_phone?: string | null;
+  job_title: string;
+  department?: string | null;
+  offered_salary: number;
+  joining_date: string;
+  issue_date: string;
+  valid_until?: string | null;
+  terms?: string | null;
+  notes?: string | null;
+}
+
+export type OfferLetterUpdatePayload = Partial<OfferLetterCreatePayload> & {
+  status?: OfferLetterStatus;
+};
+
+export type AppointmentStatus = "draft" | "sent" | "accepted";
+
+export interface AppointmentLetterOut {
+  id: string;
+  business_id: number;
+  candidate_name: string;
+  candidate_email: string;
+  candidate_phone?: string | null;
+  job_title_id?: string | null;
+  department_id?: string | null;
+  job_title?: JobTitleOut | null;
+  department?: DepartmentOut | null;
+  offered_joining_date: string;
+  probation_period_months: number;
+  employment_type: string;
+  offered_basic_salary: number;
+  offered_gross_salary: number;
+  allowance_details?: string | null;
+  issue_date: string;
+  valid_until: string;
+  terms_and_conditions?: string | null;
+  status: AppointmentStatus;
+  employee_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AppointmentLetterCreatePayload {
+  business_id: number;
+  candidate_name: string;
+  candidate_email: string;
+  candidate_phone?: string | null;
+  job_title_id?: string | null;
+  department_id?: string | null;
+  offered_joining_date: string;
+  probation_period_months?: number;
+  employment_type?: string;
+  offered_basic_salary: number;
+  offered_gross_salary: number;
+  allowance_details?: string | null;
+  issue_date: string;
+  valid_until: string;
+  terms_and_conditions?: string | null;
+}
+
+export type AppointmentLetterUpdatePayload = Partial<AppointmentLetterCreatePayload> & {
+  status?: AppointmentStatus;
+};
+
+export type SalaryCertificatePurpose =
+  | "general"
+  | "bank_loan"
+  | "visa"
+  | "tax"
+  | "credit_card"
+  | "embassy";
+
+export type SalaryCertificateStatus = "draft" | "issued" | "revoked";
+
+export interface SalaryCertificateOut {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee?: EmployeeOut | null;
+  certificate_no: string;
+  issue_date: string;
+  fiscal_year: string;
+  assessment_year?: string | null;
+  purpose: SalaryCertificatePurpose;
+  addressed_to?: string | null;
+  include_breakdown: boolean;
+  status: SalaryCertificateStatus;
+  basic_salary: number;
+  gross_salary: number;
+  net_salary: number;
+  house_rent?: number | null;
+  medical_allowance?: number | null;
+  conveyance?: number | null;
+  others_allowance?: number | null;
+  bonus?: number | null;
+  tax_deducted?: number | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryCertificateCreatePayload {
+  business_id: number;
+  employee_id: string;
+  issue_date: string;
+  fiscal_year?: string;
+  assessment_year?: string | null;
+  purpose?: SalaryCertificatePurpose;
+  addressed_to?: string | null;
+  include_breakdown?: boolean;
+  notes?: string | null;
+  basic_salary?: number;
+  gross_salary?: number;
+  net_salary?: number;
+  house_rent?: number;
+  medical_allowance?: number;
+  conveyance?: number;
+  others_allowance?: number;
+  bonus?: number;
+  tax_deducted?: number;
+}
+
+export type SalaryCertificateUpdatePayload = Partial<SalaryCertificateCreatePayload> & {
+  status?: SalaryCertificateStatus;
+};
+
+export type ExperienceLetterStatus = "draft" | "issued" | "revoked";
+
+export interface ExperienceLetterOut {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee?: EmployeeOut | null;
+  letter_no: string;
+  designation: string;
+  department?: string | null;
+  joining_date: string;
+  relieving_date: string;
+  issue_date: string;
+  addressed_to?: string | null;
+  conduct_and_character: string;
+  duties_summary?: string | null;
+  status: ExperienceLetterStatus;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExperienceLetterCreatePayload {
+  business_id: number;
+  employee_id: string;
+  designation: string;
+  department?: string | null;
+  joining_date: string;
+  relieving_date: string;
+  issue_date: string;
+  addressed_to?: string | null;
+  conduct_and_character?: string;
+  duties_summary?: string | null;
+  notes?: string | null;
+}
+
+export type ExperienceLetterUpdatePayload = Partial<ExperienceLetterCreatePayload> & {
+  status?: ExperienceLetterStatus;
+};
+
 
 
 

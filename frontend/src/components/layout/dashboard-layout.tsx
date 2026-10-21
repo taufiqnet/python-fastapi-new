@@ -82,6 +82,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   // Check module-level route authorization (Pure RBAC)
   const isEcommerceRoute = pathname.startsWith("/ecommerce");
   const isFinanceRoute = pathname.startsWith("/finance");
+  const isHrmRoute = pathname.startsWith("/hr-payroll");
   const isAdministrationRoute = pathname.startsWith("/administration");
 
   let restrictedModuleName = "";
@@ -89,6 +90,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     restrictedModuleName = "E-Commerce";
   } else if (isFinanceRoute && !hasModuleAccess("finance")) {
     restrictedModuleName = "Finance & Accounting";
+  } else if (isHrmRoute && !hasModuleAccess("hrm")) {
+    restrictedModuleName = "HR & Payroll";
   } else if (isAdministrationRoute && !user.is_superuser && !hasModuleAccess("general")) {
     restrictedModuleName = "System Administration";
   }

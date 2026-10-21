@@ -132,6 +132,31 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/hr-payroll/organization",
           permission: { module: "hrm", feature: "departments", action: "view" },
         },
+        {
+          name: "Offer Letters",
+          href: "/hr-payroll/offer-letters",
+          permission: { module: "hrm", feature: "offer_letters", action: "view" },
+        },
+        {
+          name: "Appointment Letters",
+          href: "/hr-payroll/appointment-letters",
+          permission: { module: "hrm", feature: "appointment_letters", action: "view" },
+        },
+        {
+          name: "Payroll Payslips",
+          href: "/hr-payroll/payroll-records",
+          permission: { module: "hrm", feature: "payroll_records", action: "view" },
+        },
+        {
+          name: "Salary Certificates",
+          href: "/hr-payroll/salary-certificates",
+          permission: { module: "hrm", feature: "salary_certificates", action: "view" },
+        },
+        {
+          name: "Experience Letters",
+          href: "/hr-payroll/experience-letters",
+          permission: { module: "hrm", feature: "experience_letters", action: "view" },
+        },
       ],
     },
     {
