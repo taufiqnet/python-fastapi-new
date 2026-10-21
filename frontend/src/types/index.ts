@@ -1294,6 +1294,214 @@ export type ExperienceLetterUpdatePayload = Partial<ExperienceLetterCreatePayloa
   status?: ExperienceLetterStatus;
 };
 
+// ── Healthcare Module Types ──────────────────────────────────────────────
+export type PatientGender = "male" | "female" | "other";
+export type PatientBloodGroup = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-";
+export type DiagnosticDepartment =
+  | "pathology"
+  | "biochemistry"
+  | "hematology"
+  | "microbiology"
+  | "radiology_imaging"
+  | "cardiology_ecg"
+  | "histopathology";
+export type ReportTemplateType = "structured_parameters" | "radiology_text";
+export type DiagnosticOrderStatus =
+  | "ordered"
+  | "sample_collected"
+  | "in_lab"
+  | "partially_reported"
+  | "completed"
+  | "cancelled";
+export type SampleStatus = "pending" | "collected" | "received" | "rejected" | "analyzed";
+
+export interface PatientOut {
+  id: string;
+  business_id: number;
+  uhid: string;
+  full_name: string;
+  phone: string;
+  email?: string | null;
+  date_of_birth?: string | null;
+  gender: PatientGender;
+  blood_group?: PatientBloodGroup | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  address?: string | null;
+  national_id?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PatientCreatePayload {
+  business_id: number;
+  full_name: string;
+  phone: string;
+  email?: string | null;
+  date_of_birth?: string | null;
+  gender?: PatientGender;
+  blood_group?: PatientBloodGroup | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  address?: string | null;
+  national_id?: string | null;
+  is_active?: boolean;
+}
+
+export interface DoctorProfileOut {
+  id: string;
+  business_id: number;
+  employee_id?: string | null;
+  full_name: string;
+  specialization: string;
+  medical_degrees: string;
+  bmdc_reg_number?: string | null;
+  chamber_name?: string | null;
+  consultation_fee: number;
+  follow_up_fee: number;
+  contact_phone?: string | null;
+  is_referral_doctor: boolean;
+  referral_commission_rate: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DoctorProfileCreatePayload {
+  business_id: number;
+  full_name: string;
+  specialization: string;
+  medical_degrees: string;
+  bmdc_reg_number?: string | null;
+  chamber_name?: string | null;
+  consultation_fee?: number;
+  follow_up_fee?: number;
+  contact_phone?: string | null;
+  is_referral_doctor?: boolean;
+  referral_commission_rate?: number;
+  employee_id?: string | null;
+  is_active?: boolean;
+}
+
+export interface DiagnosticTestParameterOut {
+  id: string;
+  test_id: string;
+  parameter_name: string;
+  unit?: string | null;
+  male_ref_range?: string | null;
+  female_ref_range?: string | null;
+  child_ref_range?: string | null;
+  default_formula?: string | null;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DiagnosticTestParameterCreatePayload {
+  parameter_name: string;
+  unit?: string | null;
+  male_ref_range?: string | null;
+  female_ref_range?: string | null;
+  child_ref_range?: string | null;
+  default_formula?: string | null;
+  display_order?: number;
+}
+
+export interface DiagnosticTestOut {
+  id: string;
+  business_id: number;
+  department: DiagnosticDepartment;
+  test_code: string;
+  name: string;
+  category_name?: string | null;
+  sample_type?: string | null;
+  cost_price: number;
+  sale_price: number;
+  default_turnaround_hours: number;
+  requires_fasting: boolean;
+  report_template_type: ReportTemplateType;
+  is_active: boolean;
+  parameters: DiagnosticTestParameterOut[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DiagnosticTestCreatePayload {
+  business_id: number;
+  department: DiagnosticDepartment;
+  test_code: string;
+  name: string;
+  category_name?: string | null;
+  sample_type?: string | null;
+  cost_price?: number;
+  sale_price: number;
+  default_turnaround_hours?: number;
+  requires_fasting?: boolean;
+  report_template_type?: ReportTemplateType;
+  is_active?: boolean;
+  parameters?: DiagnosticTestParameterCreatePayload[];
+}
+
+export interface DiagnosticOrderItemOut {
+  id: string;
+  order_id: string;
+  test_id: string;
+  test_name: string;
+  test_code: string;
+  unit_price: number;
+  discount: number;
+  net_price: number;
+  status: string;
+  created_at: string;
+}
+
+export interface DiagnosticSampleOut {
+  id: string;
+  business_id: number;
+  order_id: string;
+  barcode: string;
+  sample_type: string;
+  status: SampleStatus;
+  collected_at?: string | null;
+  collected_by_name?: string | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface DiagnosticOrderOut {
+  id: string;
+  business_id: number;
+  order_number: string;
+  patient_id: string;
+  referring_doctor_id?: string | null;
+  order_date: string;
+  status: DiagnosticOrderStatus;
+  total_bill: number;
+  discount_amount: number;
+  net_amount: number;
+  paid_amount: number;
+  due_amount: number;
+  payment_method: string;
+  notes?: string | null;
+  patient?: PatientOut | null;
+  referring_doctor?: DoctorProfileOut | null;
+  items: DiagnosticOrderItemOut[];
+  samples: DiagnosticSampleOut[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DiagnosticCheckoutRequest {
+  business_id: number;
+  patient_id: string;
+  referring_doctor_id?: string | null;
+  items: { test_id: string; discount: number }[];
+  paid_amount: number;
+  payment_method?: string;
+  notes?: string | null;
+}
+
 
 
 

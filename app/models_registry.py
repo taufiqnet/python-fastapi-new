@@ -138,3 +138,13 @@ from app.modules.finance.models import (  # noqa: F401
     SalesInvoice,
     SalesInvoiceLine,
 )
+from app.modules.healthcare.models import (  # noqa: F401
+    DiagnosticOrder,
+    DiagnosticOrderItem,
+    DiagnosticSample,
+    DiagnosticTest,
+    DiagnosticTestParameter,
+    DoctorProfile,
+    Patient,
+)
+

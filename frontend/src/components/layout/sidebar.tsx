@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Building2,
   ShieldCheck,
+  Stethoscope,
 } from "lucide-react";
 
 interface NavChild {
@@ -52,6 +53,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     ecommerce: true,
     hr: true,
+    healthcare: true,
     finance: true,
     administration: true,
   });
@@ -156,6 +158,34 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           name: "Experience Letters",
           href: "/hr-payroll/experience-letters",
           permission: { module: "hrm", feature: "experience_letters", action: "view" },
+        },
+      ],
+    },
+    {
+      name: "Healthcare & Clinic",
+      href: "/healthcare",
+      icon: Stethoscope,
+      sectionKey: "healthcare",
+      children: [
+        {
+          name: "Diagnostic Billing",
+          href: "/healthcare/diagnostic/billing",
+        },
+        {
+          name: "Patient Registry (MPI)",
+          href: "/healthcare/patients",
+        },
+        {
+          name: "Doctors & Chambers",
+          href: "/healthcare/doctors",
+        },
+        {
+          name: "Test Catalog",
+          href: "/healthcare/diagnostic/catalog",
+        },
+        {
+          name: "Phlebotomy & Samples",
+          href: "/healthcare/diagnostic/phlebotomy",
         },
       ],
     },
