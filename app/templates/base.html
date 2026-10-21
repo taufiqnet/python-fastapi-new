@@ -480,6 +480,7 @@
                 {% endif %}
 
                 <!-- FEATURES & PLANS LINK FOR SUBSCRIBERS -->
+                {% if current_user and (current_user.is_superuser or current_user.has_permission('general:subscription_plans:view')) %}
                 <div class="px-1">
                     <a href="/features-plans" class="sidebar-link relative flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 {% if active_page == 'features_plans' %}bg-indigo-50 text-indigo-700 font-semibold{% else %}text-gray-700 hover:bg-gray-100{% endif %}">
                         <i class="fas fa-star w-4 text-sm shrink-0 text-amber-500"></i>
@@ -491,6 +492,7 @@
                         </span>
                     </a>
                 </div>
+                {% endif %}
 
                 <!-- GENERAL / USERS & PERMISSIONS MODULE -->
                 {% if current_user and (current_user.is_superuser or current_user.has_permission('general:users_permissions:view')) %}

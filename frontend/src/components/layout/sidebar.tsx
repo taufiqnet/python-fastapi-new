@@ -22,12 +22,22 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+interface NavChild {
+  name: string;
+  href: string;
+  permission?: { module: string; feature: string; action: string };
+  superuserOnly?: boolean;
+}
+
 interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
+  sectionKey?: string;
+  module?: string;
   permission?: { module: string; feature: string; action: string };
-  children?: { name: string; href: string }[];
+  superuserOnly?: boolean;
+  children?: NavChild[];
 }
 
 interface SidebarProps {
@@ -38,7 +48,7 @@ interface SidebarProps {
 
 export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }: SidebarProps) {
   const pathname = usePathname();
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, hasModuleAccess } = useAuth();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     ecommerce: true,
     hr: true,
@@ -61,12 +71,33 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       href: "/ecommerce/products",
       icon: ShoppingBag,
       sectionKey: "ecommerce",
+      module: "ecommerce",
       children: [
-        { name: "Products", href: "/ecommerce/products" },
-        { name: "Categories", href: "/ecommerce/categories" },
-        { name: "Inventory", href: "/ecommerce/inventory" },
-        { name: "Orders", href: "/ecommerce/orders" },
-        { name: "POS Register", href: "/ecommerce/pos" },
+        {
+          name: "Products",
+          href: "/ecommerce/products",
+          permission: { module: "ecommerce", feature: "products", action: "view" },
+        },
+        {
+          name: "Categories",
+          href: "/ecommerce/categories",
+          permission: { module: "ecommerce", feature: "categories", action: "view" },
+        },
+        {
+          name: "Inventory",
+          href: "/ecommerce/inventory",
+          permission: { module: "ecommerce", feature: "inventory", action: "view" },
+        },
+        {
+          name: "Orders",
+          href: "/ecommerce/orders",
+          permission: { module: "ecommerce", feature: "orders", action: "view" },
+        },
+        {
+          name: "POS Register",
+          href: "/ecommerce/pos",
+          permission: { module: "ecommerce", feature: "pos_terminal", action: "view" },
+        },
       ],
     },
     {
@@ -74,12 +105,33 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       href: "/hr-payroll/employees",
       icon: Users,
       sectionKey: "hr",
+      module: "hrm",
       children: [
-        { name: "Employees", href: "/hr-payroll/employees" },
-        { name: "Attendance", href: "/hr-payroll/attendance" },
-        { name: "Leave Management", href: "/hr-payroll/leave" },
-        { name: "Payroll Management", href: "/hr-payroll/payroll" },
-        { name: "Organization", href: "/hr-payroll/organization" },
+        {
+          name: "Employees",
+          href: "/hr-payroll/employees",
+          permission: { module: "hrm", feature: "employees", action: "view" },
+        },
+        {
+          name: "Attendance",
+          href: "/hr-payroll/attendance",
+          permission: { module: "hrm", feature: "attendance", action: "view" },
+        },
+        {
+          name: "Leave Management",
+          href: "/hr-payroll/leave",
+          permission: { module: "hrm", feature: "leave_applications", action: "view" },
+        },
+        {
+          name: "Payroll Management",
+          href: "/hr-payroll/payroll",
+          permission: { module: "hrm", feature: "payroll_periods", action: "view" },
+        },
+        {
+          name: "Organization",
+          href: "/hr-payroll/organization",
+          permission: { module: "hrm", feature: "departments", action: "view" },
+        },
       ],
     },
     {
@@ -87,11 +139,28 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       href: "/finance/accounts",
       icon: Wallet,
       sectionKey: "finance",
+      module: "finance",
       children: [
-        { name: "Chart of Accounts", href: "/finance/accounts" },
-        { name: "Vouchers", href: "/finance/vouchers" },
-        { name: "Ledger", href: "/finance/ledger" },
-        { name: "Financial Reports", href: "/finance/reports" },
+        {
+          name: "Chart of Accounts",
+          href: "/finance/accounts",
+          permission: { module: "finance", feature: "accounts", action: "view" },
+        },
+        {
+          name: "Vouchers",
+          href: "/finance/vouchers",
+          permission: { module: "finance", feature: "vouchers", action: "view" },
+        },
+        {
+          name: "Ledger",
+          href: "/finance/ledger",
+          permission: { module: "finance", feature: "accounts", action: "view" },
+        },
+        {
+          name: "Financial Reports",
+          href: "/finance/reports",
+          permission: { module: "finance", feature: "reports", action: "view" },
+        },
       ],
     },
     {
@@ -99,20 +168,89 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       href: "/administration/business-profile",
       icon: ShieldCheck,
       sectionKey: "administration",
+      module: "general",
       children: [
-        { name: "Company Profile", href: "/administration/business-profile" },
-        { name: "User Accounts", href: "/administration/users" },
-        { name: "Roles & Permissions", href: "/administration/roles" },
-        { name: "Subscription Plans", href: "/administration/subscription-plans" },
-        { name: "Tenants Directory", href: "/administration/businesses" },
+        {
+          name: "Company Profile",
+          href: "/administration/business-profile",
+          permission: { module: "general", feature: "business_profile", action: "view" },
+        },
+        {
+          name: "User Accounts",
+          href: "/administration/users",
+          permission: { module: "general", feature: "users_permissions", action: "view" },
+        },
+        {
+          name: "Roles & Permissions",
+          href: "/administration/roles",
+          permission: { module: "general", feature: "roles", action: "view" },
+        },
+        {
+          name: "Subscription Plans",
+          href: "/administration/subscription-plans",
+          permission: { module: "general", feature: "subscription_plans", action: "view" },
+        },
+        {
+          name: "Tenants Directory",
+          href: "/administration/businesses",
+          superuserOnly: true,
+        },
       ],
     },
     {
       name: "AI Assistant",
       href: "/ai-assistant",
       icon: Bot,
+      permission: { module: "general", feature: "ai_assistant", action: "view" },
     },
   ];
+
+  // Dynamically filter navigation items based on active role & module permissions
+  const visibleNavItems = navItems
+    .map((item) => {
+      if (item.superuserOnly && !user?.is_superuser) {
+        return null;
+      }
+
+      if (item.module && !user?.is_superuser && !hasModuleAccess(item.module)) {
+        return null;
+      }
+
+      if (
+        item.permission &&
+        !user?.is_superuser &&
+        !hasPermission(item.permission.module, item.permission.feature, item.permission.action)
+      ) {
+        return null;
+      }
+
+      if (item.children) {
+        const allowedChildren = item.children.filter((sub) => {
+          if (sub.superuserOnly && !user?.is_superuser) return false;
+          if (user?.is_superuser) return true;
+          if (sub.permission) {
+            return hasPermission(
+              sub.permission.module,
+              sub.permission.feature,
+              sub.permission.action
+            );
+          }
+          return true;
+        });
+
+        if (allowedChildren.length === 0) {
+          return null;
+        }
+
+        return {
+          ...item,
+          children: allowedChildren,
+        };
+      }
+
+      return item;
+    })
+    .filter(Boolean) as (NavItem & { sectionKey?: string })[];
 
   return (
     <>
@@ -189,7 +327,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
               pathname === item.href ||

@@ -10,6 +10,7 @@ interface AuthContextType {
   login: (formData: FormData) => Promise<void>;
   logout: () => Promise<void>;
   hasPermission: (module: string, feature: string, action: string) => boolean;
+  hasModuleAccess: (module: string) => boolean;
   refreshUser: () => Promise<void>;
 }
 
@@ -117,6 +118,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  const hasModuleAccess = (module: string): boolean => {
+    if (!user) return false;
+    if (user.is_superuser) return true;
+
+    if (user.direct_permissions?.some((p) => p.module === module)) {
+      return true;
+    }
+
+    if (user.roles?.some((r) => r.permissions?.some((p) => p.module === module))) {
+      return true;
+    }
+
+    return false;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -125,6 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         hasPermission,
+        hasModuleAccess,
         refreshUser: fetchCurrentUser,
       }}
     >

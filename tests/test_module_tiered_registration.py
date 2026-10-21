@@ -21,25 +21,30 @@ def setup_seed_data():
 
 @pytest.mark.asyncio
 async def test_module_tiered_registration():
+    import uuid
+    suffix = uuid.uuid4().hex[:6]
+    test_username = f"tier_test_hr_{suffix}"
+    test_email = f"tier_test_{suffix}@example.com"
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         reg_payload = {
-            "username": "tier_test_hr",
-            "email": "tier_test_hr@example.com",
+            "username": test_username,
+            "email": test_email,
             "password": "Password123#",
-            "company_name": "Tiered HR Corp",
+            "company_name": f"Tiered HR Corp {suffix}",
             "modules": ["hrm"],
         }
         res = await ac.post("/auth/register", json=reg_payload)
         assert res.status_code == 201, res.text
         data = res.json()
-        assert data["email"] == "tier_test_hr@example.com"
+        assert data["email"] == test_email
 
     async with AsyncSessionLocal() as db:
         res = await db.execute(
             select(User)
             .options(selectinload(User.roles).selectinload(Role.permissions), selectinload(User.direct_permissions))
-            .where(User.email == "tier_test_hr@example.com")
+            .where(User.email == test_email)
         )
         user = res.scalar_one_or_none()
         assert user is not None
