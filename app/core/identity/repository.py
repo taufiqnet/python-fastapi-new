@@ -121,7 +121,7 @@ class UserRepository:
             .execution_options(populate_existing=True)
         )
         if business_id is not None:
-            query = query.filter(User.business_id == business_id)
+            query = query.filter(User.business_id == business_id, User.is_superuser == False)
 
         query = query.offset(skip).limit(limit)
         result = await db.execute(query)

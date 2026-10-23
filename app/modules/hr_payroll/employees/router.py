@@ -307,6 +307,16 @@ def get_employee_org_chart(
     )
 
 
+@router.get("/employees/unlinked", response_model=list[UnlinkedEmployeeOut])
+def get_unlinked_employees(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.get_unlinked_employees(db, business_id=resolved_business_id)
+
+
 @router.get("/employees/{employee_id}", response_model=EmployeeOut)
 def get_employee(
     employee_id: uuid.UUID,
@@ -523,14 +533,6 @@ def get_employee_exit_clearance(
     }
 
 
-@router.get("/employees/unlinked", response_model=list[UnlinkedEmployeeOut])
-def get_unlinked_employees(
-    business_id: int | None = Query(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "employees", "view")),
-):
-    resolved_business_id = resolve_business_id(current_user, business_id)
-    return employee_service.get_unlinked_employees(db, business_id=resolved_business_id)
 
 
 @router.post("/employees/{employee_id}/provision-user")

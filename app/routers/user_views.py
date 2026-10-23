@@ -176,8 +176,9 @@ async def get_user_api(
     current_user: User = Depends(require_permission("general", "users_permissions", "view")),
 ):
     target_user = await user_service.get_user_by_id(db, user_id)
-    if not current_user.is_superuser and target_user.business_id != current_user.business_id:
-        raise HTTPException(status_code=403, detail="Access denied: User belongs to another tenant.")
+    if not current_user.is_superuser:
+        if target_user.is_superuser or target_user.business_id != current_user.business_id:
+            raise HTTPException(status_code=403, detail="Access denied: Cannot access this user account.")
     return target_user
 
 
@@ -190,8 +191,8 @@ async def update_user_api(
 ):
     target_user = await user_service.get_user_by_id(db, user_id)
     if not current_user.is_superuser:
-        if target_user.business_id != current_user.business_id:
-            raise HTTPException(status_code=403, detail="Cannot edit user belonging to another tenant.")
+        if target_user.is_superuser or target_user.business_id != current_user.business_id:
+            raise HTTPException(status_code=403, detail="Cannot edit user belonging to another tenant or superadmin.")
         data.business_id = current_user.business_id
         data.is_superuser = False
     return await user_service.update_user(db, user_id, data)
@@ -205,8 +206,8 @@ async def link_employee_api(
     current_user: User = Depends(require_permission("general", "users_permissions", "update")),
 ):
     target_user = await user_service.get_user_by_id(db, user_id)
-    if not current_user.is_superuser and target_user.business_id != current_user.business_id:
-        raise HTTPException(status_code=403, detail="Cannot modify user belonging to another tenant.")
+    if not current_user.is_superuser and (target_user.is_superuser or target_user.business_id != current_user.business_id):
+        raise HTTPException(status_code=403, detail="Cannot modify user belonging to another tenant or superadmin.")
     
     tenant_biz = None if current_user.is_superuser else current_user.business_id
     return await user_service.link_employee(
@@ -221,6 +222,6 @@ async def delete_user_api(
     current_user: User = Depends(require_permission("general", "users_permissions", "delete")),
 ):
     target_user = await user_service.get_user_by_id(db, user_id)
-    if not current_user.is_superuser and target_user.business_id != current_user.business_id:
-        raise HTTPException(status_code=403, detail="Cannot delete user belonging to another tenant.")
+    if not current_user.is_superuser and (target_user.is_superuser or target_user.business_id != current_user.business_id):
+        raise HTTPException(status_code=403, detail="Cannot delete user belonging to another tenant or superadmin.")
     await user_service.delete_user(db, user_id)

@@ -125,9 +125,16 @@ class UserService:
             from app.modules.hr_payroll.employees.models import Employee
             import uuid
             try:
-                emp_uuid = uuid.UUID(str(data.employee_id))
-                emp_res = await db.execute(select(Employee).where(Employee.id == emp_uuid))
-                emp = emp_res.scalars().first()
+                emp = None
+                try:
+                    emp_uuid = uuid.UUID(str(data.employee_id))
+                    emp_res = await db.execute(select(Employee).where(Employee.id == emp_uuid))
+                    emp = emp_res.scalars().first()
+                except (ValueError, TypeError):
+                    pass
+                if not emp:
+                    emp_res = await db.execute(select(Employee).where(Employee.employee_id == str(data.employee_id)))
+                    emp = emp_res.scalars().first()
                 if emp:
                     emp.user_id = user.id
                     await db.commit()
@@ -218,6 +225,24 @@ class UserService:
         from app.core.security import hash_password
 
         user = await self.get_user_by_id(db, user_id)
+
+        ROOT_SUPERADMIN_EMAIL = "admin@example.com"
+        if user.email == ROOT_SUPERADMIN_EMAIL or user.username == "admin":
+            if data.is_superuser is False:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cannot revoke Super Admin privileges from the root system administrator account.",
+                )
+            if data.is_active is False:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="The root Super Admin account cannot be deactivated.",
+                )
+            if data.business_id is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Root Super Admin account cannot be bound to a single tenant business.",
+                )
 
         if data.username and data.username != user.username:
             existing = await self.repository.get_by_username(db, data.username)
@@ -349,6 +374,11 @@ class UserService:
 
     async def delete_user(self, db: AsyncSession, user_id: int) -> None:
         user = await self.get_user_by_id(db, user_id)
+        if user.email == "admin@example.com" or user.username == "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="The root Super Admin account (admin@example.com) is permanently protected and cannot be deleted.",
+            )
         if user.is_superuser:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

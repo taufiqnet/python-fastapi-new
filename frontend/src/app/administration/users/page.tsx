@@ -559,23 +559,34 @@ export default function UsersPage() {
 
                         <td className="py-3.5 px-5 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-1.5">
-                            <Link
-                              href={`/administration/users/${user.id}/edit`}
-                              className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-                              title="Edit user"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Link>
-
-                            {!user.is_superuser && (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenDelete(user)}
-                                className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
-                                title="Delete user"
+                            {user.email === "admin@example.com" || user.username === "admin" ? (
+                              <span
+                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-500 border border-slate-200"
+                                title="Root Super Admin account is permanently protected"
                               >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                                Protected Root
+                              </span>
+                            ) : (
+                              <>
+                                <Link
+                                  href={`/administration/users/${user.id}/edit`}
+                                  className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                                  title="Edit user"
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Link>
+
+                                {!user.is_superuser && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenDelete(user)}
+                                    className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                    title="Delete user"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         </td>
