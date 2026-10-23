@@ -141,6 +141,27 @@ SYSTEM_MODULES = {
                     ("da_policies", "DA & Conveyance Policies"),
                 ],
             },
+            {
+                "category": "Performance Management",
+                "features": [
+                    ("performance_cycles", "Appraisal Cycles"),
+                    ("performance_goals", "Goals & KPIs"),
+                    ("performance_appraisals", "Performance Appraisals"),
+                ],
+            },
+            {
+                "category": "Career Lifecycle",
+                "features": [
+                    ("probation_reviews", "Probation Confirmation"),
+                    ("career_movements", "Promotions, Increments & Transfers"),
+                ],
+            },
+            {
+                "category": "Disciplinary",
+                "features": [
+                    ("disciplinary_cases", "Show Cause & Warnings"),
+                ],
+            },
         ],
     },
     "finance": {

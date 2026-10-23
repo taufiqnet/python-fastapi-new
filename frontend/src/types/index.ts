@@ -2447,6 +2447,229 @@ export interface TravelExpenseStats {
   settled_claims_this_month: number;
 }
 
+// ===========================================================================
+// Performance Management & Career Lifecycle
+// ===========================================================================
+
+export type CycleType = "annual" | "semi_annual" | "quarterly" | "probation";
+export type CycleStatus = "draft" | "goal_setting" | "in_review" | "calibration" | "closed";
+
+export interface AppraisalCycle {
+  id: string;
+  business_id: number;
+  title: string;
+  cycle_type: CycleType | string;
+  start_date: string;
+  end_date: string;
+  self_review_deadline?: string | null;
+  manager_review_deadline?: string | null;
+  status: CycleStatus | string;
+  created_at?: string;
+}
+
+export type GoalCategory = "strategic" | "operational" | "developmental" | "behavioral";
+export type GoalMetric = "percentage" | "numeric" | "currency" | "boolean";
+export type GoalStatus = "not_started" | "in_progress" | "achieved" | "partially_achieved" | "deferred";
+
+export interface EmployeeGoal {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee_name?: string | null;
+  cycle_id: string;
+  title: string;
+  description?: string | null;
+  category: GoalCategory | string;
+  metric_type: GoalMetric | string;
+  target_value: number;
+  achieved_value: number;
+  weightage: number;
+  due_date?: string | null;
+  status: GoalStatus | string;
+  self_rating?: number | null;
+  manager_rating?: number | null;
+  self_comments?: string | null;
+  manager_comments?: string | null;
+  achievement_pct?: number | null;
+  created_at?: string;
+}
+
+export type AppraisalStatus =
+  | "draft"
+  | "self_review_pending"
+  | "manager_review_pending"
+  | "calibration_pending"
+  | "acknowledgement_pending"
+  | "completed";
+
+export interface PerformanceAppraisal {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee_name?: string | null;
+  cycle_id: string;
+  cycle_title?: string | null;
+  reviewer_id?: string | null;
+  self_evaluation_text?: string | null;
+  self_overall_score?: number | null;
+  manager_evaluation_text?: string | null;
+  manager_overall_score?: number | null;
+  calibrated_score?: number | null;
+  final_rating_label?: string | null;
+  status: AppraisalStatus | string;
+  promotion_recommended?: boolean;
+  recommended_job_title_id?: string | null;
+  increment_recommended?: boolean;
+  recommended_increment_pct?: number | null;
+  pip_recommended?: boolean;
+  discussion_date?: string | null;
+  employee_acknowledged_at?: string | null;
+  created_at?: string;
+}
+
+export interface PerformanceStats {
+  active_cycles: number;
+  total_goals: number;
+  appraisals_pending_self: number;
+  appraisals_pending_manager: number;
+  appraisals_pending_calibration: number;
+  completed_appraisals: number;
+}
+
+// Probation
+export interface ProbationDeskRow {
+  employee_id: string;
+  employee_name: string;
+  employee_code?: string | null;
+  department_name?: string | null;
+  job_title_name?: string | null;
+  start_date?: string | null;
+  probation_end_date?: string | null;
+  days_remaining?: number | null;
+  confirmation_date?: string | null;
+  is_overdue: boolean;
+}
+
+export interface ProbationReview {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee_name?: string | null;
+  reviewer_id?: string | null;
+  review_number: string;
+  due_date?: string | null;
+  review_date: string;
+  performance_rating: number;
+  conduct_rating: number;
+  punctuality_rating: number;
+  recommendation: "confirm" | "extend_probation" | "terminate" | string;
+  extension_months?: number | null;
+  effective_confirmation_date?: string | null;
+  comments?: string | null;
+  status: "draft" | "submitted" | "approved" | "rejected" | string;
+  decided_at?: string | null;
+  letter_reference_no?: string | null;
+  created_at?: string;
+}
+
+// Career Movements
+export type MovementType = "promotion" | "increment" | "transfer" | "promotion_and_increment";
+export type MovementStatus = "pending_approval" | "applied" | "rejected";
+
+export interface CareerMovement {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee_name?: string | null;
+  movement_number: string;
+  action_type: MovementType | string;
+  status: MovementStatus | string;
+  effective_date: string;
+  reason_category: string;
+  justification_notes?: string | null;
+  previous_job_title_id?: string | null;
+  new_job_title_id?: string | null;
+  previous_job_title_name?: string | null;
+  new_job_title_name?: string | null;
+  previous_salary_grade_id?: string | null;
+  new_salary_grade_id?: string | null;
+  previous_branch_id?: string | null;
+  new_branch_id?: string | null;
+  previous_department_id?: string | null;
+  new_department_id?: string | null;
+  previous_manager_id?: string | null;
+  new_manager_id?: string | null;
+  increment_type?: "percentage" | "fixed_amount" | string | null;
+  increment_value?: number | null;
+  previous_basic_salary?: number | null;
+  new_basic_salary?: number | null;
+  previous_gross_salary?: number | null;
+  new_gross_salary?: number | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+  letter_reference_no?: string | null;
+  created_at?: string;
+}
+
+export interface IncrementPreview {
+  employee_id: string;
+  previous_basic_salary: number;
+  new_basic_salary: number;
+  previous_gross_salary: number;
+  new_gross_salary: number;
+  previous_net_salary: number;
+  new_net_salary: number;
+}
+
+// Disciplinary
+export interface DisciplinaryNotice {
+  id: string;
+  notice_number: string;
+  issue_date: string;
+  response_deadline: string;
+  notice_content?: string | null;
+  employee_explanation?: string | null;
+  explanation_received_date?: string | null;
+  explanation_accepted?: boolean | null;
+}
+
+export interface DisciplinaryAction {
+  id: string;
+  sanction_type: string;
+  effective_date: string;
+  suspension_days?: number | null;
+  subsistence_allowance_pct?: number | null;
+  remarks?: string | null;
+  letter_reference_no?: string | null;
+}
+
+export interface DisciplinaryCase {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee_name?: string | null;
+  case_number: string;
+  incident_date: string;
+  allegation_title: string;
+  allegation_details?: string | null;
+  allegation_category: string;
+  statutory_clause?: string | null;
+  severity_level: string;
+  current_stage: "reported" | "show_cause_issued" | "explanation_received" | "inquiry_pending" | "closed" | string;
+  notices: DisciplinaryNotice[];
+  actions: DisciplinaryAction[];
+  created_at?: string;
+}
+
+export interface LifecycleStats {
+  on_probation: number;
+  probation_due_30_days: number;
+  probation_overdue: number;
+  pending_movements: number;
+  open_disciplinary_cases: number;
+}
+
+
 
 
 

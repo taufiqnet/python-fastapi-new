@@ -16,11 +16,15 @@ import {
   Sparkles,
   Laptop,
   Plane,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 
 const PORTAL_NAV_TABS = [
   { name: "Overview", href: "/portal", icon: LayoutDashboard },
   { name: "My Profile", href: "/portal/profile", icon: User },
+  { name: "My Goals & Appraisals", href: "/portal/performance", icon: Target },
+  { name: "My Career & Conduct", href: "/portal/career", icon: TrendingUp },
   { name: "My Assets", href: "/portal/assets", icon: Laptop },
   { name: "Travel Desk", href: "/portal/travel", icon: Plane },
   { name: "Loans & Expenses", href: "/portal/finance", icon: Wallet },

@@ -225,6 +225,36 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/hr-payroll/expense-policies",
           permission: { module: "hrm", feature: "da_policies", action: "view" },
         },
+        {
+          name: "Appraisal Cycles",
+          href: "/hr-payroll/performance/cycles",
+          permission: { module: "hrm", feature: "performance_cycles", action: "view" },
+        },
+        {
+          name: "Goals & KPIs",
+          href: "/hr-payroll/performance/goals",
+          permission: { module: "hrm", feature: "performance_goals", action: "view" },
+        },
+        {
+          name: "Performance Appraisals",
+          href: "/hr-payroll/performance/appraisals",
+          permission: { module: "hrm", feature: "performance_appraisals", action: "view" },
+        },
+        {
+          name: "Probation Desk",
+          href: "/hr-payroll/lifecycle/probation",
+          permission: { module: "hrm", feature: "probation_reviews", action: "view" },
+        },
+        {
+          name: "Career Movements",
+          href: "/hr-payroll/lifecycle/movements",
+          permission: { module: "hrm", feature: "career_movements", action: "view" },
+        },
+        {
+          name: "Disciplinary Actions",
+          href: "/hr-payroll/disciplinary",
+          permission: { module: "hrm", feature: "disciplinary_cases", action: "view" },
+        },
       ],
     },
     {

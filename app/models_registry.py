@@ -186,3 +186,15 @@ from app.modules.travel_expenses.models import (  # noqa: F401
     TravelAdvance,
     TravelRequest,
 )
+from app.modules.hr_payroll.performance.models import (  # noqa: F401
+    AppraisalCycle,
+    EmployeeGoal,
+    PerformanceAppraisal,
+)
+from app.modules.hr_payroll.lifecycle.models import (  # noqa: F401
+    CareerMovement,
+    DisciplinaryActionLog,
+    DisciplinaryCase,
+    ProbationReview,
+    ShowCauseNotice,
+)
