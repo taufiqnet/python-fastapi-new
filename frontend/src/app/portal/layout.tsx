@@ -14,14 +14,18 @@ import {
   BookOpen,
   Headphones,
   Sparkles,
+  Laptop,
+  Plane,
 } from "lucide-react";
 
 const PORTAL_NAV_TABS = [
   { name: "Overview", href: "/portal", icon: LayoutDashboard },
   { name: "My Profile", href: "/portal/profile", icon: User },
+  { name: "My Assets", href: "/portal/assets", icon: Laptop },
+  { name: "Travel Desk", href: "/portal/travel", icon: Plane },
+  { name: "Loans & Expenses", href: "/portal/finance", icon: Wallet },
   { name: "Payslips & Tax", href: "/portal/payslips", icon: CreditCard },
   { name: "Requests Hub", href: "/portal/requests", icon: CalendarCheck },
-  { name: "Loans & Expenses", href: "/portal/finance", icon: Wallet },
   { name: "Official Letters", href: "/portal/letters", icon: FileCheck },
   { name: "Policies & Handbook", href: "/portal/handbook", icon: BookOpen },
   { name: "HR Helpdesk", href: "/portal/helpdesk", icon: Headphones },

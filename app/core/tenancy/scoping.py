@@ -5,11 +5,13 @@ from fastapi import HTTPException, status
 def resolve_business_id(user: Any, requested_business_id: int | None = None) -> int | None:
     """
     Resolves the business_id for a query or mutation.
-    For superusers, honours the requested_business_id.
+    For superusers, honours requested_business_id if provided; falls back to user.business_id.
     For regular users, ignores requested_business_id and forces user.business_id if present.
     """
     if user and getattr(user, "is_superuser", False):
-        return requested_business_id
+        if requested_business_id is not None:
+            return requested_business_id
+        return getattr(user, "business_id", None)
     if user and getattr(user, "business_id", None) is not None:
         return user.business_id
     return requested_business_id

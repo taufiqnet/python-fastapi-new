@@ -32,6 +32,7 @@ import {
   BadgeCheck,
   Building2,
   UserCheck,
+  Laptop,
 } from "lucide-react";
 import { EmployeeOut, DepartmentOut, JobTitleOut } from "@/types";
 import { apiClient } from "@/lib/api-client";
@@ -40,7 +41,7 @@ import { DeleteEmployeeDialog } from "@/components/hr-payroll/delete-employee-di
 import { NomineeTab } from "@/components/hr-payroll/employees/nominee-tab";
 import { IDCardGenerator } from "@/components/hr-payroll/employees/id-card-generator";
 
-type DetailTab = "basic" | "details" | "nominees" | "idcard";
+type DetailTab = "basic" | "details" | "nominees" | "idcard" | "assets";
 
 export default function EmployeeDetailPage() {
   const params = useParams();
@@ -53,8 +54,23 @@ export default function EmployeeDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<DetailTab>("basic");
+  const [clearanceData, setClearanceData] = useState<any>(null);
+  const [loadingClearance, setLoadingClearance] = useState(false);
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+
+  const loadClearance = async () => {
+    if (!employeeId) return;
+    setLoadingClearance(true);
+    try {
+      const res = await apiClient.get(`/employees/${employeeId}/clearance`);
+      setClearanceData(res.data);
+    } catch {
+      // Non-blocking
+    } finally {
+      setLoadingClearance(false);
+    }
+  };
 
   const loadData = async () => {
     if (!employeeId) return;
@@ -314,6 +330,21 @@ export default function EmployeeDetailPage() {
             >
               <CreditCard className="w-3.5 h-3.5" />
               Smart ID Card
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("assets");
+                loadClearance();
+              }}
+              className={`px-4 py-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === "assets"
+                  ? "border-indigo-600 text-indigo-600 bg-white"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Laptop className="w-3.5 h-3.5" />
+              Assets & Exit Clearance
             </button>
           </div>
         </div>
@@ -686,6 +717,127 @@ export default function EmployeeDetailPage() {
         {activeTab === "idcard" && (
           <div className="animate-in fade-in duration-200">
             <IDCardGenerator employee={employee} />
+          </div>
+        )}
+
+        {/* ── TAB 5: ASSETS & EXIT CLEARANCE ───────────────────────────────────── */}
+        {activeTab === "assets" && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Clearance Summary Banner */}
+            <div className={`p-6 rounded-2xl border shadow-xs ${
+              clearanceData?.is_cleared
+                ? "bg-emerald-50/60 border-emerald-200 text-emerald-900"
+                : "bg-amber-50/60 border-amber-200 text-amber-900"
+            }`}>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                    clearanceData?.is_cleared ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                  }`}>
+                    {clearanceData?.is_cleared ? (
+                      <CheckCircle2 className="w-6 h-6" />
+                    ) : (
+                      <AlertCircle className="w-6 h-6" />
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold">
+                      {clearanceData?.is_cleared
+                        ? "Employee Cleared of Company Custody"
+                        : "Outstanding Company Custody & Advances"}
+                    </h3>
+                    <p className="text-xs opacity-80 mt-0.5">
+                      {clearanceData?.is_cleared
+                        ? "All company laptops, cellular SIMs, and travel advances are fully returned and settled."
+                        : "Assets must be returned and travel advances cleared prior to final offboarding and severance payout."}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/assets/allocations"
+                    className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition"
+                  >
+                    Open Custody Handover Log
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Unreturned Assets */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Laptop className="w-4 h-4 text-indigo-600" />
+                  <h3 className="text-sm font-bold text-slate-900">Assigned Company Equipment & Gear</h3>
+                </div>
+                <span className="text-xs font-semibold text-slate-500">
+                  {clearanceData?.unreturned_assets_count || 0} items active
+                </span>
+              </div>
+
+              {loadingClearance ? (
+                <div className="p-8 text-center text-slate-400 text-xs">Checking asset custody...</div>
+              ) : clearanceData?.unreturned_assets && clearanceData.unreturned_assets.length > 0 ? (
+                <div className="divide-y divide-slate-100 mt-2">
+                  {clearanceData.unreturned_assets.map((item: any) => (
+                    <div key={item.assignment_id} className="py-3 flex items-center justify-between text-xs">
+                      <div>
+                        <div className="font-semibold text-slate-900">{item.asset_name || "Company Asset"}</div>
+                        <div className="font-mono text-[11px] text-indigo-600">{item.asset_tag}</div>
+                      </div>
+                      <div className="text-right">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 capitalize">
+                          {item.status.replace("_", " ")}
+                        </span>
+                        <div className="text-[11px] text-slate-400 mt-0.5">Assigned: {item.assigned_date}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  No company hardware or equipment currently assigned to this employee.
+                </div>
+              )}
+            </div>
+
+            {/* Unsettled Advances */}
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                  <h3 className="text-sm font-bold text-slate-900">Unsettled Travel Advances</h3>
+                </div>
+                <span className="text-xs font-semibold text-slate-500">
+                  {clearanceData?.unsettled_advances_count || 0} active advances
+                </span>
+              </div>
+
+              {clearanceData?.unsettled_advances && clearanceData.unsettled_advances.length > 0 ? (
+                <div className="divide-y divide-slate-100 mt-2">
+                  {clearanceData.unsettled_advances.map((adv: any) => (
+                    <div key={adv.advance_id} className="py-3 flex items-center justify-between text-xs">
+                      <div>
+                        <div className="font-semibold text-slate-900 font-mono">{adv.advance_number}</div>
+                        <div className="text-[11px] text-slate-400">Travel Advance Fund</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono font-bold text-slate-900">BDT {Number(adv.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 capitalize mt-0.5">
+                          {adv.settlement_status.replace("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-slate-400 text-xs">
+                  No unsettled pre-trip advances found for this employee.
+                </div>
+              )}
+            </div>
           </div>
         )}
 

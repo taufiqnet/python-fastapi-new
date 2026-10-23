@@ -2236,6 +2236,217 @@ export interface TaxCardSummary {
   monthly_breakdown: TaxCardMonthlyRow[];
 }
 
+// ===========================================================================
+// Asset Management Interfaces
+// ===========================================================================
+export interface AssetCategory {
+  id: string;
+  business_id: number;
+  name: string;
+  code: string;
+  description?: string | null;
+  depreciation_method?: string | null;
+  useful_life_months?: number | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export type AssetStatus = "available" | "assigned" | "under_maintenance" | "damaged" | "retired" | "lost";
+export type AssetCondition = "new" | "good" | "fair" | "damaged";
+export type AllocationStatus = "pending_acknowledgement" | "active" | "returned" | "disputed";
+export type MaintenanceStatus = "reported" | "in_repair" | "repaired" | "irreparable";
+export type MaintenanceType = "damage" | "preventive" | "breakdown" | "upgrade";
+
+export interface CompanyAsset {
+  id: string;
+  business_id: number;
+  category_id: string;
+  category_name?: string | null;
+  asset_tag: string;
+  name: string;
+  serial_number?: string | null;
+  imei_or_reg_number?: string | null;
+  brand?: string | null;
+  model?: string | null;
+  specifications?: string | null;
+  purchase_date?: string | null;
+  purchase_cost: number | string;
+  warranty_expiry_date?: string | null;
+  vendor_supplier?: string | null;
+  invoice_number?: string | null;
+  location?: string | null;
+  current_status: AssetStatus;
+  condition: AssetCondition;
+  notes?: string | null;
+  current_assigned_employee_id?: string | null;
+  current_assigned_employee_name?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AssetAssignment {
+  id: string;
+  business_id: number;
+  asset_id: string;
+  employee_id: string;
+  asset_tag?: string | null;
+  asset_name?: string | null;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  assigned_date: string;
+  expected_return_date?: string | null;
+  actual_return_date?: string | null;
+  issue_condition: AssetCondition;
+  issue_notes?: string | null;
+  return_condition?: AssetCondition | null;
+  return_notes?: string | null;
+  status: AllocationStatus;
+  acknowledged_at?: string | null;
+  created_at?: string;
+}
+
+export interface AssetMaintenanceLog {
+  id: string;
+  business_id: number;
+  asset_id: string;
+  asset_tag?: string | null;
+  asset_name?: string | null;
+  issue_type: MaintenanceType;
+  reported_date: string;
+  problem_description: string;
+  vendor_service_center?: string | null;
+  cost: number | string;
+  start_date: string;
+  completion_date?: string | null;
+  status: MaintenanceStatus;
+  resolution_notes?: string | null;
+  invoice_or_receipt_url?: string | null;
+  created_at?: string;
+}
+
+export interface AssetOverviewStats {
+  total_assets: number;
+  available_assets: number;
+  assigned_assets: number;
+  under_maintenance_assets: number;
+  damaged_assets: number;
+}
+
+// ===========================================================================
+// Travel & Expense Management Interfaces
+// ===========================================================================
+export type TravelStatus = "draft" | "pending_approval" | "approved" | "rejected" | "completed" | "cancelled";
+export type TravelType = "domestic" | "international";
+export type AdvanceStatus = "unsettled" | "partially_settled" | "fully_settled";
+export type ClaimType = "travel_settlement" | "daily_conveyance" | "general_expense";
+export type ClaimStatus = "draft" | "submitted" | "manager_approved" | "finance_approved" | "settled" | "rejected";
+export type ExpenseCategory =
+  | "travel_fare"
+  | "hotel_lodging"
+  | "daily_allowance"
+  | "local_conveyance"
+  | "meals"
+  | "office_supplies"
+  | "client_entertainment"
+  | "communication"
+  | "other";
+
+export interface TravelRequest {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  request_number: string;
+  purpose: string;
+  travel_type: TravelType;
+  origin: string;
+  destination: string;
+  departure_date: string;
+  return_date: string;
+  estimated_cost: number | string;
+  advance_required: boolean;
+  advance_amount_requested: number | string;
+  status: TravelStatus;
+  approver_name?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+  notes?: string | null;
+  advance_id?: string | null;
+  advance_settlement_status?: string | null;
+  created_at?: string;
+}
+
+export interface TravelAdvance {
+  id: string;
+  business_id: number;
+  travel_request_id: string;
+  employee_id: string;
+  advance_number: string;
+  amount_approved: number | string;
+  disbursed_at?: string | null;
+  disbursement_method: string;
+  payment_reference?: string | null;
+  settlement_status: AdvanceStatus;
+  created_at?: string;
+}
+
+export interface DAConveyancePolicy {
+  id: string;
+  business_id: number;
+  grade_name: string;
+  city_tier: string;
+  daily_allowance_rate: number | string;
+  hotel_limit_per_night: number | string;
+  conveyance_rate_per_km: number | string;
+  is_active: boolean;
+  created_at?: string;
+}
+
+export interface ExpenseClaimLine {
+  id: string;
+  expense_date: string;
+  category: ExpenseCategory;
+  amount: number | string;
+  conveyance_km?: number | null;
+  conveyance_mode?: string | null;
+  description: string;
+  receipt_url?: string | null;
+}
+
+export interface ExpenseSettlementClaim {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  travel_request_id?: string | null;
+  claim_type: ClaimType;
+  claim_number: string;
+  title: string;
+  claim_date: string;
+  total_claim_amount: number | string;
+  advance_deducted: number | string;
+  net_payable_or_refundable: number | string;
+  status: ClaimStatus;
+  approval_notes?: string | null;
+  settlement_channel?: string | null;
+  payment_reference?: string | null;
+  paid_at?: string | null;
+  lines: ExpenseClaimLine[];
+  created_at?: string;
+}
+
+export interface TravelExpenseStats {
+  pending_travel_requests: number;
+  active_travel_advances: number;
+  total_advances_amount: number | string;
+  pending_claims: number;
+  total_claims_pending_amount: number | string;
+  settled_claims_this_month: number;
+}
+
 
 
 

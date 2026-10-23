@@ -124,6 +124,23 @@ SYSTEM_MODULES = {
                     ("notice_board", "Notice Board"),
                 ],
             },
+            {
+                "category": "Company Assets",
+                "features": [
+                    ("assets", "Company Asset Inventory"),
+                    ("asset_allocations", "Asset Allocations & Handover"),
+                    ("asset_maintenance", "Damage & Maintenance Work Orders"),
+                ],
+            },
+            {
+                "category": "Travel & Expense",
+                "features": [
+                    ("travel_requests", "Travel Requisitions"),
+                    ("travel_advances", "Travel Advances"),
+                    ("expense_claims", "Expense Claims & Settlements"),
+                    ("da_policies", "DA & Conveyance Policies"),
+                ],
+            },
         ],
     },
     "finance": {

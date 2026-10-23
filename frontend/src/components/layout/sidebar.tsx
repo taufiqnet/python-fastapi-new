@@ -22,6 +22,9 @@ import {
   ShieldCheck,
   Stethoscope,
   UserCheck,
+  Laptop,
+  Plane,
+  Receipt,
 } from "lucide-react";
 
 interface NavChild {
@@ -55,6 +58,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
     portal: true,
     ecommerce: true,
     hr: true,
+    assets: true,
     healthcare: true,
     finance: true,
     administration: true,
@@ -205,6 +209,50 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           name: "Experience Letters",
           href: "/hr-payroll/experience-letters",
           permission: { module: "hrm", feature: "experience_letters", action: "view" },
+        },
+        {
+          name: "Travel Requests",
+          href: "/hr-payroll/travel-requests",
+          permission: { module: "hrm", feature: "travel_requests", action: "view" },
+        },
+        {
+          name: "Expense Claims",
+          href: "/hr-payroll/expense-claims",
+          permission: { module: "hrm", feature: "expense_claims", action: "view" },
+        },
+        {
+          name: "DA & Conveyance Policies",
+          href: "/hr-payroll/expense-policies",
+          permission: { module: "hrm", feature: "da_policies", action: "view" },
+        },
+      ],
+    },
+    {
+      name: "Asset Management",
+      href: "/assets",
+      icon: Laptop,
+      sectionKey: "assets",
+      module: "hrm",
+      children: [
+        {
+          name: "Asset Inventory",
+          href: "/assets",
+          permission: { module: "hrm", feature: "assets", action: "view" },
+        },
+        {
+          name: "Custody Allocations",
+          href: "/assets/allocations",
+          permission: { module: "hrm", feature: "asset_allocations", action: "view" },
+        },
+        {
+          name: "Maintenance & Repairs",
+          href: "/assets/maintenance",
+          permission: { module: "hrm", feature: "asset_maintenance", action: "view" },
+        },
+        {
+          name: "Categories Setup",
+          href: "/assets/categories",
+          permission: { module: "hrm", feature: "assets", action: "view" },
         },
       ],
     },

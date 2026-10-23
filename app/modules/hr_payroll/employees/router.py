@@ -447,3 +447,76 @@ def get_employee_id_card(
         db, employee_id=employee_id, business_id=resolved_business_id
     )
 
+
+# ── Employee Exit & Offboarding Clearance Check ───────────────────
+@router.get("/employees/{employee_id}/clearance")
+def get_employee_exit_clearance(
+    employee_id: uuid.UUID,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    emp = employee_service.get_employee_by_id(db, employee_id, business_id=resolved_business_id)
+    if not emp:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+
+    from app.modules.assets.models import AllocationStatusEnum, AssetAssignment
+    from app.modules.travel_expenses.models import AdvanceStatusEnum, TravelAdvance
+
+    # 1. Unreturned assets
+    unreturned_assets = (
+        db.query(AssetAssignment)
+        .filter(
+            AssetAssignment.business_id == resolved_business_id,
+            AssetAssignment.employee_id == employee_id,
+            AssetAssignment.status.in_([
+                AllocationStatusEnum.PENDING_ACKNOWLEDGEMENT.value,
+                AllocationStatusEnum.ACTIVE.value,
+                AllocationStatusEnum.DISPUTED.value,
+            ]),
+        )
+        .all()
+    )
+
+    # 2. Unsettled travel advances
+    unsettled_advances = (
+        db.query(TravelAdvance)
+        .filter(
+            TravelAdvance.business_id == resolved_business_id,
+            TravelAdvance.employee_id == employee_id,
+            TravelAdvance.settlement_status == AdvanceStatusEnum.UNSETTLED.value,
+        )
+        .all()
+    )
+
+    is_cleared = len(unreturned_assets) == 0 and len(unsettled_advances) == 0
+
+    return {
+        "employee_id": str(employee_id),
+        "employee_name": f"{emp.first_name} {emp.last_name or ''}".strip(),
+        "is_cleared": is_cleared,
+        "unreturned_assets_count": len(unreturned_assets),
+        "unreturned_assets": [
+            {
+                "assignment_id": str(a.id),
+                "asset_id": str(a.asset_id),
+                "asset_tag": a.asset.asset_tag if a.asset else None,
+                "asset_name": a.asset.name if a.asset else None,
+                "assigned_date": str(a.assigned_date),
+                "status": a.status,
+            }
+            for a in unreturned_assets
+        ],
+        "unsettled_advances_count": len(unsettled_advances),
+        "unsettled_advances": [
+            {
+                "advance_id": str(adv.id),
+                "advance_number": adv.advance_number,
+                "amount": float(adv.amount_approved),
+                "settlement_status": adv.settlement_status,
+            }
+            for adv in unsettled_advances
+        ],
+    }
+

@@ -173,5 +173,16 @@ from app.modules.hr_payroll.portal.models import (  # noqa: F401
     PolicyAcknowledgement,
     ProfileUpdateRequest,
 )
-
-
+from app.modules.assets.models import (  # noqa: F401
+    AssetAssignment,
+    AssetCategory,
+    AssetMaintenanceLog,
+    CompanyAsset,
+)
+from app.modules.travel_expenses.models import (  # noqa: F401
+    DAConveyancePolicy,
+    ExpenseClaimLine,
+    ExpenseSettlementClaim,
+    TravelAdvance,
+    TravelRequest,
+)

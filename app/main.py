@@ -108,6 +108,8 @@ from app.modules.hr_payroll.recruitment.router import router as recruitment_rout
 from app.modules.hr_payroll.roster.router import router as roster_router
 from app.modules.hr_payroll.portal.router import router as portal_router
 from app.modules.healthcare.router import router as healthcare_router
+from app.modules.assets.router import router as assets_router
+from app.modules.travel_expenses.router import router as travel_expenses_router
 from app.api.v1.endpoints.sync import router as sync_router
 
 from app.routers import (
@@ -438,6 +440,14 @@ app.include_router(portal_router)
 # healthcare router
 app.include_router(healthcare_router, prefix="/api/v1")
 app.include_router(healthcare_router)
+
+# asset management router
+app.include_router(assets_router, prefix="/api/v1")
+app.include_router(assets_router)
+
+# travel & expense router
+app.include_router(travel_expenses_router, prefix="/api/v1")
+app.include_router(travel_expenses_router)
 
 # project management router
 app.include_router(tasks.router)
