@@ -1962,6 +1962,281 @@ export interface RosterExchangeCreatePayload {
   reason: string;
 }
 
+// ===========================================================================
+// Employee Self-Service (ESS) Portal Interfaces
+// ===========================================================================
+export interface PortalMe {
+  id: string;
+  business_id: number;
+  user_id?: number | null;
+  employee_id: string;
+  first_name: string;
+  last_name?: string | null;
+  full_name: string;
+  bangla_name?: string | null;
+  work_email: string;
+  personal_email?: string | null;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  blood_group?: string | null;
+  national_id?: string | null;
+  tin?: string | null;
+  photo_url?: string | null;
+  department_name?: string | null;
+  job_title_name?: string | null;
+  branch_name?: string | null;
+  manager_name?: string | null;
+  employment_type?: string | null;
+  employee_category?: string | null;
+  work_arrangement?: string | null;
+  start_date?: string | null;
+  confirmation_date?: string | null;
+  is_active: boolean;
+  disbursement_method?: string | null;
+  bank_name?: string | null;
+  bank_branch?: string | null;
+  bank_account_no?: string | null;
+  bank_routing_number?: string | null;
+  mfs_provider?: string | null;
+  mfs_number?: string | null;
+  present_address?: string | null;
+  permanent_address?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_relation?: string | null;
+  emergency_contact_phone?: string | null;
+}
+
+export interface PortalLeaveBalance {
+  leave_type_id: string;
+  leave_type_name: string;
+  code: string;
+  is_statutory: boolean;
+  allocated_days: number;
+  used_days: number;
+  remaining_days: number;
+}
+
+export interface PortalHoliday {
+  name: string;
+  holiday_type: string;
+  start_date: string;
+  end_date: string;
+  is_paid: boolean;
+}
+
+export interface PortalRosterShift {
+  duty_date: string;
+  shift_name: string;
+  start_time: string;
+  end_time: string;
+  is_night_shift: boolean;
+}
+
+export interface PortalNotice {
+  id: string;
+  title: string;
+  category: string;
+  publish_date: string;
+  is_pinned: boolean;
+  is_acknowledged: boolean;
+}
+
+export interface PortalDashboard {
+  profile: PortalMe;
+  attendance_summary: {
+    month: string;
+    present_days: number;
+    late_days: number;
+    absent_days: number;
+    leave_days: number;
+    overtime_hours: number;
+    today_status: string;
+    today_punch_in?: string | null;
+    today_punch_out?: string | null;
+  };
+  leave_balances: PortalLeaveBalance[];
+  upcoming_holidays: PortalHoliday[];
+  upcoming_shifts: PortalRosterShift[];
+  recent_notices: PortalNotice[];
+  unread_notices_count: number;
+  pending_requests_count: number;
+  active_tickets_count: number;
+}
+
+export interface ProfileUpdateRequest {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  requested_changes: Record<string, any>;
+  reason?: string | null;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by_id?: number | null;
+  review_notes?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+}
+
+export interface AttendanceCorrectionRequest {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  attendance_date: string;
+  request_type: "missed_punch" | "late_excuse" | "work_on_holiday";
+  requested_time_in?: string | null;
+  requested_time_out?: string | null;
+  reason: string;
+  supporting_document_url?: string | null;
+  status: "pending" | "approved" | "rejected";
+  reviewed_by_id?: number | null;
+  review_notes?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+}
+
+export interface EmployeeLoan {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  loan_type: "salary_advance" | "personal_loan" | "emergency_loan";
+  principal_amount: number;
+  monthly_installment_amount: number;
+  total_installments: number;
+  disbursed_amount: number;
+  remaining_balance: number;
+  repayment_start_date?: string | null;
+  status: "pending" | "approved" | "disbursed" | "rejected" | "completed";
+  approved_by_id?: number | null;
+  disbursed_at?: string | null;
+  reason: string;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface ExpenseClaimItem {
+  id?: string;
+  claim_id?: string;
+  expense_date: string;
+  category: "travel" | "meals" | "hotel" | "supplies" | "training" | "other";
+  amount: number;
+  description: string;
+  receipt_url?: string | null;
+}
+
+export interface ExpenseClaim {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  claim_number: string;
+  title: string;
+  claim_date: string;
+  total_amount: number;
+  status: "draft" | "submitted" | "approved" | "rejected" | "reimbursed";
+  reviewer_id?: number | null;
+  review_notes?: string | null;
+  payment_reference?: string | null;
+  reimbursed_at?: string | null;
+  items: ExpenseClaimItem[];
+  created_at: string;
+}
+
+export interface OfficialLetterRequest {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  letter_type: "noc_visa" | "noc_travel" | "salary_certificate" | "experience_letter" | "job_confirmation";
+  purpose: string;
+  addressed_to?: string | null;
+  travel_country?: string | null;
+  travel_start_date?: string | null;
+  travel_end_date?: string | null;
+  status: "pending" | "approved" | "generated" | "rejected";
+  generated_file_url?: string | null;
+  reviewed_by_id?: number | null;
+  review_notes?: string | null;
+  reviewed_at?: string | null;
+  created_at: string;
+}
+
+export interface CompanyPolicy {
+  id: string;
+  business_id: number;
+  title: string;
+  category: "hr_policy" | "code_of_conduct" | "leave_rules" | "it_security" | "health_safety" | "benefits";
+  version: string;
+  effective_date: string;
+  summary?: string | null;
+  content?: string | null;
+  attachment_url?: string | null;
+  is_mandatory_acknowledgement: boolean;
+  is_active: boolean;
+  acknowledged_by_me: boolean;
+  acknowledged_at?: string | null;
+  created_at: string;
+}
+
+export interface HRTicketComment {
+  id: string;
+  ticket_id: string;
+  author_user_id: number;
+  is_hr_staff: boolean;
+  message: string;
+  attachment_url?: string | null;
+  created_at: string;
+}
+
+export interface HRTicket {
+  id: string;
+  business_id: number;
+  ticket_number: string;
+  employee_id: string;
+  category: "payroll" | "leave" | "benefits" | "workplace" | "it" | "general";
+  priority: "low" | "medium" | "high" | "urgent";
+  subject: string;
+  description: string;
+  attachment_url?: string | null;
+  status: "open" | "in_progress" | "resolved" | "closed";
+  assigned_to_id?: number | null;
+  resolved_at?: string | null;
+  resolution_notes?: string | null;
+  comments?: HRTicketComment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaxCardMonthlyRow {
+  month_name: string;
+  period_id: string;
+  basic_salary: number;
+  house_rent: number;
+  medical_allowance: number;
+  conveyance: number;
+  other_allowance: number;
+  gross_salary: number;
+  tax_deducted: number;
+}
+
+export interface TaxCardSummary {
+  employee_id: string;
+  employee_name: string;
+  tin?: string | null;
+  designation?: string | null;
+  department?: string | null;
+  fiscal_year: string;
+  assessment_year: string;
+  total_basic: number;
+  total_house_rent: number;
+  total_medical: number;
+  total_conveyance: number;
+  total_bonus: number;
+  total_gross_income: number;
+  total_tax_exempted: number;
+  taxable_income: number;
+  total_tax_withheld: number;
+  monthly_breakdown: TaxCardMonthlyRow[];
+}
+
+
 
 
 

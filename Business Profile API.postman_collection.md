@@ -4357,6 +4357,300 @@ Tenant scoping is automatically resolved via the user's JWT claims and validated
 ---
 
 
+### Employee Self-Service (ESS) Portal
+
+### `GET` Get Current Linked Employee Profile
+
+- **URL:** `{{base_url}}/portal/me`
+- **Method:** `GET`
+- **Summary:** Fetch the currently authenticated user's linked employee record, designation, department, and company scope.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `GET` Get Portal Telemetry & Leave Balances
+
+- **URL:** `{{base_url}}/portal/dashboard`
+- **Method:** `GET`
+- **Summary:** Dashboard overview including today's attendance punch status, leave balance dials, upcoming holidays, shift roster, and recent notices.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `POST` Digital Web Punch Clock (Check-in/Out)
+
+- **URL:** `{{base_url}}/portal/attendance/punch`
+- **Method:** `POST`
+- **Summary:** Performs instant biometric/web attendance punch with server timestamp.
+- **Headers:** `Content-Type: application/json`
+
+**Request Body (JSON):**
+```json
+{
+    "action": "check_in",
+    "note": "Arrived at office"
+}
+```
+
+
+---
+
+### `POST` Submit Profile Update Request
+
+- **URL:** `{{base_url}}/portal/profile/update-requests`
+- **Method:** `POST`
+- **Summary:** Employee request to change sensitive personal or banking details with audit approval queue.
+- **Headers:** `Content-Type: application/json`
+
+**Request Body (JSON):**
+```json
+{
+    "field_name": "emergency_contact_phone",
+    "new_value": "+8801700998877",
+    "supporting_document_url": "https://docs.example.com/nid_update.pdf",
+    "reason": "Updated emergency contact number"
+}
+```
+
+
+---
+
+### `GET` List Profile Update Requests
+
+- **URL:** `{{base_url}}/portal/profile/update-requests`
+- **Method:** `GET`
+- **Summary:** View tracking history of profile change requests and HR review statuses.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `POST` Apply for Attendance Regularisation
+
+- **URL:** `{{base_url}}/portal/attendance-corrections`
+- **Method:** `POST`
+- **Summary:** Request regularisation for missed punch or system downtime with line manager review.
+- **Headers:** `Content-Type: application/json`
+
+**Request Body (JSON):**
+```json
+{
+    "attendance_date": "2026-10-22",
+    "requested_check_in": "09:00:00",
+    "requested_check_out": "18:00:00",
+    "reason": "Device scanner malfunction at main lobby"
+}
+```
+
+
+---
+
+### `GET` List Attendance Corrections
+
+- **URL:** `{{base_url}}/portal/attendance-corrections`
+- **Method:** `GET`
+- **Summary:** List my attendance correction requests.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `POST` Apply for Employee Loan / Advance
+
+- **URL:** `{{base_url}}/portal/loans`
+- **Method:** `POST`
+- **Summary:** Submit request for salary advance or corporate loan with installment deduction schedule.
+- **Headers:** `Content-Type: application/json`
+
+**Request Body (JSON):**
+```json
+{
+    "loan_type": "salary_advance",
+    "principal_amount": 25000,
+    "monthly_installment_amount": 5000,
+    "total_installments": 5,
+    "reason": "Festival advance and travel expenses"
+}
+```
+
+
+---
+
+### `GET` List My Loans & Advances
+
+- **URL:** `{{base_url}}/portal/loans`
+- **Method:** `GET`
+- **Summary:** View outstanding loan balances, monthly deductions, and approval status.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `POST` Submit Expense Reimbursement Claim
+
+- **URL:** `{{base_url}}/portal/expense-claims`
+- **Method:** `POST`
+- **Summary:** Submit itemized corporate business expense claims with attached receipts.
+- **Headers:** `Content-Type: application/json`
+
+**Request Body (JSON):**
+```json
+{
+    "title": "Client Site Inspection & Client Dinner",
+    "claim_date": "2026-10-22",
+    "items": [
+        {
+            "expense_date": "2026-10-22",
+            "category": "travel",
+            "amount": 1500,
+            "description": "Ride sharing to client headquarters",
+            "receipt_url": "https://receipts.example.com/uber_oct22.pdf"
+        },
+        {
+            "expense_date": "2026-10-22",
+            "category": "meals",
+            "amount": 2800,
+            "description": "Business lunch with client stakeholders",
+            "receipt_url": "https://receipts.example.com/lunch_oct22.pdf"
+        }
+    ]
+}
+```
+
+
+---
+
+### `GET` List My Expense Claims
+
+- **URL:** `{{base_url}}/portal/expense-claims`
+- **Method:** `GET`
+- **Summary:** List my submitted expense claims and reimbursement tracking.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `POST` Request Official Letter / NOC
+
+- **URL:** `{{base_url}}/portal/letter-requests`
+- **Method:** `POST`
+- **Summary:** Request official company documentation: Visa NOC, Travel NOC, Salary Certificate, or Experience Letter.
+- **Headers:** `Content-Type: application/json`
+
+**Request Body (JSON):**
+```json
+{
+    "letter_type": "noc_visa",
+    "purpose": "Tourist visa application for personal holiday",
+    "addressed_to": "Visa Officer, Embassy of Japan",
+    "travel_country": "Japan",
+    "travel_start_date": "2026-12-15",
+    "travel_end_date": "2026-12-25"
+}
+```
+
+
+---
+
+### `GET` List Official Letter Requests
+
+- **URL:** `{{base_url}}/portal/letter-requests`
+- **Method:** `GET`
+- **Summary:** List official letter requests with download URLs once generated.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `GET` Browse Policies & Employee Handbook
+
+- **URL:** `{{base_url}}/portal/policies`
+- **Method:** `GET`
+- **Summary:** Directory of company policies, code of conduct, statutory labor regulations (BLA 2006), and acknowledgement status.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `POST` Acknowledge / Sign Policy
+
+- **URL:** `{{base_url}}/portal/policies/{{sample_policy_id}}/acknowledge`
+- **Method:** `POST`
+- **Summary:** Record digital signature and compliance sign-off for mandatory company policy.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `POST` Raise HR Support Ticket
+
+- **URL:** `{{base_url}}/portal/tickets`
+- **Method:** `POST`
+- **Summary:** Raise support or grievance ticket to HR/Payroll team.
+- **Headers:** `Content-Type: application/json`
+
+**Request Body (JSON):**
+```json
+{
+    "category": "payroll",
+    "priority": "medium",
+    "subject": "Tax Withholding Clarification for October 2026",
+    "description": "Need breakdown on conveyance exemption applied under ITA 2023."
+}
+```
+
+
+---
+
+### `GET` List My Support Tickets
+
+- **URL:** `{{base_url}}/portal/tickets`
+- **Method:** `GET`
+- **Summary:** View employee helpdesk tickets and status.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `GET` Get Support Ticket Thread Details
+
+- **URL:** `{{base_url}}/portal/tickets/{{sample_ticket_id}}`
+- **Method:** `GET`
+- **Summary:** Fetch complete ticket conversation history and comments.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `POST` Reply to Support Ticket
+
+- **URL:** `{{base_url}}/portal/tickets/{{sample_ticket_id}}/comments`
+- **Method:** `POST`
+- **Summary:** Add reply comment to support ticket discussion.
+- **Headers:** `Content-Type: application/json`
+
+**Request Body (JSON):**
+```json
+{
+    "message": "Thank you for the clarification. The explanation aligns with the tax slab."
+}
+```
+
+
+---
+
+### `GET` Get Payslip Archive
+
+- **URL:** `{{base_url}}/portal/payslips`
+- **Method:** `GET`
+- **Summary:** Fetch all monthly payslip records with breakdown of allowances and deductions.
+- **Headers:** `Content-Type: application/json`
+
+---
+
+### `GET` Get Annual Tax Deduction Card (ITA 2023)
+
+- **URL:** `{{base_url}}/portal/tax-card`
+- **Method:** `GET`
+- **Summary:** Download/view complete Bangladesh Income Tax Act 2023 annual tax certificate summary and month-by-month deduction ledger.
+- **Headers:** `Content-Type: application/json`
+- **Query Parameters:**
+  - `fiscal_year`: `2025-2026`
+
+---
+
+
 ## Finance & Accounting (Bangladesh)
 
 

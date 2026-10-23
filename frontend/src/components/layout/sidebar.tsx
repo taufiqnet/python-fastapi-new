@@ -21,6 +21,7 @@ import {
   Building2,
   ShieldCheck,
   Stethoscope,
+  UserCheck,
 } from "lucide-react";
 
 interface NavChild {
@@ -51,6 +52,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
   const pathname = usePathname();
   const { user, hasPermission, hasModuleAccess } = useAuth();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    portal: true,
     ecommerce: true,
     hr: true,
     healthcare: true,
@@ -67,6 +69,46 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       name: "Dashboard",
       href: "/",
       icon: LayoutDashboard,
+    },
+    {
+      name: "Employee Portal",
+      href: "/portal",
+      icon: UserCheck,
+      sectionKey: "portal",
+      children: [
+        {
+          name: "Overview & Check-In",
+          href: "/portal",
+        },
+        {
+          name: "My Profile",
+          href: "/portal/profile",
+        },
+        {
+          name: "Payslips & Tax Card",
+          href: "/portal/payslips",
+        },
+        {
+          name: "Leave & Attendance",
+          href: "/portal/requests",
+        },
+        {
+          name: "Loans & Expenses",
+          href: "/portal/finance",
+        },
+        {
+          name: "Official Letters & NOC",
+          href: "/portal/letters",
+        },
+        {
+          name: "Policy Handbook",
+          href: "/portal/handbook",
+        },
+        {
+          name: "HR Helpdesk",
+          href: "/portal/helpdesk",
+        },
+      ],
     },
     {
       name: "E-Commerce",
