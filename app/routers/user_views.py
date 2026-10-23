@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from fastapi import HTTPException, status
 from app.core.deps import get_current_user_optional, require_permission
 from app.core.identity.models import User
-from app.core.identity.schemas import UserCreate, UserResponse, UserUpdate
+from app.core.identity.schemas import UserCreate, UserResponse, UserUpdate, UserLinkEmployeeRequest
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
 from app.core.tenancy.models import BusinessProfile
@@ -195,6 +195,23 @@ async def update_user_api(
         data.business_id = current_user.business_id
         data.is_superuser = False
     return await user_service.update_user(db, user_id, data)
+
+
+@router.post("/users/api/{user_id}/link-employee", response_model=UserResponse)
+async def link_employee_api(
+    user_id: int,
+    data: UserLinkEmployeeRequest,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(require_permission("general", "users_permissions", "update")),
+):
+    target_user = await user_service.get_user_by_id(db, user_id)
+    if not current_user.is_superuser and target_user.business_id != current_user.business_id:
+        raise HTTPException(status_code=403, detail="Cannot modify user belonging to another tenant.")
+    
+    tenant_biz = None if current_user.is_superuser else current_user.business_id
+    return await user_service.link_employee(
+        db, user_id, data.employee_id, tenant_business_id=tenant_biz
+    )
 
 
 @router.delete("/users/api/{user_id}", status_code=204)

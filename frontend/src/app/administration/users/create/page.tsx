@@ -75,11 +75,42 @@ export default function CreateUserPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isFetchingEmployees, setIsFetchingEmployees] = useState(false);
+
+  const fetchEmployeesForBusiness = async (bId: string) => {
+    if (!bId) {
+      setUnlinkedEmployees([]);
+      setSelectedEmployeeId("");
+      return;
+    }
+    setIsFetchingEmployees(true);
+    try {
+      const res = await apiClient.get<UnlinkedEmployee[]>("/employees/unlinked", {
+        params: { business_id: Number(bId) },
+      });
+      setUnlinkedEmployees(res.data || []);
+      setSelectedEmployeeId("");
+    } catch {
+      toast.error("Lookup Error", `Failed to load employees for Tenant #${bId}.`);
+    } finally {
+      setIsFetchingEmployees(false);
+    }
+  };
+
+  const handleBusinessChange = (newBId: string) => {
+    setBusinessId(newBId);
+    setSelectedEmployeeId("");
+    setUsername("");
+    setEmail("");
+    setPhone("");
+    fetchEmployeesForBusiness(newBId);
+  };
 
   useEffect(() => {
     async function loadMetadata() {
       setLoading(true);
       try {
+        let initBizId = "";
         if (typeof window !== "undefined") {
           const raw = localStorage.getItem("current_user");
           if (raw) {
@@ -87,7 +118,8 @@ export default function CreateUserPage() {
               const u = JSON.parse(raw);
               setLoggedInUser(u);
               if (u.business_id) {
-                setBusinessId(String(u.business_id));
+                initBizId = String(u.business_id);
+                setBusinessId(initBizId);
               }
             } catch {}
           }
@@ -99,13 +131,24 @@ export default function CreateUserPage() {
           apiClient.get<SystemModulesMap>("/permissions/system-modules/api"),
           apiClient.get<BusinessProfile[]>("/business/"),
           apiClient.get<SubscriptionPlan[]>("/subscription-plans/api"),
-          apiClient.get<UnlinkedEmployee[]>("/employees/unlinked"),
+          apiClient.get<UnlinkedEmployee[]>("/employees/unlinked", {
+            params: initBizId ? { business_id: Number(initBizId) } : undefined,
+          }),
         ]);
 
         if (rolesRes.status === "fulfilled") setRoles(rolesRes.value.data || []);
         if (permsRes.status === "fulfilled") setPermissions(permsRes.value.data || []);
         if (modsRes.status === "fulfilled") setSystemModules(modsRes.value.data || {});
-        if (bizRes.status === "fulfilled") setBusinesses(bizRes.value.data || []);
+        if (bizRes.status === "fulfilled") {
+          const loadedBusinesses = bizRes.value.data || [];
+          setBusinesses(loadedBusinesses);
+          // If no initial business was set from user and businesses exist, set first one
+          if (!initBizId && loadedBusinesses.length > 0) {
+            const firstBizId = String(loadedBusinesses[0].id);
+            setBusinessId(firstBizId);
+            fetchEmployeesForBusiness(firstBizId);
+          }
+        }
         if (plansRes.status === "fulfilled") setPlans(plansRes.value.data || []);
         if (unlinkedRes.status === "fulfilled") setUnlinkedEmployees(unlinkedRes.value.data || []);
       } catch {
@@ -174,6 +217,11 @@ export default function CreateUserPage() {
     }
   };
 
+  const matchedBiz = businesses.find((b) => b.id === Number(businessId));
+  const matchedPlan = matchedBiz?.subscription_plan_id
+    ? plans.find((p) => p.id === matchedBiz.subscription_plan_id)
+    : null;
+
   return (
     <DashboardLayout>
       <form onSubmit={handleSubmit} className="space-y-6 max-w-7xl mx-auto w-full">
@@ -219,17 +267,85 @@ export default function CreateUserPage() {
           </div>
         </div>
 
-        {/* Account Type & Employee Association Card */}
+        {/* Step 1: Select Business Profile / Tenant Organization */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
-              <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200">
-                <UserCheck className="w-4 h-4" />
+              <span className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200">
+                <Building2 className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Account Type &amp; Employee Association</h3>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>Step 1: Select Business ID &amp; Tenant Organization</span>
+                  <span className="text-rose-500 font-bold">*</span>
+                </h3>
                 <p className="text-xs text-slate-500">
-                  Select whether this user is for a company employee or a standalone system user.
+                  Select the Business ID first. Employee records and subscription user quotas are populated under this business.
+                </p>
+              </div>
+            </div>
+
+            {matchedBiz && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Tenant #{businessId} Selected
+              </span>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              Business Profile / Tenant Organization <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <select
+                required
+                value={businessId}
+                onChange={(e) => handleBusinessChange(e.target.value)}
+                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+              >
+                <option value="">-- Choose Business Organization (Tenant ID) --</option>
+                {businesses.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name_en || b.legal_name} (Business ID: #{b.id})
+                  </option>
+                ))}
+              </select>
+            </div>
+            {matchedBiz && (
+              <div className="mt-2.5 flex items-center justify-between p-2.5 rounded-xl bg-indigo-50/60 border border-indigo-100 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-indigo-900">{matchedBiz.name_en || matchedBiz.legal_name}</span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-slate-600 font-mono">Business ID: #{matchedBiz.id}</span>
+                </div>
+                <span className="text-[11px] font-semibold text-indigo-700">
+                  Subscription Plan: {matchedPlan?.name || "Active Tier"}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Step 2: Account Type & Employee Association Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+                <UserCheck className="w-5 h-5" />
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>Step 2: Employee Association</span>
+                  {matchedBiz && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200">
+                      Populated under Business #{businessId}
+                    </span>
+                  )}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Select employee from the populated list under Business #{businessId || "..."} to link to this user.
                 </p>
               </div>
             </div>
@@ -265,26 +381,75 @@ export default function CreateUserPage() {
 
           {accountType === "employee" ? (
             <div className="space-y-3">
-              <label className="block text-xs font-semibold text-slate-700">
-                Select Company Employee to Link:
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedEmployeeId}
-                  onChange={(e) => handleSelectEmployee(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                >
-                  <option value="">-- Choose an unlinked employee ({unlinkedEmployees.length} available) --</option>
-                  {unlinkedEmployees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <p className="text-[11px] text-slate-500">
-                Selecting an employee auto-populates their email and username, and automatically enables self-service portal access.
-              </p>
+              {!businessId ? (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+                  <UserX className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Please select a <strong>Business ID</strong> in Step 1 above. The employee records will populate automatically.</span>
+                </div>
+              ) : isFetchingEmployees ? (
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 text-indigo-600 animate-spin shrink-0" />
+                  <span>Loading employees under Business #{businessId} ({matchedBiz?.name_en || "Tenant"})...</span>
+                </div>
+              ) : (
+                <>
+                  <label className="block text-xs font-semibold text-slate-700">
+                    Select Employee under {matchedBiz?.name_en || `Business #${businessId}`}:
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedEmployeeId}
+                      onChange={(e) => handleSelectEmployee(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                    >
+                      <option value="">-- Choose an unlinked employee ({unlinkedEmployees.length} available) --</option>
+                      {unlinkedEmployees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Selected Employee Preview Box */}
+                  {selectedEmployeeId && (
+                    (() => {
+                      const empPreview = unlinkedEmployees.find((e) => e.id === selectedEmployeeId);
+                      if (!empPreview) return null;
+                      return (
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-indigo-200/80 shadow-2xs flex items-center justify-between gap-3 animate-in fade-in">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                              {empPreview.first_name?.[0]}{empPreview.last_name?.[0] || ""}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                                <span>{empPreview.full_name}</span>
+                                <span className="font-mono text-[11px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 font-semibold">
+                                  {empPreview.employee_id}
+                                </span>
+                              </p>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                {empPreview.job_title_name || "Staff"} • {empPreview.department_name || "General"} • {empPreview.work_email || empPreview.personal_email || "No email"}
+                              </p>
+                              <p className="text-[10px] text-indigo-600 font-medium mt-0.5">
+                                Organization: {matchedBiz?.name_en || `Business #${businessId}`}
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                            Will Link to User Account
+                          </span>
+                        </div>
+                      );
+                    })()
+                  )}
+
+                  <p className="text-[11px] text-slate-500">
+                    Selecting an employee populates their username, official email, and binds their employee record to this login.
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600">
@@ -293,11 +458,11 @@ export default function CreateUserPage() {
           )}
         </div>
 
-        {/* Identity & Account Card */}
+        {/* Step 3: Identity & Account Credentials Card */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
           <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
             <UserIcon className="w-4 h-4 text-indigo-600" />
-            Account Credentials &amp; Tenancy
+            Step 3: Account Credentials &amp; Profile
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -367,44 +532,6 @@ export default function CreateUserPage() {
                 />
               </div>
             </div>
-
-            {loggedInUser?.is_superuser ? (
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Business Profile Tenant (Platform Superadmin)
-                </label>
-                <div className="relative">
-                  <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <select
-                    value={businessId}
-                    onChange={(e) => setBusinessId(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                  >
-                    <option value="">Global / Unassigned Tenant Level</option>
-                    {businesses.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name_en || b.legal_name} (#{b.id})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            ) : (
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  Tenant Organization
-                </label>
-                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <Building2 className="w-4 h-4 text-indigo-600" />
-                  <span className="text-xs font-bold text-slate-800">
-                    {businesses.find((b) => b.id === Number(businessId))?.name_en || "Current Tenant Organization"}
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold ml-auto">
-                    Tenant #{businessId || "1"}
-                  </span>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Account Flags */}

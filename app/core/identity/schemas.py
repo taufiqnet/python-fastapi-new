@@ -164,6 +164,10 @@ class LinkedEmployeeSummary(BaseModel):
     designation_title: str | None = None
 
 
+class UserLinkEmployeeRequest(BaseModel):
+    employee_id: str | None = None
+
+
 class UserUpdate(BaseModel):
     username: str | None = None
     email: EmailStr | None = None

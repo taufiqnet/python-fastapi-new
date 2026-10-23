@@ -41,6 +41,9 @@ import {
   UserX,
   CheckCircle2,
   BadgeCheck,
+  Link2,
+  Unlink,
+  RefreshCw,
 } from "lucide-react";
 
 interface UserEditPageProps {
@@ -71,6 +74,8 @@ export default function UserEditPage({ params }: UserEditPageProps) {
   const [linkedEmployee, setLinkedEmployee] = useState<LinkedEmployeeSummary | null>(null);
   const [unlinkedEmployees, setUnlinkedEmployees] = useState<UnlinkedEmployee[]>([]);
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
+  const [isLinkingDirectly, setIsLinkingDirectly] = useState(false);
+  const [isSwitchingEmployee, setIsSwitchingEmployee] = useState(false);
 
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
@@ -161,6 +166,49 @@ export default function UserEditPage({ params }: UserEditPageProps) {
     setSelectedRoleIds((prev) =>
       prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
     );
+  };
+
+  const handleLinkEmployeeDirectly = async (empIdToLink: string | null) => {
+    setIsLinkingDirectly(true);
+    try {
+      const res = await apiClient.post<User>(`/users/api/${userId}/link-employee`, {
+        employee_id: empIdToLink,
+      });
+      if (res.data) {
+        setUser(res.data);
+        if (res.data.employee) {
+          setLinkedEmployee(res.data.employee);
+          setSelectedEmployeeId(String(res.data.employee.id));
+          setIsSwitchingEmployee(false);
+          toast.success(
+            "Employee Linked Successfully",
+            `User "${res.data.username}" is now linked to ${res.data.employee.employee_id} - ${res.data.employee.first_name} ${res.data.employee.last_name || ""}.`
+          );
+        } else {
+          setLinkedEmployee(null);
+          setSelectedEmployeeId("");
+          setIsSwitchingEmployee(false);
+          toast.success(
+            "Employee Unlinked",
+            `Unlinked employee association from User "${res.data.username}".`
+          );
+        }
+        // Refetch unlinked employees list
+        const unlinkedRes = await apiClient.get<UnlinkedEmployee[]>("/employees/unlinked");
+        if (unlinkedRes.data) {
+          setUnlinkedEmployees(unlinkedRes.data);
+        }
+      }
+    } catch (err: unknown) {
+      let msg = "Failed to update employee association.";
+      if (err && typeof err === "object" && "response" in err) {
+        const axErr = err as { response?: { data?: { detail?: string } } };
+        msg = axErr.response?.data?.detail || msg;
+      }
+      toast.error("Action Failed", msg);
+    } finally {
+      setIsLinkingDirectly(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -506,29 +554,37 @@ export default function UserEditPage({ params }: UserEditPageProps) {
         </div>
 
         {/* Associated Employee Record Card */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
-              <span className={`p-2 rounded-xl border ${linkedEmployee ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
-                {linkedEmployee ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+              <span className={`p-2.5 rounded-xl border ${linkedEmployee && !isSwitchingEmployee ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-indigo-50 text-indigo-600 border-indigo-200'}`}>
+                {linkedEmployee && !isSwitchingEmployee ? <UserCheck className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
               </span>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  {linkedEmployee ? "Associated Employee Record" : "Link to Employee Record"}
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>{linkedEmployee && !isSwitchingEmployee ? "Associated Employee Record" : "Link to Employee Record"}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200">
+                    WBSOFT Technologies Ltd.
+                  </span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  {linkedEmployee
-                    ? "This login account is linked to an employee profile in HR directory."
-                    : "Associate this user with an employee to activate personal portal access (ESS)."}
+                  {linkedEmployee && !isSwitchingEmployee
+                    ? `User #${userId} (${username}) is bound to an active employee profile in WBSOFT HR directory.`
+                    : `Associate User #${userId} (${username}) with an Employee ID and Full Name under tenant business_id = 1.`}
                 </p>
               </div>
             </div>
 
             <div>
-              {linkedEmployee ? (
+              {linkedEmployee && !isSwitchingEmployee ? (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                   Employee Linked ({linkedEmployee.employee_id})
+                </span>
+              ) : isSwitchingEmployee ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                  <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
+                  Switching Association
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
@@ -539,66 +595,145 @@ export default function UserEditPage({ params }: UserEditPageProps) {
             </div>
           </div>
 
-          {linkedEmployee ? (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
+          {linkedEmployee && !isSwitchingEmployee ? (
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-indigo-50/30 rounded-xl border border-slate-200 gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
                   {linkedEmployee.first_name?.[0]}{linkedEmployee.last_name?.[0] || ""}
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <span>{linkedEmployee.first_name} {linkedEmployee.last_name || ""}</span>
-                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold">
-                      {linkedEmployee.employee_id}
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2 flex-wrap">
+                    <span className="text-base text-slate-900">{linkedEmployee.first_name} {linkedEmployee.last_name || ""}</span>
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-indigo-100 text-indigo-700 border border-indigo-200">
+                      ID: {linkedEmployee.employee_id}
+                    </span>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                      Active Staff
                     </span>
                   </h4>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {linkedEmployee.designation_title || "Staff Member"} • {linkedEmployee.department_name || "General Department"}
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-slate-600 mt-1 flex-wrap">
+                    <span className="font-medium text-slate-800">{linkedEmployee.designation_title || "Staff Member"}</span>
+                    <span>•</span>
+                    <span>{linkedEmployee.department_name || "General Department"}</span>
+                    <span>•</span>
+                    <span className="text-slate-500 font-mono text-[11px]">{linkedEmployee.work_email || linkedEmployee.email || "No email"}</span>
+                  </div>
+                  <div className="mt-1 flex items-center gap-1.5 text-[11px] text-indigo-600 font-medium">
+                    <Building2 className="w-3.5 h-3.5" />
+                    <span>Organization: WBSOFT Technologies Ltd. (Tenant #1)</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-200">
                 <Link
                   href={`/hr-payroll/employees/${linkedEmployee.id}`}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition shadow-2xs"
                 >
-                  View Profile
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                  View HR Profile
                 </Link>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedEmployeeId("unlink");
-                    setLinkedEmployee(null);
-                    toast.info("Unlink Requested", "Click 'Save Changes' to finalize unlinking this employee.");
-                  }}
-                  className="px-3 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition"
+                  onClick={() => setIsSwitchingEmployee(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition shadow-2xs"
                 >
-                  Unlink Employee
+                  <RefreshCw className="w-3.5 h-3.5 text-slate-400" />
+                  Switch Employee
+                </button>
+                <button
+                  type="button"
+                  disabled={isLinkingDirectly}
+                  onClick={() => handleLinkEmployeeDirectly(null)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition disabled:opacity-50"
+                >
+                  {isLinkingDirectly ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Unlink className="w-3.5 h-3.5" />}
+                  Unlink
                 </button>
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              <label className="block text-xs font-semibold text-slate-700">
-                Select an unlinked employee from your organization:
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <select
-                  value={selectedEmployeeId === "unlink" ? "" : selectedEmployeeId}
-                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                >
-                  <option value="">-- No Employee Linked (Standalone Admin / Auditor) --</option>
-                  {unlinkedEmployees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-4 bg-slate-50/70 p-4 rounded-xl border border-slate-200">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Select Employee by Employee ID &amp; Full Name (WBSOFT):
+                </label>
+                <p className="text-[11px] text-slate-500 mb-2">
+                  Choose an unlinked employee from WBSOFT Technologies Ltd. (business_id = 1) to link with User #{userId}.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={selectedEmployeeId === "unlink" ? "" : selectedEmployeeId}
+                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                  >
+                    <option value="">-- Choose an Unlinked Employee to Link --</option>
+                    {unlinkedEmployees.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    type="button"
+                    disabled={!selectedEmployeeId || selectedEmployeeId === "unlink" || isLinkingDirectly}
+                    onClick={() => handleLinkEmployeeDirectly(selectedEmployeeId)}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition disabled:opacity-50 shrink-0"
+                  >
+                    {isLinkingDirectly ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Link2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>Link Employee to User</span>
+                  </button>
+
+                  {isSwitchingEmployee && (
+                    <button
+                      type="button"
+                      onClick={() => setIsSwitchingEmployee(false)}
+                      className="px-3.5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold transition shrink-0"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Selected Employee Preview Box */}
+              {selectedEmployeeId && selectedEmployeeId !== "unlink" && (
+                (() => {
+                  const empPreview = unlinkedEmployees.find((e) => e.id === selectedEmployeeId);
+                  if (!empPreview) return null;
+                  return (
+                    <div className="p-3.5 rounded-xl bg-white border border-indigo-200/80 shadow-2xs flex items-center justify-between gap-3 animate-in fade-in">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center text-xs">
+                          {empPreview.first_name?.[0]}{empPreview.last_name?.[0] || ""}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-slate-900">
+                            {empPreview.full_name}
+                            <span className="ml-2 font-mono text-[11px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100 font-semibold">
+                              {empPreview.employee_id}
+                            </span>
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            {empPreview.job_title_name || "Staff"} • {empPreview.department_name || "General"} • {empPreview.work_email || empPreview.personal_email || "No email"}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                        Ready to Link
+                      </span>
+                    </div>
+                  );
+                })()
+              )}
+
               <p className="text-[11px] text-slate-500">
-                Linking an employee automatically binds their attendance clocking, leave requests, payslips, and asset allocations to this user account.
+                Linking an employee binds their attendance clocking, leave requests, payslips, and asset allocations to this user account in WBSOFT.
               </p>
             </div>
           )}

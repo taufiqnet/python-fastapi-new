@@ -1,6 +1,7 @@
 from datetime import date
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.identity.models import Address, User, VendorStatus
@@ -282,12 +283,69 @@ class UserService:
                     emp_res = await db.execute(select(Employee).where(Employee.id == emp_uuid))
                     emp = emp_res.scalars().first()
                     if emp:
+                        if user.business_id and emp.business_id != user.business_id:
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail="Cannot link employee from another tenant organization.",
+                            )
                         emp.user_id = user.id
+                except HTTPException:
+                    raise
                 except Exception:
                     pass
             await db.commit()
 
         return await self.repository.update(db, user)
+
+    async def link_employee(
+        self,
+        db: AsyncSession,
+        user_id: int,
+        employee_id: str | None,
+        tenant_business_id: int | None = None,
+    ) -> User:
+        user = await self.get_user_by_id(db, user_id)
+        from app.modules.hr_payroll.employees.models import Employee
+        import uuid
+
+        # Unlink any current employee assigned to this user
+        prev_emps = await db.execute(select(Employee).where(Employee.user_id == user.id))
+        for prev_emp in prev_emps.scalars().all():
+            prev_emp.user_id = None
+
+        if employee_id and employee_id != "unlink":
+            try:
+                emp_uuid = uuid.UUID(str(employee_id))
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid Employee UUID format.",
+                )
+
+            emp_res = await db.execute(select(Employee).where(Employee.id == emp_uuid))
+            emp = emp_res.scalars().first()
+            if not emp:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Employee record not found.",
+                )
+
+            # Tenancy checks: user business and executing tenant business
+            if user.business_id and emp.business_id != user.business_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Employee belongs to business #{emp.business_id}, but user belongs to #{user.business_id}.",
+                )
+            if tenant_business_id and emp.business_id != tenant_business_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied: Cannot link employee outside your tenant organization.",
+                )
+
+            emp.user_id = user.id
+
+        await db.commit()
+        return await self.get_user_by_id(db, user.id)
 
     async def delete_user(self, db: AsyncSession, user_id: int) -> None:
         user = await self.get_user_by_id(db, user_id)
