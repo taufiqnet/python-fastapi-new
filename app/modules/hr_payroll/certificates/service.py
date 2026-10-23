@@ -1,6 +1,7 @@
 import datetime
 import uuid
 from typing import Any
+from app.common.timezone import today_bd, get_bangladesh_fiscal_year
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -38,7 +39,7 @@ def parse_fiscal_year(fy_str: str) -> tuple[datetime.date, datetime.date]:
         return datetime.date(start_yr, 7, 1), datetime.date(start_yr + 1, 6, 30)
     else:
         # Fallback to current/prev fiscal year range
-        today = datetime.date.today()
+        today = today_bd()
         start_yr = today.year - 1
         return datetime.date(start_yr, 7, 1), datetime.date(start_yr + 1, 6, 30)
 
@@ -64,7 +65,7 @@ class SalaryCertificateService:
 
     def _generate_certificate_no(self, db: Session, business_id: int) -> str:
         count = self.repo.count_by_business(db, business_id) + 1
-        year = datetime.date.today().year
+        year = today_bd().year
         return f"SC-{year}-{count:04d}"
 
     def get_certificates(

@@ -1,6 +1,7 @@
 import json
 import uuid
 from datetime import date
+from app.common.timezone import today_bd
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
@@ -100,8 +101,8 @@ def export_attendance_monthly_register_excel(
         year=year,
         month=month,
     )
-    y_str = str(year) if year else str(date.today().year)
-    m_str = f"{month:02d}" if month else f"{date.today().month:02d}"
+    y_str = str(year) if year else str(today_bd().year)
+    m_str = f"{month:02d}" if month else f"{today_bd().month:02d}"
     filename = (
         f"monthly_attendance_register_{y_str}_{m_str}.xlsx"
         if not resolved_business_id

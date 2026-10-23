@@ -3,6 +3,15 @@ import uuid
 from datetime import date, datetime, timedelta
 from typing import Any
 
+from app.common.timezone import (
+    now_bd,
+    today_bd,
+    time_bd,
+    utc_now,
+    get_bangladesh_fiscal_year,
+    derive_assessment_year,
+)
+
 from fastapi import HTTPException, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
@@ -146,7 +155,7 @@ class PortalService:
         )
 
     def get_dashboard(self, db: Session, employee: Employee) -> PortalDashboardOut:
-        today = date.today()
+        today = today_bd()
         month_start = today.replace(day=1)
         next_month = (month_start + timedelta(days=32)).replace(day=1)
 
@@ -376,7 +385,7 @@ class PortalService:
         req.status = data.status
         req.review_notes = data.review_notes
         req.reviewed_by_id = reviewer_user_id
-        req.reviewed_at = datetime.utcnow()
+        req.reviewed_at = utc_now()
 
         if data.status == "approved":
             # Apply changes to Employee record
@@ -451,7 +460,7 @@ class PortalService:
         req.status = data.status
         req.review_notes = data.review_notes
         req.reviewed_by_id = reviewer_user_id
-        req.reviewed_at = datetime.utcnow()
+        req.reviewed_at = utc_now()
 
         if data.status == "approved":
             # Find or create Attendance record
@@ -506,7 +515,7 @@ class PortalService:
             monthly_installment_amount=monthly_inst,
             total_installments=data.total_installments,
             remaining_balance=data.principal_amount,
-            repayment_start_date=data.repayment_start_date or (date.today() + timedelta(days=30)),
+            repayment_start_date=data.repayment_start_date or (today_bd() + timedelta(days=30)),
             reason=data.reason,
             status="pending",
         )
@@ -542,7 +551,7 @@ class PortalService:
 
         loan.status = "disbursed"
         loan.disbursed_amount = loan.principal_amount
-        loan.disbursed_at = datetime.utcnow()
+        loan.disbursed_at = utc_now()
         loan.notes = (loan.notes or "") + f" [Disbursed ref: {data.payment_reference}]"
         db.commit()
         db.refresh(loan)
@@ -554,7 +563,7 @@ class PortalService:
     def create_expense_claim(
         self, db: Session, employee: Employee, data: ExpenseClaimCreate
     ) -> ExpenseClaim:
-        claim_number = f"EXP-{datetime.utcnow().strftime('%Y%m')}-{uuid.uuid4().hex[:6].upper()}"
+        claim_number = f"EXP-{now_bd().strftime('%Y%m')}-{uuid.uuid4().hex[:6].upper()}"
         total = sum(item.amount for item in data.items)
 
         claim = ExpenseClaim(
@@ -611,7 +620,7 @@ class PortalService:
 
         claim.status = "reimbursed"
         claim.payment_reference = data.payment_reference
-        claim.reimbursed_at = datetime.utcnow()
+        claim.reimbursed_at = utc_now()
         if data.review_notes:
             claim.review_notes = (claim.review_notes or "") + f" [Reimburse note: {data.review_notes}]"
         db.commit()
@@ -649,7 +658,7 @@ class PortalService:
         req.status = data.status
         req.review_notes = data.review_notes
         req.reviewed_by_id = reviewer_user_id
-        req.reviewed_at = datetime.utcnow()
+        req.reviewed_at = utc_now()
         if data.generated_file_url:
             req.generated_file_url = data.generated_file_url
         db.commit()
@@ -714,7 +723,7 @@ class PortalService:
         ack = PolicyAcknowledgement(
             policy_id=policy_id,
             employee_id=employee.id,
-            acknowledged_at=datetime.utcnow(),
+            acknowledged_at=utc_now(),
             ip_address=ip_address,
         )
         db.add(ack)
@@ -728,7 +737,7 @@ class PortalService:
     def create_ticket(
         self, db: Session, employee: Employee, data: HRTicketCreate
     ) -> HRTicket:
-        tkt_no = f"TKT-{datetime.utcnow().strftime('%Y%m')}-{uuid.uuid4().hex[:6].upper()}"
+        tkt_no = f"TKT-{now_bd().strftime('%Y%m')}-{uuid.uuid4().hex[:6].upper()}"
         tkt = HRTicket(
             business_id=employee.business_id,
             ticket_number=tkt_no,
@@ -776,7 +785,7 @@ class PortalService:
             raise HTTPException(status_code=404, detail="Ticket not found.")
         tkt.status = data.status
         if data.status in ("resolved", "closed"):
-            tkt.resolved_at = datetime.utcnow()
+            tkt.resolved_at = utc_now()
             tkt.resolution_notes = data.resolution_notes
         db.commit()
         db.refresh(tkt)
@@ -794,18 +803,18 @@ class PortalService:
         )
 
     def get_tax_card_summary(
-        self, db: Session, employee: Employee, fiscal_year: str = "2024-2025"
+        self, db: Session, employee: Employee, fiscal_year: str | None = None
     ) -> TaxCardSummaryOut:
         """
         Calculates annual tax withholding and statutory exemption summary
         under Bangladesh Income Tax Act (ITA 2023).
         """
+        active_fy = fiscal_year or get_bangladesh_fiscal_year()[0]
         records = (
             db.query(PayrollRecord)
             .join(PayrollPeriod, PayrollRecord.period_id == PayrollPeriod.id)
             .filter(
                 PayrollRecord.employee_id == employee.id,
-                # e.g. names starting with 2024 or 2025
             )
             .order_by(PayrollPeriod.start_date.asc())
             .all()
@@ -869,8 +878,8 @@ class PortalService:
             tin=employee.tin,
             designation=employee.job_title_name,
             department=employee.department_name,
-            fiscal_year=fiscal_year,
-            assessment_year=f"{int(fiscal_year.split('-')[1])}-{int(fiscal_year.split('-')[1]) + 1}" if "-" in fiscal_year else "2025-2026",
+            fiscal_year=active_fy,
+            assessment_year=derive_assessment_year(active_fy),
             total_basic=round(total_basic, 2),
             total_house_rent=round(total_house_rent, 2),
             total_medical=round(total_medical, 2),

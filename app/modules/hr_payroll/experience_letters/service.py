@@ -18,6 +18,7 @@ from app.modules.hr_payroll.experience_letters.schemas import (
     ExperienceLetterCreate,
     ExperienceLetterUpdate,
 )
+from app.common.timezone import today_bd
 
 
 class ExperienceLetterService:
@@ -26,7 +27,7 @@ class ExperienceLetterService:
 
     def _generate_letter_no(self, db: Session, business_id: int) -> str:
         count = self.repo.count_by_business(db, business_id) + 1
-        year = datetime.date.today().year
+        year = today_bd().year
         return f"EL-{year}-{count:04d}"
 
     def get_letters(
@@ -69,7 +70,7 @@ class ExperienceLetterService:
                 ),
             )
 
-        joining_date = letter_in.joining_date or employee.start_date or datetime.date.today()
+        joining_date = letter_in.joining_date or employee.start_date or today_bd()
         designation = (
             letter_in.designation
             or (employee.job_title.name if employee.job_title else "Employee")

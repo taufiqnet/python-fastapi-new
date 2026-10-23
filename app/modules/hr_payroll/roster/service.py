@@ -2,6 +2,7 @@ import calendar
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
+from app.common.timezone import utc_now, today_bd
 
 from fastapi import HTTPException, status
 from sqlalchemy import and_, select
@@ -557,7 +558,7 @@ class RosterService:
             )
 
         roster.status = MonthlyRosterStatusEnum.SUBMITTED
-        roster.submitted_at = datetime.now(timezone.utc)
+        roster.submitted_at = utc_now()
         if hasattr(current_user, "employee_id") and current_user.employee_id:
             roster.submitted_by_id = current_user.employee_id
 
@@ -579,7 +580,7 @@ class RosterService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Monthly roster not found."
             )
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         reviewer_id = getattr(current_user, "employee_id", None)
 
         if payload.action == "approve":
@@ -659,7 +660,7 @@ class RosterService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Duty batch not found."
             )
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         reviewer_id = getattr(current_user, "employee_id", None)
 
         if payload.action == "approve":
@@ -737,7 +738,7 @@ class RosterService:
                 detail=f"Cannot review request with status '{req.status}'.",
             )
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         req.reviewed_at = now
         req.reviewed_by_id = getattr(current_user, "employee_id", None)
         req.review_note = payload.note
@@ -819,7 +820,7 @@ class RosterService:
                 detail="Request is not awaiting peer acceptance.",
             )
 
-        req.peer_reviewed_at = datetime.now(timezone.utc)
+        req.peer_reviewed_at = utc_now()
         req.peer_note = payload.peer_note
 
         if payload.action == "accept":
@@ -850,7 +851,7 @@ class RosterService:
                 detail="Request must be accepted by peer before manager approval.",
             )
 
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         req.reviewed_at = now
         req.reviewed_by_id = getattr(current_user, "employee_id", None)
         req.review_note = payload.review_note

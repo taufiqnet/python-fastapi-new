@@ -2,6 +2,8 @@ import uuid
 from datetime import date, datetime, time, timedelta
 from typing import Any
 
+from app.common.timezone import today_bd, time_bd, now_bd
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -76,7 +78,7 @@ class AttendanceService:
         if data.work_hours is not None and data.work_hours > 0.0:
             work_hours = float(data.work_hours)
         elif check_in and check_out:
-            today = date.today()
+            today = today_bd()
             dt_in = datetime.combine(today, check_in)
             dt_out = datetime.combine(today, check_out)
             if dt_out < dt_in:
@@ -223,9 +225,8 @@ class AttendanceService:
                 detail=f"Employee with id '{employee_id}' not found",
             )
 
-        now = datetime.now()
-        target_date = att_date or now.date()
-        target_check_in = check_in_time or now.time().replace(microsecond=0)
+        target_date = att_date or today_bd()
+        target_check_in = check_in_time or time_bd()
 
         existing = self.repository.get_by_emp_date(
             db,
@@ -272,9 +273,8 @@ class AttendanceService:
                 detail=f"Employee with id '{employee_id}' not found",
             )
 
-        now = datetime.now()
-        target_date = att_date or now.date()
-        target_check_out = check_out_time or now.time().replace(microsecond=0)
+        target_date = att_date or today_bd()
+        target_check_out = check_out_time or time_bd()
 
         existing = self.repository.get_by_emp_date(
             db,
@@ -337,7 +337,7 @@ class AttendanceService:
         ws.append(headers)
 
         employees = self.employee_repository.get_all(db, business_id=business_id, limit=500)
-        sample_date = date.today().strftime("%Y-%m-%d")
+        sample_date = today_bd().strftime("%Y-%m-%d")
 
         if employees:
             for emp in employees[:5]:
@@ -381,7 +381,7 @@ class AttendanceService:
         year: int | None = None,
         month: int | None = None,
     ) -> bytes:
-        today = date.today()
+        today = today_bd()
         year = year or today.year
         month = month or today.month
 

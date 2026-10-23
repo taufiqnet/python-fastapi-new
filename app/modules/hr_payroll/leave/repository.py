@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime, timezone
+from app.common.timezone import utc_now
 
 from sqlalchemy.orm import Session
 
@@ -264,7 +265,7 @@ class LeaveApplicationRepository:
         application.status = LeaveStatusEnum.PENDING
         application.rolled_back_by_id = rolled_back_by_id
         application.rollback_reason = reason
-        application.rolled_back_at = datetime.now(timezone.utc)
+        application.rolled_back_at = utc_now()
         db.commit()
         db.refresh(application)
         return application
@@ -334,7 +335,7 @@ class LeaveEncashmentRepository:
         encashment.status = status
         if reviewed_by_id:
             encashment.reviewed_by_id = reviewed_by_id
-            encashment.reviewed_at = datetime.now(timezone.utc)
+            encashment.reviewed_at = utc_now()
         if review_note:
             encashment.review_note = review_note
         db.commit()

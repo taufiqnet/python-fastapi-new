@@ -15,6 +15,7 @@ from app.modules.hr_payroll.offer_letters.schemas import (
     OfferLetterCreate,
     OfferLetterUpdate,
 )
+from app.common.timezone import today_bd
 
 
 class OfferLetterService:
@@ -23,7 +24,7 @@ class OfferLetterService:
 
     def _generate_letter_no(self, db: Session, business_id: int) -> str:
         count = self.repo.count_by_business(db, business_id) + 1
-        year = datetime.date.today().year
+        year = today_bd().year
         return f"OL-{year}-{count:04d}"
 
     def get_letters(

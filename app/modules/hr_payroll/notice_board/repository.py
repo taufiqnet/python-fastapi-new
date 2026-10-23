@@ -1,5 +1,6 @@
 import datetime
 import uuid
+from app.common.timezone import utc_now
 
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -32,7 +33,7 @@ class NoticeBoardRepository:
                 )
             )
         if active_only:
-            now = datetime.datetime.now(datetime.timezone.utc)
+            now = utc_now()
             query = query.where(
                 Notice.is_active.is_(True),
                 Notice.publish_date <= now,
@@ -80,7 +81,7 @@ class NoticeBoardRepository:
             receipt = NoticeReadReceipt(
                 notice_id=notice_id,
                 employee_id=employee_id,
-                read_at=datetime.datetime.now(datetime.timezone.utc),
+                read_at=utc_now(),
             )
             db.add(receipt)
             db.commit()
