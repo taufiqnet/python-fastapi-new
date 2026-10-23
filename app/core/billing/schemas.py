@@ -6,6 +6,9 @@ class SubscriptionPlanBase(BaseModel):
     name: str
     description: str | None = None
     is_active: bool = True
+    max_users: int | None = 25
+    max_employees: int | None = 50
+    tier_code: str | None = "pro"
 
 
 class SubscriptionPlanCreate(SubscriptionPlanBase):
@@ -16,6 +19,9 @@ class SubscriptionPlanUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     is_active: bool | None = None
+    max_users: int | None = None
+    max_employees: int | None = None
+    tier_code: str | None = None
     permission_ids: list[int] | None = None
 
 

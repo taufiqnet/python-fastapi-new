@@ -199,6 +199,11 @@ class Employee(Base, UUIDMixin, TimestampMixin):
         foreign_keys=[branch_id],
         lazy="selectin",
     )
+    user: Mapped["User | None"] = relationship(  # noqa: F821
+        "User",
+        foreign_keys=[user_id],
+        lazy="selectin",
+    )
     department: Mapped["Department | None"] = relationship(  # noqa: F821
         "Department",
         foreign_keys=[department_id],
@@ -251,6 +256,18 @@ class Employee(Base, UUIDMixin, TimestampMixin):
     @property
     def manager_name(self) -> str | None:
         return self.direct_manager.full_name if self.direct_manager else None
+
+    @property
+    def user_username(self) -> str | None:
+        return self.user.username if self.user else None
+
+    @property
+    def user_email(self) -> str | None:
+        return self.user.email if self.user else None
+
+    @property
+    def user_roles(self) -> list[str]:
+        return [r.name for r in self.user.roles] if self.user and self.user.roles else []
 
     def __repr__(self) -> str:
         return f"<Employee {self.first_name} {self.last_name} ({self.employee_id})>"

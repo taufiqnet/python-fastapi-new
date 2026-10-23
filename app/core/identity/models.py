@@ -90,6 +90,13 @@ class User(Base):
     addresses: Mapped[list["Address"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    employee: Mapped["Employee | None"] = relationship(  # noqa: F821
+        "Employee",
+        back_populates="user",
+        uselist=False,
+        foreign_keys="Employee.user_id",
+        lazy="selectin",
+    )
 
     def has_role(self, role_name: str) -> bool:
         if self.is_superuser:

@@ -37,15 +37,18 @@ import {
   TrendingUp,
   ShieldAlert,
   Award,
+  KeyRound,
+  Lock,
+  UserX,
 } from "lucide-react";
-import { EmployeeOut, DepartmentOut, JobTitleOut, EmployeeGoal, PerformanceAppraisal, ProbationReview, CareerMovement, DisciplinaryCase } from "@/types";
+import { EmployeeOut, DepartmentOut, JobTitleOut, EmployeeGoal, PerformanceAppraisal, ProbationReview, CareerMovement, DisciplinaryCase, Role } from "@/types";
 import { apiClient } from "@/lib/api-client";
 import { formatDate } from "@/lib/utils";
 import { DeleteEmployeeDialog } from "@/components/hr-payroll/delete-employee-dialog";
 import { NomineeTab } from "@/components/hr-payroll/employees/nominee-tab";
 import { IDCardGenerator } from "@/components/hr-payroll/employees/id-card-generator";
 
-type DetailTab = "basic" | "details" | "nominees" | "idcard" | "assets" | "performance" | "lifecycle" | "disciplinary";
+type DetailTab = "basic" | "details" | "nominees" | "idcard" | "assets" | "performance" | "lifecycle" | "disciplinary" | "portal";
 
 export default function EmployeeDetailPage() {
   const params = useParams();
@@ -110,6 +113,80 @@ export default function EmployeeDetailPage() {
       // Non-blocking
     } finally {
       setLoadingClearance(false);
+    }
+  };
+
+  // Portal provisioning state
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [provisionUsername, setProvisionUsername] = useState("");
+  const [provisionEmail, setProvisionEmail] = useState("");
+  const [provisionPassword, setProvisionPassword] = useState("");
+  const [provisionRoleId, setProvisionRoleId] = useState<number | "">("");
+  const [isProvisioning, setIsProvisioning] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
+  const [portalMessage, setPortalMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  useEffect(() => {
+    if (employee) {
+      const rawUser = employee.work_email || employee.employee_id;
+      const suggested = (rawUser.includes("@") ? rawUser.split("@")[0] : rawUser).toLowerCase();
+      setProvisionUsername(suggested);
+      setProvisionEmail(employee.work_email || employee.personal_email || `${suggested}@wbsoft.local`);
+      setProvisionPassword("Pass@" + Math.floor(1000 + Math.random() * 9000));
+    }
+  }, [employee]);
+
+  const loadPortalRoles = async () => {
+    try {
+      const res = await apiClient.get<Role[]>("/roles/api");
+      if (res.data) setAvailableRoles(res.data);
+    } catch {}
+  };
+
+  const handleProvisionUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!provisionPassword || provisionPassword.length < 6) {
+      setPortalMessage({ text: "Password must be at least 6 characters.", type: "error" });
+      return;
+    }
+    setIsProvisioning(true);
+    setPortalMessage(null);
+    try {
+      const res = await apiClient.post(`/employees/${employeeId}/provision-user`, {
+        username: provisionUsername.trim(),
+        email: provisionEmail.trim(),
+        password: provisionPassword,
+        role_ids: provisionRoleId ? [Number(provisionRoleId)] : [],
+      });
+      setPortalMessage({ text: res.data.message || "User account provisioned successfully!", type: "success" });
+      const empRes = await apiClient.get<EmployeeOut>(`/employees/${employeeId}`);
+      if (empRes.data) setEmployee(empRes.data);
+    } catch (err: any) {
+      setPortalMessage({
+        text: err.response?.data?.detail || "Provisioning failed. Please check subscription limits or credentials.",
+        type: "error",
+      });
+    } finally {
+      setIsProvisioning(false);
+    }
+  };
+
+  const handleUnlinkUser = async () => {
+    if (!confirm("Are you sure you want to revoke portal access and unlink this user account?")) return;
+    setIsUnlinking(true);
+    setPortalMessage(null);
+    try {
+      await apiClient.post(`/employees/${employeeId}/unlink-user`);
+      setPortalMessage({ text: "User unlinked from employee successfully.", type: "success" });
+      const empRes = await apiClient.get<EmployeeOut>(`/employees/${employeeId}`);
+      if (empRes.data) setEmployee(empRes.data);
+    } catch (err: any) {
+      setPortalMessage({
+        text: err.response?.data?.detail || "Unlink failed.",
+        type: "error",
+      });
+    } finally {
+      setIsUnlinking(false);
     }
   };
 
@@ -431,6 +508,30 @@ export default function EmployeeDetailPage() {
             >
               <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
               Disciplinary Conduct
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("portal");
+                loadPortalRoles();
+              }}
+              className={`px-4 py-3 text-xs font-bold border-b-2 transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                activeTab === "portal"
+                  ? "border-indigo-600 text-indigo-600 bg-white"
+                  : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
+              Portal Access &amp; User
+              {employee.user_id ? (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-700 font-bold">
+                  Active
+                </span>
+              ) : (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 font-bold">
+                  Unlinked
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -1149,6 +1250,225 @@ export default function EmployeeDetailPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── TAB: PORTAL ACCESS & USER ────────────────────────────────────────── */}
+        {activeTab === "portal" && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {portalMessage && (
+              <div
+                className={`p-4 rounded-xl text-xs font-semibold flex items-center gap-2 ${
+                  portalMessage.type === "success"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                    : "bg-rose-50 text-rose-800 border border-rose-200"
+                }`}
+              >
+                {portalMessage.type === "success" ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                )}
+                <span>{portalMessage.text}</span>
+              </div>
+            )}
+
+            {employee.user_id ? (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <span className="p-3 rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200">
+                      <UserCheck className="w-6 h-6" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        Active Employee Portal Account
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        This employee can sign in to the self-service portal to manage their leave, view payslips, and sign asset handovers.
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    Portal Account Active
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      Username
+                    </span>
+                    <span className="text-sm font-bold text-slate-900 font-mono mt-1 block">
+                      {employee.user_username || "—"}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      Login Email
+                    </span>
+                    <span className="text-sm font-bold text-slate-900 mt-1 block">
+                      {employee.user_email || "—"}
+                    </span>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      User Account ID
+                    </span>
+                    <span className="text-sm font-bold text-indigo-700 font-mono mt-1 block">
+                      User #{employee.user_id}
+                    </span>
+                  </div>
+                </div>
+
+                {employee.user_roles && employee.user_roles.length > 0 && (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                      Assigned RBAC Roles
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {employee.user_roles.map((r: string) => (
+                        <span
+                          key={r}
+                          className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 capitalize"
+                        >
+                          {r.replace(/_/g, " ")}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                  <Link
+                    href={`/administration/users/${employee.user_id}/edit`}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                    Edit User Privileges &amp; Password
+                  </Link>
+
+                  <button
+                    type="button"
+                    disabled={isUnlinking}
+                    onClick={handleUnlinkUser}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition disabled:opacity-50"
+                  >
+                    {isUnlinking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserX className="w-3.5 h-3.5" />}
+                    Revoke Portal Access / Unlink
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <span className="p-3 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200">
+                      <KeyRound className="w-6 h-6" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900">
+                        Provision Self-Service Portal Access
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Enable employee self-service login credentials so this employee can clock attendance, view salary slips, and manage requests.
+                      </p>
+                    </div>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    <UserX className="w-4 h-4 text-amber-600" />
+                    No User Linked
+                  </span>
+                </div>
+
+                <form onSubmit={handleProvisionUser} className="space-y-4 max-w-2xl">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        Username <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={provisionUsername}
+                        onChange={(e) => setProvisionUsername(e.target.value)}
+                        placeholder="e.g. john.doe"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        Login Email <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={provisionEmail}
+                        onChange={(e) => setProvisionEmail(e.target.value)}
+                        placeholder="john.doe@wbsoft.com"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        Initial Temporary Password <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={provisionPassword}
+                        onChange={(e) => setProvisionPassword(e.target.value)}
+                        placeholder="Min 6 characters"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition font-mono"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Provide this password to the employee for their first portal sign-in.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        Assigned System Role
+                      </label>
+                      <select
+                        value={provisionRoleId}
+                        onChange={(e) => setProvisionRoleId(e.target.value ? Number(e.target.value) : "")}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                      >
+                        <option value="">Default: Employee Self-Service (hr_basic)</option>
+                        {availableRoles.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name} {r.description ? `(${r.description})` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="pt-3">
+                    <button
+                      type="submit"
+                      disabled={isProvisioning}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-600/20 transition disabled:opacity-50"
+                    >
+                      {isProvisioning ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <KeyRound className="w-4 h-4" />
+                      )}
+                      Provision Account &amp; Enable Portal
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

@@ -14,6 +14,10 @@ class SubscriptionPlan(Base):
     description: Mapped[str | None] = mapped_column(Text, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+    max_users: Mapped[int | None] = mapped_column(default=25)
+    max_employees: Mapped[int | None] = mapped_column(default=50)
+    tier_code: Mapped[str | None] = mapped_column(String(50), default="pro")
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow

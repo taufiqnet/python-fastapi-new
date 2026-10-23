@@ -245,6 +245,10 @@ class EmployeeOut(EmployeeBase):
 
     id: uuid.UUID
     full_name: str
+    user_id: int | None = None
+    user_username: str | None = None
+    user_email: str | None = None
+    user_roles: list[str] = []
     branch_name: str | None = None
     department_name: str | None = None
     job_title_name: str | None = None
@@ -252,6 +256,28 @@ class EmployeeOut(EmployeeBase):
     nominees: list[EmployeeNomineeOut] = []
     created_at: datetime
     updated_at: datetime
+
+
+class UnlinkedEmployeeOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    employee_id: str
+    first_name: str
+    last_name: str | None = None
+    full_name: str
+    work_email: str | None = None
+    personal_email: str | None = None
+    phone: str | None = None
+    department_name: str | None = None
+    job_title_name: str | None = None
+
+
+class EmployeeUserProvisionRequest(BaseModel):
+    username: str | None = None
+    email: str | None = None
+    password: str = Field(..., min_length=6)
+    role_ids: list[int] = []
 
 
 class BulkDeleteEmployeesRequest(BaseModel):

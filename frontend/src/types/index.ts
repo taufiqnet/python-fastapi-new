@@ -87,6 +87,18 @@ export type BusinessProfileInput = Omit<
   favicon?: string | null;
 };
 
+export interface LinkedEmployeeSummary {
+  id: string;
+  employee_id: string;
+  first_name: string;
+  last_name?: string | null;
+  email?: string | null;
+  work_email?: string | null;
+  phone?: string | null;
+  department_name?: string | null;
+  designation_title?: string | null;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -105,6 +117,7 @@ export interface User {
   roles?: Role[];
   direct_permissions?: Permission[];
   permissions?: string[];
+  employee?: LinkedEmployeeSummary | null;
 }
 
 export interface Role {
@@ -158,6 +171,9 @@ export interface SubscriptionPlan {
   name: string;
   description?: string | null;
   is_active: boolean;
+  max_users?: number | null;
+  max_employees?: number | null;
+  tier_code?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   permission_ids: number[];
@@ -168,6 +184,9 @@ export interface SubscriptionPlanCreateInput {
   name: string;
   description?: string | null;
   is_active?: boolean;
+  max_users?: number | null;
+  max_employees?: number | null;
+  tier_code?: string | null;
   permission_ids: number[];
 }
 
@@ -175,6 +194,9 @@ export interface SubscriptionPlanUpdateInput {
   name?: string;
   description?: string | null;
   is_active?: boolean;
+  max_users?: number | null;
+  max_employees?: number | null;
+  tier_code?: string | null;
   permission_ids?: number[];
 }
 
@@ -191,12 +213,26 @@ export interface TenantPlanStatus {
   is_active: boolean;
 }
 
+export interface UnlinkedEmployee {
+  id: string;
+  employee_id: string;
+  first_name: string;
+  last_name?: string | null;
+  full_name: string;
+  work_email?: string | null;
+  personal_email?: string | null;
+  phone?: string | null;
+  department_name?: string | null;
+  job_title_name?: string | null;
+}
+
 export interface UserCreateInput {
   username: string;
   email: string;
   password: string;
   phone?: string;
   business_id?: number | null;
+  employee_id?: string | null;
   is_active?: boolean;
   is_superuser?: boolean;
   can_use_offline_mode?: boolean;
@@ -210,6 +246,7 @@ export interface UserUpdateInput {
   password?: string;
   phone?: string;
   business_id?: number | null;
+  employee_id?: string | null;
   is_active?: boolean;
   is_superuser?: boolean;
   can_use_offline_mode?: boolean;
@@ -631,6 +668,10 @@ export interface EmployeeOut {
 
   biometric_user_id?: string | null;
   rfid_card_number?: string | null;
+  user_id?: number | null;
+  user_username?: string | null;
+  user_email?: string | null;
+  user_roles?: string[];
 
   skills_expertise?: string | null;
   is_department_head?: boolean;

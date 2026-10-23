@@ -1578,3 +1578,124 @@ class EmployeeService:
             verification_url=f"/verify/emp/{emp.employee_id}",
         )
 
+    def get_unlinked_employees(
+        self,
+        db: Session,
+        business_id: int | None = None,
+    ) -> list[Employee]:
+        query = db.query(Employee).filter(Employee.user_id.is_(None))
+        if business_id is not None:
+            query = query.filter(Employee.business_id == business_id)
+        return query.order_by(Employee.first_name.asc()).all()
+
+    def provision_user_for_employee(
+        self,
+        db: Session,
+        business_id: int | None,
+        employee_id: uuid.UUID,
+        data: Any,
+    ) -> dict:
+        from app.core.identity.models import User, Role
+        from app.core.security import hash_password
+        from app.core.billing.models import SubscriptionPlan
+        from app.core.tenancy.models import BusinessProfile
+
+        emp = self.get_employee_by_id(db, employee_id, business_id=business_id)
+        if emp.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Employee {emp.full_name} ({emp.employee_id}) already has a linked user account (User #{emp.user_id}).",
+            )
+
+        # Determine username and email
+        raw_username = (data.username or emp.work_email or emp.employee_id).strip()
+        username = raw_username.split("@")[0].lower() if "@" in raw_username else raw_username.lower()
+        email = (data.email or emp.work_email or emp.personal_email or f"{username}@wbsoft.local").strip().lower()
+
+        # Check uniqueness
+        existing_user = db.query(User).filter(
+            (User.username == username) | (User.email == email)
+        ).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A user with username '{username}' or email '{email}' already exists.",
+            )
+
+        # Check subscription seat limit
+        biz_id = emp.business_id
+        if biz_id:
+            biz = db.query(BusinessProfile).filter(BusinessProfile.id == biz_id).first()
+            if biz and biz.subscription_plan_id:
+                plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.id == biz.subscription_plan_id).first()
+                if plan and plan.max_users:
+                    active_users_count = db.query(User).filter(
+                        User.business_id == biz_id, User.is_active == True
+                    ).count()
+                    if active_users_count >= plan.max_users:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Subscription seat quota exceeded ({active_users_count}/{plan.max_users} seats used on {plan.name} plan). Please upgrade your subscription plan.",
+                        )
+
+        new_user = User(
+            username=username,
+            email=email,
+            password_hash=hash_password(data.password),
+            phone=emp.phone,
+            business_id=emp.business_id,
+            is_active=True,
+            is_superuser=False,
+            is_verified=True,
+        )
+        db.add(new_user)
+        db.flush()
+
+        # Assign roles
+        if data.role_ids:
+            roles = db.query(Role).filter(Role.id.in_(data.role_ids)).all()
+            new_user.roles = roles
+        else:
+            default_role = db.query(Role).filter(Role.name.in_(["hr_basic", "customer"])).first()
+            if default_role:
+                new_user.roles = [default_role]
+
+        emp.user_id = new_user.id
+        db.commit()
+        db.refresh(emp)
+        db.refresh(new_user)
+
+        return {
+            "message": f"User account created and linked to employee {emp.full_name} successfully.",
+            "user_id": new_user.id,
+            "username": new_user.username,
+            "email": new_user.email,
+            "employee_id": str(emp.id),
+            "employee_code": emp.employee_id,
+            "roles": [r.name for r in new_user.roles],
+        }
+
+    def unlink_user_from_employee(
+        self,
+        db: Session,
+        business_id: int | None,
+        employee_id: uuid.UUID,
+    ) -> dict:
+        emp = self.get_employee_by_id(db, employee_id, business_id=business_id)
+        if not emp.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Employee {emp.full_name} is not currently linked to any user account.",
+            )
+
+        old_user_id = emp.user_id
+        emp.user_id = None
+        db.commit()
+        db.refresh(emp)
+
+        return {
+            "message": f"User account #{old_user_id} unlinked from employee {emp.full_name}.",
+            "employee_id": str(emp.id),
+        }
+
+

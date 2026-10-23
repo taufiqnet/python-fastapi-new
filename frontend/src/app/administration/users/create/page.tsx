@@ -10,7 +10,10 @@ import {
   Permission,
   SystemModulesMap,
   BusinessProfile,
+  SubscriptionPlan,
   UserCreateInput,
+  UnlinkedEmployee,
+  User,
 } from "@/types";
 import { PermissionsMatrix } from "@/components/administration/permissions-matrix";
 import { useToast } from "@/context/toast-context";
@@ -28,11 +31,23 @@ import {
   Mail,
   User as UserIcon,
   Phone,
+  UserCheck,
+  UserX,
+  CheckCircle2,
+  CreditCard,
+  Sparkles,
 } from "lucide-react";
 
 export default function CreateUserPage() {
   const router = useRouter();
   const { toast } = useToast();
+
+  const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
+
+  // Account Type
+  const [accountType, setAccountType] = useState<"employee" | "standalone">("employee");
+  const [unlinkedEmployees, setUnlinkedEmployees] = useState<UnlinkedEmployee[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
 
   // Basic Account info
   const [username, setUsername] = useState("");
@@ -56,6 +71,7 @@ export default function CreateUserPage() {
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [systemModules, setSystemModules] = useState<SystemModulesMap>({});
   const [businesses, setBusinesses] = useState<BusinessProfile[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -64,17 +80,34 @@ export default function CreateUserPage() {
     async function loadMetadata() {
       setLoading(true);
       try {
-        const [rolesRes, permsRes, modsRes, bizRes] = await Promise.allSettled([
+        if (typeof window !== "undefined") {
+          const raw = localStorage.getItem("current_user");
+          if (raw) {
+            try {
+              const u = JSON.parse(raw);
+              setLoggedInUser(u);
+              if (u.business_id) {
+                setBusinessId(String(u.business_id));
+              }
+            } catch {}
+          }
+        }
+
+        const [rolesRes, permsRes, modsRes, bizRes, plansRes, unlinkedRes] = await Promise.allSettled([
           apiClient.get<Role[]>("/roles/api"),
           apiClient.get<Permission[]>("/permissions/api"),
           apiClient.get<SystemModulesMap>("/permissions/system-modules/api"),
           apiClient.get<BusinessProfile[]>("/business/"),
+          apiClient.get<SubscriptionPlan[]>("/subscription-plans/api"),
+          apiClient.get<UnlinkedEmployee[]>("/employees/unlinked"),
         ]);
 
         if (rolesRes.status === "fulfilled") setRoles(rolesRes.value.data || []);
         if (permsRes.status === "fulfilled") setPermissions(permsRes.value.data || []);
         if (modsRes.status === "fulfilled") setSystemModules(modsRes.value.data || {});
         if (bizRes.status === "fulfilled") setBusinesses(bizRes.value.data || []);
+        if (plansRes.status === "fulfilled") setPlans(plansRes.value.data || []);
+        if (unlinkedRes.status === "fulfilled") setUnlinkedEmployees(unlinkedRes.value.data || []);
       } catch {
         toast.error("Initialization Failed", "Could not load user configuration data.");
       } finally {
@@ -89,6 +122,18 @@ export default function CreateUserPage() {
     setSelectedRoleIds((prev) =>
       prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
     );
+  };
+
+  const handleSelectEmployee = (empId: string) => {
+    setSelectedEmployeeId(empId);
+    const emp = unlinkedEmployees.find((e) => e.id === empId);
+    if (emp) {
+      const rawUser = emp.work_email || emp.employee_id;
+      const suggestedUsername = (rawUser.includes("@") ? rawUser.split("@")[0] : rawUser).toLowerCase();
+      setUsername(suggestedUsername);
+      setEmail(emp.work_email || emp.personal_email || `${suggestedUsername}@wbsoft.local`);
+      setPhone(emp.phone || "");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,6 +151,7 @@ export default function CreateUserPage() {
         password,
         phone: phone.trim() || undefined,
         business_id: businessId ? Number(businessId) : null,
+        employee_id: accountType === "employee" && selectedEmployeeId ? selectedEmployeeId : undefined,
         is_active: isActive,
         is_superuser: isSuperuser,
         can_use_offline_mode: canUseOfflineMode,
@@ -173,11 +219,85 @@ export default function CreateUserPage() {
           </div>
         </div>
 
+        {/* Account Type & Employee Association Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200">
+                <UserCheck className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">Account Type &amp; Employee Association</h3>
+                <p className="text-xs text-slate-500">
+                  Select whether this user is for a company employee or a standalone system user.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setAccountType("employee")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  accountType === "employee"
+                    ? "bg-white text-indigo-700 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Employee Account (ESS)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAccountType("standalone");
+                  setSelectedEmployeeId("");
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  accountType === "standalone"
+                    ? "bg-white text-indigo-700 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                Standalone Account
+              </button>
+            </div>
+          </div>
+
+          {accountType === "employee" ? (
+            <div className="space-y-3">
+              <label className="block text-xs font-semibold text-slate-700">
+                Select Company Employee to Link:
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedEmployeeId}
+                  onChange={(e) => handleSelectEmployee(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                >
+                  <option value="">-- Choose an unlinked employee ({unlinkedEmployees.length} available) --</option>
+                  {unlinkedEmployees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Selecting an employee auto-populates their email and username, and automatically enables self-service portal access.
+              </p>
+            </div>
+          ) : (
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-600">
+              Standalone user accounts are not linked to employee profiles (ideal for external auditors, system operators, or partner users).
+            </div>
+          )}
+        </div>
+
         {/* Identity & Account Card */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
           <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
             <UserIcon className="w-4 h-4 text-indigo-600" />
-            Account Credentials & Tenancy
+            Account Credentials &amp; Tenancy
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -248,26 +368,43 @@ export default function CreateUserPage() {
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Business Profile Tenant
-              </label>
-              <div className="relative">
-                <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <select
-                  value={businessId}
-                  onChange={(e) => setBusinessId(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                >
-                  <option value="">Global / Unassigned Tenant Level</option>
-                  {businesses.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name_en || b.legal_name} (#{b.id})
-                    </option>
-                  ))}
-                </select>
+            {loggedInUser?.is_superuser ? (
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Business Profile Tenant (Platform Superadmin)
+                </label>
+                <div className="relative">
+                  <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={businessId}
+                    onChange={(e) => setBusinessId(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                  >
+                    <option value="">Global / Unassigned Tenant Level</option>
+                    {businesses.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name_en || b.legal_name} (#{b.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Tenant Organization
+                </label>
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <Building2 className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-bold text-slate-800">
+                    {businesses.find((b) => b.id === Number(businessId))?.name_en || "Current Tenant Organization"}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold ml-auto">
+                    Tenant #{businessId || "1"}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Account Flags */}
@@ -297,18 +434,20 @@ export default function CreateUserPage() {
               </span>
             </label>
 
-            <label className="inline-flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isSuperuser}
-                onChange={(e) => setIsSuperuser(e.target.checked)}
-                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 transition"
-              />
-              <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                System Superadmin (Bypasses RBAC checks)
-              </span>
-            </label>
+            {loggedInUser?.is_superuser && (
+              <label className="inline-flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isSuperuser}
+                  onChange={(e) => setIsSuperuser(e.target.checked)}
+                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 transition"
+                />
+                <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  System Superadmin (Bypasses RBAC checks)
+                </span>
+              </label>
+            )}
           </div>
         </div>
 

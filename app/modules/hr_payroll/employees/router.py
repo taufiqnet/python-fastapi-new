@@ -17,8 +17,10 @@ from app.modules.hr_payroll.employees.schemas import (
     EmployeeNomineeUpdate,
     EmployeeOut,
     EmployeeUpdate,
+    EmployeeUserProvisionRequest,
     IDCardDataOut,
     OrgChartNodeOut,
+    UnlinkedEmployeeOut,
 )
 from app.modules.hr_payroll.employees.service import EmployeeService
 
@@ -519,4 +521,42 @@ def get_employee_exit_clearance(
             for adv in unsettled_advances
         ],
     }
+
+
+@router.get("/employees/unlinked", response_model=list[UnlinkedEmployeeOut])
+def get_unlinked_employees(
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.get_unlinked_employees(db, business_id=resolved_business_id)
+
+
+@router.post("/employees/{employee_id}/provision-user")
+def provision_employee_user(
+    employee_id: uuid.UUID,
+    data: EmployeeUserProvisionRequest,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "update")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.provision_user_for_employee(
+        db, business_id=resolved_business_id, employee_id=employee_id, data=data
+    )
+
+
+@router.post("/employees/{employee_id}/unlink-user")
+def unlink_employee_user(
+    employee_id: uuid.UUID,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "employees", "update")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return employee_service.unlink_user_from_employee(
+        db, business_id=resolved_business_id, employee_id=employee_id
+    )
+
 

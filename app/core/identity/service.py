@@ -85,6 +85,28 @@ class UserService:
             business_id = new_business.id
             is_company_owner = True
 
+        # Check subscription seat limit if business_id is set
+        if business_id:
+            from app.core.billing.models import SubscriptionPlan
+            from sqlalchemy import func
+            biz_res = await db.execute(select(BusinessProfile).where(BusinessProfile.id == business_id))
+            biz = biz_res.scalars().first()
+            if biz and biz.subscription_plan_id:
+                plan_res = await db.execute(
+                    select(SubscriptionPlan).where(SubscriptionPlan.id == biz.subscription_plan_id)
+                )
+                plan = plan_res.scalars().first()
+                if plan and plan.max_users:
+                    cnt_res = await db.execute(
+                        select(func.count(User.id)).where(User.business_id == business_id, User.is_active == True)
+                    )
+                    count = cnt_res.scalar() or 0
+                    if count >= plan.max_users:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Subscription user seat limit reached ({count}/{plan.max_users} seats active on {plan.name} plan). Please upgrade your subscription plan.",
+                        )
+
         user = User(
             username=data.username,
             email=data.email,
@@ -97,6 +119,19 @@ class UserService:
         )
 
         user = await self.repository.create(db, user)
+
+        if data.employee_id:
+            from app.modules.hr_payroll.employees.models import Employee
+            import uuid
+            try:
+                emp_uuid = uuid.UUID(str(data.employee_id))
+                emp_res = await db.execute(select(Employee).where(Employee.id == emp_uuid))
+                emp = emp_res.scalars().first()
+                if emp:
+                    emp.user_id = user.id
+                    await db.commit()
+            except Exception:
+                pass
 
         if data.role_ids:
             roles = []
@@ -232,6 +267,25 @@ class UserService:
                 db, data.permission_ids
             )
             user.direct_permissions = permissions
+
+        if data.employee_id is not None:
+            from app.modules.hr_payroll.employees.models import Employee
+            import uuid
+            # Unlink previous employee if any
+            prev_emps = await db.execute(select(Employee).where(Employee.user_id == user.id))
+            for prev_emp in prev_emps.scalars().all():
+                prev_emp.user_id = None
+
+            if data.employee_id and data.employee_id != "unlink":
+                try:
+                    emp_uuid = uuid.UUID(str(data.employee_id))
+                    emp_res = await db.execute(select(Employee).where(Employee.id == emp_uuid))
+                    emp = emp_res.scalars().first()
+                    if emp:
+                        emp.user_id = user.id
+                except Exception:
+                    pass
+            await db.commit()
 
         return await self.repository.update(db, user)
 

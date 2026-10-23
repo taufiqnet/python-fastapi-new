@@ -6,6 +6,7 @@ Pydantic schemas for the user system, extending the original user.py
 from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
+import uuid
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
@@ -21,6 +22,7 @@ class UserCreate(BaseModel):
     phone: str | None = None
     business_id: int | None = None
     company_name: str | None = None
+    employee_id: str | None = None
     modules: list[str] = []
     role_ids: list[int] = []
     permission_ids: list[int] = []
@@ -148,11 +150,26 @@ class AddressResponse(AddressCreate):
 # ---------------------------------------------------------------------------
 
 
+class LinkedEmployeeSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID | str
+    employee_id: str
+    first_name: str
+    last_name: str | None = None
+    email: str | None = None
+    work_email: str | None = None
+    phone: str | None = None
+    department_name: str | None = None
+    designation_title: str | None = None
+
+
 class UserUpdate(BaseModel):
     username: str | None = None
     email: EmailStr | None = None
     phone: str | None = None
     business_id: int | None = None
+    employee_id: str | None = None
     is_active: bool | None = None
     is_superuser: bool | None = None
     can_use_offline_mode: bool | None = None
@@ -181,3 +198,4 @@ class UserResponse(BaseModel):
     customer_profile: CustomerProfileResponse | None = None
     vendor_profile: VendorProfileResponse | None = None
     addresses: list[AddressResponse] = []
+    employee: LinkedEmployeeSummary | None = None

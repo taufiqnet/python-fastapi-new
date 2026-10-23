@@ -88,6 +88,7 @@ class UserRepository:
                 selectinload(User.customer_profile),
                 selectinload(User.vendor_profile),
                 selectinload(User.addresses),
+                selectinload(User.employee),
                 selectinload(User.business_profile)
                 .selectinload(BusinessProfile.subscription_plan)
                 .selectinload(SubscriptionPlan.permissions),
@@ -112,6 +113,7 @@ class UserRepository:
                 selectinload(User.customer_profile),
                 selectinload(User.vendor_profile),
                 selectinload(User.addresses),
+                selectinload(User.employee),
                 selectinload(User.business_profile)
                 .selectinload(BusinessProfile.subscription_plan)
                 .selectinload(SubscriptionPlan.permissions),

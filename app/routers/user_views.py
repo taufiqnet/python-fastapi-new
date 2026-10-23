@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from fastapi import HTTPException, status
 from app.core.deps import get_current_user_optional, require_permission
+from app.core.identity.models import User
 from app.core.identity.schemas import UserCreate, UserResponse, UserUpdate
 from app.core.identity.seed import SYSTEM_MODULES
 from app.core.identity.service import UserService
@@ -149,8 +150,10 @@ async def user_edit_page(
 async def list_users_api(
     business_id: int | None = None,
     db: AsyncSession = Depends(get_async_db),
-    _perm_check=Depends(require_permission("general", "users_permissions", "view")),
+    current_user: User = Depends(require_permission("general", "users_permissions", "view")),
 ):
+    if not current_user.is_superuser:
+        business_id = current_user.business_id
     return await user_service.get_all_users(db, business_id=business_id)
 
 
@@ -158,8 +161,11 @@ async def list_users_api(
 async def create_user_api(
     data: UserCreate,
     db: AsyncSession = Depends(get_async_db),
-    _perm_check=Depends(require_permission("general", "users_permissions", "create")),
+    current_user: User = Depends(require_permission("general", "users_permissions", "create")),
 ):
+    if not current_user.is_superuser:
+        data.business_id = current_user.business_id
+        data.is_superuser = False
     return await user_service.create_user(db, data)
 
 
@@ -167,9 +173,12 @@ async def create_user_api(
 async def get_user_api(
     user_id: int,
     db: AsyncSession = Depends(get_async_db),
-    _perm_check=Depends(require_permission("general", "users_permissions", "view")),
+    current_user: User = Depends(require_permission("general", "users_permissions", "view")),
 ):
-    return await user_service.get_user_by_id(db, user_id)
+    target_user = await user_service.get_user_by_id(db, user_id)
+    if not current_user.is_superuser and target_user.business_id != current_user.business_id:
+        raise HTTPException(status_code=403, detail="Access denied: User belongs to another tenant.")
+    return target_user
 
 
 @router.put("/users/api/{user_id}", response_model=UserResponse)
@@ -177,8 +186,14 @@ async def update_user_api(
     user_id: int,
     data: UserUpdate,
     db: AsyncSession = Depends(get_async_db),
-    _perm_check=Depends(require_permission("general", "users_permissions", "update")),
+    current_user: User = Depends(require_permission("general", "users_permissions", "update")),
 ):
+    target_user = await user_service.get_user_by_id(db, user_id)
+    if not current_user.is_superuser:
+        if target_user.business_id != current_user.business_id:
+            raise HTTPException(status_code=403, detail="Cannot edit user belonging to another tenant.")
+        data.business_id = current_user.business_id
+        data.is_superuser = False
     return await user_service.update_user(db, user_id, data)
 
 
@@ -186,6 +201,9 @@ async def update_user_api(
 async def delete_user_api(
     user_id: int,
     db: AsyncSession = Depends(get_async_db),
-    _perm_check=Depends(require_permission("general", "users_permissions", "delete")),
+    current_user: User = Depends(require_permission("general", "users_permissions", "delete")),
 ):
+    target_user = await user_service.get_user_by_id(db, user_id)
+    if not current_user.is_superuser and target_user.business_id != current_user.business_id:
+        raise HTTPException(status_code=403, detail="Cannot delete user belonging to another tenant.")
     await user_service.delete_user(db, user_id)

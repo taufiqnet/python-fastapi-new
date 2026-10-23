@@ -13,6 +13,8 @@ import {
   BusinessProfile,
   SubscriptionPlan,
   UserUpdateInput,
+  LinkedEmployeeSummary,
+  UnlinkedEmployee,
 } from "@/types";
 import { PermissionsMatrix } from "@/components/administration/permissions-matrix";
 import { useToast } from "@/context/toast-context";
@@ -35,6 +37,10 @@ import {
   ExternalLink,
   RotateCcw,
   Sparkles,
+  UserCheck,
+  UserX,
+  CheckCircle2,
+  BadgeCheck,
 } from "lucide-react";
 
 interface UserEditPageProps {
@@ -48,6 +54,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
   const userId = resolvedParams.id;
 
   const [user, setUser] = useState<User | null>(null);
+  const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
 
   // Form states
   const [username, setUsername] = useState("");
@@ -59,6 +66,11 @@ export default function UserEditPage({ params }: UserEditPageProps) {
   const [isActive, setIsActive] = useState(true);
   const [isSuperuser, setIsSuperuser] = useState(false);
   const [canUseOfflineMode, setCanUseOfflineMode] = useState(false);
+
+  // Employee association states
+  const [linkedEmployee, setLinkedEmployee] = useState<LinkedEmployeeSummary | null>(null);
+  const [unlinkedEmployees, setUnlinkedEmployees] = useState<UnlinkedEmployee[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
 
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
@@ -79,13 +91,23 @@ export default function UserEditPage({ params }: UserEditPageProps) {
     async function loadUserAndMetadata() {
       setLoading(true);
       try {
-        const [userRes, rolesRes, permsRes, modsRes, bizRes, plansRes] = await Promise.allSettled([
+        if (typeof window !== "undefined") {
+          const rawUser = localStorage.getItem("current_user");
+          if (rawUser) {
+            try {
+              setLoggedInUser(JSON.parse(rawUser));
+            } catch {}
+          }
+        }
+
+        const [userRes, rolesRes, permsRes, modsRes, bizRes, plansRes, unlinkedRes] = await Promise.allSettled([
           apiClient.get<User>(`/users/api/${userId}`),
           apiClient.get<Role[]>("/roles/api"),
           apiClient.get<Permission[]>("/permissions/api"),
           apiClient.get<SystemModulesMap>("/permissions/system-modules/api"),
           apiClient.get<BusinessProfile[]>("/business/"),
           apiClient.get<SubscriptionPlan[]>("/subscription-plans/api"),
+          apiClient.get<UnlinkedEmployee[]>("/employees/unlinked"),
         ]);
 
         if (userRes.status === "fulfilled" && userRes.value.data) {
@@ -98,6 +120,11 @@ export default function UserEditPage({ params }: UserEditPageProps) {
           setIsActive(u.is_active);
           setIsSuperuser(u.is_superuser);
           setCanUseOfflineMode(!!u.can_use_offline_mode);
+
+          if (u.employee) {
+            setLinkedEmployee(u.employee);
+            setSelectedEmployeeId(String(u.employee.id));
+          }
 
           const rIds = u.roles ? u.roles.map((r) => r.id) : [];
           setSelectedRoleIds(rIds);
@@ -119,6 +146,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
         if (modsRes.status === "fulfilled") setSystemModules(modsRes.value.data || {});
         if (bizRes.status === "fulfilled") setBusinesses(bizRes.value.data || []);
         if (plansRes.status === "fulfilled") setPlans(plansRes.value.data || []);
+        if (unlinkedRes.status === "fulfilled") setUnlinkedEmployees(unlinkedRes.value.data || []);
       } catch {
         toast.error("Error", "Failed to retrieve user account details.");
       } finally {
@@ -150,6 +178,7 @@ export default function UserEditPage({ params }: UserEditPageProps) {
         password: password ? password : undefined,
         phone: phone.trim() || undefined,
         business_id: businessId ? Number(businessId) : null,
+        employee_id: selectedEmployeeId ? selectedEmployeeId : undefined,
         is_active: isActive,
         is_superuser: isSuperuser,
         can_use_offline_mode: canUseOfflineMode,
@@ -393,26 +422,43 @@ export default function UserEditPage({ params }: UserEditPageProps) {
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Business Profile Tenant
-              </label>
-              <div className="relative">
-                <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <select
-                  value={businessId}
-                  onChange={(e) => setBusinessId(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                >
-                  <option value="">Global / Unassigned Tenant Level</option>
-                  {businesses.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name_en || b.legal_name} (#{b.id})
-                    </option>
-                  ))}
-                </select>
+            {loggedInUser?.is_superuser ? (
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Business Profile Tenant (Platform Superadmin)
+                </label>
+                <div className="relative">
+                  <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select
+                    value={businessId}
+                    onChange={(e) => setBusinessId(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                  >
+                    <option value="">Global / Unassigned Tenant Level</option>
+                    {businesses.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name_en || b.legal_name} (#{b.id})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Tenant Organization
+                </label>
+                <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <Building2 className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-bold text-slate-800">
+                    {matchedBiz ? (matchedBiz.name_en || matchedBiz.legal_name) : "Current Tenant Organization"}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-bold ml-auto">
+                    Tenant #{businessId || matchedBiz?.id || "1"}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Account Flags */}
@@ -442,19 +488,120 @@ export default function UserEditPage({ params }: UserEditPageProps) {
               </span>
             </label>
 
-            <label className="inline-flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isSuperuser}
-                onChange={(e) => setIsSuperuser(e.target.checked)}
-                className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 transition"
-              />
-              <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                System Superadmin (Bypasses RBAC checks)
-              </span>
-            </label>
+            {loggedInUser?.is_superuser && (
+              <label className="inline-flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isSuperuser}
+                  onChange={(e) => setIsSuperuser(e.target.checked)}
+                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 transition"
+                />
+                <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  System Superadmin (Bypasses RBAC checks)
+                </span>
+              </label>
+            )}
           </div>
+        </div>
+
+        {/* Associated Employee Record Card */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <span className={`p-2 rounded-xl border ${linkedEmployee ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+                {linkedEmployee ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
+              </span>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900">
+                  {linkedEmployee ? "Associated Employee Record" : "Link to Employee Record"}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {linkedEmployee
+                    ? "This login account is linked to an employee profile in HR directory."
+                    : "Associate this user with an employee to activate personal portal access (ESS)."}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              {linkedEmployee ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Employee Linked ({linkedEmployee.employee_id})
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                  <UserX className="w-3.5 h-3.5 text-amber-600" />
+                  Unlinked / Standalone
+                </span>
+              )}
+            </div>
+          </div>
+
+          {linkedEmployee ? (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-indigo-600 text-white font-bold flex items-center justify-center text-sm shadow-sm shrink-0">
+                  {linkedEmployee.first_name?.[0]}{linkedEmployee.last_name?.[0] || ""}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span>{linkedEmployee.first_name} {linkedEmployee.last_name || ""}</span>
+                    <span className="text-xs font-mono px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold">
+                      {linkedEmployee.employee_id}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {linkedEmployee.designation_title || "Staff Member"} • {linkedEmployee.department_name || "General Department"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/hr-payroll/employees/${linkedEmployee.id}`}
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition"
+                >
+                  View Profile
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedEmployeeId("unlink");
+                    setLinkedEmployee(null);
+                    toast.info("Unlink Requested", "Click 'Save Changes' to finalize unlinking this employee.");
+                  }}
+                  className="px-3 py-1.5 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition"
+                >
+                  Unlink Employee
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <label className="block text-xs font-semibold text-slate-700">
+                Select an unlinked employee from your organization:
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <select
+                  value={selectedEmployeeId === "unlink" ? "" : selectedEmployeeId}
+                  onChange={(e) => setSelectedEmployeeId(e.target.value)}
+                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                >
+                  <option value="">-- No Employee Linked (Standalone Admin / Auditor) --</option>
+                  {unlinkedEmployees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Linking an employee automatically binds their attendance clocking, leave requests, payslips, and asset allocations to this user account.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Role Assignment Card */}
