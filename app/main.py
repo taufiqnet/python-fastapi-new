@@ -238,11 +238,44 @@ async def custom_general_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
 
+def _sync_missing_columns(conn):
+    from sqlalchemy import inspect, text
+    inspector = inspect(conn)
+    existing_tables = set(inspector.get_table_names())
+    for table_name, table in Base.metadata.tables.items():
+        if table_name in existing_tables:
+            db_cols = {c["name"] for c in inspector.get_columns(table_name)}
+            for col in table.columns:
+                if col.name not in db_cols:
+                    col_type_str = col.type.compile(conn.dialect)
+                    stmt = f'ALTER TABLE "{table_name}" ADD COLUMN IF NOT EXISTS "{col.name}" {col_type_str}'
+                    if col.default is not None and hasattr(col.default, 'arg'):
+                        arg = col.default.arg
+                        if isinstance(arg, (int, float)):
+                            stmt += f" DEFAULT {arg}"
+                        elif isinstance(arg, bool):
+                            stmt += f" DEFAULT {'TRUE' if arg else 'FALSE'}"
+                        elif isinstance(arg, str):
+                            stmt += f" DEFAULT '{arg}'"
+                    elif col.nullable is False:
+                        if "bool" in str(col_type_str).lower():
+                            stmt += " DEFAULT FALSE"
+                        elif "int" in str(col_type_str).lower() or "numeric" in str(col_type_str).lower():
+                            stmt += " DEFAULT 0"
+                        else:
+                            stmt += " DEFAULT ''"
+                    try:
+                        conn.execute(text(stmt))
+                    except Exception as err:
+                        logger.warning(f"Could not auto-add column {table_name}.{col.name}: {err}")
+
+
 @app.on_event("startup")
 async def on_startup():
     try:
         async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(_sync_missing_columns)
         async with AsyncSessionLocal() as db:
             await seed_system_admin_and_permissions(db)
 
