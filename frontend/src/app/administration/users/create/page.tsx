@@ -267,20 +267,22 @@ export default function CreateUserPage() {
           </div>
         </div>
 
-        {/* Step 1: Select Business Profile / Tenant Organization */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        {/* ───────────────────────────────────────────────────────────────────── */}
+        {/* 1. Account Credentials & Tenancy Section                              */}
+        {/* ───────────────────────────────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
               <span className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-200">
                 <Building2 className="w-5 h-5" />
               </span>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>Step 1: Select Business ID &amp; Tenant Organization</span>
+                  <span>1. Account Credentials &amp; Tenancy Section</span>
                   <span className="text-rose-500 font-bold">*</span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Select the Business ID first. Employee records and subscription user quotas are populated under this business.
+                  Select business profile to scope tenancy, then set up primary account credentials and flags.
                 </p>
               </div>
             </div>
@@ -293,6 +295,7 @@ export default function CreateUserPage() {
             )}
           </div>
 
+          {/* Tenancy Selector */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
               Business Profile / Tenant Organization <span className="text-rose-500">*</span>
@@ -303,7 +306,8 @@ export default function CreateUserPage() {
                 required
                 value={businessId}
                 onChange={(e) => handleBusinessChange(e.target.value)}
-                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                disabled={!loggedInUser?.is_superuser && !!loggedInUser?.business_id}
+                className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition disabled:bg-slate-50 disabled:text-slate-500"
               >
                 <option value="">-- Choose Business Organization (Tenant ID) --</option>
                 {businesses.map((b) => (
@@ -326,26 +330,147 @@ export default function CreateUserPage() {
               </div>
             )}
           </div>
+
+          {/* Account Credentials Grid */}
+          <div className="pt-2 border-t border-slate-100">
+            <h4 className="text-xs font-bold text-slate-800 mb-3 flex items-center gap-1.5">
+              <UserIcon className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Login Credentials</span>
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Username <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. john_doe"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Email Address <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="john@example.com"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Password <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Set initial password"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+8801700000000"
+                    className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Account Flags */}
+          <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-6">
+            <label className="inline-flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 transition"
+              />
+              <span className="text-xs font-semibold text-slate-800">
+                Account Active
+              </span>
+            </label>
+
+            <label className="inline-flex items-center gap-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={canUseOfflineMode}
+                onChange={(e) => setCanUseOfflineMode(e.target.checked)}
+                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 transition"
+              />
+              <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                <Wifi className="w-3.5 h-3.5 text-emerald-600" />
+                Allow Offline Mode &amp; Local Sync
+              </span>
+            </label>
+
+            {loggedInUser?.is_superuser && (
+              <label className="inline-flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isSuperuser}
+                  onChange={(e) => setIsSuperuser(e.target.checked)}
+                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 transition"
+                />
+                <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  System Superadmin (Global access across all tenants)
+                </span>
+              </label>
+            )}
+          </div>
         </div>
 
-        {/* Step 2: Account Type & Employee Association Card */}
+        {/* ───────────────────────────────────────────────────────────────────── */}
+        {/* 2. Account Type & Employee Association Section                         */}
+        {/* ───────────────────────────────────────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
             <div className="flex items-center gap-2.5">
               <span className="p-2.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
                 <UserCheck className="w-5 h-5" />
               </span>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <span>Step 2: Employee Association</span>
+                  <span>2. Account Type &amp; Employee Association Section</span>
                   {matchedBiz && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-semibold border border-slate-200">
-                      Populated under Business #{businessId}
+                      Populated under {matchedBiz.name_en || `Business #${businessId}`}
                     </span>
                   )}
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Select employee from the populated list under Business #{businessId || "..."} to link to this user.
+                  After selecting the Business ID, employees of the existing business are populated here to link with this user account.
                 </p>
               </div>
             </div>
@@ -384,7 +509,7 @@ export default function CreateUserPage() {
               {!businessId ? (
                 <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                   <UserX className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Please select a <strong>Business ID</strong> in Step 1 above. The employee records will populate automatically.</span>
+                  <span>Please select a <strong>Business ID</strong> in Section 1 above. The employees will populate automatically.</span>
                 </div>
               ) : isFetchingEmployees ? (
                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs flex items-center gap-2">
@@ -402,7 +527,7 @@ export default function CreateUserPage() {
                       onChange={(e) => handleSelectEmployee(e.target.value)}
                       className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
                     >
-                      <option value="">-- Choose an unlinked employee ({unlinkedEmployees.length} available) --</option>
+                      <option value="">-- Choose an employee ({unlinkedEmployees.length} available) --</option>
                       {unlinkedEmployees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
                           {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
@@ -417,9 +542,9 @@ export default function CreateUserPage() {
                       const empPreview = unlinkedEmployees.find((e) => e.id === selectedEmployeeId);
                       if (!empPreview) return null;
                       return (
-                        <div className="p-3.5 rounded-xl bg-slate-50 border border-indigo-200/80 shadow-2xs flex items-center justify-between gap-3 animate-in fade-in">
+                        <div className="p-4 rounded-xl bg-slate-50 border border-indigo-200/80 shadow-2xs flex items-center justify-between gap-3 animate-in fade-in">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-bold flex items-center justify-center text-xs shadow-xs">
+                            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white font-bold flex items-center justify-center text-sm shadow-xs">
                               {empPreview.first_name?.[0]}{empPreview.last_name?.[0] || ""}
                             </div>
                             <div>
@@ -437,7 +562,7 @@ export default function CreateUserPage() {
                               </p>
                             </div>
                           </div>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                          <span className="text-[10px] font-semibold px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
                             Will Link to User Account
                           </span>
                         </div>
@@ -446,7 +571,7 @@ export default function CreateUserPage() {
                   )}
 
                   <p className="text-[11px] text-slate-500">
-                    Selecting an employee populates their username, official email, and binds their employee record to this login.
+                    Selecting an employee populates their username, official email, and links their employee profile to this account.
                   </p>
                 </>
               )}
@@ -458,241 +583,126 @@ export default function CreateUserPage() {
           )}
         </div>
 
-        {/* Step 3: Identity & Account Credentials Card */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
-          <h2 className="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-            <UserIcon className="w-4 h-4 text-indigo-600" />
-            Step 3: Account Credentials &amp; Profile
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Username <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <UserIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="e.g. john_doe"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Email Address <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="john@example.com"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Password <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Set initial password"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Phone Number
-              </label>
-              <div className="relative">
-                <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+8801700000000"
-                  className="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Account Flags */}
-          <div className="mt-6 pt-5 border-t border-slate-100 flex flex-wrap items-center gap-6">
-            <label className="inline-flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 transition"
-              />
-              <span className="text-xs font-semibold text-slate-800">
-                Account Active
-              </span>
-            </label>
-
-            <label className="inline-flex items-center gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={canUseOfflineMode}
-                onChange={(e) => setCanUseOfflineMode(e.target.checked)}
-                className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 transition"
-              />
-              <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
-                <Wifi className="w-3.5 h-3.5 text-emerald-600" />
-                Allow Offline Mode &amp; Local Sync
-              </span>
-            </label>
-
-            {loggedInUser?.is_superuser && (
-              <label className="inline-flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isSuperuser}
-                  onChange={(e) => setIsSuperuser(e.target.checked)}
-                  className="w-4 h-4 rounded text-rose-600 focus:ring-rose-500 border-slate-300 transition"
-                />
-                <span className="text-xs font-bold text-rose-700 flex items-center gap-1.5">
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                  System Superadmin (Bypasses RBAC checks)
-                </span>
-              </label>
-            )}
-          </div>
-        </div>
-
-        {/* Role Assignment Card */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
-          <div className="mb-4">
-            <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-indigo-600" />
-              Assign Roles
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Select one or more roles. Roles grant predefined sets of permissions to the user.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {roles.map((r) => {
-              const isChecked = selectedRoleIds.includes(r.id);
-              return (
-                <label
-                  key={r.id}
-                  className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition ${
-                    isChecked
-                      ? "bg-indigo-50/60 border-indigo-300 shadow-xs"
-                      : "bg-slate-50/50 border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    onChange={() => handleToggleRole(r.id)}
-                    className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 leading-tight">
-                      {r.name}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
-                      {r.description || "No description provided"}
-                    </p>
-                    <span className="inline-block mt-1.5 text-[10px] font-mono text-indigo-600">
-                      {r.permissions ? r.permissions.length : 0} permissions
-                    </span>
-                  </div>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Collapsible Direct Permissions Matrix */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-          <div
-            onClick={() => setShowDirectPermissions((prev) => !prev)}
-            className="flex items-center justify-between p-5 bg-slate-50 cursor-pointer hover:bg-slate-100/70 transition"
-          >
-            <div>
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+        {/* ───────────────────────────────────────────────────────────────────── */}
+        {/* 3. Assign Roles & Permissions Section                                  */}
+        {/* ───────────────────────────────────────────────────────────────────── */}
+        <div className="space-y-6">
+          {/* Role Assignment Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                Custom Direct Permissions (Optional)
-              </h2>
+                <span>3. Assign Roles &amp; Permissions</span>
+              </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Grant fine-grained module permissions directly to this user beyond role inheritance
-                {selectedPermissionIds.length > 0 && (
-                  <span className="font-semibold text-indigo-600 ml-1">
-                    ({selectedPermissionIds.length} custom permissions active)
-                  </span>
-                )}
+                Select one or more roles. Roles grant predefined sets of permissions to the user.
               </p>
             </div>
 
-            <ChevronDown
-              className={`w-5 h-5 text-slate-400 transition-transform ${
-                showDirectPermissions ? "rotate-180" : ""
-              }`}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {roles.map((r) => {
+                const isChecked = selectedRoleIds.includes(r.id);
+                return (
+                  <label
+                    key={r.id}
+                    className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition ${
+                      isChecked
+                        ? "bg-indigo-50/60 border-indigo-300 shadow-xs"
+                        : "bg-slate-50/50 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleToggleRole(r.id)}
+                      className="mt-0.5 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-900 leading-tight">
+                        {r.name}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-2">
+                        {r.description || "No description provided"}
+                      </p>
+                      <span className="inline-block mt-1.5 text-[10px] font-mono text-indigo-600">
+                        {r.permissions ? r.permissions.length : 0} permissions
+                      </span>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
           </div>
 
-          {showDirectPermissions && (
-            <div className="p-6 border-t border-slate-200">
-              {loading ? (
-                <div className="p-8 text-center">
-                  <Loader2 className="w-6 h-6 animate-spin text-indigo-600 mx-auto mb-2" />
-                  <p className="text-xs text-slate-500">Loading permissions matrix...</p>
-                </div>
-              ) : (
-                <PermissionsMatrix
-                  permissions={permissions}
-                  systemModules={systemModules}
-                  selectedPermissionIds={selectedPermissionIds}
-                  onChange={setSelectedPermissionIds}
-                  disabled={saving}
-                />
-              )}
-            </div>
-          )}
-        </div>
+          {/* Collapsible Direct Permissions Matrix */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div
+              onClick={() => setShowDirectPermissions((prev) => !prev)}
+              className="flex items-center justify-between p-5 bg-slate-50 cursor-pointer hover:bg-slate-100/70 transition"
+            >
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  Custom Direct Permissions (Optional)
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Grant fine-grained module permissions directly to this user beyond role inheritance
+                  {selectedPermissionIds.length > 0 && (
+                    <span className="font-semibold text-indigo-600 ml-1">
+                      ({selectedPermissionIds.length} custom permissions active)
+                    </span>
+                  )}
+                </p>
+              </div>
 
-        {/* Bottom Save Bar */}
-        <div className="flex items-center justify-end gap-3 pt-2 pb-6">
-          <Link
-            href="/administration/users"
-            className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold transition"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={saving || loading}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition disabled:opacity-50"
-          >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
+              <ChevronDown
+                className={`w-5 h-5 text-slate-400 transition-transform ${
+                  showDirectPermissions ? "rotate-180" : ""
+                }`}
+              />
+            </div>
+
+            {showDirectPermissions && (
+              <div className="p-6 border-t border-slate-200">
+                {loading ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-indigo-600 mx-auto mb-2" />
+                    <p className="text-xs text-slate-500">Loading permissions matrix...</p>
+                  </div>
+                ) : (
+                  <PermissionsMatrix
+                    permissions={permissions}
+                    systemModules={systemModules}
+                    selectedPermissionIds={selectedPermissionIds}
+                    onChange={setSelectedPermissionIds}
+                    disabled={saving}
+                  />
+                )}
+              </div>
             )}
-            Save User Account
-          </button>
+          </div>
+
+          {/* Bottom Save Bar */}
+          <div className="flex items-center justify-end gap-3 pt-2 pb-6">
+            <Link
+              href="/administration/users"
+              className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold transition"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={saving || loading}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition disabled:opacity-50"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Save User Account
+            </button>
+          </div>
         </div>
       </form>
     </DashboardLayout>
