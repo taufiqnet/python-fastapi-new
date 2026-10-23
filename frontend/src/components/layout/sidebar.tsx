@@ -120,6 +120,11 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           permission: { module: "hrm", feature: "attendance", action: "view" },
         },
         {
+          name: "Duty Roster",
+          href: "/hr-payroll/roster",
+          permission: { module: "hrm", feature: "roster", action: "view" },
+        },
+        {
           name: "Leave Management",
           href: "/hr-payroll/leave",
           permission: { module: "hrm", feature: "leave_applications", action: "view" },

@@ -123,6 +123,14 @@ from app.modules.hr_payroll.recruitment.models import (  # noqa: F401
     Interview,
     InterviewEvaluation,
 )
+from app.modules.hr_payroll.roster.models import (  # noqa: F401
+    DutyAssignBatch,
+    DutyAssignment,
+    MonthlyRoster,
+    RosterChangeApplication,
+    RosterExchangeApplication,
+    Shift,
+)
 from app.services.ai.models import AIConversation  # noqa: F401
 from app.modules.finance.models import (  # noqa: F401
     Account,

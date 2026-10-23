@@ -88,6 +88,7 @@ class Department(Base, UUIDMixin, TimestampMixin):
     slug: Mapped[str] = mapped_column(String(280), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_roster_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     multiple_heads_allowed: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )

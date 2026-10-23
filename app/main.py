@@ -105,6 +105,7 @@ from app.modules.hr_payroll.experience_letters.router import router as experienc
 from app.modules.hr_payroll.appointments.router import router as appointments_router
 from app.modules.hr_payroll.notice_board.router import router as notices_router
 from app.modules.hr_payroll.recruitment.router import router as recruitment_router
+from app.modules.hr_payroll.roster.router import router as roster_router
 from app.modules.healthcare.router import router as healthcare_router
 from app.api.v1.endpoints.sync import router as sync_router
 
@@ -396,6 +397,7 @@ app.include_router(experience_letters_router)
 app.include_router(appointments_router)
 app.include_router(notices_router)
 app.include_router(recruitment_router)
+app.include_router(roster_router)
 
 # healthcare router
 app.include_router(healthcare_router, prefix="/api/v1")

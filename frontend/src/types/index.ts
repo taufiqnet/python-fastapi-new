@@ -1744,6 +1744,226 @@ export interface ReferralPayoutPayload {
   notes?: string | null;
 }
 
+// ============================================================
+// Roster Management Types
+// ============================================================
+export interface Shift {
+  id: string;
+  business_id: number;
+  name: string;
+  code: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  work_hours: number;
+  break_duration_minutes: number;
+  grace_in_minutes: number;
+  grace_out_minutes: number;
+  is_night_shift: boolean;
+  is_off_day: boolean;
+  color_code: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ShiftCreatePayload {
+  name: string;
+  code: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  work_hours?: number;
+  break_duration_minutes?: number;
+  grace_in_minutes?: number;
+  grace_out_minutes?: number;
+  is_night_shift?: boolean;
+  is_off_day?: boolean;
+  color_code?: string;
+  is_active?: boolean;
+}
+
+export interface ShiftUpdatePayload extends Partial<ShiftCreatePayload> {}
+
+export interface DepartmentRosterStatus {
+  id: string;
+  name: string;
+  code?: string | null;
+  is_roster_enabled: boolean;
+  employee_count: number;
+}
+
+export interface DutyAssignment {
+  id: string;
+  business_id: number;
+  monthly_roster_id?: string | null;
+  batch_id?: string | null;
+  employee_id: string;
+  department_id: string;
+  date: string;
+  shift_id: string;
+  status: "draft" | "approved" | "cancelled";
+  source: "monthly_roster" | "direct_assign" | "shift_change" | "shift_exchange";
+  notes?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
+  shift?: Shift | null;
+}
+
+export interface DutyAssignBatch {
+  id: string;
+  business_id: number;
+  department_id: string;
+  department_name?: string | null;
+  title: string;
+  start_date: string;
+  end_date: string;
+  assigned_count: number;
+  status: "draft" | "pending_approval" | "approved" | "rejected";
+  submitted_by_id?: string | null;
+  submitted_by_name?: string | null;
+  submitted_at: string;
+  approved_by_id?: string | null;
+  approved_by_name?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+}
+
+export interface DutyAssignBatchCreatePayload {
+  department_id: string;
+  title: string;
+  start_date: string;
+  end_date: string;
+  assignments: Array<{
+    employee_id: string;
+    date: string;
+    shift_id: string;
+    notes?: string;
+  }>;
+}
+
+export interface MonthlyRoster {
+  id: string;
+  business_id: number;
+  department_id: string;
+  department_name?: string | null;
+  year: number;
+  month: number;
+  status: "draft" | "submitted" | "approved" | "rejected";
+  submitted_by_id?: string | null;
+  submitted_by_name?: string | null;
+  submitted_at?: string | null;
+  approved_by_id?: string | null;
+  approved_by_name?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
+  notes?: string | null;
+  total_assignments: number;
+  created_at?: string;
+}
+
+export interface RestDayViolation {
+  employee_id: string;
+  employee_name: string;
+  consecutive_work_days: number;
+  start_date: string;
+  end_date: string;
+  rule: string;
+}
+
+export interface EmployeeMatrixRow {
+  employee_id: string;
+  employee_name: string;
+  employee_code?: string | null;
+  job_title?: string | null;
+  duties: Record<string, DutyAssignment>;
+  total_shifts: number;
+  total_off_days: number;
+  total_work_hours: number;
+}
+
+export interface MonthlyRosterMatrix {
+  monthly_roster?: MonthlyRoster | null;
+  department_id: string;
+  department_name: string;
+  is_roster_enabled: boolean;
+  year: number;
+  month: number;
+  days_in_month: number;
+  shifts: Shift[];
+  rows: EmployeeMatrixRow[];
+  daily_shift_counts: Record<string, Record<string, number>>;
+  rest_day_violations: RestDayViolation[];
+}
+
+export interface RosterChangeApplication {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  duty_assignment_id?: string | null;
+  date: string;
+  current_shift_id: string;
+  current_shift?: Shift | null;
+  requested_shift_id: string;
+  requested_shift?: Shift | null;
+  reason: string;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  applied_at: string;
+  reviewed_by_id?: string | null;
+  reviewed_by_name?: string | null;
+  reviewed_at?: string | null;
+  review_note?: string | null;
+}
+
+export interface RosterExchangeApplication {
+  id: string;
+  business_id: number;
+  requesting_employee_id: string;
+  requesting_employee_name?: string | null;
+  target_employee_id: string;
+  target_employee_name?: string | null;
+  requesting_date: string;
+  requesting_shift_id: string;
+  requesting_shift?: Shift | null;
+  target_date: string;
+  target_shift_id: string;
+  target_shift?: Shift | null;
+  reason: string;
+  status:
+    | "pending_peer_approval"
+    | "pending_manager_approval"
+    | "approved"
+    | "rejected"
+    | "cancelled";
+  applied_at: string;
+  peer_reviewed_at?: string | null;
+  peer_note?: string | null;
+  reviewed_by_id?: string | null;
+  reviewed_by_name?: string | null;
+  reviewed_at?: string | null;
+  review_note?: string | null;
+}
+
+export interface RosterChangeCreatePayload {
+  employee_id: string;
+  date: string;
+  requested_shift_id: string;
+  reason: string;
+}
+
+export interface RosterExchangeCreatePayload {
+  requesting_employee_id: string;
+  target_employee_id: string;
+  requesting_date: string;
+  target_date: string;
+  reason: string;
+}
+
+
+
 
 
 

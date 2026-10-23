@@ -1,5 +1,6 @@
 import uuid
 from datetime import date, datetime, time, timedelta
+from typing import Any
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -37,10 +38,29 @@ class AttendanceService:
         self.repository = repository or AttendanceRepository()
         self.employee_repository = employee_repository or EmployeeRepository()
 
+    def _resolve_shift(
+        self,
+        db: Session,
+        employee_id: uuid.UUID | None,
+        att_date: date | None,
+        business_id: int | None,
+    ) -> Any | None:
+        if not employee_id or not att_date or not business_id:
+            return None
+        try:
+            emp = self.employee_repository.get_by_id(db, employee_id)
+            if emp and emp.department and getattr(emp.department, "is_roster_enabled", False):
+                from app.modules.hr_payroll.roster.service import RosterService
+                return RosterService().get_employee_scheduled_shift(db, emp, att_date, business_id)
+        except Exception:
+            pass
+        return None
+
     def _compute_hours(
         self,
         data: AttendanceCreate | AttendanceUpdate,
         existing: Attendance | None = None,
+        shift: Any | None = None,
     ) -> tuple[float, float]:
         check_in = (
             data.check_in
@@ -72,10 +92,14 @@ class AttendanceService:
 
         if data.overtime_hours is not None:
             overtime_hours = float(data.overtime_hours)
-        elif work_hours > 8.0:
-            overtime_hours = round(work_hours - 8.0, 2)
+        elif shift and getattr(shift, "is_off_day", False):
+            overtime_hours = work_hours
         else:
-            overtime_hours = 0.0
+            std_hours = float(getattr(shift, "work_hours", 8.0) or 8.0)
+            if work_hours > std_hours:
+                overtime_hours = round(work_hours - std_hours, 2)
+            else:
+                overtime_hours = 0.0
 
         return work_hours, overtime_hours
 
@@ -130,7 +154,14 @@ class AttendanceService:
                 detail=f"Attendance record already exists for employee on {data.date}",
             )
 
-        work_hours, overtime_hours = self._compute_hours(data)
+        shift = self._resolve_shift(db, data.employee_id, data.date, data.business_id)
+        if shift and shift.start_time and data.check_in:
+            grace_dt = datetime.combine(data.date, shift.start_time) + timedelta(minutes=shift.grace_in_minutes)
+            actual_dt = datetime.combine(data.date, data.check_in)
+            if actual_dt > grace_dt and getattr(data, "status", None) == AttendanceStatusEnum.PRESENT:
+                data.status = AttendanceStatusEnum.LATE
+
+        work_hours, overtime_hours = self._compute_hours(data, shift=shift)
         data.work_hours = work_hours
         data.overtime_hours = overtime_hours
 
@@ -169,7 +200,8 @@ class AttendanceService:
                     ),
                 )
 
-        work_hours, overtime_hours = self._compute_hours(data, existing=record)
+        shift = self._resolve_shift(db, target_emp_id, target_date, target_biz_id)
+        work_hours, overtime_hours = self._compute_hours(data, existing=record, shift=shift)
         data.work_hours = work_hours
         data.overtime_hours = overtime_hours
 

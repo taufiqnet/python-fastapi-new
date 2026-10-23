@@ -87,6 +87,7 @@ SYSTEM_MODULES = {
                 "category": "Attendance & Leave",
                 "features": [
                     ("attendance", "Attendance"),
+                    ("roster", "Duty Roster"),
                     ("leave_types", "Leave Types"),
                     ("leave_allocations", "Leave Allocations"),
                     ("leave_applications", "Leave Requests"),
@@ -259,6 +260,7 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         "job_titles",
         "employees",
         "attendance",
+        "roster",
         "leave_types",
         "leave_applications",
         "holidays",
