@@ -161,4 +161,17 @@ from app.modules.healthcare.models import (  # noqa: F401
     RadiologyReport,
     ReferralDoctorCommission,
 )
+from app.modules.hr_payroll.portal.models import (  # noqa: F401
+    AttendanceCorrectionRequest,
+    CompanyPolicy,
+    EmployeeLoan,
+    ExpenseClaim,
+    ExpenseClaimItem,
+    HRTicket,
+    HRTicketComment,
+    OfficialLetterRequest,
+    PolicyAcknowledgement,
+    ProfileUpdateRequest,
+)
+
 

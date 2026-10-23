@@ -62,6 +62,13 @@ class Employee(Base, UUIDMixin, TimestampMixin):
         nullable=False,
         index=True,
     )
+    user_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
 
     # ── Basic Information ──────────────────────────────────────────
     first_name: Mapped[str] = mapped_column(String(255), nullable=False)
