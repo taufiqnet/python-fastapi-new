@@ -1,9 +1,9 @@
 # Stage 1: Install dependencies
 FROM node:22-alpine AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+COPY .npmrc* ./
+RUN npm ci --legacy-peer-deps
 
 # Stage 2: Build application
 FROM node:22-alpine AS builder
