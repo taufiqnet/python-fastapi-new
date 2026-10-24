@@ -3394,6 +3394,283 @@ export interface MonthlyAttendanceSummary {
   items: MonthlyAttendanceSummaryItem[];
 }
 
+// ===========================================================================
+// Employee Document Management Types
+// ===========================================================================
+export type DocumentConfidentiality = 'public' | 'internal' | 'confidential' | 'strictly_confidential';
+export type DocumentVerificationStatus = 'unverified' | 'verified' | 'rejected';
+export type AgreementType =
+  | 'permanent_contract'
+  | 'probation_contract'
+  | 'fixed_term_contract'
+  | 'nda'
+  | 'non_compete'
+  | 'training_bond'
+  | 'consultancy_agreement';
+export type AgreementStatus =
+  | 'draft'
+  | 'pending_signature'
+  | 'active'
+  | 'amended'
+  | 'renewed'
+  | 'expired'
+  | 'terminated';
+export type IdentityType =
+  | 'nid_smart_card'
+  | 'nid_classic'
+  | 'passport'
+  | 'work_permit_bida'
+  | 'work_permit_bepza'
+  | 'work_visa'
+  | 'tin_certificate'
+  | 'birth_registration'
+  | 'driving_license'
+  | 'police_clearance';
+export type BulkLetterType =
+  | 'appointment'
+  | 'confirmation'
+  | 'increment'
+  | 'transfer'
+  | 'promotion'
+  | 'bonus';
+export type BulkJobStatus = 'draft' | 'processing' | 'completed' | 'partial_failed';
+export type SignatureMode =
+  | 'drawn_canvas'
+  | 'typed_signature'
+  | 'profile_stamp'
+  | 'clickwrap_acknowledge';
+export type SignatureStatus = 'pending' | 'signed' | 'declined' | 'revoked';
+
+export interface DocumentCategory {
+  id: string;
+  business_id: number;
+  name: string;
+  code: string;
+  description?: string | null;
+  is_mandatory: boolean;
+  has_expiry: boolean;
+  confidentiality_level: DocumentConfidentiality;
+  allowed_extensions: string;
+  max_file_size_mb: number;
+  is_system: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentTemplate {
+  id: string;
+  business_id: number;
+  name: string;
+  category_id?: string | null;
+  category_name?: string | null;
+  template_type: BulkLetterType;
+  subject: string;
+  content_html: string;
+  header_content?: string | null;
+  footer_content?: string | null;
+  signatory_title?: string | null;
+  requires_employee_signature: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeDocument {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  category_id: string;
+  document_title: string;
+  document_number?: string | null;
+  file_url: string;
+  file_name: string;
+  file_size_bytes: number;
+  mime_type: string;
+  issue_date?: string | null;
+  expiry_date?: string | null;
+  issuing_authority?: string | null;
+  confidentiality_level: DocumentConfidentiality;
+  verification_status: DocumentVerificationStatus;
+  verified_by_user_id?: number | null;
+  verified_at?: string | null;
+  rejection_reason?: string | null;
+  version: number;
+  notes?: string | null;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
+  category_name?: string | null;
+  category_code?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DossierCategoryGroup {
+  category_id: string;
+  category_name: string;
+  category_code: string;
+  is_mandatory: boolean;
+  uploaded_count: number;
+  verified_count: number;
+  is_compliant: boolean;
+  documents: EmployeeDocument[];
+}
+
+export interface DossierSummary {
+  employee_id: string;
+  employee_name: string;
+  employee_code: string;
+  department_name?: string | null;
+  total_mandatory_categories: number;
+  completed_mandatory_categories: number;
+  completeness_percentage: number;
+  total_documents: number;
+  verified_documents: number;
+  pending_verification: number;
+  rejected_documents: number;
+  categories: DossierCategoryGroup[];
+}
+
+export interface EmployeeAgreement {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  template_id?: string | null;
+  agreement_type: AgreementType;
+  reference_no: string;
+  title: string;
+  start_date: string;
+  end_date?: string | null;
+  notice_period_days: number;
+  probation_months: number;
+  bond_amount?: number | null;
+  governing_law: string;
+  document_url?: string | null;
+  content_snapshot?: string | null;
+  status: AgreementStatus;
+  signed_at?: string | null;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeIdentityRecord {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  identity_type: IdentityType;
+  document_number: string;
+  issuing_country: string;
+  issuing_authority?: string | null;
+  issue_date?: string | null;
+  expiry_date?: string | null;
+  visa_category?: string | null;
+  place_of_issue?: string | null;
+  document_file_url?: string | null;
+  verification_status: DocumentVerificationStatus;
+  alert_threshold_days: number;
+  is_primary: boolean;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentRenewalAlert {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  document_id?: string | null;
+  identity_id?: string | null;
+  agreement_id?: string | null;
+  alert_type: string;
+  document_title: string;
+  expiry_date: string;
+  days_remaining: number;
+  renewal_status: string;
+  tracking_reference?: string | null;
+  notes?: string | null;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BulkLetterItem {
+  id: string;
+  job_id: string;
+  business_id: number;
+  employee_id: string;
+  reference_no: string;
+  recipient_name: string;
+  recipient_email?: string | null;
+  designation?: string | null;
+  department?: string | null;
+  rendered_content: string;
+  pdf_url?: string | null;
+  is_signed: boolean;
+  signed_at?: string | null;
+  created_at: string;
+}
+
+export interface BulkLetterJob {
+  id: string;
+  business_id: number;
+  job_type: BulkLetterType;
+  template_id: string;
+  batch_title: string;
+  reference_prefix: string;
+  issue_date: string;
+  total_recipients: number;
+  successful_count: number;
+  failed_count: number;
+  status: BulkJobStatus;
+  created_by_user_id?: number | null;
+  template_name?: string | null;
+  items: BulkLetterItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DocumentAcknowledgement {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  document_id?: string | null;
+  agreement_id?: string | null;
+  letter_item_id?: string | null;
+  document_checksum_sha256: string;
+  signature_mode: SignatureMode;
+  signature_image_url?: string | null;
+  signer_full_name: string;
+  signer_email?: string | null;
+  signer_ip_address?: string | null;
+  signer_user_agent?: string | null;
+  acknowledgement_text: string;
+  status: SignatureStatus;
+  signed_at: string;
+  audit_certificate_no: string;
+  employee_name?: string | null;
+  created_at: string;
+}
+
+export interface SignatureVerification {
+  is_valid: boolean;
+  audit_certificate_no: string;
+  signer_full_name: string;
+  document_checksum_sha256: string;
+  signed_at: string;
+  signature_mode: string;
+  ip_address_masked?: string | null;
+  verification_message: string;
+}
+
+
 
 
 

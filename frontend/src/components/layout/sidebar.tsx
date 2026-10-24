@@ -260,6 +260,11 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/hr-payroll/separation",
           permission: { module: "hrm", feature: "separations", action: "view" },
         },
+        {
+          name: "Document Management",
+          href: "/hr-payroll/documents",
+          permission: { module: "hrm", feature: "Documents", action: "view" },
+        },
       ],
     },
     {

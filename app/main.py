@@ -113,6 +113,7 @@ from app.modules.travel_expenses.router import router as travel_expenses_router
 from app.modules.hr_payroll.performance.router import router as performance_router
 from app.modules.hr_payroll.lifecycle.router import router as lifecycle_router
 from app.modules.hr_payroll.separation.router import router as separation_router
+from app.modules.hr_payroll.documents.router import router as documents_router
 from app.api.v1.endpoints.sync import router as sync_router
 
 from app.routers import (
@@ -461,6 +462,10 @@ app.include_router(lifecycle_router)
 # separation & offboarding router
 app.include_router(separation_router, prefix="/api/v1")
 app.include_router(separation_router)
+
+# employee document management router
+app.include_router(documents_router, prefix="/api/v1")
+app.include_router(documents_router)
 
 # project management router
 app.include_router(tasks.router)

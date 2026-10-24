@@ -164,6 +164,17 @@ from app.modules.hr_payroll.separation.models import (  # noqa: F401
     ReleaseLetter,
     ResignationApplication,
 )
+from app.modules.hr_payroll.documents.models import (  # noqa: F401
+    BulkLetterItem,
+    BulkLetterJob,
+    DocumentAcknowledgement,
+    DocumentCategory,
+    DocumentRenewalAlert,
+    DocumentTemplate,
+    EmployeeAgreement,
+    EmployeeDocument,
+    EmployeeIdentityRecord,
+)
 from app.services.ai.models import AIConversation  # noqa: F401
 from app.modules.finance.models import (  # noqa: F401
     Account,
