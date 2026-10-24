@@ -25,6 +25,7 @@ import {
   Laptop,
   Plane,
   Receipt,
+  Car,
 } from "lucide-react";
 
 interface NavChild {
@@ -32,6 +33,8 @@ interface NavChild {
   href: string;
   permission?: { module: string; feature: string; action: string };
   superuserOnly?: boolean;
+  group?: string;
+  badge?: string;
 }
 
 interface NavItem {
@@ -58,6 +61,8 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
     portal: true,
     ecommerce: true,
     hr: true,
+    travel: true,
+    fleet: true,
     assets: true,
     healthcare: true,
     finance: true,
@@ -150,66 +155,145 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
     },
     {
       name: "HR & Payroll",
-      href: "/hr-payroll/employees",
+      href: "/hr-payroll/organization",
       icon: Users,
       sectionKey: "hr",
       module: "hrm",
       children: [
+        // 1. Core HR & Workforce
+        {
+          name: "Organization",
+          href: "/hr-payroll/organization",
+          permission: { module: "hrm", feature: "departments", action: "view" },
+          group: "Core HR & Workforce",
+        },
         {
           name: "Employees",
           href: "/hr-payroll/employees",
           permission: { module: "hrm", feature: "employees", action: "view" },
+          group: "Core HR & Workforce",
         },
+        {
+          name: "Document Management",
+          href: "/hr-payroll/documents",
+          permission: { module: "hrm", feature: "Documents", action: "view" },
+          group: "Core HR & Workforce",
+        },
+
+        // 2. Time & Attendance
         {
           name: "Attendance",
           href: "/hr-payroll/attendance",
           permission: { module: "hrm", feature: "attendance", action: "view" },
+          group: "Time & Attendance",
         },
         {
           name: "Duty Roster",
           href: "/hr-payroll/roster",
           permission: { module: "hrm", feature: "roster", action: "view" },
+          group: "Time & Attendance",
         },
         {
           name: "Leave Management",
           href: "/hr-payroll/leave",
           permission: { module: "hrm", feature: "leave_applications", action: "view" },
+          group: "Time & Attendance",
         },
+
+        // 3. Payroll & Compensation
         {
           name: "Payroll Management",
           href: "/hr-payroll/payroll",
           permission: { module: "hrm", feature: "payroll_periods", action: "view" },
-        },
-        {
-          name: "Organization",
-          href: "/hr-payroll/organization",
-          permission: { module: "hrm", feature: "departments", action: "view" },
-        },
-        {
-          name: "Offer Letters",
-          href: "/hr-payroll/offer-letters",
-          permission: { module: "hrm", feature: "offer_letters", action: "view" },
-        },
-        {
-          name: "Appointment Letters",
-          href: "/hr-payroll/appointment-letters",
-          permission: { module: "hrm", feature: "appointment_letters", action: "view" },
+          group: "Payroll & Compensation",
         },
         {
           name: "Payroll Payslips",
           href: "/hr-payroll/payroll-records",
           permission: { module: "hrm", feature: "payroll_records", action: "view" },
+          group: "Payroll & Compensation",
         },
         {
           name: "Salary Certificates",
           href: "/hr-payroll/salary-certificates",
           permission: { module: "hrm", feature: "salary_certificates", action: "view" },
+          group: "Payroll & Compensation",
+        },
+
+        // 4. Letters & Onboarding
+        {
+          name: "Offer Letters",
+          href: "/hr-payroll/offer-letters",
+          permission: { module: "hrm", feature: "offer_letters", action: "view" },
+          group: "Letters & Onboarding",
+        },
+        {
+          name: "Appointment Letters",
+          href: "/hr-payroll/appointment-letters",
+          permission: { module: "hrm", feature: "appointment_letters", action: "view" },
+          group: "Letters & Onboarding",
         },
         {
           name: "Experience Letters",
           href: "/hr-payroll/experience-letters",
           permission: { module: "hrm", feature: "experience_letters", action: "view" },
+          group: "Letters & Onboarding",
         },
+
+        // 5. Talent & Performance
+        {
+          name: "Performance Appraisals",
+          href: "/hr-payroll/performance/appraisals",
+          permission: { module: "hrm", feature: "performance_appraisals", action: "view" },
+          group: "Talent & Performance",
+        },
+        {
+          name: "Goals & KPIs",
+          href: "/hr-payroll/performance/goals",
+          permission: { module: "hrm", feature: "performance_goals", action: "view" },
+          group: "Talent & Performance",
+        },
+        {
+          name: "Appraisal Cycles",
+          href: "/hr-payroll/performance/cycles",
+          permission: { module: "hrm", feature: "performance_cycles", action: "view" },
+          group: "Talent & Performance",
+        },
+
+        // 6. Lifecycle & Disciplinary
+        {
+          name: "Probation Desk",
+          href: "/hr-payroll/lifecycle/probation",
+          permission: { module: "hrm", feature: "probation_reviews", action: "view" },
+          group: "Lifecycle & Disciplinary",
+        },
+        {
+          name: "Career Movements",
+          href: "/hr-payroll/lifecycle/movements",
+          permission: { module: "hrm", feature: "career_movements", action: "view" },
+          group: "Lifecycle & Disciplinary",
+        },
+        {
+          name: "Disciplinary Actions",
+          href: "/hr-payroll/disciplinary",
+          permission: { module: "hrm", feature: "disciplinary_cases", action: "view" },
+          group: "Lifecycle & Disciplinary",
+        },
+        {
+          name: "Separation & Offboarding",
+          href: "/hr-payroll/separation",
+          permission: { module: "hrm", feature: "separations", action: "view" },
+          group: "Lifecycle & Disciplinary",
+        },
+      ],
+    },
+    {
+      name: "Travel & Expenses",
+      href: "/hr-payroll/travel-requests",
+      icon: Plane,
+      sectionKey: "travel",
+      module: "hrm",
+      children: [
         {
           name: "Travel Requests",
           href: "/hr-payroll/travel-requests",
@@ -225,45 +309,17 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/hr-payroll/expense-policies",
           permission: { module: "hrm", feature: "da_policies", action: "view" },
         },
+      ],
+    },
+    {
+      name: "Vehicle & Fleet",
+      href: "/fleet",
+      icon: Car,
+      sectionKey: "fleet",
+      children: [
         {
-          name: "Appraisal Cycles",
-          href: "/hr-payroll/performance/cycles",
-          permission: { module: "hrm", feature: "performance_cycles", action: "view" },
-        },
-        {
-          name: "Goals & KPIs",
-          href: "/hr-payroll/performance/goals",
-          permission: { module: "hrm", feature: "performance_goals", action: "view" },
-        },
-        {
-          name: "Performance Appraisals",
-          href: "/hr-payroll/performance/appraisals",
-          permission: { module: "hrm", feature: "performance_appraisals", action: "view" },
-        },
-        {
-          name: "Probation Desk",
-          href: "/hr-payroll/lifecycle/probation",
-          permission: { module: "hrm", feature: "probation_reviews", action: "view" },
-        },
-        {
-          name: "Career Movements",
-          href: "/hr-payroll/lifecycle/movements",
-          permission: { module: "hrm", feature: "career_movements", action: "view" },
-        },
-        {
-          name: "Disciplinary Actions",
-          href: "/hr-payroll/disciplinary",
-          permission: { module: "hrm", feature: "disciplinary_cases", action: "view" },
-        },
-        {
-          name: "Separation & Offboarding",
-          href: "/hr-payroll/separation",
-          permission: { module: "hrm", feature: "separations", action: "view" },
-        },
-        {
-          name: "Document Management",
-          href: "/hr-payroll/documents",
-          permission: { module: "hrm", feature: "Documents", action: "view" },
+          name: "Fleet Overview",
+          href: "/fleet",
         },
       ],
     },
@@ -568,24 +624,37 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
 
                   {isOpen && (
                     <div className="pl-9 pr-2 space-y-1">
-                      {item.children.map((sub) => {
-                        const isSubActive = pathname === sub.href;
-                        return (
-                          <Link
-                            key={sub.name}
-                            href={sub.href}
-                            onClick={onCloseMobile}
-                            className={cn(
-                              "block px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
-                              isSubActive
-                                ? "bg-indigo-600 text-white shadow-sm font-semibold"
-                                : "text-slate-400 hover:text-white hover:bg-slate-800"
-                            )}
-                          >
-                            {sub.name}
-                          </Link>
-                        );
-                      })}
+                      {(() => {
+                        let lastGroup: string | undefined = undefined;
+                        return item.children.map((sub) => {
+                          const isSubActive = pathname === sub.href;
+                          const showGroupHeader = Boolean(sub.group && sub.group !== lastGroup);
+                          if (sub.group) {
+                            lastGroup = sub.group;
+                          }
+                          return (
+                            <React.Fragment key={sub.name + sub.href}>
+                              {showGroupHeader && (
+                                <div className="pt-3 pb-1 px-2 text-[10px] font-bold tracking-wider uppercase text-slate-500 border-t border-slate-800/80 first:border-t-0 first:pt-1">
+                                  {sub.group}
+                                </div>
+                              )}
+                              <Link
+                                href={sub.href}
+                                onClick={onCloseMobile}
+                                className={cn(
+                                  "block px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                                  isSubActive
+                                    ? "bg-indigo-600 text-white shadow-sm font-semibold"
+                                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                                )}
+                              >
+                                {sub.name}
+                              </Link>
+                            </React.Fragment>
+                          );
+                        });
+                      })()}
                     </div>
                   )}
                 </div>
