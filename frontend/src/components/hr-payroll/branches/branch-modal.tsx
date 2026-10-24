@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { BranchOut, EmployeeOut } from "@/types";
 import { X, Building2, User, MapPin, Phone, Mail, Check, AlertCircle, Crown } from "lucide-react";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface BranchModalProps {
   isOpen: boolean;
@@ -220,21 +221,14 @@ export function BranchModal({
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">
               Branch Manager / Lead
             </label>
-            <div className="relative">
-              <select
-                value={managerEmployeeId}
-                onChange={(e) => setManagerEmployeeId(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 transition-all appearance-none bg-white"
-              >
-                <option value="">-- No Branch Manager Assigned --</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.full_name} ({emp.employee_id}) — {emp.job_title_name || "Staff"}
-                  </option>
-                ))}
-              </select>
-              <User className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
-            </div>
+            <SearchableEmployeeCombobox
+              employees={employees}
+              value={managerEmployeeId}
+              onChange={(empId) => setManagerEmployeeId(empId)}
+              placeholder="Search & select branch manager / lead..."
+              allowClear={true}
+              emptyUnassignedLabel="-- No Branch Manager Assigned --"
+            />
           </div>
 
           {/* Contact (Phone & Email) */}
