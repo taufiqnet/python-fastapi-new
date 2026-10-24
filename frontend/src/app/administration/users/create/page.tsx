@@ -15,6 +15,7 @@ import {
   UnlinkedEmployee,
   User,
 } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 import { PermissionsMatrix } from "@/components/administration/permissions-matrix";
 import { useToast } from "@/context/toast-context";
 import {
@@ -522,18 +523,14 @@ export default function CreateUserPage() {
                     Select Employee under {matchedBiz?.name_en || `Business #${businessId}`}:
                   </label>
                   <div className="relative">
-                    <select
+                    <SearchableEmployeeCombobox
+                      employees={unlinkedEmployees}
                       value={selectedEmployeeId}
-                      onChange={(e) => handleSelectEmployee(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                    >
-                      <option value="">-- Choose an employee ({unlinkedEmployees.length} available) --</option>
-                      {unlinkedEmployees.map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(empId) => handleSelectEmployee(empId)}
+                      placeholder={`-- Choose an employee (${unlinkedEmployees.length} available) --`}
+                      allowClear={true}
+                      emptyUnassignedLabel="-- No Employee Selected --"
+                    />
                   </div>
 
                   {/* Selected Employee Preview Box */}

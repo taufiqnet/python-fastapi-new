@@ -16,6 +16,7 @@ import {
   LinkedEmployeeSummary,
   UnlinkedEmployee,
 } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 import { PermissionsMatrix } from "@/components/administration/permissions-matrix";
 import { useToast } from "@/context/toast-context";
 import {
@@ -662,18 +663,16 @@ export default function UserEditPage({ params }: UserEditPageProps) {
                   Choose an unlinked employee from WBSOFT Technologies Ltd. (business_id = 1) to link with User #{userId}.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <select
-                    value={selectedEmployeeId === "unlink" ? "" : selectedEmployeeId}
-                    onChange={(e) => setSelectedEmployeeId(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition"
-                  >
-                    <option value="">-- Choose an Unlinked Employee to Link --</option>
-                    {unlinkedEmployees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.employee_id} - {emp.full_name} ({emp.department_name || "General"} • {emp.job_title_name || "Staff"})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex-1">
+                    <SearchableEmployeeCombobox
+                      employees={unlinkedEmployees}
+                      value={selectedEmployeeId === "unlink" ? "" : selectedEmployeeId}
+                      onChange={(id) => setSelectedEmployeeId(id)}
+                      placeholder="-- Choose an Unlinked Employee to Link --"
+                      allowClear={true}
+                      emptyUnassignedLabel="-- No Employee Selected --"
+                    />
+                  </div>
 
                   <button
                     type="button"

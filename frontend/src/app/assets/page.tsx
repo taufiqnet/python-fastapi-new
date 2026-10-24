@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { apiClient } from "@/lib/api-client";
 import { CompanyAsset, AssetCategory, AssetOverviewStats, EmployeeOut } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 import { useToast } from "@/context/toast-context";
 import {
   Laptop,
@@ -608,20 +609,14 @@ export default function AssetInventoryPage() {
 
               <form onSubmit={handleAssignAsset} className="space-y-3.5 mt-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 uppercase">Select Employee *</label>
-                  <select
-                    required
+                  <label className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Select Employee *</label>
+                  <SearchableEmployeeCombobox
+                    employees={employees}
                     value={assignEmployeeId}
-                    onChange={(e) => setAssignEmployeeId(e.target.value)}
-                    className="w-full mt-1 px-3 py-1.5 text-xs rounded-xl border border-slate-200 bg-white"
-                  >
-                    <option value="">Select Employee...</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.full_name} ({emp.employee_id || "No Code"})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(id) => setAssignEmployeeId(id)}
+                    placeholder="Search & select employee..."
+                    allowClear={false}
+                  />
                 </div>
 
                 <div>

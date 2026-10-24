@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import { DoctorProfileOut, EmployeeOut } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 import {
   X,
   Stethoscope,
@@ -311,18 +312,14 @@ export function DoctorModal({
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 Link to HR Employee Record (Optional)
               </label>
-              <select
+              <SearchableEmployeeCombobox
+                employees={employees || []}
                 value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)}
-                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
-              >
-                <option value="">None (Independent / External Consultant)</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.full_name} ({emp.employee_id})
-                  </option>
-                ))}
-              </select>
+                onChange={(id) => setEmployeeId(id)}
+                placeholder="Search & select employee..."
+                allowClear={true}
+                emptyUnassignedLabel="None (Independent / External Consultant)"
+              />
             </div>
           </div>
 
