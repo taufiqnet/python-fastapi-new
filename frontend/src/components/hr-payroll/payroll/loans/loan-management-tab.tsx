@@ -27,6 +27,7 @@ import {
   LoanRepaymentScheduleOut,
   EmployeeOut,
 } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface LoanManagementTabProps {
   currentBusinessId: number;
@@ -639,19 +640,13 @@ export function LoanManagementTab({ currentBusinessId }: LoanManagementTabProps)
                 <label className="font-semibold text-slate-700 block mb-1">
                   Beneficiary Employee *
                 </label>
-                <select
-                  required
+                <SearchableEmployeeCombobox
+                  employees={employees}
                   value={newLoanData.employee_id}
-                  onChange={(e) => setNewLoanData({ ...newLoanData, employee_id: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-800 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20"
-                >
-                  <option value="">Select Employee...</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name} ({emp.employee_id || "EMP"})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(empId) => setNewLoanData({ ...newLoanData, employee_id: empId })}
+                  placeholder="Search & select beneficiary employee..."
+                  allowClear={false}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">

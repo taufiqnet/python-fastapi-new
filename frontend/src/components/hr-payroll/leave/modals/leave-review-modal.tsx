@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { LeaveApplicationOut, LeaveTypeOut, EmployeeOut } from "@/types";
 import { X, CheckCircle2, XCircle, AlertCircle, FileText, Calendar, ExternalLink, ShieldAlert } from "lucide-react";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface LeaveReviewModalProps {
   isOpen: boolean;
@@ -168,18 +169,13 @@ export function LeaveReviewModal({
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               Reviewing Manager / Authority <span className="text-rose-500">*</span>
             </label>
-            <select
+            <SearchableEmployeeCombobox
+              employees={employees}
               value={reviewerId}
-              onChange={(e) => setReviewerId(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-white"
-            >
-              <option value="">-- Choose Reviewer --</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.full_name} ({emp.employee_id || "ID"}) - {emp.job_title_name || emp.job_title?.name || "Staff"}
-                </option>
-              ))}
-            </select>
+              onChange={(empId) => setReviewerId(empId)}
+              placeholder="Search & select reviewing manager..."
+              allowClear={false}
+            />
           </div>
 
           <div>

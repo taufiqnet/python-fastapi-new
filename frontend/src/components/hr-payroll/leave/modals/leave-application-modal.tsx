@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import { LeaveTypeOut, EmployeeOut, LeaveAllocationOut } from "@/types";
 import { X, Calendar, AlertCircle, CheckCircle2, FileText, Link as LinkIcon, Info } from "lucide-react";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface LeaveApplicationModalProps {
   isOpen: boolean;
@@ -171,19 +172,13 @@ export function LeaveApplicationModal({
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               Select Applicant Employee <span className="text-rose-500">*</span>
             </label>
-            <select
-              required
+            <SearchableEmployeeCombobox
+              employees={employees}
               value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-white transition-colors"
-            >
-              <option value="">-- Choose Employee --</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.full_name} ({emp.employee_id || "No ID"}) {emp.department_name ? `- ${emp.department_name}` : (emp.department?.name ? `- ${emp.department.name}` : "")}
-                </option>
-              ))}
-            </select>
+              onChange={(empId) => setEmployeeId(empId)}
+              placeholder="Search & select applicant employee..."
+              allowClear={false}
+            />
           </div>
 
           <div>

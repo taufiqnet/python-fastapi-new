@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { EmployeeOut, RosterExchangeCreatePayload } from "@/types";
 import { X, ArrowLeftRight, AlertCircle } from "lucide-react";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface RosterExchangeModalProps {
   isOpen: boolean;
@@ -98,17 +99,13 @@ export const RosterExchangeModal: React.FC<RosterExchangeModalProps> = ({
               <label className="block text-xs font-bold text-purple-900 mb-1">
                 Your Shift (Employee A)
               </label>
-              <select
+              <SearchableEmployeeCombobox
+                employees={employees}
                 value={requestingEmpId}
-                onChange={(e) => setRequestingEmpId(e.target.value)}
-                className="w-full px-2.5 py-2 bg-white border border-purple-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-purple-500"
-              >
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.full_name}
-                  </option>
-                ))}
-              </select>
+                onChange={(empId) => setRequestingEmpId(empId)}
+                placeholder="Select Employee A..."
+                allowClear={false}
+              />
               <label className="block text-[11px] font-semibold text-slate-600 mt-2 mb-1">
                 Duty Date
               </label>
@@ -125,17 +122,13 @@ export const RosterExchangeModal: React.FC<RosterExchangeModalProps> = ({
               <label className="block text-xs font-bold text-purple-900 mb-1">
                 Exchange Partner (Employee B)
               </label>
-              <select
+              <SearchableEmployeeCombobox
+                employees={employees}
                 value={targetEmpId}
-                onChange={(e) => setTargetEmpId(e.target.value)}
-                className="w-full px-2.5 py-2 bg-white border border-purple-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-purple-500"
-              >
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.full_name}
-                  </option>
-                ))}
-              </select>
+                onChange={(empId) => setTargetEmpId(empId)}
+                placeholder="Select Employee B..."
+                allowClear={false}
+              />
               <label className="block text-[11px] font-semibold text-slate-600 mt-2 mb-1">
                 Duty Date
               </label>

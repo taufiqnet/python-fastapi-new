@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   CreditCard,
 } from "lucide-react";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface LeaveEncashmentModalProps {
   isOpen: boolean;
@@ -205,17 +206,13 @@ export function LeaveEncashmentModal({
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Select Employee <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <SearchableEmployeeCombobox
+                  employees={employees}
                   value={employeeId}
-                  onChange={(e) => setEmployeeId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white"
-                >
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.full_name} ({emp.employee_id || "ID"}) - {emp.department_name || "General"}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(empId) => setEmployeeId(empId)}
+                  placeholder="Search & select employee..."
+                  allowClear={false}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -345,17 +342,13 @@ export function LeaveEncashmentModal({
                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
                   Reviewing Authority / Manager <span className="text-rose-500">*</span>
                 </label>
-                <select
+                <SearchableEmployeeCombobox
+                  employees={employees}
                   value={reviewerId}
-                  onChange={(e) => setReviewerId(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 bg-white"
-                >
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.full_name} ({emp.employee_id})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(empId) => setReviewerId(empId)}
+                  placeholder="Search & select reviewing manager..."
+                  allowClear={false}
+                />
               </div>
 
               <div>

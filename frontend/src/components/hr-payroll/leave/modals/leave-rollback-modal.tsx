@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { apiClient } from "@/lib/api-client";
 import { LeaveApplicationOut, LeaveTypeOut, EmployeeOut } from "@/types";
 import { X, RotateCcw, AlertCircle, ShieldAlert } from "lucide-react";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface LeaveRollbackModalProps {
   isOpen: boolean;
@@ -139,18 +140,13 @@ export function LeaveRollbackModal({
             <label className="block text-xs font-bold text-slate-700 mb-1.5">
               Authorized Authority / Manager <span className="text-rose-500">*</span>
             </label>
-            <select
+            <SearchableEmployeeCombobox
+              employees={employees}
               value={actorId}
-              onChange={(e) => setActorId(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-600 bg-white"
-            >
-              <option value="">-- Choose Manager --</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.full_name} ({emp.employee_id || "ID"})
-                </option>
-              ))}
-            </select>
+              onChange={(empId) => setActorId(empId)}
+              placeholder="Search & select authorized manager..."
+              allowClear={false}
+            />
           </div>
 
           {/* Reason Input */}

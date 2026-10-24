@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { apiClient } from "@/lib/api-client";
 import { LeaveAllocationOut, LeaveTypeOut, EmployeeOut } from "@/types";
 import { X, AlertCircle, CheckCircle2, Search, Sparkles } from "lucide-react";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface LeaveAllocationModalProps {
   isOpen: boolean;
@@ -276,33 +277,14 @@ export function LeaveAllocationModal({
               Select Employee <span className="text-rose-500">*</span>
             </label>
 
-            {!allocationToEdit && employees.length > 5 && (
-              <div className="relative mb-2">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Filter employee list..."
-                  value={empSearch}
-                  onChange={(e) => setEmpSearch(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
-                />
-              </div>
-            )}
-
-            <select
-              required
-              disabled={!!allocationToEdit}
+            <SearchableEmployeeCombobox
+              employees={employees}
               value={formData.employee_id}
-              onChange={(e) => handleEmployeeChange(e.target.value)}
-              className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 bg-white disabled:bg-slate-50 transition-colors"
-            >
-              <option value="">-- Choose Employee --</option>
-              {filteredEmployees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.full_name} ({emp.employee_id || "No ID"}) - {emp.department_name || emp.department?.name || "General"}
-                </option>
-              ))}
-            </select>
+              onChange={(empId) => handleEmployeeChange(empId)}
+              disabled={!!allocationToEdit}
+              placeholder="Search & select employee..."
+              allowClear={false}
+            />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

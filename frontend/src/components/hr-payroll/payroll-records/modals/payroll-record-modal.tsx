@@ -11,6 +11,7 @@ import {
 } from "@/types";
 import { X, DollarSign, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/context/toast-context";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface BusinessItem {
   id: number;
@@ -324,43 +325,19 @@ export function PayrollRecordModal({
           )}
 
           {/* Section: Period & Employee Target */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-            {isSuperuser && (
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Business <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={businessId}
-                  onChange={(e) => setBusinessId(Number(e.target.value))}
-                  className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  {businesses.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name_en}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Employee <span className="text-red-500">*</span>
               </label>
-              <select
+              <SearchableEmployeeCombobox
+                employees={employees}
                 value={employeeId}
-                onChange={(e) => handleEmployeeChange(e.target.value)}
+                onChange={(empId) => handleEmployeeChange(empId)}
                 disabled={isEdit}
-                className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
-              >
-                <option value="">Select Employee</option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.full_name} ({e.employee_id})
-                  </option>
-                ))}
-              </select>
+                placeholder="Search & select employee..."
+                allowClear={false}
+              />
             </div>
 
             <div>

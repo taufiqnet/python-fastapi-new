@@ -40,6 +40,7 @@ import {
 } from "@/types";
 import { apiClient } from "@/lib/api-client";
 import { useToast } from "@/context/toast-context";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface EmployeeFormProps {
   initialData?: EmployeeOut | null;
@@ -1268,18 +1269,14 @@ export function EmployeeForm({ initialData, isEdit = false }: EmployeeFormProps)
               <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                 Direct Reporting Manager (তত্ত্বাবধায়ক)
               </label>
-              <select
+              <SearchableEmployeeCombobox
+                employees={managerCandidates}
                 value={directManagerId}
-                onChange={(e) => setDirectManagerId(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
-              >
-                <option value="">No Reporting Manager (Self / Board)</option>
-                {managerCandidates.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.full_name} ({m.employee_id})
-                  </option>
-                ))}
-              </select>
+                onChange={(empId) => setDirectManagerId(empId)}
+                placeholder="Search & select direct reporting manager..."
+                allowClear={true}
+                emptyUnassignedLabel="No Reporting Manager (Self / Board)"
+              />
             </div>
 
             <div>
