@@ -356,6 +356,7 @@ class ProcurementService:
                 expiry_date=item_data.expiry_date,
             )
             db.add(grn_item)
+            db.flush()
 
             # --- INVENTORY RECEIVING INTEGRATION ---
             variant = po_item.variant
