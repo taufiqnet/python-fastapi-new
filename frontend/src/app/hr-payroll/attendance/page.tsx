@@ -23,6 +23,15 @@ import { AttendanceDetailModal } from "@/components/hr-payroll/attendance/modals
 import { AttendanceExportModal } from "@/components/hr-payroll/attendance/modals/attendance-export-modal";
 import { AttendanceImportModal } from "@/components/hr-payroll/attendance/modals/attendance-import-modal";
 
+// Extended Attendance Sub-tabs
+import { BiometricDevicesTab } from "@/components/hr-payroll/attendance/devices/biometric-devices-tab";
+import { RawAttendanceTab } from "@/components/hr-payroll/attendance/raw-logs/raw-attendance-tab";
+import { AttendanceRequestsTab } from "@/components/hr-payroll/attendance/regularizations/attendance-requests-tab";
+import { OutdoorDutyTab } from "@/components/hr-payroll/attendance/outdoor/outdoor-duty-tab";
+import { OvertimeTab } from "@/components/hr-payroll/attendance/overtime/overtime-tab";
+import { AttendanceProcessTab } from "@/components/hr-payroll/attendance/process/attendance-process-tab";
+import { MonthlyAttendanceSummaryTab } from "@/components/hr-payroll/attendance/summary/monthly-attendance-summary-tab";
+
 import {
   Clock,
   Plus,
@@ -33,6 +42,14 @@ import {
   RefreshCw,
   CheckCircle2,
   X,
+  CalendarDays,
+  Cpu,
+  Fingerprint,
+  FileCheck2,
+  Briefcase,
+  Timer,
+  ShieldCheck,
+  FileSpreadsheet,
 } from "lucide-react";
 
 interface BusinessItem {
@@ -71,6 +88,11 @@ export default function AttendancePage() {
 
   // Multi-Selection State (Superuser)
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  // Tab State
+  const [activeTab, setActiveTab] = useState<
+    "daily" | "devices" | "raw_logs" | "requests" | "outdoor" | "overtime" | "process" | "summary"
+  >("daily");
 
   // Modals State
   const [isLogModalOpen, setIsLogModalOpen] = useState<boolean>(false);
@@ -370,161 +392,244 @@ export default function AttendancePage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 flex items-center gap-1">
+              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-900 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> HR & Payroll
               </span>
             </div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Attendance Records
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Attendance & Time Tracking
             </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              Track employee daily attendance, punch timestamps, and work hours
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Daily logs, biometric device syncing, regularizations, outdoor duties, overtime, and monthly audit registers
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Superuser Bulk Operations */}
-            {isSuperuser && selectedIds.length > 0 && (
+          {activeTab === "daily" && (
+            <div className="flex flex-wrap items-center gap-2.5">
+              {/* Superuser Bulk Operations */}
+              {isSuperuser && selectedIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsBulkDeleting(true)}
+                  className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5 animate-in fade-in"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete Selected ({selectedIds.length})
+                </button>
+              )}
+
+              {isSuperuser && (
+                <button
+                  type="button"
+                  onClick={() => setIsFullWipeModalOpen(true)}
+                  className="px-3 py-2 rounded-xl bg-rose-900 hover:bg-rose-950 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
+                  title="System Admin: Wipe Attendance"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Wipe All
+                </button>
+              )}
+
+              {/* Import Excel */}
               <button
                 type="button"
-                onClick={() => setIsBulkDeleting(true)}
-                className="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5 animate-in fade-in"
+                onClick={() => setIsImportModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete Selected ({selectedIds.length})
+                <Upload className="w-3.5 h-3.5" />
+                Import Excel
               </button>
-            )}
 
-            {isSuperuser && (
+              {/* Export Excel */}
               <button
                 type="button"
-                onClick={() => setIsFullWipeModalOpen(true)}
-                className="px-3 py-2 rounded-xl bg-rose-900 hover:bg-rose-950 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
-                title="System Admin: Wipe Attendance"
+                onClick={() => setIsExportModalOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                Wipe All
+                <Download className="w-3.5 h-3.5" />
+                Export Excel
               </button>
-            )}
 
-            {/* Import Excel */}
-            <button
-              type="button"
-              onClick={() => setIsImportModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              Import Excel
-            </button>
-
-            {/* Export Excel */}
-            <button
-              type="button"
-              onClick={() => setIsExportModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export Excel
-            </button>
-
-            {/* Log Attendance Button */}
-            <button
-              type="button"
-              onClick={() => {
-                setEditingRecord(null);
-                setIsLogModalOpen(true);
-              }}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              Log Attendance
-            </button>
-          </div>
+              {/* Log Attendance Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingRecord(null);
+                  setIsLogModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                Log Attendance
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Metric Summary Cards */}
-        <AttendanceStatCards
-          totalCount={totalCount}
-          presentCount={presentCount}
-          absentCount={absentCount}
-          leaveCount={leaveCount}
-          lateHalfDayCount={lateHalfDayCount}
-          totalWorkHours={totalWorkHours}
-          totalOvertimeHours={totalOvertimeHours}
-        />
+        {/* Unified Tab Switcher */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-slate-200 dark:border-slate-800">
+          {[
+            { key: "daily", label: "Daily Logs", icon: CalendarDays },
+            { key: "devices", label: "Biometric Devices & Settings", icon: Cpu },
+            { key: "raw_logs", label: "Raw Logs", icon: Fingerprint },
+            { key: "requests", label: "Attendance Requests", icon: FileCheck2 },
+            { key: "outdoor", label: "Outdoor Duty", icon: Briefcase },
+            { key: "overtime", label: "Overtime (OT)", icon: Timer },
+            { key: "process", label: "Consolidation & Lock", icon: ShieldCheck },
+            { key: "summary", label: "Monthly Summary", icon: FileSpreadsheet },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`flex items-center gap-2 px-3.5 py-2.5 text-xs font-semibold rounded-xl transition-all whitespace-nowrap ${
+                  isActive
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/20"
+                    : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
 
-        {/* In-Place Non-Destructive Filter Bar */}
-        <AttendanceFilterBar
-          employees={employees}
-          businesses={businesses}
-          isSuperuser={isSuperuser}
-          selectedEmployee={selectedEmployee}
-          onSelectEmployee={handleSelectEmployee}
-          selectedBusiness={selectedBusiness}
-          onSelectBusiness={handleSelectBusiness}
-          startDate={startDate}
-          onStartDateChange={handleStartDateChange}
-          endDate={endDate}
-          onEndDateChange={handleEndDateChange}
-          statusFilter={statusFilter}
-          onStatusFilterChange={handleStatusFilterChange}
-          onResetFilters={handleResetFilters}
-          onExportClick={() => setIsExportModalOpen(true)}
-          isFetching={isFetching}
-        />
+        {/* Tab 1: Daily Logs */}
+        {activeTab === "daily" && (
+          <div className="space-y-6">
+            {/* Metric Summary Cards */}
+            <AttendanceStatCards
+              totalCount={totalCount}
+              presentCount={presentCount}
+              absentCount={absentCount}
+              leaveCount={leaveCount}
+              lateHalfDayCount={lateHalfDayCount}
+              totalWorkHours={totalWorkHours}
+              totalOvertimeHours={totalOvertimeHours}
+            />
 
-        {/* Error Alert */}
-        {error && (
-          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => fetchRecords(false)}
-              className="font-bold underline text-rose-800"
-            >
-              Retry
-            </button>
+            {/* In-Place Non-Destructive Filter Bar */}
+            <AttendanceFilterBar
+              employees={employees}
+              businesses={businesses}
+              isSuperuser={isSuperuser}
+              selectedEmployee={selectedEmployee}
+              onSelectEmployee={handleSelectEmployee}
+              selectedBusiness={selectedBusiness}
+              onSelectBusiness={handleSelectBusiness}
+              startDate={startDate}
+              onStartDateChange={handleStartDateChange}
+              endDate={endDate}
+              onEndDateChange={handleEndDateChange}
+              statusFilter={statusFilter}
+              onStatusFilterChange={handleStatusFilterChange}
+              onResetFilters={handleResetFilters}
+              onExportClick={() => setIsExportModalOpen(true)}
+              isFetching={isFetching}
+            />
+
+            {/* Error Alert */}
+            {error && (
+              <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{error}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fetchRecords(false)}
+                  className="font-bold underline text-rose-800"
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+
+            {/* Master Table with In-Place Non-Destructive Transitions */}
+            <AttendanceTable
+              records={records}
+              employeeMap={employeeMap}
+              businessMap={businessMap}
+              isSuperuser={isSuperuser}
+              selectedIds={selectedIds}
+              onToggleSelectAll={handleToggleSelectAll}
+              onToggleSelectRow={handleToggleSelectRow}
+              onViewDetail={(r) => {
+                setDetailRecord(r);
+                setIsDetailModalOpen(true);
+              }}
+              onEdit={(r) => {
+                setEditingRecord(r);
+                setIsLogModalOpen(true);
+              }}
+              onDelete={(r) => setRecordToDelete(r)}
+              initialLoading={initialLoading}
+              isFetching={isFetching}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              totalRecords={records.length}
+              onPageChange={(p) =>
+                startTransition(() => {
+                  setCurrentPage(p);
+                })
+              }
+              onPageSizeChange={(ps) =>
+                startTransition(() => {
+                  setPageSize(ps);
+                  setCurrentPage(1);
+                })
+              }
+            />
           </div>
         )}
 
-        {/* Master Table with In-Place Non-Destructive Transitions */}
-        <AttendanceTable
-          records={records}
-          employeeMap={employeeMap}
-          businessMap={businessMap}
-          isSuperuser={isSuperuser}
-          selectedIds={selectedIds}
-          onToggleSelectAll={handleToggleSelectAll}
-          onToggleSelectRow={handleToggleSelectRow}
-          onViewDetail={(r) => {
-            setDetailRecord(r);
-            setIsDetailModalOpen(true);
-          }}
-          onEdit={(r) => {
-            setEditingRecord(r);
-            setIsLogModalOpen(true);
-          }}
-          onDelete={(r) => setRecordToDelete(r)}
-          initialLoading={initialLoading}
-          isFetching={isFetching}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          totalRecords={records.length}
-          onPageChange={(p) =>
-            startTransition(() => {
-              setCurrentPage(p);
-            })
-          }
-          onPageSizeChange={(ps) =>
-            startTransition(() => {
-              setPageSize(ps);
-              setCurrentPage(1);
-            })
-          }
-        />
+        {/* Tab 2: Biometric Devices & Settings */}
+        {activeTab === "devices" && (
+          <BiometricDevicesTab currentBusinessId={currentBusinessId} />
+        )}
+
+        {/* Tab 3: Raw Device Logs */}
+        {activeTab === "raw_logs" && (
+          <RawAttendanceTab currentBusinessId={currentBusinessId} />
+        )}
+
+        {/* Tab 4: Regularization & Requests */}
+        {activeTab === "requests" && (
+          <AttendanceRequestsTab
+            currentBusinessId={currentBusinessId}
+            employees={employees}
+          />
+        )}
+
+        {/* Tab 5: Outdoor Duty & Client Visits */}
+        {activeTab === "outdoor" && (
+          <OutdoorDutyTab
+            currentBusinessId={currentBusinessId}
+            employees={employees}
+          />
+        )}
+
+        {/* Tab 6: Overtime Ledger & Approval */}
+        {activeTab === "overtime" && (
+          <OvertimeTab
+            currentBusinessId={currentBusinessId}
+            employees={employees}
+          />
+        )}
+
+        {/* Tab 7: Attendance Process Engine & Audit Lock */}
+        {activeTab === "process" && (
+          <AttendanceProcessTab currentBusinessId={currentBusinessId} />
+        )}
+
+        {/* Tab 8: Monthly Summary Register */}
+        {activeTab === "summary" && (
+          <MonthlyAttendanceSummaryTab currentBusinessId={currentBusinessId} />
+        )}
       </div>
 
       {/* Log / Edit Attendance Modal */}

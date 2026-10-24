@@ -837,8 +837,9 @@ export interface AttendanceRecord {
   id: string;
   business_id: number;
   employee_id: string;
-  employee_name?: string;
-  employee_code?: string;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
   date: string;
   status: AttendanceStatusEnum | string;
   check_in?: string | null;
@@ -847,7 +848,7 @@ export interface AttendanceRecord {
   overtime_hours: number;
   source: AttendanceSourceEnum | string;
   note?: string | null;
-  recorded_by_id?: string | null;
+  recorded_by_id?: string | number | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -3215,6 +3216,184 @@ export interface AssetHandoverItem {
   status: string;
   condition_notes?: string | null;
 }
+
+// ===========================================================================
+// Attendance & Time Tracking Types
+// ===========================================================================
+export type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day' | 'on_leave';
+export type AttendanceSource = 'manual' | 'biometric' | 'mobile_app' | 'web' | 'system';
+
+
+
+export interface AttendanceSettings {
+  id: string;
+  business_id: number;
+  enable_biometric_device: boolean;
+  auto_sync_device_logs: boolean;
+  sync_interval_minutes: number;
+  grace_period_minutes: number;
+  half_day_late_minutes: number;
+  standard_daily_work_hours: number;
+  minimum_work_hours_half_day: number;
+  require_ot_pre_approval: boolean;
+  require_attendance_approval_before_payroll: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BiometricDevice {
+  id: string;
+  business_id: number;
+  device_name: string;
+  device_brand: 'zkteco' | 'hikvision' | 'anviz' | 'realtime' | 'generic_webhook';
+  device_type: 'fingerprint' | 'face_recognition' | 'rfid_card' | 'hybrid';
+  ip_address: string;
+  port: number;
+  comm_key?: string | null;
+  serial_number?: string | null;
+  mac_address?: string | null;
+  branch_id?: string | null;
+  branch_name?: string | null;
+  status: 'online' | 'offline' | 'disabled';
+  last_heartbeat_at?: string | null;
+  last_synced_at?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RawAttendanceLog {
+  id: string;
+  business_id: number;
+  device_id?: string | null;
+  biometric_user_id: string;
+  employee_id?: string | null;
+  punch_time: string;
+  punch_state: 'check_in' | 'check_out' | 'break_out' | 'break_in' | 'auto';
+  verification_type: 'fingerprint' | 'face' | 'rfid' | 'password';
+  device_ip?: string | null;
+  is_processed: boolean;
+  processed_at?: string | null;
+  error_message?: string | null;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  device_name?: string | null;
+  created_at: string;
+}
+
+export interface AttendanceRegularization {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  attendance_date: string;
+  request_type: 'missed_in' | 'missed_out' | 'both_punches' | 'late_excuse' | 'work_from_home';
+  requested_check_in?: string | null;
+  requested_check_out?: string | null;
+  reason: string;
+  supporting_doc_url?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by_id?: number | null;
+  reviewed_at?: string | null;
+  review_remarks?: string | null;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
+  reviewer_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OutdoorDutyApplication {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  start_date: string;
+  end_date: string;
+  is_full_day: boolean;
+  visit_type: 'client_meeting' | 'field_work' | 'customer_site' | 'training_seminar' | 'government_office' | 'other';
+  destination_or_client: string;
+  purpose: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewed_by_id?: number | null;
+  reviewed_at?: string | null;
+  review_remarks?: string | null;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
+  reviewer_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OvertimeApplication {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  ot_date: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  claimed_hours: number;
+  approved_hours: number;
+  purpose: string;
+  project_name_or_task?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  approved_by_id?: number | null;
+  approved_at?: string | null;
+  manager_remarks?: string | null;
+  employee_name?: string | null;
+  employee_code?: string | null;
+  department_name?: string | null;
+  approver_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttendancePeriodApproval {
+  id: string;
+  business_id: number;
+  year: number;
+  month: number;
+  start_date: string;
+  end_date: string;
+  total_employees: number;
+  present_days_total: number;
+  absent_days_total: number;
+  leave_days_total: number;
+  ot_hours_total: number;
+  status: 'draft' | 'under_review' | 'approved' | 'locked';
+  approved_by_id?: number | null;
+  approved_at?: string | null;
+  comments?: string | null;
+  approver_name?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MonthlyAttendanceSummaryItem {
+  employee_id: string;
+  employee_code: string;
+  employee_name: string;
+  department_name?: string | null;
+  job_title?: string | null;
+  total_days: number;
+  present_days: number;
+  late_days: number;
+  half_days: number;
+  absent_days: number;
+  leave_days: number;
+  outdoor_duty_days: number;
+  total_work_hours: number;
+  overtime_hours: number;
+}
+
+export interface MonthlyAttendanceSummary {
+  business_id: number;
+  year: number;
+  month: number;
+  total_employees: number;
+  items: MonthlyAttendanceSummaryItem[];
+}
+
 
 
 

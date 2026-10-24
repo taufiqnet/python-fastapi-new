@@ -87,6 +87,11 @@ SYSTEM_MODULES = {
                 "category": "Attendance & Leave",
                 "features": [
                     ("attendance", "Attendance"),
+                    ("biometric_devices", "Biometric Devices"),
+                    ("attendance_regularizations", "Attendance Regularizations"),
+                    ("outdoor_duties", "Outdoor Duty Applications"),
+                    ("overtime_applications", "Overtime Management"),
+                    ("attendance_approvals", "Attendance Period Approvals"),
                     ("roster", "Duty Roster"),
                     ("leave_types", "Leave Types"),
                     ("leave_allocations", "Leave Allocations"),

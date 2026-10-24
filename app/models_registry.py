@@ -111,6 +111,16 @@ from app.modules.hr_payroll.leave.models import (  # noqa: F401
     LeaveEncashment,
     LeaveType,
 )
+from app.modules.hr_payroll.attendance.models import (  # noqa: F401
+    Attendance,
+    AttendancePeriodApproval,
+    AttendanceRegularization,
+    AttendanceSettings,
+    BiometricDevice,
+    OutdoorDutyApplication,
+    OvertimeApplication,
+    RawAttendanceLog,
+)
 from app.modules.hr_payroll.notice_board.models import Notice, NoticeReadReceipt  # noqa: F401
 from app.modules.hr_payroll.organization.models import (  # noqa: F401
     Branch,
