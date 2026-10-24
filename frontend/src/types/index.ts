@@ -3670,6 +3670,147 @@ export interface SignatureVerification {
   verification_message: string;
 }
 
+// ============================================================================
+// VEHICLE & FLEET MANAGEMENT (VMS)
+// ============================================================================
+export type VehicleType =
+  | 'sedan'
+  | 'suv'
+  | 'microbus'
+  | 'pickup'
+  | 'covered_van'
+  | 'prime_mover'
+  | 'heavy_truck'
+  | 'motorcycle'
+  | 'cng_auto'
+  | 'electric_van'
+  | 'ambulance'
+  | 'bus';
+
+export type VehicleFuelType =
+  | 'octane'
+  | 'diesel'
+  | 'petrol'
+  | 'cng'
+  | 'lpg'
+  | 'hybrid_octane'
+  | 'electric';
+
+export type VehicleStatus =
+  | 'available'
+  | 'on_trip'
+  | 'under_maintenance'
+  | 'out_of_service'
+  | 'decommissioned';
+
+export type DriverLicenseGrade =
+  | 'light'
+  | 'medium'
+  | 'heavy'
+  | 'motorcycle'
+  | 'psv';
+
+export type DriverStatus =
+  | 'active'
+  | 'on_duty'
+  | 'on_leave'
+  | 'suspended'
+  | 'terminated';
+
+export interface DriverMini {
+  id: string;
+  full_name: string;
+  phone: string;
+  license_number: string;
+  status: DriverStatus;
+}
+
+export interface Vehicle {
+  id: string;
+  business_id: number;
+  vehicle_number: string;
+  vehicle_type: VehicleType;
+  brand_make: string;
+  model_name: string;
+  model_year?: number | null;
+  chassis_number?: string | null;
+  engine_number?: string | null;
+  color?: string | null;
+  seating_capacity: number;
+  payload_capacity_kg?: number | null;
+  fuel_type: VehicleFuelType;
+  cng_cylinder_capacity_liters?: number | null;
+  cng_last_test_date?: string | null;
+  cng_test_expiry_date?: string | null;
+  current_odometer_km: number;
+  ownership_type: string;
+  status: VehicleStatus;
+  assigned_driver_id?: string | null;
+  assigned_driver?: DriverMini | null;
+  default_depot?: string | null;
+  brta_fitness_expiry_date?: string | null;
+  brta_tax_token_expiry_date?: string | null;
+  brta_route_permit_expiry_date?: string | null;
+  insurance_policy_number?: string | null;
+  insurance_company?: string | null;
+  insurance_expiry_date?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Driver {
+  id: string;
+  business_id: number;
+  employee_id?: string | null;
+  full_name: string;
+  phone: string;
+  emergency_phone?: string | null;
+  nid_number?: string | null;
+  license_number: string;
+  license_grade: DriverLicenseGrade;
+  license_expiry_date: string;
+  blood_group?: string | null;
+  joining_date?: string | null;
+  status: DriverStatus;
+  safety_score: number;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpiryAlertItem {
+  category: 'brta_fitness' | 'brta_tax_token' | 'cng_test' | 'insurance' | 'driver_license' | string;
+  entity_id: string;
+  entity_name: string;
+  identifier: string;
+  expiry_date: string;
+  days_remaining: number;
+  status: 'expired' | 'urgent' | 'warning';
+}
+
+export interface ExpiryAlertsReport {
+  total_alerts: number;
+  expired_count: number;
+  expiring_soon_count: number;
+  alerts: ExpiryAlertItem[];
+}
+
+export interface FleetOverviewStats {
+  total_vehicles: number;
+  available_vehicles: number;
+  on_trip_vehicles: number;
+  in_maintenance_vehicles: number;
+  total_drivers: number;
+  active_drivers: number;
+  active_trips: number;
+  pending_requisitions: number;
+  expiring_documents_count: number;
+  monthly_fuel_cost_bdt: number;
+  monthly_maintenance_cost_bdt: number;
+  total_fleet_odometer_km: number;
+}
+
 
 
 

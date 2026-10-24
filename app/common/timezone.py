@@ -3,11 +3,14 @@ app/common/timezone.py
 Centralized timezone & datetime utilities for Bangladesh Standard Time (BST)
 and ISO UTC compliance across ProERP SaaS.
 """
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 # Bangladesh Standard Time is UTC+6:00 with no Daylight Saving Time
-BANGLADESH_TZ = ZoneInfo("Asia/Dhaka")
+try:
+    BANGLADESH_TZ = ZoneInfo("Asia/Dhaka")
+except Exception:
+    BANGLADESH_TZ = timezone(timedelta(hours=6), name="Asia/Dhaka")
 UTC_TZ = timezone.utc
 
 

@@ -242,3 +242,15 @@ from app.modules.hr_payroll.lifecycle.models import (  # noqa: F401
     ProbationReview,
     ShowCauseNotice,
 )
+from app.modules.vehicles.models import (  # noqa: F401
+    Driver,
+    FuelLog,
+    IncidentReport,
+    MaintenanceSchedule,
+    TelematicsEvent,
+    TireLog,
+    TripLog,
+    Vehicle,
+    VehicleRequisition,
+    WorkOrder,
+)

@@ -109,6 +109,7 @@ from app.modules.hr_payroll.roster.router import router as roster_router
 from app.modules.hr_payroll.portal.router import router as portal_router
 from app.modules.healthcare.router import router as healthcare_router
 from app.modules.assets.router import router as assets_router
+from app.modules.vehicles.router import router as vehicles_router
 from app.modules.travel_expenses.router import router as travel_expenses_router
 from app.modules.hr_payroll.performance.router import router as performance_router
 from app.modules.hr_payroll.lifecycle.router import router as lifecycle_router
@@ -448,6 +449,10 @@ app.include_router(healthcare_router)
 # asset management router
 app.include_router(assets_router, prefix="/api/v1")
 app.include_router(assets_router)
+
+# vehicle & fleet management router
+app.include_router(vehicles_router, prefix="/api/v1")
+app.include_router(vehicles_router)
 
 # travel & expense router
 app.include_router(travel_expenses_router, prefix="/api/v1")
