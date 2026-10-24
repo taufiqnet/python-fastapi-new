@@ -691,7 +691,7 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
             email=test_user_email,
             password_hash=hash_password("123456"),
             business_id=wbsoft.id,
-            is_superuser=False,
+            is_superuser=True,
             is_active=True,
             is_verified=True,
         )
@@ -701,7 +701,7 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         test_user.username = test_user_email
         test_user.password_hash = hash_password("123456")
         test_user.business_id = wbsoft.id
-        test_user.is_superuser = False
+        test_user.is_superuser = True
         test_user.is_active = True
         test_user.is_verified = True
 

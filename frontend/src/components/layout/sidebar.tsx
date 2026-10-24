@@ -446,6 +446,11 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/administration/backups",
           superuserOnly: true,
         },
+        {
+          name: "Demo & Seed Data",
+          href: "/administration/seed-data",
+          superuserOnly: true,
+        },
       ],
     },
     {

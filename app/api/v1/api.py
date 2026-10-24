@@ -55,6 +55,7 @@ from app.modules.vehicles.router import router as vehicles_router
 # System & Core API Routers
 from app.api.v1.endpoints.sync import router as sync_router
 from app.modules.system_backups.router import router as system_backups_router
+from app.modules.system_seed.router import router as system_seed_router
 from app.routers import ai_chat, auth, business, tasks
 
 api_v1_router = APIRouter()
@@ -108,6 +109,7 @@ api_v1_router.include_router(vehicles_router)
 # --- 4. System & Core Endpoints ---
 api_v1_router.include_router(sync_router)
 api_v1_router.include_router(system_backups_router)
+api_v1_router.include_router(system_seed_router)
 api_v1_router.include_router(auth.router)
 api_v1_router.include_router(ai_chat.router)
 api_v1_router.include_router(business.router)

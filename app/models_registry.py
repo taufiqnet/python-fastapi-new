@@ -255,3 +255,4 @@ from app.modules.vehicles.models import (  # noqa: F401
     WorkOrder,
 )
 from app.modules.system_backups.models import SystemBackup  # noqa: F401
+from app.modules.system_seed.models import SystemSeedBatch, SystemSeedRecord  # noqa: F401
