@@ -705,10 +705,17 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         test_user.is_active = True
         test_user.is_verified = True
 
-    # Assign test@test.com to HR Basic Tier with 0 direct permissions for pure role inheritance
-    test_user.roles.clear()
-    if hr_basic_role and hr_basic_role not in test_user.roles:
-        test_user.roles.append(hr_basic_role)
+    # Assign test@test.com to HR Enterprise Tier by default and preserve assigned roles
+    target_role = hr_enterprise_role or hr_basic_role
+    if not test_user.roles:
+        if target_role:
+            test_user.roles.append(target_role)
+    else:
+        # If user was on hr_basic, ensure they have hr_enterprise privileges
+        if any(r.name == "hr_basic" for r in test_user.roles) and not any(r.name == "hr_enterprise" for r in test_user.roles):
+            if hr_enterprise_role:
+                test_user.roles.clear()
+                test_user.roles.append(hr_enterprise_role)
 
     # Clean direct permissions to ensure pure role-based and subscription-based access control
     test_user.direct_permissions = []
