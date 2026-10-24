@@ -217,24 +217,6 @@ export function AppointmentLetterModal({
             </div>
           )}
 
-          {isSuperuser && (
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Target Business <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={businessId}
-                onChange={(e) => setBusinessId(Number(e.target.value))}
-                className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {businesses.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name_en}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

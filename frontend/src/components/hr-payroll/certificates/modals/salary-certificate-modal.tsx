@@ -12,6 +12,7 @@ import {
 } from "@/types";
 import { X, Award, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/context/toast-context";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface BusinessItem {
   id: number;
@@ -226,43 +227,19 @@ export function SalaryCertificateModal({
             </div>
           )}
 
-          {isSuperuser && (
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Target Business <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={businessId}
-                onChange={(e) => setBusinessId(Number(e.target.value))}
-                className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {businesses.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name_en}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
                 Employee <span className="text-red-500">*</span>
               </label>
-              <select
+              <SearchableEmployeeCombobox
+                employees={employees}
                 value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)}
+                onChange={(empId) => setEmployeeId(empId)}
                 disabled={isEdit}
-                className="w-full text-xs rounded-xl border border-slate-200 p-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-100"
-              >
-                <option value="">Select Employee</option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.full_name} ({e.employee_id})
-                  </option>
-                ))}
-              </select>
+                placeholder="Search & select employee..."
+                allowClear={false}
+              />
             </div>
 
             <div>
