@@ -29,6 +29,8 @@ import {
   SeparationType,
   SeparationStatus,
 } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
+
 
 interface SeparationTabProps {
   currentBusinessId: number;
@@ -423,19 +425,13 @@ export function SeparationTab({ currentBusinessId, onNavigateTab }: SeparationTa
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
                   Employee *
                 </label>
-                <select
-                  required
+                <SearchableEmployeeCombobox
+                  employees={employees}
                   value={createForm.employee_id}
-                  onChange={(e) => setCreateForm({ ...createForm, employee_id: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                >
-                  <option value="">Select Employee</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.first_name} {emp.last_name || ""} ({emp.employee_id}) - {emp.department_name || "Staff"}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(empId) => setCreateForm({ ...createForm, employee_id: empId })}
+                  placeholder="Search & select separating employee..."
+                  allowClear={false}
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

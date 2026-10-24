@@ -12,8 +12,20 @@ import {
   Building,
 } from "lucide-react";
 
+export interface SearchableEmployeeItem {
+  id: string;
+  employee_id?: string | null;
+  full_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  work_email?: string | null;
+  job_title_name?: string | null;
+  department_name?: string | null;
+  photo_url?: string | null;
+}
+
 export interface SearchableEmployeeComboboxProps {
-  employees: EmployeeOut[];
+  employees: (EmployeeOut | SearchableEmployeeItem | any)[];
   value?: string | null;
   onChange: (employeeId: string) => void;
   placeholder?: string;

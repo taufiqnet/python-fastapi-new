@@ -9,6 +9,7 @@ import {
   EmployeeDocument,
   EmployeeOut,
 } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 import {
   FolderArchive,
   Upload,
@@ -38,7 +39,6 @@ export function DossierTab({ currentBusinessId, employees }: DossierTabProps) {
   const [isPending, startTransition] = useTransition();
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("");
-  const [employeeSearch, setEmployeeSearch] = useState<string>("");
   const [categories, setCategories] = useState<DocumentCategory[]>([]);
   const [summary, setSummary] = useState<DossierSummary | null>(null);
 
@@ -210,14 +210,6 @@ export function DossierTab({ currentBusinessId, employees }: DossierTabProps) {
     }
   };
 
-  const filteredEmployees = employees.filter((e) => {
-    if (!employeeSearch.trim()) return true;
-    const q = employeeSearch.toLowerCase();
-    return (
-      e.full_name.toLowerCase().includes(q) ||
-      (e.employee_id && e.employee_id.toLowerCase().includes(q))
-    );
-  });
 
   const getStatusBadge = (status: EmployeeDocument["verification_status"]) => {
     switch (status) {
@@ -250,26 +242,21 @@ export function DossierTab({ currentBusinessId, employees }: DossierTabProps) {
           <div className="p-2.5 bg-primary-50 dark:bg-primary-950/50 rounded-xl text-primary-600 dark:text-primary-400">
             <FolderArchive className="w-6 h-6" />
           </div>
-          <div className="w-full sm:w-auto">
+          <div className="w-full sm:w-80">
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
               Select Employee e-Dossier
             </label>
-            <select
+            <SearchableEmployeeCombobox
+              employees={employees}
               value={selectedEmployeeId}
-              onChange={(e) => {
-                const id = e.target.value;
+              onChange={(id) => {
                 startTransition(() => {
                   setSelectedEmployeeId(id);
                 });
               }}
-              className="w-full sm:w-72 px-3 py-2 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500 shadow-xs"
-            >
-              {filteredEmployees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.full_name} ({emp.employee_id || "No ID"})
-                </option>
-              ))}
-            </select>
+              placeholder="Search & select employee e-dossier..."
+              allowClear={false}
+            />
           </div>
         </div>
 

@@ -8,6 +8,7 @@ import {
   DocumentCategory,
   EmployeeOut,
 } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 import {
   FileCode,
   Plus,
@@ -564,25 +565,22 @@ export function TemplatesTab({ currentBusinessId, employees }: TemplatesTabProps
               </button>
             </div>
 
-            <div className="py-3 flex items-center gap-3 border-b border-slate-100 dark:border-slate-700">
-              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+            <div className="py-3 flex flex-wrap items-center gap-3 border-b border-slate-100 dark:border-slate-700">
+              <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 shrink-0">
                 Test with Employee:
               </label>
-              <select
-                value={previewEmpId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setPreviewEmpId(id);
-                  handleOpenPreview(previewTemplate, id);
-                }}
-                className="text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-slate-800 dark:text-slate-200"
-              >
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.first_name} {emp.last_name} ({emp.employee_id})
-                  </option>
-                ))}
-              </select>
+              <div className="w-64 sm:w-72">
+                <SearchableEmployeeCombobox
+                  employees={employees}
+                  value={previewEmpId}
+                  onChange={(id) => {
+                    setPreviewEmpId(id);
+                    handleOpenPreview(previewTemplate, id);
+                  }}
+                  placeholder="Select test employee..."
+                  allowClear={false}
+                />
+              </div>
 
               <div className="ml-auto flex items-center gap-1 text-[11px] text-slate-400">
                 <span>Tokens replaced:</span>

@@ -21,6 +21,7 @@ import {
 import { apiClient } from "@/lib/api-client";
 import { useToast } from "@/context/toast-context";
 import { AssetHandoverItem, EmployeeOut } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 
 interface AssetHandoverTabProps {
   currentBusinessId: number;
@@ -143,17 +144,14 @@ export function AssetHandoverTab({ currentBusinessId }: AssetHandoverTabProps) {
             <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
               Select Separating / Offboarding Employee
             </label>
-            <select
+            <SearchableEmployeeCombobox
+              employees={employees}
               value={selectedEmployeeId}
-              onChange={(e) => setSelectedEmployeeId(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-medium"
-            >
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.first_name} {emp.last_name || ""} ({emp.employee_id}) - {emp.department_name || "Staff"}
-                </option>
-              ))}
-            </select>
+              onChange={(empId) => setSelectedEmployeeId(empId)}
+              placeholder="Search & select separating employee..."
+              allowClear={true}
+              emptyUnassignedLabel="-- Select Separating Employee --"
+            />
           </div>
         </div>
 

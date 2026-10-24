@@ -5,6 +5,7 @@ import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { apiClient } from "@/lib/api-client";
 import { DisciplinaryCase, EmployeeOut, LifecycleStats } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 import { useToast } from "@/context/toast-context";
 import {
   ShieldAlert,
@@ -448,19 +449,13 @@ export default function DisciplinaryPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Employee *</label>
-                    <select
-                      required
+                    <SearchableEmployeeCombobox
+                      employees={employees}
                       value={formEmployeeId}
-                      onChange={(e) => setFormEmployeeId(e.target.value)}
-                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200"
-                    >
-                      <option value="">Select Employee...</option>
-                      {employees.map((emp) => (
-                        <option key={emp.id} value={emp.id}>
-                          {emp.first_name} {emp.last_name || ""} ({emp.employee_id})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(id) => setFormEmployeeId(id)}
+                      placeholder="Search & select employee..."
+                      allowClear={false}
+                    />
                   </div>
 
                   <div>

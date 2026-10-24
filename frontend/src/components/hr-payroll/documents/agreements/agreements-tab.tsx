@@ -4,6 +4,7 @@ import React, { useState, useEffect, useTransition, useCallback } from "react";
 import { apiClient } from "@/lib/api-client";
 import { useToast } from "@/context/toast-context";
 import { EmployeeAgreement, EmployeeOut } from "@/types";
+import { SearchableEmployeeCombobox } from "@/components/common/searchable-employee-combobox";
 import {
   FileSignature,
   Plus,
@@ -454,19 +455,13 @@ export function AgreementsTab({ currentBusinessId, employees }: AgreementsTabPro
                 <label className="block text-xs font-semibold uppercase text-slate-500 mb-1">
                   Employee <span className="text-rose-500">*</span>
                 </label>
-                <select
-                  required
+                <SearchableEmployeeCombobox
+                  employees={employees}
                   value={createForm.employee_id}
-                  onChange={(e) => setCreateForm({ ...createForm, employee_id: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="">Select Employee</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.full_name} ({emp.employee_id || "No ID"})
-                    </option>
-                  ))}
-                </select>
+                  onChange={(empId) => setCreateForm({ ...createForm, employee_id: empId })}
+                  placeholder="Search & select employee..."
+                  allowClear={false}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
