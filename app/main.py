@@ -72,59 +72,14 @@ Jinja2Templates.TemplateResponse = _custom_template_response
 # Registers every module's models with Base.metadata in one place
 from app import models_registry  # noqa: F401
 
-# Routers
-from app.modules.ecommerce.brands.router import router as brands_router
-from app.modules.ecommerce.cart.router import router as cart_router
-from app.modules.ecommerce.categories.router import router as categories_router
-from app.modules.ecommerce.customer.router import router as customers_router
-from app.modules.ecommerce.inventory.router import router as inventory_router
-from app.modules.ecommerce.notifications.router import router as notifications_router
-from app.modules.ecommerce.orders.router import router as orders_router
-from app.modules.ecommerce.pos.router import router as pos_router
-from app.modules.ecommerce.procurement.router import router as procurement_router
-from app.modules.ecommerce.payments.router import router as payments_router
-from app.modules.ecommerce.pricing.router import router as pricing_router
-from app.modules.ecommerce.products.router import router as products_router
-from app.modules.ecommerce.reviews.router import router as reviews_router
-from app.modules.ecommerce.search.router import router as search_router
-from app.modules.ecommerce.sellers.router import router as sellers_router
-from app.modules.ecommerce.shipping.router import router as shipping_router
-from app.modules.ecommerce.reports.router import router as reports_router
-from app.modules.finance.router import router as finance_router
-from app.modules.hr_payroll.organization.router import (
-    router as organization_router,
-)
-from app.modules.hr_payroll.employees.router import router as employees_router
-from app.modules.hr_payroll.leave.router import router as leave_router
-from app.modules.hr_payroll.attendance.router import router as attendance_router
-from app.modules.hr_payroll.compensation.router import router as compensation_router
-from app.modules.hr_payroll.payroll.router import router as payroll_router
-from app.modules.hr_payroll.certificates.router import router as certificates_router
-from app.modules.hr_payroll.offer_letters.router import router as offer_letters_router
-from app.modules.hr_payroll.experience_letters.router import router as experience_letters_router
-from app.modules.hr_payroll.appointments.router import router as appointments_router
-from app.modules.hr_payroll.notice_board.router import router as notices_router
-from app.modules.hr_payroll.recruitment.router import router as recruitment_router
-from app.modules.hr_payroll.roster.router import router as roster_router
-from app.modules.hr_payroll.portal.router import router as portal_router
-from app.modules.healthcare.router import router as healthcare_router
-from app.modules.assets.router import router as assets_router
-from app.modules.vehicles.router import router as vehicles_router
-from app.modules.travel_expenses.router import router as travel_expenses_router
-from app.modules.hr_payroll.performance.router import router as performance_router
-from app.modules.hr_payroll.lifecycle.router import router as lifecycle_router
-from app.modules.hr_payroll.separation.router import router as separation_router
-from app.modules.hr_payroll.documents.router import router as documents_router
-from app.api.v1.endpoints.sync import router as sync_router
+# Central Unified REST API Router
+from app.api.v1.api import api_v1_router
 
 from app.routers import (
-    ai_chat,
     appointment_views,
     attendance_views,
-    auth,
     report_views,
     brand_views,
-    business,
     business_views,
     catalog_views,
     category_views,
@@ -156,7 +111,6 @@ from app.routers import (
     subscription_plan_views,
     user_views,
     mcp_views,
-    tasks,
 )
 
 logger = logging.getLogger(__name__)
@@ -366,8 +320,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
-app.include_router(ai_chat.router)
+# Jinja2 Server-Rendered HTML Views (Kept at root)
 app.include_router(business_views.router)
 app.include_router(category_views.router)
 app.include_router(customer_views.router)
@@ -397,84 +350,18 @@ app.include_router(offer_letter_views.router)
 app.include_router(experience_letter_views.router)
 app.include_router(appointment_views.router)
 app.include_router(notice_views.router)
+app.include_router(notification_views.router)
 app.include_router(recruitment_views.router)
 app.include_router(role_views.router)
 app.include_router(subscription_plan_views.router)
 app.include_router(user_views.router)
 app.include_router(mcp_views.router)
-app.include_router(business.router)
 
-# ecommerce module router
-app.include_router(brands_router)
-app.include_router(categories_router)
-app.include_router(customers_router)
-app.include_router(products_router)
-app.include_router(inventory_router)
-app.include_router(pricing_router)
-app.include_router(cart_router)
-app.include_router(notification_views.router)
-app.include_router(orders_router)
-app.include_router(pos_router)
-app.include_router(procurement_router)
-app.include_router(payments_router)
-app.include_router(shipping_router)
-app.include_router(reviews_router)
-app.include_router(sellers_router)
-app.include_router(notifications_router)
-app.include_router(search_router)
-app.include_router(reports_router)
-app.include_router(finance_router)
-
-# hr payroll router
-app.include_router(organization_router)
-app.include_router(employees_router)
-app.include_router(leave_router)
-app.include_router(attendance_router)
-app.include_router(compensation_router)
-app.include_router(payroll_router)
-app.include_router(certificates_router)
-app.include_router(offer_letters_router)
-app.include_router(experience_letters_router)
-app.include_router(appointments_router)
-app.include_router(notices_router)
-app.include_router(recruitment_router)
-app.include_router(roster_router)
-app.include_router(portal_router, prefix="/api/v1")
-app.include_router(portal_router)
-
-# healthcare router
-app.include_router(healthcare_router, prefix="/api/v1")
-app.include_router(healthcare_router)
-
-# asset management router
-app.include_router(assets_router, prefix="/api/v1")
-app.include_router(assets_router)
-
-# vehicle & fleet management router
-app.include_router(vehicles_router, prefix="/api/v1")
-app.include_router(vehicles_router)
-
-# travel & expense router
-app.include_router(travel_expenses_router, prefix="/api/v1")
-app.include_router(travel_expenses_router)
-
-# performance & career lifecycle routers
-app.include_router(performance_router, prefix="/api/v1")
-app.include_router(performance_router)
-app.include_router(lifecycle_router, prefix="/api/v1")
-app.include_router(lifecycle_router)
-
-# separation & offboarding router
-app.include_router(separation_router, prefix="/api/v1")
-app.include_router(separation_router)
-
-# employee document management router
-app.include_router(documents_router, prefix="/api/v1")
-app.include_router(documents_router)
-
-# project management router
-app.include_router(tasks.router)
-app.include_router(sync_router)
+# ===========================================================================
+# Central Unified REST API (Dual-Mount: Standard /api/v1 and legacy root /)
+# ===========================================================================
+app.include_router(api_v1_router, prefix="/api/v1")
+app.include_router(api_v1_router)
 
 
 from fastapi.responses import FileResponse
