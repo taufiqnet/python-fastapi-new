@@ -97,7 +97,12 @@ from app.modules.hr_payroll.attendance.models import Attendance  # noqa: F401
 from app.modules.hr_payroll.certificates.models import SalaryCertificate  # noqa: F401
 from app.modules.hr_payroll.offer_letters.models import OfferLetter  # noqa: F401
 from app.modules.hr_payroll.experience_letters.models import ExperienceLetter  # noqa: F401
-from app.modules.hr_payroll.compensation.models import EmployeeSalary  # noqa: F401
+from app.modules.hr_payroll.compensation.models import (  # noqa: F401
+    EmployeeSalary,
+    SalaryComponent,
+    SalaryStructure,
+    SalaryStructureItem,
+)
 from app.modules.hr_payroll.employees.models import Employee, ImportJob  # noqa: F401
 from app.modules.hr_payroll.leave.models import (  # noqa: F401
     LeaveAllocation,
@@ -111,12 +116,22 @@ from app.modules.hr_payroll.organization.models import (  # noqa: F401
     Branch,
     Department,
     JobTitle,
+    SalaryGrade,
 )
 from app.modules.hr_payroll.payroll.models import (  # noqa: F401
+    BonusPolicy,
+    BonusRun,
+    CompanyBankAccount,
     Holiday,
+    LoanRepaymentSchedule,
+    PayscaleStep,
     PayrollPeriod,
+    PayrollPeriodApproval,
     PayrollRecord,
     PayrollSettings,
+    SalaryAdjustment,
+    StatutoryComplianceSetting,
+    TaxSlab,
 )
 from app.modules.hr_payroll.recruitment.models import (  # noqa: F401
     Candidate,

@@ -1095,6 +1095,9 @@ export interface PayrollRecordOut {
   bank_account?: string | null;
   is_paid: boolean;
   paid_at?: string | null;
+  is_held?: boolean;
+  hold_reason?: string | null;
+  hold_released_at?: string | null;
   note?: string | null;
   created_at: string;
   updated_at: string;
@@ -1134,10 +1137,315 @@ export interface PayrollRecordCreatePayload {
   bank_account?: string | null;
   is_paid?: boolean;
   paid_at?: string | null;
+  is_held?: boolean;
+  hold_reason?: string | null;
+  hold_released_at?: string | null;
   note?: string | null;
 }
 
 export type PayrollRecordUpdatePayload = Partial<PayrollRecordCreatePayload>;
+
+// ==========================================
+// Payscale & Salary Structures
+// ==========================================
+export interface PayscaleStepOut {
+  id: string;
+  business_id: number;
+  salary_grade_id: string;
+  step_number: number;
+  basic_amount: number;
+  increment_amount: number;
+  description?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayscaleStepCreatePayload {
+  business_id: number;
+  salary_grade_id: string;
+  step_number: number;
+  basic_amount: number;
+  increment_amount?: number;
+  description?: string | null;
+  is_active?: boolean;
+}
+
+export type PayscaleStepUpdatePayload = Partial<PayscaleStepCreatePayload>;
+
+export interface SalaryComponentOut {
+  id: string;
+  business_id: number;
+  name: string;
+  code: string;
+  component_type: "earning" | "deduction" | "reimbursement" | "statutory";
+  calculation_type: "fixed" | "percent_basic" | "percent_gross" | "formula";
+  default_value: number;
+  is_taxable: boolean;
+  is_statutory: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryComponentCreatePayload {
+  business_id: number;
+  name: string;
+  code: string;
+  component_type: "earning" | "deduction" | "reimbursement" | "statutory";
+  calculation_type?: "fixed" | "percent_basic" | "percent_gross" | "formula";
+  default_value?: number;
+  is_taxable?: boolean;
+  is_statutory?: boolean;
+  is_active?: boolean;
+}
+
+export type SalaryComponentUpdatePayload = Partial<SalaryComponentCreatePayload>;
+
+export interface SalaryStructureItemOut {
+  id: string;
+  structure_id: string;
+  component_id: string;
+  calculation_type: "fixed" | "percent_basic" | "percent_gross" | "formula";
+  value: number;
+  component?: SalaryComponentOut;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryStructureOut {
+  id: string;
+  business_id: number;
+  name: string;
+  description?: string | null;
+  is_active: boolean;
+  items: SalaryStructureItemOut[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryStructureCreatePayload {
+  business_id: number;
+  name: string;
+  description?: string | null;
+  is_active?: boolean;
+  items?: Array<{
+    component_id: string;
+    calculation_type: "fixed" | "percent_basic" | "percent_gross" | "formula";
+    value: number;
+  }>;
+}
+
+export type SalaryStructureUpdatePayload = Partial<SalaryStructureCreatePayload>;
+
+// ==========================================
+// Bank Accounts & Payments
+// ==========================================
+export interface CompanyBankAccountOut {
+  id: string;
+  business_id: number;
+  bank_name: string;
+  branch_name: string;
+  account_title: string;
+  account_number: string;
+  routing_number: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompanyBankAccountCreatePayload {
+  business_id: number;
+  bank_name: string;
+  branch_name: string;
+  account_title: string;
+  account_number: string;
+  routing_number: string;
+  is_default?: boolean;
+  is_active?: boolean;
+}
+
+export type CompanyBankAccountUpdatePayload = Partial<CompanyBankAccountCreatePayload>;
+
+// ==========================================
+// Tax & Statutory Compliance
+// ==========================================
+export interface TaxSlabOut {
+  id: string;
+  business_id: number;
+  fiscal_year: string;
+  gender_category: "general_male" | "female_senior" | "disabled_freedom_fighter";
+  slab_order: number;
+  min_income: number;
+  max_income?: number | null;
+  tax_rate_percent: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TaxSlabCreatePayload {
+  business_id: number;
+  fiscal_year: string;
+  gender_category?: "general_male" | "female_senior" | "disabled_freedom_fighter";
+  slab_order: number;
+  min_income: number;
+  max_income?: number | null;
+  tax_rate_percent: number;
+}
+
+export type TaxSlabUpdatePayload = Partial<TaxSlabCreatePayload>;
+
+export interface StatutoryComplianceSettingOut {
+  id: string;
+  business_id: number;
+  enable_provident_fund: boolean;
+  pf_employee_percent: number;
+  pf_employer_percent: number;
+  enable_tax_auto_deduction: boolean;
+  minimum_tax_amount: number;
+  gratuity_qualifying_years: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StatutoryComplianceSettingUpdatePayload {
+  enable_provident_fund?: boolean;
+  pf_employee_percent?: number;
+  pf_employer_percent?: number;
+  enable_tax_auto_deduction?: boolean;
+  minimum_tax_amount?: number;
+  gratuity_qualifying_years?: number;
+}
+
+// ==========================================
+// Salary Adjustments (Arrears / Deductions)
+// ==========================================
+export interface SalaryAdjustmentOut {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  period_id?: string | null;
+  adjustment_type: "arrear" | "bonus_special" | "incentive" | "penalty_deduction" | "damage_recovery" | "advance_adjustment";
+  amount: number;
+  title: string;
+  reason?: string | null;
+  status: "pending" | "approved" | "rejected" | "applied";
+  approved_by_id?: number | null;
+  applied_payroll_record_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SalaryAdjustmentCreatePayload {
+  business_id: number;
+  employee_id: string;
+  period_id?: string | null;
+  adjustment_type: "arrear" | "bonus_special" | "incentive" | "penalty_deduction" | "damage_recovery" | "advance_adjustment";
+  amount: number;
+  title: string;
+  reason?: string | null;
+}
+
+export type SalaryAdjustmentUpdatePayload = Partial<SalaryAdjustmentCreatePayload & { status: string }>;
+
+// ==========================================
+// Loan Repayment Schedules
+// ==========================================
+export interface LoanRepaymentScheduleOut {
+  id: string;
+  business_id: number;
+  loan_id: string;
+  installment_number: number;
+  due_date: string;
+  installment_amount: number;
+  status: "pending" | "deducted" | "paid_manually" | "paused" | "waived";
+  payroll_record_id?: string | null;
+  paid_at?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LoanRepaymentScheduleUpdatePayload {
+  status?: "pending" | "deducted" | "paid_manually" | "paused" | "waived";
+  due_date?: string;
+  notes?: string | null;
+}
+
+// ==========================================
+// Bonus Policies & Runs
+// ==========================================
+export interface BonusPolicyOut {
+  id: string;
+  business_id: number;
+  name: string;
+  bonus_type: "festival" | "performance" | "attendance" | "special";
+  calculation_basis: "percent_basic" | "percent_gross" | "flat_amount";
+  percentage_or_amount: number;
+  min_service_months: number;
+  is_taxable: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BonusPolicyCreatePayload {
+  business_id: number;
+  name: string;
+  bonus_type: "festival" | "performance" | "attendance" | "special";
+  calculation_basis: "percent_basic" | "percent_gross" | "flat_amount";
+  percentage_or_amount: number;
+  min_service_months?: number;
+  is_taxable?: boolean;
+  is_active?: boolean;
+}
+
+export type BonusPolicyUpdatePayload = Partial<BonusPolicyCreatePayload>;
+
+export interface BonusRunOut {
+  id: string;
+  business_id: number;
+  policy_id: string;
+  payroll_period_id?: string | null;
+  run_date: string;
+  status: string;
+  total_amount: number;
+  headcount: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BonusRunCreatePayload {
+  business_id: number;
+  policy_id: string;
+  payroll_period_id?: string | null;
+  run_date: string;
+}
+
+// ==========================================
+// Payroll Period Approvals
+// ==========================================
+export interface PayrollPeriodApprovalOut {
+  id: string;
+  business_id: number;
+  period_id: string;
+  stage: "hr_review" | "finance_review" | "management_sign_off";
+  action: "approved" | "rejected" | "returned_for_revision";
+  action_by_id: number;
+  comments?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PayrollPeriodApprovalCreatePayload {
+  business_id: number;
+  period_id: string;
+  stage: "hr_review" | "finance_review" | "management_sign_off";
+  action: "approved" | "rejected" | "returned_for_revision";
+  comments?: string | null;
+}
+
 
 // ==========================================
 // HR Letters & Certificates

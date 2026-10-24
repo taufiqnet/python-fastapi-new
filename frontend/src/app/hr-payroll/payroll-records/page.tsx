@@ -28,6 +28,8 @@ import {
   Loader2,
   AlertTriangle,
   Eye,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 
 interface BusinessItem {
@@ -262,6 +264,30 @@ export default function PayrollRecordsPage() {
       toast.error("Delete Failed", "Could not delete this payroll record.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  // Toggle Salary Hold Action
+  const handleToggleHold = async (r: PayrollRecordOut) => {
+    const empName = empMap.get(r.employee_id)?.full_name || r.employee_name || "Employee";
+    const willHold = !r.is_held;
+    let reason: string | null = null;
+    if (willHold) {
+      reason = window.prompt(`Enter reason for putting ${empName}'s salary on hold:`, "Pending clearance / audit");
+      if (!reason) return;
+    }
+    try {
+      await apiClient.patch(`/payroll/records/${r.id}/hold`, {
+        is_held: willHold,
+        hold_reason: reason || undefined,
+      });
+      toast.success(
+        willHold ? "Salary Held" : "Salary Released",
+        `Payslip for ${empName} is now ${willHold ? "on hold" : "released"}.`
+      );
+      fetchRecords(true);
+    } catch {
+      toast.error("Operation Failed", "Could not update salary hold status.");
     }
   };
 
@@ -500,15 +526,24 @@ export default function PayrollRecordsPage() {
                           ৳{Number(r.net_salary).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                         </td>
                         <td className="py-3.5 px-4">
-                          {r.is_paid ? (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 className="w-3 h-3" /> Paid
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                              <Clock className="w-3 h-3" /> Pending
-                            </span>
-                          )}
+                          <div className="flex flex-col gap-1 items-start">
+                            {r.is_held ? (
+                              <span
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200"
+                                title={r.hold_reason || "Salary is on hold"}
+                              >
+                                <PauseCircle className="w-3 h-3 text-amber-600" /> On Hold
+                              </span>
+                            ) : r.is_paid ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <CheckCircle2 className="w-3 h-3" /> Paid
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                <Clock className="w-3 h-3" /> Pending
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
@@ -519,6 +554,24 @@ export default function PayrollRecordsPage() {
                             >
                               <Eye className="w-3.5 h-3.5" />
                             </Link>
+
+                            {hasPermission("hrm", "payroll_records", "update") && (
+                              <button
+                                onClick={() => handleToggleHold(r)}
+                                className={`p-1.5 rounded-lg border transition ${
+                                  r.is_held
+                                    ? "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                                    : "border-slate-200 text-slate-600 hover:text-amber-600 hover:bg-amber-50"
+                                }`}
+                                title={r.is_held ? "Release Salary Hold" : "Put Salary on Hold"}
+                              >
+                                {r.is_held ? (
+                                  <PlayCircle className="w-3.5 h-3.5" />
+                                ) : (
+                                  <PauseCircle className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            )}
 
                             {hasPermission("hrm", "payroll_records", "update") && (
                               <button

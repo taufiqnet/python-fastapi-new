@@ -152,3 +152,145 @@ def delete_salary(
 ):
     salary_service.delete_salary_structure(db, salary_id, current_user=current_user)
     return None
+
+
+# ============================================================
+# Salary Components Endpoints
+# ============================================================
+from app.modules.hr_payroll.compensation.schemas import (
+    SalaryComponentCreate,
+    SalaryComponentOut,
+    SalaryComponentUpdate,
+    SalaryStructureCreate,
+    SalaryStructureOut,
+    SalaryStructureUpdate,
+)
+from app.modules.hr_payroll.compensation.service import (
+    SalaryComponentService,
+    SalaryStructureService,
+)
+
+component_service = SalaryComponentService()
+structure_service = SalaryStructureService()
+
+
+@router.get("/components", response_model=list[SalaryComponentOut])
+def get_salary_components(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    business_id: int | None = Query(None),
+    is_active: bool | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "compensation", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return component_service.get_components(
+        db,
+        skip=skip,
+        limit=limit,
+        business_id=resolved_business_id,
+        is_active=is_active,
+    )
+
+
+@router.post(
+    "/components",
+    response_model=SalaryComponentOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_salary_component(
+    component_data: SalaryComponentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "compensation", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, component_data.business_id)
+    if not current_user.is_superuser:
+        component_data.business_id = current_user.business_id
+    elif component_data.business_id is None:
+        component_data.business_id = resolved_business_id
+    return component_service.create_component(db, component_data)
+
+
+@router.put("/components/{component_id}", response_model=SalaryComponentOut)
+def update_salary_component(
+    component_id: uuid.UUID,
+    component_data: SalaryComponentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "compensation", "update")),
+):
+    return component_service.update_component(
+        db, component_id, component_data, current_user=current_user
+    )
+
+
+@router.delete("/components/{component_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_salary_component(
+    component_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "compensation", "delete")),
+):
+    component_service.delete_component(db, component_id, current_user=current_user)
+    return None
+
+
+# ============================================================
+# Salary Structures Endpoints
+# ============================================================
+@router.get("/structures", response_model=list[SalaryStructureOut])
+def get_salary_structures(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    business_id: int | None = Query(None),
+    is_active: bool | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "compensation", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return structure_service.get_structures(
+        db,
+        skip=skip,
+        limit=limit,
+        business_id=resolved_business_id,
+        is_active=is_active,
+    )
+
+
+@router.post(
+    "/structures",
+    response_model=SalaryStructureOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_salary_structure_template(
+    structure_data: SalaryStructureCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "compensation", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, structure_data.business_id)
+    if not current_user.is_superuser:
+        structure_data.business_id = current_user.business_id
+    elif structure_data.business_id is None:
+        structure_data.business_id = resolved_business_id
+    return structure_service.create_structure(db, structure_data)
+
+
+@router.put("/structures/{structure_id}", response_model=SalaryStructureOut)
+def update_salary_structure_template(
+    structure_id: uuid.UUID,
+    structure_data: SalaryStructureUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "compensation", "update")),
+):
+    return structure_service.update_structure(
+        db, structure_id, structure_data, current_user=current_user
+    )
+
+
+@router.delete("/structures/{structure_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_salary_structure_template(
+    structure_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "compensation", "delete")),
+):
+    structure_service.delete_structure(db, structure_id, current_user=current_user)
+    return None
+

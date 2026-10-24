@@ -460,3 +460,136 @@ class EmployeeSalaryService:
             "imported_count": success_count,
             "errors": error_messages,
         }
+
+
+# ============================================================
+# SalaryComponentService & SalaryStructureService
+# ============================================================
+from app.modules.hr_payroll.compensation.models import (
+    SalaryComponent,
+    SalaryStructure,
+)
+from app.modules.hr_payroll.compensation.repository import (
+    SalaryComponentRepository,
+    SalaryStructureRepository,
+)
+from app.modules.hr_payroll.compensation.schemas import (
+    SalaryComponentCreate,
+    SalaryComponentUpdate,
+    SalaryStructureCreate,
+    SalaryStructureUpdate,
+)
+
+
+class SalaryComponentService:
+    def __init__(self, repository: SalaryComponentRepository | None = None):
+        self.repository = repository or SalaryComponentRepository()
+
+    def get_components(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+        is_active: bool | None = None,
+    ) -> list[SalaryComponent]:
+        return self.repository.get_all(
+            db, skip=skip, limit=limit, business_id=business_id, is_active=is_active
+        )
+
+    def get_component(
+        self, db: Session, component_id: uuid.UUID, current_user: Any | None = None
+    ) -> SalaryComponent:
+        component = self.repository.get_by_id(db, component_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                component, current_user, detail="Salary component not found"
+            )
+        if not component:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Salary component not found",
+            )
+        return component
+
+    def create_component(
+        self, db: Session, data: SalaryComponentCreate
+    ) -> SalaryComponent:
+        existing = self.repository.get_by_code(
+            db, business_id=data.business_id, code=data.code
+        )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Salary component with code '{data.code}' already exists.",
+            )
+        return self.repository.create(db, data)
+
+    def update_component(
+        self,
+        db: Session,
+        component_id: uuid.UUID,
+        data: SalaryComponentUpdate,
+        current_user: Any | None = None,
+    ) -> SalaryComponent:
+        component = self.get_component(db, component_id, current_user=current_user)
+        return self.repository.update(db, component, data)
+
+    def delete_component(
+        self, db: Session, component_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        component = self.get_component(db, component_id, current_user=current_user)
+        self.repository.delete(db, component)
+
+
+class SalaryStructureService:
+    def __init__(self, repository: SalaryStructureRepository | None = None):
+        self.repository = repository or SalaryStructureRepository()
+
+    def get_structures(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        business_id: int | None = None,
+        is_active: bool | None = None,
+    ) -> list[SalaryStructure]:
+        return self.repository.get_all(
+            db, skip=skip, limit=limit, business_id=business_id, is_active=is_active
+        )
+
+    def get_structure(
+        self, db: Session, structure_id: uuid.UUID, current_user: Any | None = None
+    ) -> SalaryStructure:
+        structure = self.repository.get_by_id(db, structure_id)
+        if current_user is not None:
+            return verify_record_ownership(
+                structure, current_user, detail="Salary structure not found"
+            )
+        if not structure:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Salary structure not found",
+            )
+        return structure
+
+    def create_structure(
+        self, db: Session, data: SalaryStructureCreate
+    ) -> SalaryStructure:
+        return self.repository.create(db, data)
+
+    def update_structure(
+        self,
+        db: Session,
+        structure_id: uuid.UUID,
+        data: SalaryStructureUpdate,
+        current_user: Any | None = None,
+    ) -> SalaryStructure:
+        structure = self.get_structure(db, structure_id, current_user=current_user)
+        return self.repository.update(db, structure, data)
+
+    def delete_structure(
+        self, db: Session, structure_id: uuid.UUID, current_user: Any | None = None
+    ) -> None:
+        structure = self.get_structure(db, structure_id, current_user=current_user)
+        self.repository.delete(db, structure)

@@ -346,3 +346,463 @@ def update_payroll_settings(
     return settings_service.update_settings(
         db, business_id=business_id, data=data, current_user=current_user
     )
+
+
+# ============================================================
+# Bank Advice & Hold Management Endpoints
+# ============================================================
+@router.get("/periods/{period_id}/bank-advice")
+def download_bank_advice_excel(
+    period_id: uuid.UUID,
+    bank_account_id: uuid.UUID | None = Query(None),
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = record_service.generate_bank_advice_excel(
+        db, period_id=period_id, bank_account_id=bank_account_id, business_id=resolved_business_id
+    )
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=bank_advice_period_{period_id}.xlsx"},
+    )
+
+
+@router.get("/periods/{period_id}/mfs-advice")
+def download_mfs_advice_excel(
+    period_id: uuid.UUID,
+    provider: str = Query("bkash"),
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    excel_data = record_service.generate_mfs_advice_excel(
+        db, period_id=period_id, mfs_provider=provider, business_id=resolved_business_id
+    )
+    return Response(
+        content=excel_data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={provider}_advice_period_{period_id}.xlsx"},
+    )
+
+
+from pydantic import BaseModel
+
+
+class RecordHoldPayload(BaseModel):
+    is_held: bool
+    hold_reason: str | None = None
+
+
+@router.put("/records/{record_id}/hold", response_model=PayrollRecordOut)
+def toggle_payroll_record_hold(
+    record_id: uuid.UUID,
+    payload: RecordHoldPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "update")),
+):
+    return record_service.toggle_record_hold(
+        db,
+        record_id=record_id,
+        is_held=payload.is_held,
+        hold_reason=payload.hold_reason,
+        current_user=current_user,
+    )
+
+
+# ============================================================
+# Auxiliary Payroll Feature Routers & Services
+# ============================================================
+from app.modules.hr_payroll.payroll.schemas import (
+    BonusPolicyCreate,
+    BonusPolicyOut,
+    BonusPolicyUpdate,
+    BonusRunCreate,
+    BonusRunOut,
+    CompanyBankAccountCreate,
+    CompanyBankAccountOut,
+    CompanyBankAccountUpdate,
+    LoanRepaymentScheduleOut,
+    LoanRepaymentScheduleUpdate,
+    PayscaleStepCreate,
+    PayscaleStepOut,
+    PayscaleStepUpdate,
+    PayrollPeriodApprovalCreate,
+    PayrollPeriodApprovalOut,
+    SalaryAdjustmentCreate,
+    SalaryAdjustmentOut,
+    SalaryAdjustmentUpdate,
+    StatutoryComplianceSettingOut,
+    StatutoryComplianceSettingUpdate,
+    TaxSlabCreate,
+    TaxSlabOut,
+    TaxSlabUpdate,
+)
+from app.modules.hr_payroll.payroll.service import (
+    BonusPolicyService,
+    BonusRunService,
+    CompanyBankAccountService,
+    LoanRepaymentScheduleService,
+    PayscaleStepService,
+    PayrollPeriodApprovalService,
+    SalaryAdjustmentService,
+    StatutoryComplianceService,
+    TaxSlabService,
+)
+
+payscale_step_service = PayscaleStepService()
+bank_account_service = CompanyBankAccountService()
+tax_slab_service = TaxSlabService()
+statutory_service = StatutoryComplianceService()
+adjustment_service = SalaryAdjustmentService()
+loan_schedule_service = LoanRepaymentScheduleService()
+bonus_policy_service = BonusPolicyService()
+bonus_run_service = BonusRunService()
+period_approval_service = PayrollPeriodApprovalService()
+
+
+# ── Payscale Steps ────────────────────────────────────────────────────
+@router.get("/payscale/grades/{grade_id}/steps", response_model=list[PayscaleStepOut])
+def get_payscale_steps(
+    grade_id: uuid.UUID,
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return payscale_step_service.get_steps_by_grade(db, grade_id, business_id=resolved_business_id)
+
+
+@router.post("/payscale/steps", response_model=PayscaleStepOut, status_code=status.HTTP_201_CREATED)
+def create_payscale_step(
+    data: PayscaleStepCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, data.business_id)
+    if not current_user.is_superuser:
+        data.business_id = current_user.business_id
+    elif data.business_id is None:
+        data.business_id = resolved_business_id
+    return payscale_step_service.create_step(db, data)
+
+
+@router.put("/payscale/steps/{step_id}", response_model=PayscaleStepOut)
+def update_payscale_step(
+    step_id: uuid.UUID,
+    data: PayscaleStepUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "update")),
+):
+    return payscale_step_service.update_step(db, step_id, data)
+
+
+@router.delete("/payscale/steps/{step_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_payscale_step(
+    step_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "delete")),
+):
+    payscale_step_service.delete_step(db, step_id)
+    return None
+
+
+# ── Company Bank Accounts ─────────────────────────────────────────────
+@router.get("/bank-accounts", response_model=list[CompanyBankAccountOut])
+def get_company_bank_accounts(
+    business_id: int | None = Query(None),
+    is_active: bool | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return bank_account_service.get_accounts(db, business_id=resolved_business_id or 1, is_active=is_active)
+
+
+@router.post("/bank-accounts", response_model=CompanyBankAccountOut, status_code=status.HTTP_201_CREATED)
+def create_company_bank_account(
+    data: CompanyBankAccountCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, data.business_id)
+    if not current_user.is_superuser:
+        data.business_id = current_user.business_id
+    elif data.business_id is None:
+        data.business_id = resolved_business_id
+    return bank_account_service.create_account(db, data)
+
+
+@router.put("/bank-accounts/{account_id}", response_model=CompanyBankAccountOut)
+def update_company_bank_account(
+    account_id: uuid.UUID,
+    data: CompanyBankAccountUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "update")),
+):
+    return bank_account_service.update_account(db, account_id, data)
+
+
+@router.delete("/bank-accounts/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_company_bank_account(
+    account_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "delete")),
+):
+    bank_account_service.delete_account(db, account_id)
+    return None
+
+
+# ── Tax Slabs (ITA 2023) ──────────────────────────────────────────────
+@router.get("/tax-slabs", response_model=list[TaxSlabOut])
+def get_tax_slabs(
+    fiscal_year: str | None = Query(None),
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return tax_slab_service.get_slabs(db, business_id=resolved_business_id or 1, fiscal_year=fiscal_year)
+
+
+@router.post("/tax-slabs", response_model=TaxSlabOut, status_code=status.HTTP_201_CREATED)
+def create_tax_slab(
+    data: TaxSlabCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, data.business_id)
+    if not current_user.is_superuser:
+        data.business_id = current_user.business_id
+    elif data.business_id is None:
+        data.business_id = resolved_business_id
+    return tax_slab_service.create_slab(db, data)
+
+
+@router.put("/tax-slabs/{slab_id}", response_model=TaxSlabOut)
+def update_tax_slab(
+    slab_id: uuid.UUID,
+    data: TaxSlabUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "update")),
+):
+    return tax_slab_service.update_slab(db, slab_id, data)
+
+
+@router.delete("/tax-slabs/{slab_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_tax_slab(
+    slab_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "delete")),
+):
+    tax_slab_service.delete_slab(db, slab_id)
+    return None
+
+
+# ── Statutory Compliance Settings ─────────────────────────────────────
+@router.get("/statutory-settings", response_model=StatutoryComplianceSettingOut)
+def get_statutory_compliance_settings(
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return statutory_service.get_setting(db, business_id=resolved_business_id or 1)
+
+
+@router.put("/statutory-settings", response_model=StatutoryComplianceSettingOut)
+def update_statutory_compliance_settings(
+    data: StatutoryComplianceSettingUpdate,
+    business_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "update")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return statutory_service.update_setting(db, business_id=resolved_business_id or 1, data=data)
+
+
+# ── Salary Adjustments (Arrears / Deductions) ─────────────────────────
+@router.get("/adjustments", response_model=list[SalaryAdjustmentOut])
+def get_salary_adjustments(
+    period_id: uuid.UUID | None = Query(None),
+    employee_id: uuid.UUID | None = Query(None),
+    status: str | None = Query(None),
+    business_id: int | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return adjustment_service.get_adjustments(
+        db,
+        business_id=resolved_business_id or 1,
+        period_id=period_id,
+        employee_id=employee_id,
+        status=status,
+        skip=skip,
+        limit=limit,
+    )
+
+
+@router.post("/adjustments", response_model=SalaryAdjustmentOut, status_code=status.HTTP_201_CREATED)
+def create_salary_adjustment(
+    data: SalaryAdjustmentCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, data.business_id)
+    if not current_user.is_superuser:
+        data.business_id = current_user.business_id
+    elif data.business_id is None:
+        data.business_id = resolved_business_id
+    return adjustment_service.create_adjustment(db, data)
+
+
+@router.put("/adjustments/{adjustment_id}", response_model=SalaryAdjustmentOut)
+def update_salary_adjustment(
+    adjustment_id: uuid.UUID,
+    data: SalaryAdjustmentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "update")),
+):
+    return adjustment_service.update_adjustment(db, adjustment_id, data)
+
+
+@router.delete("/adjustments/{adjustment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_salary_adjustment(
+    adjustment_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "delete")),
+):
+    adjustment_service.delete_adjustment(db, adjustment_id)
+    return None
+
+
+# ── Loan Repayment Schedules ──────────────────────────────────────────
+@router.get("/loans/{loan_id}/schedules", response_model=list[LoanRepaymentScheduleOut])
+def get_loan_repayment_schedules(
+    loan_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "view")),
+):
+    return loan_schedule_service.get_schedules_by_loan(db, loan_id)
+
+
+@router.put("/loan-schedules/{schedule_id}", response_model=LoanRepaymentScheduleOut)
+def update_loan_repayment_schedule(
+    schedule_id: uuid.UUID,
+    data: LoanRepaymentScheduleUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "update")),
+):
+    return loan_schedule_service.update_schedule(db, schedule_id, data)
+
+
+# ── Bonus Policies & Bonus Runs ───────────────────────────────────────
+@router.get("/bonus-policies", response_model=list[BonusPolicyOut])
+def get_bonus_policies(
+    business_id: int | None = Query(None),
+    is_active: bool | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return bonus_policy_service.get_policies(db, business_id=resolved_business_id or 1, is_active=is_active)
+
+
+@router.post("/bonus-policies", response_model=BonusPolicyOut, status_code=status.HTTP_201_CREATED)
+def create_bonus_policy(
+    data: BonusPolicyCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, data.business_id)
+    if not current_user.is_superuser:
+        data.business_id = current_user.business_id
+    elif data.business_id is None:
+        data.business_id = resolved_business_id
+    return bonus_policy_service.create_policy(db, data)
+
+
+@router.put("/bonus-policies/{policy_id}", response_model=BonusPolicyOut)
+def update_bonus_policy(
+    policy_id: uuid.UUID,
+    data: BonusPolicyUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "update")),
+):
+    return bonus_policy_service.update_policy(db, policy_id, data)
+
+
+@router.delete("/bonus-policies/{policy_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_bonus_policy(
+    policy_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_settings", "delete")),
+):
+    bonus_policy_service.delete_policy(db, policy_id)
+    return None
+
+
+@router.get("/bonus-runs", response_model=list[BonusRunOut])
+def get_bonus_runs(
+    period_id: uuid.UUID | None = Query(None),
+    business_id: int | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "view")),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return bonus_run_service.get_runs(db, business_id=resolved_business_id or 1, period_id=period_id)
+
+
+@router.post("/bonus-runs", response_model=BonusRunOut, status_code=status.HTTP_201_CREATED)
+def create_bonus_run(
+    data: BonusRunCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "create")),
+):
+    resolved_business_id = resolve_business_id(current_user, data.business_id)
+    if not current_user.is_superuser:
+        data.business_id = current_user.business_id
+    elif data.business_id is None:
+        data.business_id = resolved_business_id
+    return bonus_run_service.create_run(db, data)
+
+
+class BonusRunStatusPayload(BaseModel):
+    status: str
+
+
+@router.put("/bonus-runs/{run_id}/status", response_model=BonusRunOut)
+def update_bonus_run_status(
+    run_id: uuid.UUID,
+    payload: BonusRunStatusPayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_records", "update")),
+):
+    return bonus_run_service.update_run_status(db, run_id, payload.status)
+
+
+# ── Multi-Tier Period Approvals ───────────────────────────────────────
+@router.get("/periods/{period_id}/approvals", response_model=list[PayrollPeriodApprovalOut])
+def get_payroll_period_approvals(
+    period_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "view")),
+):
+    return period_approval_service.get_approvals(db, period_id)
+
+
+@router.post("/periods/{period_id}/approvals", response_model=PayrollPeriodApprovalOut, status_code=status.HTTP_201_CREATED)
+def submit_payroll_period_approval(
+    period_id: uuid.UUID,
+    data: PayrollPeriodApprovalCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("hrm", "payroll_periods", "update")),
+):
+    return period_approval_service.submit_approval(db, data, action_by_id=current_user.id)
+

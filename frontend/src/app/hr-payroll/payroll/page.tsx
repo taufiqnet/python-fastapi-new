@@ -20,6 +20,13 @@ import { PeriodModal } from "@/components/hr-payroll/payroll/periods/modals/peri
 import { PeriodExportModal } from "@/components/hr-payroll/payroll/periods/modals/period-export-modal";
 import { PayrollProcessTab } from "@/components/hr-payroll/payroll/process/payroll-process-tab";
 import { PayrollSettingsTab } from "@/components/hr-payroll/payroll/settings/payroll-settings-tab";
+import { PeriodApprovalsTab } from "@/components/hr-payroll/payroll/approvals/period-approvals-tab";
+import { BankAdviceTab } from "@/components/hr-payroll/payroll/disbursements/bank-advice-tab";
+import { AdjustmentsTab } from "@/components/hr-payroll/payroll/adjustments/adjustments-tab";
+import { LoanManagementTab } from "@/components/hr-payroll/payroll/loans/loan-management-tab";
+import { BonusTab } from "@/components/hr-payroll/payroll/bonus/bonus-tab";
+import { StructuresTab } from "@/components/hr-payroll/payroll/structures/structures-tab";
+import { ExtendedSettingsTab } from "@/components/hr-payroll/payroll/settings/extended-settings-tab";
 
 import {
   DollarSign,
@@ -31,6 +38,12 @@ import {
   AlertTriangle,
   Cog,
   CheckCircle2,
+  ShieldCheck,
+  Building2,
+  Sliders,
+  CreditCard,
+  Gift,
+  Layers,
 } from "lucide-react";
 
 interface BusinessItem {
@@ -38,7 +51,16 @@ interface BusinessItem {
   name_en: string;
 }
 
-type TabType = "periods" | "process" | "settings";
+type TabType =
+  | "periods"
+  | "process"
+  | "approvals"
+  | "disbursements"
+  | "adjustments"
+  | "loans"
+  | "bonus"
+  | "structures"
+  | "settings";
 
 function PayrollContent() {
   const { user } = useAuth();
@@ -50,8 +72,19 @@ function PayrollContent() {
   const currentBusinessId = user?.business_id || 1;
 
   // Active Tab state
-  const rawTab = searchParams.get("tab");
-  const initialTab: TabType = rawTab === "settings" ? "settings" : rawTab === "process" ? "process" : "periods";
+  const rawTab = searchParams.get("tab") as TabType | null;
+  const validTabs: TabType[] = [
+    "periods",
+    "process",
+    "approvals",
+    "disbursements",
+    "adjustments",
+    "loans",
+    "bonus",
+    "structures",
+    "settings",
+  ];
+  const initialTab: TabType = rawTab && validTabs.includes(rawTab) ? rawTab : "periods";
   const [activeTab, setActiveTab] = useState<TabType>(initialTab);
 
   // Sync tab with URL
@@ -335,19 +368,19 @@ function PayrollContent() {
           )}
         </div>
 
-        {/* Unified Tab Navigation Bar */}
-        <div className="flex items-center gap-2 border-b border-slate-200">
+        {/* Unified Tab Navigation Bar with Horizontal Scrolling */}
+        <div className="flex items-center gap-1.5 border-b border-slate-200 overflow-x-auto pb-px">
           <button
             type="button"
             onClick={() => handleTabChange("periods")}
-            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all ${
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
               activeTab === "periods"
                 ? "border-indigo-600 text-indigo-600"
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             <Calendar className="w-4 h-4" />
-            <span>Payroll Periods</span>
+            <span>Periods</span>
             <span
               className={`text-[10px] px-2 py-0.5 rounded-full ${
                 activeTab === "periods"
@@ -362,27 +395,105 @@ function PayrollContent() {
           <button
             type="button"
             onClick={() => handleTabChange("process")}
-            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all ${
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
               activeTab === "process"
                 ? "border-indigo-600 text-indigo-600"
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             <Cog className="w-4 h-4" />
-            <span>Payroll Process</span>
+            <span>Process Cycle</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("approvals")}
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              activeTab === "approvals"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Approvals & Hold</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("disbursements")}
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              activeTab === "disbursements"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Building2 className="w-4 h-4 text-indigo-600" />
+            <span>Bank & MFS Advice</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("adjustments")}
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              activeTab === "adjustments"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Sliders className="w-4 h-4 text-amber-600" />
+            <span>Adjustments</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("loans")}
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              activeTab === "loans"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <CreditCard className="w-4 h-4 text-blue-600" />
+            <span>Loans & EMI</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("bonus")}
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              activeTab === "bonus"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Gift className="w-4 h-4 text-pink-600" />
+            <span>Bonus Engine</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleTabChange("structures")}
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
+              activeTab === "structures"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            <Layers className="w-4 h-4 text-purple-600" />
+            <span>Components & Structures</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleTabChange("settings")}
-            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all ${
+            className={`pb-3 px-3 text-xs font-bold flex items-center gap-2 border-b-2 transition-all shrink-0 ${
               activeTab === "settings"
                 ? "border-indigo-600 text-indigo-600"
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             <Settings className="w-4 h-4" />
-            <span>Payroll Settings</span>
+            <span>Settings & Compliance</span>
           </button>
         </div>
 
@@ -473,9 +584,71 @@ function PayrollContent() {
           </div>
         )}
 
-        {/* Tab 3: Payroll Settings Content */}
-        {activeTab === "settings" && (
+        {/* Tab 3: Multi-Tier Approvals & Salary Hold */}
+        {activeTab === "approvals" && (
           <div className="animate-in fade-in duration-150">
+            <PeriodApprovalsTab
+              periods={periods}
+              currentBusinessId={currentBusinessId}
+              onRefreshPeriods={() => fetchPeriods(false)}
+            />
+          </div>
+        )}
+
+        {/* Tab 4: Bank & MFS Advice Generation */}
+        {activeTab === "disbursements" && (
+          <div className="animate-in fade-in duration-150">
+            <BankAdviceTab
+              periods={periods}
+              currentBusinessId={currentBusinessId}
+            />
+          </div>
+        )}
+
+        {/* Tab 5: Salary Adjustments (Arrears / Deductions) */}
+        {activeTab === "adjustments" && (
+          <div className="animate-in fade-in duration-150">
+            <AdjustmentsTab
+              periods={periods}
+              currentBusinessId={currentBusinessId}
+            />
+          </div>
+        )}
+
+        {/* Tab 6: Loan Management & EMI Schedule */}
+        {activeTab === "loans" && (
+          <div className="animate-in fade-in duration-150">
+            <LoanManagementTab
+              currentBusinessId={currentBusinessId}
+            />
+          </div>
+        )}
+
+        {/* Tab 7: Bonus Setup & Bonus Process */}
+        {activeTab === "bonus" && (
+          <div className="animate-in fade-in duration-150">
+            <BonusTab
+              periods={periods}
+              currentBusinessId={currentBusinessId}
+            />
+          </div>
+        )}
+
+        {/* Tab 8: Salary Components & Structures */}
+        {activeTab === "structures" && (
+          <div className="animate-in fade-in duration-150">
+            <StructuresTab
+              currentBusinessId={currentBusinessId}
+            />
+          </div>
+        )}
+
+        {/* Tab 9: Settings & Statutory Compliance */}
+        {activeTab === "settings" && (
+          <div className="space-y-6 animate-in fade-in duration-150">
+            <ExtendedSettingsTab
+              currentBusinessId={currentBusinessId}
+            />
             <PayrollSettingsTab
               businesses={businesses}
               isSuperuser={isSuperuser}

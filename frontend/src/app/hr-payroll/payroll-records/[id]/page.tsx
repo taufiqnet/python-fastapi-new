@@ -347,6 +347,17 @@ export default function PrintablePayslipPage() {
           </div>
         </div>
 
+        {/* Hold Notice Banner (if record is held) */}
+        {record.is_held && (
+          <div className="p-3.5 bg-amber-50 border border-amber-300 rounded-xl text-amber-900 text-xs flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+            <div>
+              <span className="font-bold">DISBURSEMENT ON HOLD:</span>{" "}
+              {record.hold_reason || "Remuneration suspended pending internal clearance."}
+            </div>
+          </div>
+        )}
+
         {/* Net Salary Highlight Box */}
         <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 flex items-center justify-between text-xs">
           <div>
@@ -354,7 +365,7 @@ export default function PrintablePayslipPage() {
               Net Disbursable Remuneration
             </div>
             <div className="text-[11px] text-emerald-700 mt-0.5">
-              Net Amount = Total Gross Earnings − Total Deductions
+              Net Amount = Total Gross Earnings − Total Deductions (BLA 2006 & ITA 2023 Compliant)
             </div>
           </div>
           <div className="text-2xl font-bold text-emerald-800">
