@@ -113,7 +113,7 @@ def update_category(
     category_id: uuid.UUID,
     data: DocumentCategoryUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "document_categories", "edit")),
+    current_user: User = Depends(require_permission("hrm", "document_categories", "update")),
 ):
     cat = cat_service.get_by_id(db, category_id)
     if not cat:
@@ -193,7 +193,7 @@ def update_template(
     template_id: uuid.UUID,
     data: DocumentTemplateUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "document_templates", "edit")),
+    current_user: User = Depends(require_permission("hrm", "document_templates", "update")),
 ):
     tpl = tpl_service.get_by_id(db, template_id)
     if not tpl:
@@ -283,7 +283,7 @@ def update_dossier_document(
     doc_id: uuid.UUID,
     data: EmployeeDocumentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "employee_documents", "edit")),
+    current_user: User = Depends(require_permission("hrm", "employee_documents", "update")),
 ):
     doc = doc_service.get_by_id(db, doc_id)
     if not doc:
@@ -300,7 +300,7 @@ def verify_dossier_document(
     doc_id: uuid.UUID,
     data: EmployeeDocumentVerify,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "employee_documents", "edit")),
+    current_user: User = Depends(require_permission("hrm", "employee_documents", "update")),
 ):
     doc = doc_service.get_by_id(db, doc_id)
     if not doc:
@@ -366,7 +366,7 @@ def update_agreement(
     agreement_id: uuid.UUID,
     data: EmployeeAgreementUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "employee_agreements", "edit")),
+    current_user: User = Depends(require_permission("hrm", "employee_agreements", "update")),
 ):
     agr = agr_service.get_by_id(db, agreement_id)
     if not agr:
@@ -383,7 +383,7 @@ def renew_agreement(
     agreement_id: uuid.UUID,
     data: EmployeeAgreementRenew,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "employee_agreements", "edit")),
+    current_user: User = Depends(require_permission("hrm", "employee_agreements", "update")),
 ):
     agr = agr_service.get_by_id(db, agreement_id)
     if not agr:
@@ -455,7 +455,7 @@ def update_identity_record(
     record_id: uuid.UUID,
     data: EmployeeIdentityRecordUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "identity_tracking", "edit")),
+    current_user: User = Depends(require_permission("hrm", "identity_tracking", "update")),
 ):
     rec = ident_service.get_by_id(db, record_id)
     if not rec:
@@ -511,7 +511,7 @@ def update_expiry_alert(
     alert_id: uuid.UUID,
     data: DocumentRenewalAlertUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("hrm", "document_alerts", "edit")),
+    current_user: User = Depends(require_permission("hrm", "document_alerts", "update")),
 ):
     alert = alert_service.repo.get_by_id(db, alert_id)
     if not alert:

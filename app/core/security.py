@@ -139,6 +139,11 @@ def require_permission(module: str, feature: str, action: str):
             return current_user
 
         candidate_codes = [f"{module}:{feature}:{action}"]
+        if action == "edit":
+            candidate_codes.append(f"{module}:{feature}:update")
+        elif action == "update":
+            candidate_codes.append(f"{module}:{feature}:edit")
+
         if feature in ("pos_terminal", "pos_registers"):
             candidate_codes.extend([f"{module}:pos:{action}", f"{module}:orders:{action}"])
         elif feature in ("procurement_po", "procurement_suppliers"):

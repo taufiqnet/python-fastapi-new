@@ -318,29 +318,81 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
 
     # Feature partition sets for HR & Payroll tiers
     HR_BASIC_FEATURES = {
+        # Organization & Directory
         "departments",
         "job_titles",
         "employees",
+        # Attendance & Leave (Self-Service & Manual Logging)
         "attendance",
+        "attendance_regularizations",
+        "outdoor_duties",
         "roster",
         "leave_types",
         "leave_applications",
         "holidays",
+        # Announcements
         "notice_board",
+        # Digital Personal Dossier (Self-Service & Basic Uploads)
+        "employee_documents",
+        # Resignations (Self-Service submission)
+        "resignations",
     }
     HR_PRO_FEATURES = HR_BASIC_FEATURES | {
+        # Advanced Attendance & Biometric Integration
+        "biometric_devices",
+        "overtime_applications",
+        "attendance_approvals",
+        # Leave Governance
         "leave_allocations",
+        # Full Compensation & Payroll Engine
         "compensation",
         "payroll_settings",
         "payroll_periods",
-        "offer_letters",
-        "appointment_letters",
         "payroll_records",
         "salary_certificates",
+        # Standard Employment Letters, Documents & Taxonomy
+        "offer_letters",
+        "appointment_letters",
         "experience_letters",
+        "document_categories",
+        "document_templates",
+        "employee_agreements",
+        "identity_tracking",
+        "document_alerts",
+        # Full Separation & Offboarding Governance (Clearance, FnF, Relieving)
+        "separations",
+        "exit_interviews",
+        "department_clearances",
+        "final_settlements",
+        "release_letters",
+        # Company Assets & Handover
+        "assets",
+        "asset_allocations",
+        # Travel & Expense Management
+        "travel_requests",
+        "travel_advances",
+        "expense_claims",
+        "da_policies",
+        # Career Lifecycle
+        "probation_reviews",
     }
     HR_ENTERPRISE_FEATURES = HR_PRO_FEATURES | {
+        # Talent Acquisition & Pipeline
         "recruitment",
+        # High-Volume Batch Automation
+        "bulk_letters",
+        # Cryptographic Digital Signatures & Audit Trail (ICT Act 2006)
+        "document_signatures",
+        # Damage & Maintenance Work Orders
+        "asset_maintenance",
+        # 360 Performance Management
+        "performance_cycles",
+        "performance_goals",
+        "performance_appraisals",
+        # Career Movements (Promotions, Increments, Demotions, Transfers)
+        "career_movements",
+        # Statutory Disciplinary Procedures (BLA 2006)
+        "disciplinary_cases",
     }
 
     perms_hr_basic = [p for p in db_all_perms if p.module == "hrm" and p.feature in HR_BASIC_FEATURES]
@@ -351,7 +403,9 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
     ]
     perms_hr_enterprise = [
         p for p in db_all_perms
-        if p.module == "hrm" or p.code in ("general:ai_assistant:view", "general:mcp_hub:view")
+        if (p.module == "hrm" and p.feature in HR_ENTERPRISE_FEATURES)
+        or p.code.startswith("general:ai_assistant:")
+        or p.code.startswith("general:mcp_hub:")
     ]
 
     # 2. Seed Default System Roles
