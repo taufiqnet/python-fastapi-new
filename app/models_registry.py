@@ -254,3 +254,4 @@ from app.modules.vehicles.models import (  # noqa: F401
     VehicleRequisition,
     WorkOrder,
 )
+from app.modules.system_backups.models import SystemBackup  # noqa: F401

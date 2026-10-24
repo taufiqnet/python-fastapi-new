@@ -441,6 +441,11 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/administration/businesses",
           superuserOnly: true,
         },
+        {
+          name: "System Backups",
+          href: "/administration/backups",
+          superuserOnly: true,
+        },
       ],
     },
     {

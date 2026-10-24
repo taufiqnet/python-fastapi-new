@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Upgrade in Progress | ProERP SaaS</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(15, 23, 42, 0.75);
+      --border: rgba(99, 102, 241, 0.2);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      overflow-x: hidden;
+      position: relative;
+    }
+    .ambient-glow {
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .card {
+      position: relative;
+      z-index: 1;
+      max-width: 560px;
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 2.5rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.1);
+      text-align: center;
+    }
+    .logo-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+    }
+    .pulse-ring {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #a5b4fc;
+      margin-bottom: 1.25rem;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      background: #38bdf8;
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      color: #fff;
+    }
+    p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .info-box {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      text-align: left;
+      margin-bottom: 1.5rem;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.825rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--text-muted); }
+    .info-value { color: #f1f5f9; font-weight: 500; font-family: monospace; }
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: rgba(51, 65, 85, 0.5);
+      border-radius: 9999px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 75%;
+      background: linear-gradient(90deg, #6366f1, #38bdf8);
+      border-radius: 9999px;
+      animation: progress-indeterminate 2s infinite ease-in-out;
+    }
+    @keyframes progress-indeterminate {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(200%); }
+    }
+    .countdown {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-bottom: 1.25rem;
+    }
+    .btn-refresh {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.65rem 1.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-refresh:hover { background: var(--primary-hover); }
+    .footer {
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid rgba(51, 65, 85, 0.4);
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div class="card">
+    <div class="logo-badge">Pro</div>
+    <div class="pulse-ring">
+      <span class="pulse-dot"></span>
+      Scheduled Platform Upgrade
+    </div>
+    <h1>System Upgrade in Progress</h1>
+    <p>
+      We are currently deploying the latest performance optimizations, security patches, and database schema upgrades to the ProERP platform.
+    </p>
+
+    <div class="progress-bar-container">
+      <div class="progress-bar"></div>
+    </div>
+
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value" style="color: #38bdf8;">Applying Migrations & Updates</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Data Integrity</span>
+        <span class="info-value" style="color: #34d399;">100% Preserved & Backed Up</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Estimated Completion</span>
+        <span class="info-value">~2 to 4 Minutes</span>
+      </div>
+    </div>
+
+    <div class="countdown" id="countdown-text">
+      Automatically reconnecting in <strong id="timer" style="color: #fff;">10</strong> seconds...
+    </div>
+
+    <button class="btn-refresh" onclick="checkHealthNow()">
+      Check & Reconnect Now
+    </button>
+
+    <div class="footer">
+      ProERP Enterprise SaaS &bull; Bangladesh & Worldwide Operations &bull; Support: support@proerp.com
+    </div>
+  </div>
+
+  <script>
+    let timeLeft = 10;
+    const timerElem = document.getElementById('timer');
+
+    async function checkHealthNow() {
+      try {
+        const res = await fetch('/api/v1/health', { cache: 'no-store' });
+        if (res.ok) {
+          window.location.href = '/';
+          return;
+        }
+      } catch (e) {
+        // Still down
+      }
+      timeLeft = 10;
+      if (timerElem) timerElem.textContent = timeLeft;
+    }
+
+    setInterval(() => {
+      timeLeft -= 1;
+      if (timeLeft <= 0) {
+        checkHealthNow();
+        timeLeft = 10;
+      }
+      if (timerElem) timerElem.textContent = timeLeft;
+    }, 1000);
+  </script>
+</body>
+</html>
