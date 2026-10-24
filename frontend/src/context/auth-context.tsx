@@ -122,6 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return false;
     if (user.is_superuser) return true;
 
+    if (user.permissions?.some((code) => code.startsWith(`${module}:`))) {
+      return true;
+    }
+
     if (user.direct_permissions?.some((p) => p.module === module)) {
       return true;
     }
