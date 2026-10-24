@@ -6941,6 +6941,1008 @@
                                 ]
                             },
                             "response": []
+                        },
+                        {
+                            "name": "Biometric Device Integration Setup",
+                            "item": [
+                                {
+                                    "name": "Get Attendance Settings",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/settings?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "settings"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Retrieve global attendance configuration including biometric device integration toggle, overtime rules, and grace periods."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Update Attendance Settings (Enable/Disable Biometric)",
+                                    "request": {
+                                        "method": "PUT",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/settings?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "settings"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Configure attendance operation rules and toggle hardware biometric automation.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"biometric_integration_enabled\": true,\n    \"grace_period_minutes\": 15,\n    \"overtime_minimum_minutes\": 60,\n    \"work_hours_per_day\": 8.0,\n    \"allow_manual_requests\": true,\n    \"require_outdoor_duty_approval\": true\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "List Biometric Devices",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/devices?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "devices"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "List registered biometric timeclocks across branches (ZKTeco, Hikvision, Suprema)."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Register Biometric Device",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/devices?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "devices"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Enroll a new hardware biometric device for automated daily sync.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"name\": \"Main Entrance Turnstile ZKTeco\",\n    \"device_code\": \"BIO-GUL-01\",\n    \"ip_address\": \"192.168.1.201\",\n    \"port\": 4370,\n    \"device_type\": \"zkteco_standalone\",\n    \"branch_id\": 1,\n    \"location\": \"Gulshan Flagship Outlet Reception\",\n    \"secret_key\": \"sec_zk_991823\",\n    \"is_active\": true\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Test Device Connection (Ping)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/devices/{{device_id}}/ping?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "devices",
+                                                "{{device_id}}",
+                                                "ping"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Execute network handshake and protocol probe to verify biometric device connectivity."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Trigger Device Sync & Pull Logs",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/sync-daily?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "sync-daily"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Execute scheduled or manual punch retrieval from online biometric hardware terminals.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"target_date\": \"2026-10-24\",\n    \"device_ids\": []\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Raw Attendance Logs & Webhooks",
+                            "item": [
+                                {
+                                    "name": "Get Raw Attendance Logs",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/raw-logs?business_id=1&date=2026-10-24",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "raw-logs"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                },
+                                                {
+                                                    "key": "date",
+                                                    "value": "2026-10-24"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View immutable audit log of raw biometric hardware clockings."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Push Device Attendance Punch (Webhook)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/raw-logs/push?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "raw-logs",
+                                                "push"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Receives punch notifications pushed directly by smart biometric terminals or edge gateways.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"device_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"biometric_user_id\": \"EMP-001\",\n    \"punch_time\": \"2026-10-24T09:02:15\",\n    \"punch_type\": \"in\",\n    \"verification_mode\": \"fingerprint\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Manual Attendance & Regularizations",
+                            "item": [
+                                {
+                                    "name": "List Manual Attendance Requests",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/regularizations?business_id=1&status=pending",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "regularizations"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                },
+                                                {
+                                                    "key": "status",
+                                                    "value": "pending"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Fetch employee regularizations and missing punch adjustments."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Submit Manual Attendance Request",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/regularizations?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "regularizations"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Employee submission for missing punch regularization.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"attendance_date\": \"2026-10-24\",\n    \"requested_check_in\": \"09:00:00\",\n    \"requested_check_out\": \"18:00:00\",\n    \"reason\": \"Biometric device scanner failed to recognize fingerprint during peak rush.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Review Regularization (Approve / Reject)",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/regularizations/{{reg_id}}/review?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "regularizations",
+                                                "{{reg_id}}",
+                                                "review"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "HR or supervisor approval of manual attendance adjustment.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"action\": \"approved\",\n    \"reviewer_notes\": \"Verified with CCTV entrance footage.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Visit & Outdoor Duty Management",
+                            "item": [
+                                {
+                                    "name": "List Outdoor Duty Applications",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/outdoor-duties?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "outdoor-duties"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View customer visits, vendor site inspections, and outdoor duty records."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Submit Outdoor Duty Application",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/outdoor-duties?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "outdoor-duties"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Apply for outdoor duty / field assignment with location details.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"visit_date\": \"2026-10-24\",\n    \"expected_start_time\": \"10:00:00\",\n    \"expected_end_time\": \"16:00:00\",\n    \"destination\": \"Bashundhara R/A - Central Super Store Site\",\n    \"purpose\": \"Store equipment calibration and cashier training.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Review Outdoor Duty Application",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/outdoor-duties/{{od_id}}/review?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "outdoor-duties",
+                                                "{{od_id}}",
+                                                "review"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Approve or decline outdoor duty request.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"action\": \"approved\",\n    \"reviewer_notes\": \"Official visit approved.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Overtime (OT) Management",
+                            "item": [
+                                {
+                                    "name": "List Overtime Requests",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/overtime?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "overtime"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View overtime applications and authorization statuses."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Apply for Overtime",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/overtime?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "overtime"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Submit pre-approved or post-shift overtime claim.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"ot_date\": \"2026-10-24\",\n    \"ot_hours\": 3.5,\n    \"reason\": \"Emergency inventory cycle counting and month-end shelf audit.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Review Overtime Request",
+                                    "request": {
+                                        "method": "PATCH",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/overtime/{{ot_id}}/review?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "overtime",
+                                                "{{ot_id}}",
+                                                "review"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Authorize and approve overtime hours for monthly payroll computation.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"action\": \"approved\",\n    \"approved_hours\": 3.0,\n    \"reviewer_notes\": \"Approved 3.0 hours active inventory count.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Attendance Processing & Monthly Summary",
+                            "item": [
+                                {
+                                    "name": "Process Period Attendance",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/process-period?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "process-period"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Compile raw punches, leaves, holidays, and regularizations into finalized attendance records.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"start_date\": \"2026-10-01\",\n    \"end_date\": \"2026-10-31\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "List Period Approvals",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/period-approvals?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "period-approvals"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View period sign-off records and payroll locking status."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Create Period Approval",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/period-approvals?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "period-approvals"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Initiate attendance period approval cycle.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"year\": 2026,\n    \"month\": 10,\n    \"period_name\": \"October 2026 Attendance Final\",\n    \"notes\": \"Verified by HR Operations.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Lock Period Attendance (Freeze for Payroll)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/period-approvals/{{approval_id}}/lock?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "period-approvals",
+                                                "{{approval_id}}",
+                                                "lock"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Freeze period attendance to prevent tampering and hand over to automated salary processing."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Monthly Attendance Summary",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/monthly-summary?business_id=1&year=2026&month=10",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "monthly-summary"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                },
+                                                {
+                                                    "key": "year",
+                                                    "value": "2026"
+                                                },
+                                                {
+                                                    "key": "month",
+                                                    "value": "10"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Comprehensive tabular roster breakdown of days present, late, absent, on leave, and overtime hours."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Export Monthly Summary to Excel",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/attendance/monthly-summary/export-excel?business_id=1&year=2026&month=10",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "attendance",
+                                                "monthly-summary",
+                                                "export-excel"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                },
+                                                {
+                                                    "key": "year",
+                                                    "value": "2026"
+                                                },
+                                                {
+                                                    "key": "month",
+                                                    "value": "10"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Download formatted spreadsheet of monthly attendance summary."
+                                    },
+                                    "response": []
+                                }
+                            ]
                         }
                     ]
                 },
@@ -10691,6 +11693,2162 @@
                                 "description": "Download/view complete Bangladesh Income Tax Act 2023 annual tax certificate summary and month-by-month deduction ledger."
                             },
                             "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Separation & Offboarding",
+                    "item": [
+                        {
+                            "name": "Resignation Applications",
+                            "item": [
+                                {
+                                    "name": "Submit Resignation Application",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/resignations?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "resignations"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Employee submits formal resignation specifying proposed last working day.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"resignation_date\": \"2026-10-24\",\n    \"proposed_last_working_day\": \"2026-11-23\",\n    \"reason_type\": \"career_growth\",\n    \"reason_details\": \"Accepted a new role closer to home.\",\n    \"handover_notes\": \"Completed handover checklist and documentation.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "List Resignation Applications",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/resignations?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "resignations"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Retrieve all submitted resignation applications with status filters."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Resignation Details",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/resignations/{{resignation_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "resignations",
+                                                "{{resignation_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View full resignation details including notice calculation and review history."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Review Resignation (Approve/Reject)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/resignations/{{resignation_id}}/review?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "resignations",
+                                                "{{resignation_id}}",
+                                                "review"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Manager/HR reviews and signs off on resignation application.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"action\": \"approved\",\n    \"approved_last_working_day\": \"2026-11-23\",\n    \"notice_shortfall_days\": 0,\n    \"reviewer_notes\": \"Resignation accepted with full 30-day notice served.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Withdraw Resignation Application",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/resignations/{{resignation_id}}/withdraw?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "resignations",
+                                                "{{resignation_id}}",
+                                                "withdraw"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Allows employee to retract resignation before separation execution."
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Employee Separation Master",
+                            "item": [
+                                {
+                                    "name": "Create Employee Separation (Termination/Retirement/Dismissal)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/separations?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "separations"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Initiate formal employee separation under Bangladesh Labour Act (BLA 2006).",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"separation_type\": \"termination\",\n    \"separation_date\": \"2026-10-24\",\n    \"last_working_day\": \"2026-10-24\",\n    \"reason\": \"Business restructuring of branch operations.\",\n    \"is_eligible_for_rehire\": true,\n    \"gratuity_applicable\": true,\n    \"remarks\": \"Separated with full statutory severance package.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "List Employee Separations",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/separations?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "separations"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "List all ongoing and completed employee separations."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Separation Details",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/separations/{{separation_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "separations",
+                                                "{{separation_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View complete separation record, department clearances, and settlement links."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Update Separation Record",
+                                    "request": {
+                                        "method": "PUT",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/separations/{{separation_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "separations",
+                                                "{{separation_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Modify separation metadata and key offboarding milestones.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"last_working_day\": \"2026-11-01\",\n    \"remarks\": \"Extended last working day for additional audit sign-off.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Department Clearances & NOC",
+                            "item": [
+                                {
+                                    "name": "List All Department Clearances",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/clearances?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "clearances"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Retrieve clearance sign-off statuses across IT, Admin, Finance, Legal, and HR."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Separation Clearance Status (5 Departments)",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/separations/{{separation_id}}/clearances?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "separations",
+                                                "{{separation_id}}",
+                                                "clearances"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View itemized departmental sign-offs for an active separation."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Sign-Off Department Clearance",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/clearances/{{clearance_id}}/sign-off?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "clearances",
+                                                "{{clearance_id}}",
+                                                "sign-off"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Authorized department representative signs off on employee clearance.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"status\": \"cleared\",\n    \"deduction_amount\": 0.0,\n    \"notes\": \"All access tokens, email credentials, and hardware verified.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Asset Handover & Recovery",
+                            "item": [
+                                {
+                                    "name": "List Custody Assets for Employee",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/employees/{{employee_id}}/assets?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "employees",
+                                                "{{employee_id}}",
+                                                "assets"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Query asset inventory to identify all laptops, ID cards, SIMs, and keys held by departing staff."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Execute Asset Return & Handover Sign-off",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/assets/{{assignment_id}}/return?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "assets",
+                                                "{{assignment_id}}",
+                                                "return"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Register physical return of company property into inventory.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"return_condition\": \"good\",\n    \"recovery_amount\": 0.0,\n    \"notes\": \"MacBook Pro returned in immaculate condition with original charger.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Exit Interview",
+                            "item": [
+                                {
+                                    "name": "Conduct Exit Interview",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/exit-interviews?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "exit-interviews"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Document exit interview ratings, retention feedback, and cultural scores.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"separation_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"interviewer_name\": \"Taufiqul Islam (Head of HR)\",\n    \"primary_reason_for_leaving\": \"Higher compensation & remote work flexibility\",\n    \"job_satisfaction_rating\": 4,\n    \"management_rating\": 4,\n    \"work_culture_rating\": 5,\n    \"recommend_company\": true,\n    \"feedback_notes\": \"Appreciated team support and career mentorship.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "List Exit Interviews",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/exit-interviews?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "exit-interviews"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Review enterprise offboarding analytics and exit interviews."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Separation Exit Interview Details",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/separations/{{separation_id}}/exit-interview?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "separations",
+                                                "{{separation_id}}",
+                                                "exit-interview"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Inspect specific exit survey submitted for a separation."
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Final Settlement (FnF - BLA 2006)",
+                            "item": [
+                                {
+                                    "name": "List Final Settlements",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/settlements?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "settlements"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Query full & final settlement records across all offboarded staff."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Compute Statutory Final Settlement (FnF)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/separations/{{separation_id}}/settlement/compute?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "separations",
+                                                "{{separation_id}}",
+                                                "settlement",
+                                                "compute"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Compute statutory compensation adhering to BLA 2006 leave encashment and gratuity formulas.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"payable_salary_days\": 24,\n    \"unpaid_salary\": 45000.0,\n    \"encashable_leave_days\": 14,\n    \"leave_encashment_amount\": 26250.0,\n    \"service_years\": 4.5,\n    \"gratuity_amount\": 105000.0,\n    \"notice_pay\": 0.0,\n    \"bonus_payable\": 0.0,\n    \"other_allowances\": 5000.0,\n    \"total_earnings\": 181250.0,\n    \"notice_shortfall_deduction\": 0.0,\n    \"unreturned_asset_deduction\": 0.0,\n    \"loan_deduction\": 12000.0,\n    \"tax_deduction\": 3500.0,\n    \"other_deductions\": 0.0,\n    \"total_deductions\": 15500.0,\n    \"net_settlement_amount\": 165750.0\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Final Settlement Breakdown",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/settlements/{{settlement_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "settlements",
+                                                "{{settlement_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View full financial calculation breakdown and audit sign-off for a final settlement."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Disburse Final Settlement Funds",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/settlements/{{settlement_id}}/disburse?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "settlements",
+                                                "{{settlement_id}}",
+                                                "disburse"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Complete disbursement of net FnF settlement and lock separation profile.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"payment_method\": \"bank_transfer\",\n    \"reference_number\": \"EFT-FNF-2026-9901\",\n    \"disbursed_at\": \"2026-10-24T12:00:00\",\n    \"remarks\": \"Disbursed to verified employee salary bank account.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Experience & Release Letters",
+                            "item": [
+                                {
+                                    "name": "Generate Experience & Release Letter",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/release-letters?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "release-letters"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Create authenticated certificate of service and official release letter.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"separation_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"reference_number\": \"HR/EXP/2026/042\",\n    \"title\": \"Experience & Certificate of Service\",\n    \"content\": \"This is to certify that Mr. Tariqul Islam was employed with our organization from 01 Jan 2022 to 24 Oct 2026 as Senior Retail Operations Lead. His conduct during his tenure was exemplary.\",\n    \"issued_date\": \"2026-10-24\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "List Release Letters",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/release-letters?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "release-letters"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View generated release letters across the enterprise."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Release Letter by Separation",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/separation/separations/{{separation_id}}/release-letter?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "separation",
+                                                "separations",
+                                                "{{separation_id}}",
+                                                "release-letter"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Fetch the officially issued certificate of service and experience letter."
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "Employee Document Management",
+                    "item": [
+                        {
+                            "name": "Document Categories",
+                            "item": [
+                                {
+                                    "name": "List Document Categories",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/categories?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "categories"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Fetch document categories configured with statutory and confidentiality policies."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Create Document Category",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/categories?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "categories"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Configure new document category for employee personal files.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"name\": \"Academic & Professional Certifications\",\n    \"code\": \"EDU_CERT\",\n    \"description\": \"University diplomas, academic transcripts, and professional licensures.\",\n    \"is_mandatory\": false,\n    \"has_expiry\": false,\n    \"confidentiality_level\": \"internal\",\n    \"allowed_extensions\": \"pdf,png,jpg,jpeg\",\n    \"max_file_size_mb\": 10\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Update Document Category",
+                                    "request": {
+                                        "method": "PUT",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/categories/{{category_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "categories",
+                                                "{{category_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Update retention, size, or statutory flags on an existing category.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"is_mandatory\": true,\n    \"confidentiality_level\": \"confidential\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Document Templates & Preview Engine",
+                            "item": [
+                                {
+                                    "name": "List Document Templates",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/templates?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "templates"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Retrieve document generation blueprints with merge token schemas."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Create Document Template",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/templates?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "templates"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Register reusable document template containing merge tags.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"name\": \"Annual Appraisal Salary Increment Letter\",\n    \"template_type\": \"increment\",\n    \"subject\": \"Notice of Compensation Revision\",\n    \"content_html\": \"REF: {{reference_no}}\\nDate: {{current_date}}\\n\\nDear {{employee_name}},\\n\\nWe are pleased to inform you that effective {{effective_date}}, your revised monthly gross salary is BDT {{gross_salary}}.\",\n    \"header_content\": \"Official Corporate Letterhead\",\n    \"footer_content\": \"Confidential - Addressee Only\",\n    \"is_active\": true\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Update Document Template",
+                                    "request": {
+                                        "method": "PUT",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/templates/{{template_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "templates",
+                                                "{{template_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Update template content or active flag.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"name\": \"Revised Increment Letter 2026\",\n    \"is_active\": true\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Live Preview Template with Tokens",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/templates/preview?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "templates",
+                                                "preview"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Test render template with dynamic employee profile variables and custom token overrides.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"template_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"custom_tokens\": {\n        \"reference_no\": \"HR/INC/2026/001\",\n        \"effective_date\": \"2026-11-01\"\n    }\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Digital Personal File (e-Dossier / 201 File)",
+                            "item": [
+                                {
+                                    "name": "List Employee Dossier Documents",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/dossier?business_id=1&employee_id={{employee_id}}",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "dossier"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                },
+                                                {
+                                                    "key": "employee_id",
+                                                    "value": "{{employee_id}}"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Retrieve all digital files uploaded to an employee's e-Dossier folder."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Upload Document to Dossier",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/dossier?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "dossier"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Upload authenticated document to employee's 201 personal file.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"category_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"document_title\": \"Graduation Diploma - BSc CSE\",\n    \"document_number\": \"DIP-DU-2020-891\",\n    \"file_url\": \"/uploads/dossier/emp1/diploma.pdf\",\n    \"file_name\": \"diploma.pdf\",\n    \"file_size_bytes\": 1048576,\n    \"mime_type\": \"application/pdf\",\n    \"issue_date\": \"2020-06-30\",\n    \"issuing_authority\": \"University of Dhaka\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Dossier Completeness Scorecard",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/dossier/summary/{{employee_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "dossier",
+                                                "summary",
+                                                "{{employee_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Evaluate compliance percentage across all mandatory statutory categories (NID, Photos, Agreements)."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Verify / Reject Dossier Document",
+                                    "request": {
+                                        "method": "PUT",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/dossier/{{doc_id}}/verify?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "dossier",
+                                                "{{doc_id}}",
+                                                "verify"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "HR auditor verifies or rejects uploaded document with audit trail.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"status\": \"verified\",\n    \"rejection_reason\": null\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "ID, Passport, Visa & Work Permit Tracking",
+                            "item": [
+                                {
+                                    "name": "List Employee Identity Records",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/identity-records?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "identity-records"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Fetch statutory credentials including Smart NID, Passports, and BIDA work permits."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Create Identity Record (Smart NID / Passport / BIDA)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/identity-records?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "identity-records"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Store verified statutory identification with automated expiration tracking.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"identity_type\": \"nid_smart_card\",\n    \"document_number\": \"1992019283\",\n    \"issuing_country\": \"Bangladesh\",\n    \"issuing_authority\": \"Election Commission Bangladesh\",\n    \"issue_date\": \"2018-05-15\",\n    \"expiry_date\": \"2028-05-15\",\n    \"alert_threshold_days\": 60,\n    \"is_primary\": true\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Update Identity Record",
+                                    "request": {
+                                        "method": "PUT",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/identity-records/{{record_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "identity-records",
+                                                "{{record_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Update credential details and renewed expiration dates.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"document_number\": \"1992019284\",\n    \"expiry_date\": \"2029-05-15\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Contracts, NDAs & Agreements",
+                            "item": [
+                                {
+                                    "name": "List Employee Agreements",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/agreements?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "agreements"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Query permanent contracts, fixed-term employment agreements, NDAs, and training bonds."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Create Agreement (Employment Contract, NDA, Bond)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/agreements?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "agreements"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Register legally binding employment agreement with statutory governance parameters.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"agreement_type\": \"permanent_contract\",\n    \"reference_no\": \"AGR-EMP-2026-001\",\n    \"title\": \"Permanent Employment Agreement\",\n    \"start_date\": \"2026-10-24\",\n    \"end_date\": null,\n    \"notice_period_days\": 30,\n    \"probation_months\": 3,\n    \"bond_amount\": 0.0,\n    \"governing_law\": \"Laws of Bangladesh (BLA 2006)\",\n    \"status\": \"active\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Renew / Extend Agreement",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/agreements/{{agreement_id}}/renew?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "agreements",
+                                                "{{agreement_id}}",
+                                                "renew"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Execute agreement extension and archive historical term.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"new_start_date\": \"2026-11-01\",\n    \"new_end_date\": \"2027-10-31\",\n    \"new_reference_no\": \"AGR-EMP-2026-001-R1\",\n    \"renewal_notes\": \"Annual fixed-term contract renewed based on outstanding performance.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Document Expiry & Renewal Alerts",
+                            "item": [
+                                {
+                                    "name": "List Expiry Alerts",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/expiry-alerts?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "expiry-alerts"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View documents, credentials, and agreements approaching expiration."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Run Expiry Scan Engine",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/expiry-alerts/scan?business_id=1&threshold_days=60",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "expiry-alerts",
+                                                "scan"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                },
+                                                {
+                                                    "key": "threshold_days",
+                                                    "value": "60"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Trigger background scanner to evaluate passports, work permits, and contracts expiring within threshold."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Update Renewal Tracking Status",
+                                    "request": {
+                                        "method": "PUT",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/expiry-alerts/{{alert_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "expiry-alerts",
+                                                "{{alert_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Update resolution stage on active expiration alert.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"renewal_status\": \"in_progress\",\n    \"tracking_reference\": \"PASSPORT-RNW-2026-001\",\n    \"notes\": \"Submitted renewal packet to Embassy.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Bulk Letter Generation",
+                            "item": [
+                                {
+                                    "name": "List Bulk Letter Jobs",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/bulk-letters/jobs?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "bulk-letters",
+                                                "jobs"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "List batch letter generation runs and dispatch statuses."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Create & Dispatch Bulk Letter Batch",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/bulk-letters/generate?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "bulk-letters",
+                                                "generate"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Generate and dispatch personalized increment, appointment, or confirmation letters in batch.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"job_type\": \"increment\",\n    \"template_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"batch_title\": \"Annual Increment Cycle 2026\",\n    \"reference_prefix\": \"HR/INC/2026\",\n    \"issue_date\": \"2026-10-24\",\n    \"employee_ids\": [\n        \"3fa85f64-5717-4562-b3fc-2c963f66afa6\"\n    ]\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Bulk Letter Job Details",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/bulk-letters/jobs/{{job_id}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "bulk-letters",
+                                                "jobs",
+                                                "{{job_id}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "View batch statistics, success/failure counts, and rendered letters."
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Get Bulk Letter Job Items",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/bulk-letters/jobs/{{job_id}}/items?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "bulk-letters",
+                                                "jobs",
+                                                "{{job_id}}",
+                                                "items"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Inspect individual recipient letters with acknowledgment status."
+                                    },
+                                    "response": []
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Statutory e-Signature & Verification (ICT Act 2006)",
+                            "item": [
+                                {
+                                    "name": "Execute Digital Signature (SHA-256 Stamp)",
+                                    "request": {
+                                        "method": "POST",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/signatures/sign?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "signatures",
+                                                "sign"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Legally bind employee/signatory to document with tamper-evident SHA-256 hash and audit certificate number.",
+                                        "body": {
+                                            "mode": "raw",
+                                            "raw": "{\n    \"business_id\": 1,\n    \"employee_id\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\",\n    \"document_content_to_hash\": \"I accept the terms of the Employment Contract Ref: AGR-001.\",\n    \"signature_mode\": \"drawn_canvas\",\n    \"signature_image_base64_or_url\": \"data:image/png;base64,iVBORw0KGgo...\",\n    \"signer_full_name\": \"Tariqul Islam\",\n    \"signer_email\": \"tariqul@company.com\",\n    \"acknowledgement_text\": \"I hereby confirm that I have reviewed the contents of this document. By executing this electronic signature, I intend to legally bind myself under the Information & Communication Technology (ICT) Act 2006.\"\n}",
+                                            "options": {
+                                                "raw": {
+                                                    "language": "json"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    "response": []
+                                },
+                                {
+                                    "name": "Verify Certificate & Audit Authenticity",
+                                    "request": {
+                                        "method": "GET",
+                                        "header": [
+                                            {
+                                                "key": "Authorization",
+                                                "value": "Bearer {{token}}",
+                                                "type": "text"
+                                            },
+                                            {
+                                                "key": "Content-Type",
+                                                "value": "application/json",
+                                                "type": "text"
+                                            }
+                                        ],
+                                        "url": {
+                                            "raw": "{{base_url}}/documents/signatures/verify/{{certificate_no}}?business_id=1",
+                                            "host": [
+                                                "{{base_url}}"
+                                            ],
+                                            "path": [
+                                                "documents",
+                                                "signatures",
+                                                "verify",
+                                                "{{certificate_no}}"
+                                            ],
+                                            "query": [
+                                                {
+                                                    "key": "business_id",
+                                                    "value": "1"
+                                                }
+                                            ]
+                                        },
+                                        "description": "Public/Internal verification of electronic signature certificate authenticity and checksum integrity."
+                                    },
+                                    "response": []
+                                }
+                            ]
                         }
                     ]
                 }

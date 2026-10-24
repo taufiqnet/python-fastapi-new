@@ -235,24 +235,104 @@ mindmap
 
 ### 6.1 Organization & Employee Master
 - **REQ-HRM-001 (Department & Job Designation):**
-  - Hierarchical department trees and standardized job titles with reporting designations.
+  - Hierarchical department trees with branch scoping, unique department slugs, and standardized job titles with reporting designations.
 - **REQ-HRM-002 (Employee Profiles):**
-  - Digital employee master files capturing personal identity, national ID (NID), emergency contacts, branch assignment, employment type, and bank account details.
+  - Digital employee master files capturing personal identity, national ID (NID), emergency contacts, branch assignment, employment type, bank account details, and corporate email.
 
-### 6.2 Attendance & Leave Management
-- **REQ-HRM-003 (Shift & Attendance Tracking):**
-  - Multi-shift scheduling (Morning, Evening, Night retail shifts).
-  - Daily check-in/check-out logs, late-in flags, and overtime tracking.
-- **REQ-HRM-004 (Leave Policies & Quotas):**
-  - Configurable leave types (Annual Leave, Sick Leave, Casual Leave, Maternity Leave) with annual quota allocations, balance deduction, and supervisor approval hierarchy.
+### 6.2 Attendance & Time Tracking (Biometric & Roster Governance)
+- **REQ-HRM-003 (Biometric & Device Integration Engine):**
+  - Hardware device registry supporting standalone TCP/IP biometric terminals (ZKTeco, Hikvision, Suprema).
+  - Configurable settings: global enable/disable toggle for biometric integration (`biometric_integration_enabled`), device IP, port, secret key, and branch assignment.
+  - Optional architecture: Payroll calculation operates seamlessly with or without biometric hardware active. Enabling the device integration automates punch harvesting and salary processing without manual intervention.
+  - Automated network ping/handshake diagnostic probe.
+- **REQ-HRM-004 (Raw Punch Logs & Ingest Gateway):**
+  - Real-time HTTP push webhook listener and scheduled polling worker to harvest punch events (`raw-logs/push`, `sync-daily`).
+  - Immutable raw attendance audit trail capturing device ID, biometric user ID, timestamp, verification method (fingerprint, facial recognition, RFID card), and punch state (Check-In, Check-Out, Break).
+- **REQ-HRM-005 (Attendance Regularization & Missing Punch Workflow):**
+  - Self-service and supervisor manual attendance request portal for forgotten check-ins, device misreads, or field emergencies.
+  - Multi-tier approval workflow (Pending ➔ Approved / Rejected) with reason capture and mandatory audit notes.
+- **REQ-HRM-006 (Visit & Outdoor Duty Management):**
+  - Formal application and approval cycle for official client visits, branch inspections, and field duties.
+  - Captures expected timeframes, destination, and purpose, automatically crediting full working day attendance upon approval.
+- **REQ-HRM-007 (Overtime [OT] Authorization & Calculation):**
+  - Configurable minimum daily overtime qualification threshold (default 60 minutes) and standard working hours (8.0 hours/day).
+  - Employee overtime claims subjected to supervisor authorization before feeding into monthly payroll earnings.
+- **REQ-HRM-008 (Monthly Attendance Period Processing & Payroll Freeze):**
+  - Period-end compilation aggregating raw punches, approved regularizations, outdoor duties, statutory holidays, and approved leaves.
+  - Formatted Monthly Attendance Summary matrix displaying present days, absent days, late counts, and approved overtime hours.
+  - Cryptographic period locking mechanism (`period-approvals/{id}/lock`) to freeze attendance data and prevent retroactive modifications once handed over to payroll.
 
-### 6.3 Compensation & Monthly Payroll
-- **REQ-HRM-005 (Salary Breakdown Structure):**
-  - Salary profiles configured per employee: Basic Pay, House Rent Allowance, Medical Allowance, Conveyance, Gross Salary, and Provident Fund (PF) contribution.
-- **REQ-HRM-006 (Automated Payroll Runs):**
-  - Generation of monthly payroll cycles (`PayrollPeriod`).
-  - Automated calculation of earnings, overtime pay, unpaid leave deductions, Tax Deducted at Source (TDS), and net payable salary.
-  - Generation of printable employee pay slips.
+### 6.3 Compensation & Statutory Monthly Payroll (BLA 2006)
+- **REQ-HRM-009 (Salary Breakdown Structure):**
+  - Statutory 5-tier salary structure conforming to Bangladesh Labour Act:
+    - Basic Salary (minimum 50% of gross)
+    - House Rent Allowance (25%)
+    - Medical Allowance (10%)
+    - Conveyance Allowance
+    - Food / Festival Allowances
+- **REQ-HRM-010 (Automated Payroll Computation & TDS):**
+  - Automated generation of monthly payroll cycles (`PayrollPeriod`).
+  - Integration with finalized attendance roster for unpaid leave pro-rata deductions and overtime disbursements.
+  - Automated Tax Deducted at Source (TDS) based on national progressive tax slabs.
+  - Individual pay slip generation and bank EFT transfer schedules.
+
+### 6.4 Separation & Offboarding Governance
+- **REQ-HRM-011 (Resignation Application & Notice Calculation):**
+  - Self-service resignation submission with proposed last working day and reason categorization.
+  - Automated notice period evaluation (contractual notice vs. actual days served) identifying shortfall days.
+  - Supervisory review and acceptance workflow with withdrawal option prior to execution.
+- **REQ-HRM-012 (Employee Separation Master):**
+  - Enterprise governance for all separation modes: Resignation, Termination with notice, Immediate Termination with notice pay, Statutory Retirement, Dismissal on disciplinary grounds, and Death in service.
+  - Multi-state lifecycle: `Initiated` ➔ `Clearance Pending` ➔ `Settlement Ready` ➔ `Settled` ➔ `Completed`.
+- **REQ-HRM-013 (5-Tier Departmental Clearance & NOC):**
+  - Independent sign-off tracking across 5 mandatory departments:
+    1. **IT Department:** Revocation of system logins, email accounts, VPN access, and return of computing peripherals.
+    2. **Administration:** Return of access cards, uniform, corporate SIM card, and company vehicle keys.
+    3. **Finance & Accounts:** Recovery of travel advances, petty cash balances, and staff purchase dues.
+    4. **Legal & Compliance:** Verification of NDA post-employment obligations and non-compete clauses.
+    5. **Human Resources:** Exit interview completion, PF loan clearing, and final clearance sign-off.
+- **REQ-HRM-014 (Custody Asset Recovery):**
+  - Direct integration with Asset Management inventory module (`assets_router`).
+  - Lists all physical hardware assigned to the departing employee; enables itemized condition assessment (Good, Damaged, Lost) and auto-computes deduction charges for unreturned items.
+- **REQ-HRM-015 (Exit Interview & Retention Telemetry):**
+  - Structured survey capturing satisfaction ratings across compensation, management, work culture, growth opportunities, and recommendation likelihood.
+- **REQ-HRM-016 (Statutory Full & Final Settlement [FnF]):**
+  - Mathematical computation conforming strictly to Bangladesh Labour Act (BLA 2006):
+    - **Earned Unpaid Salary:** Pro-rated for active days worked in final month.
+    - **Earned Leave Encashment:** Unavailed annual leave balance encashed at `(Basic + Dearness + Allowances) / 30` per day (BLA 2006 Section 117).
+    - **Statutory Gratuity:** Calculation under BLA 2006 Section 27 based on completed continuous service years (30 days basic wages for each year completed beyond 5 years).
+    - **Notice Pay / Shortfall:** Compensation in lieu of notice where applicable.
+    - **Deductions:** TDS, pending loan principal, unreturned asset liabilities, and departmental penalties.
+  - Disbursement recording with bank EFT transaction reference.
+- **REQ-HRM-017 (Service Experience & Release Letter Generation):**
+  - Automated generation of official Certificate of Service and Relieving Letter carrying corporate letterhead, service tenure dates, designation, and verified reference code.
+
+### 6.5 Employee Document Management & Digital Personal File (e-Dossier)
+- **REQ-HRM-018 (Document Categories & Retention Governance):**
+  - Centralized categorization with statutory mandatory flags, file extension whitelists (PDF, JPG, PNG, DOCX), maximum upload sizes, and 4 confidentiality tiers (`Public`, `Internal`, `Confidential`, `Strictly Confidential`).
+- **REQ-HRM-019 (Dynamic Document Template Engine):**
+  - Reusable template catalog with rich merge tag parser replacing variables in real-time (`{{employee_name}}`, `{{employee_code}}`, `{{designation}}`, `{{department}}`, `{{joining_date}}`, `{{effective_date}}`, `{{gross_salary}}`, `{{basic_salary}}`, `{{reference_no}}`, `{{current_date}}`, `{{company_name}}`).
+  - Interactive live preview modal rendering layout with actual employee records before dispatch.
+- **REQ-HRM-020 (Digital Personal File [e-Dossier / 201 File]):**
+  - Comprehensive electronic folder for every employee tracking educational diplomas, national identity, employment contracts, and disciplinary records.
+  - **Automated Completeness Scorecard:** Calculates compliance % based on uploaded vs. mandatory statutory documents required under national employment regulations.
+  - Dual-state verification desk enabling HR auditors to review, verify, or reject files with reason capture.
+- **REQ-HRM-021 (ID, Passport, Visa & Work Permit Tracking):**
+  - Structured credential storage enforcing format validation:
+    - Bangladesh Smart NID: Exactly 10 numeric digits.
+    - Classic NID: Exactly 13 or 17 numeric digits.
+    - Bangladesh e-TIN: Exactly 12 numeric digits.
+    - Expatriate Credentials: International Passports, BIDA Work Permits, BEPZA Clearances, and Work Visas.
+- **REQ-HRM-022 (Document Expiry & Renewal Alert Engine):**
+  - Automated scanning engine evaluating credentials, agreements, and personal files expiring within threshold windows (15, 30, 60 days).
+  - Urgency categorization (`Overdue`, `Critical`, `Warning`, `Info`) with renewal tracking stages (`Pending`, `In Progress`, `Renewed`, `Grace Period`).
+- **REQ-HRM-023 (Bulk Letter Generation Worker):**
+  - Multi-recipient batch letter generator for organization-wide Salary Revisions / Increments, Service Confirmations, and Transfers.
+  - Dispatches and renders individual personalized documents in batch with automated reference prefix numbering.
+- **REQ-HRM-024 (Statutory e-Signatures & Audit Verification [ICT Act 2006]):**
+  - Legally binding electronic document execution conforming to the Bangladesh Information & Communication Technology Act 2006.
+  - Support for HTML5 canvas drawn signatures, typed script signatures, and clickwrap consents.
+  - Generates immutable SHA-256 cryptographic digest of document content, captures signer IP address and browser user-agent, and generates a globally verifiable audit certificate (`CERT-DOC-YYYYMMDD-XXXXXXXX`).
 
 ---
 
@@ -302,6 +382,7 @@ mindmap
 | **Thermal Receipt Printers** | 80mm / 58mm Thermal Printers (USB, Network LAN, ESC/POS) | Fast graphic & text receipt printing with store branding, VAT breakdowns, and barcodes. |
 | **Electronic Cash Drawers**| RJ11 / RJ12 connection through Receipt Printer | Drawer kick pulse triggered automatically upon cash payment completion. |
 | **Customer Displays (VFD)** | 2-Line USB / Serial Pole Displays | Real-time line item price and total payable display facing the customer. |
+| **Biometric Timeclocks** | TCP/IP Ethernet LAN, RS-485, HTTP Push Webhook | Automated daily & real-time punch synchronization across ZKTeco, Hikvision, and Suprema devices with optional standalone fallback. |
 
 ---
 
@@ -341,7 +422,21 @@ mindmap
 | **REQ-PROC-002**| Procurement | `PurchaseOrder` | `/procurement/purchase-orders` | `po_list.html` |
 | **REQ-HRM-001** | HRM | `Department`, `JobTitle` | `/departments/manage` | `department_list.html` |
 | **REQ-HRM-002** | HRM | `Employee` | `/employees/manage` | `employee_list.html` |
+| **REQ-HRM-003** | HRM | `BiometricDevice` | `/attendance/devices` | `attendance/page.tsx` |
+| **REQ-HRM-005** | HRM | `AttendanceRegularization` | `/attendance/regularizations` | `attendance/page.tsx` |
 | **REQ-HRM-006** | HRM | `EmployeeSalary`, `PayrollPeriod` | `/payroll/settings` | `payroll_settings.html` |
+| **REQ-HRM-007** | HRM | `AttendanceOvertimeRequest` | `/attendance/overtime` | `attendance/page.tsx` |
+| **REQ-HRM-008** | HRM | `AttendancePeriodApproval` | `/attendance/period-approvals` | `attendance/page.tsx` |
+| **REQ-HRM-011** | HRM | `ResignationApplication` | `/separation/resignations` | `resignation-tab.tsx` |
+| **REQ-HRM-012** | HRM | `EmployeeSeparation` | `/separation/separations` | `separation-tab.tsx` |
+| **REQ-HRM-013** | HRM | `DepartmentClearance` | `/separation/clearances` | `department-clearance-tab.tsx` |
+| **REQ-HRM-016** | HRM | `EmployeeFinalSettlement` | `/separation/settlements` | `final-settlement-tab.tsx` |
+| **REQ-HRM-018** | HRM | `DocumentCategory` | `/documents/categories` | `categories-tab.tsx` |
+| **REQ-HRM-020** | HRM | `EmployeeDocument` | `/documents/dossier` | `dossier-tab.tsx` |
+| **REQ-HRM-021** | HRM | `EmployeeIdentityRecord` | `/documents/identity-records` | `identity-tab.tsx` |
+| **REQ-HRM-022** | HRM | `DocumentRenewalAlert` | `/documents/expiry-alerts` | `expiry-alerts-tab.tsx` |
+| **REQ-HRM-023** | HRM | `BulkLetterJob` | `/documents/bulk-letters` | `bulk-letters-tab.tsx` |
+| **REQ-HRM-024** | HRM | `DocumentAcknowledgement` | `/documents/signatures/sign` | `sign-document-modal.tsx` |
 | **REQ-ACC-001** | Finance | `Account` | `/finance/accounts` | `account_list.html` |
 | **REQ-ACC-002** | Finance | `JournalVoucher`, `JournalEntry` | `/finance/vouchers` | `voucher_list.html` |
 | **REQ-VAT-001** | Finance | `MushakChallan`, `SalesInvoice` | `/finance/mushak-6-3` | `mushak_6_3_list.html` |

@@ -2981,6 +2981,425 @@ Tenant scoping is automatically resolved via the user's JWT claims and validated
 ---
 
 
+#### Biometric Device Integration Setup
+
+### `GET` Get Attendance Settings
+
+- **URL:** `{{base_url}}/attendance/settings?business_id=1`
+- **Method:** `GET`
+- **Summary:** Retrieve global attendance configuration including biometric device integration toggle, overtime rules, and grace periods.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `PUT` Update Attendance Settings (Enable/Disable Biometric)
+
+- **URL:** `{{base_url}}/attendance/settings?business_id=1`
+- **Method:** `PUT`
+- **Summary:** Configure attendance operation rules and toggle hardware biometric automation.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "biometric_integration_enabled": true,
+    "grace_period_minutes": 15,
+    "overtime_minimum_minutes": 60,
+    "work_hours_per_day": 8.0,
+    "allow_manual_requests": true,
+    "require_outdoor_duty_approval": true
+}
+```
+
+
+---
+
+### `GET` List Biometric Devices
+
+- **URL:** `{{base_url}}/attendance/devices?business_id=1`
+- **Method:** `GET`
+- **Summary:** List registered biometric timeclocks across branches (ZKTeco, Hikvision, Suprema).
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Register Biometric Device
+
+- **URL:** `{{base_url}}/attendance/devices?business_id=1`
+- **Method:** `POST`
+- **Summary:** Enroll a new hardware biometric device for automated daily sync.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "name": "Main Entrance Turnstile ZKTeco",
+    "device_code": "BIO-GUL-01",
+    "ip_address": "192.168.1.201",
+    "port": 4370,
+    "device_type": "zkteco_standalone",
+    "branch_id": 1,
+    "location": "Gulshan Flagship Outlet Reception",
+    "secret_key": "sec_zk_991823",
+    "is_active": true
+}
+```
+
+
+---
+
+### `POST` Test Device Connection (Ping)
+
+- **URL:** `{{base_url}}/attendance/devices/{{device_id}}/ping?business_id=1`
+- **Method:** `POST`
+- **Summary:** Execute network handshake and protocol probe to verify biometric device connectivity.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Trigger Device Sync & Pull Logs
+
+- **URL:** `{{base_url}}/attendance/sync-daily?business_id=1`
+- **Method:** `POST`
+- **Summary:** Execute scheduled or manual punch retrieval from online biometric hardware terminals.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "target_date": "2026-10-24",
+    "device_ids": []
+}
+```
+
+
+---
+
+
+#### Raw Attendance Logs & Webhooks
+
+### `GET` Get Raw Attendance Logs
+
+- **URL:** `{{base_url}}/attendance/raw-logs?business_id=1&date=2026-10-24`
+- **Method:** `GET`
+- **Summary:** View immutable audit log of raw biometric hardware clockings.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+  - `date`: `2026-10-24`
+
+---
+
+### `POST` Push Device Attendance Punch (Webhook)
+
+- **URL:** `{{base_url}}/attendance/raw-logs/push?business_id=1`
+- **Method:** `POST`
+- **Summary:** Receives punch notifications pushed directly by smart biometric terminals or edge gateways.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "device_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "biometric_user_id": "EMP-001",
+    "punch_time": "2026-10-24T09:02:15",
+    "punch_type": "in",
+    "verification_mode": "fingerprint"
+}
+```
+
+
+---
+
+
+#### Manual Attendance & Regularizations
+
+### `GET` List Manual Attendance Requests
+
+- **URL:** `{{base_url}}/attendance/regularizations?business_id=1&status=pending`
+- **Method:** `GET`
+- **Summary:** Fetch employee regularizations and missing punch adjustments.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+  - `status`: `pending`
+
+---
+
+### `POST` Submit Manual Attendance Request
+
+- **URL:** `{{base_url}}/attendance/regularizations?business_id=1`
+- **Method:** `POST`
+- **Summary:** Employee submission for missing punch regularization.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "attendance_date": "2026-10-24",
+    "requested_check_in": "09:00:00",
+    "requested_check_out": "18:00:00",
+    "reason": "Biometric device scanner failed to recognize fingerprint during peak rush."
+}
+```
+
+
+---
+
+### `PATCH` Review Regularization (Approve / Reject)
+
+- **URL:** `{{base_url}}/attendance/regularizations/{{reg_id}}/review?business_id=1`
+- **Method:** `PATCH`
+- **Summary:** HR or supervisor approval of manual attendance adjustment.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "action": "approved",
+    "reviewer_notes": "Verified with CCTV entrance footage."
+}
+```
+
+
+---
+
+
+#### Visit & Outdoor Duty Management
+
+### `GET` List Outdoor Duty Applications
+
+- **URL:** `{{base_url}}/attendance/outdoor-duties?business_id=1`
+- **Method:** `GET`
+- **Summary:** View customer visits, vendor site inspections, and outdoor duty records.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Submit Outdoor Duty Application
+
+- **URL:** `{{base_url}}/attendance/outdoor-duties?business_id=1`
+- **Method:** `POST`
+- **Summary:** Apply for outdoor duty / field assignment with location details.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "visit_date": "2026-10-24",
+    "expected_start_time": "10:00:00",
+    "expected_end_time": "16:00:00",
+    "destination": "Bashundhara R/A - Central Super Store Site",
+    "purpose": "Store equipment calibration and cashier training."
+}
+```
+
+
+---
+
+### `PATCH` Review Outdoor Duty Application
+
+- **URL:** `{{base_url}}/attendance/outdoor-duties/{{od_id}}/review?business_id=1`
+- **Method:** `PATCH`
+- **Summary:** Approve or decline outdoor duty request.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "action": "approved",
+    "reviewer_notes": "Official visit approved."
+}
+```
+
+
+---
+
+
+#### Overtime (OT) Management
+
+### `GET` List Overtime Requests
+
+- **URL:** `{{base_url}}/attendance/overtime?business_id=1`
+- **Method:** `GET`
+- **Summary:** View overtime applications and authorization statuses.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Apply for Overtime
+
+- **URL:** `{{base_url}}/attendance/overtime?business_id=1`
+- **Method:** `POST`
+- **Summary:** Submit pre-approved or post-shift overtime claim.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "ot_date": "2026-10-24",
+    "ot_hours": 3.5,
+    "reason": "Emergency inventory cycle counting and month-end shelf audit."
+}
+```
+
+
+---
+
+### `PATCH` Review Overtime Request
+
+- **URL:** `{{base_url}}/attendance/overtime/{{ot_id}}/review?business_id=1`
+- **Method:** `PATCH`
+- **Summary:** Authorize and approve overtime hours for monthly payroll computation.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "action": "approved",
+    "approved_hours": 3.0,
+    "reviewer_notes": "Approved 3.0 hours active inventory count."
+}
+```
+
+
+---
+
+
+#### Attendance Processing & Monthly Summary
+
+### `POST` Process Period Attendance
+
+- **URL:** `{{base_url}}/attendance/process-period?business_id=1`
+- **Method:** `POST`
+- **Summary:** Compile raw punches, leaves, holidays, and regularizations into finalized attendance records.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "start_date": "2026-10-01",
+    "end_date": "2026-10-31"
+}
+```
+
+
+---
+
+### `GET` List Period Approvals
+
+- **URL:** `{{base_url}}/attendance/period-approvals?business_id=1`
+- **Method:** `GET`
+- **Summary:** View period sign-off records and payroll locking status.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Create Period Approval
+
+- **URL:** `{{base_url}}/attendance/period-approvals?business_id=1`
+- **Method:** `POST`
+- **Summary:** Initiate attendance period approval cycle.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "year": 2026,
+    "month": 10,
+    "period_name": "October 2026 Attendance Final",
+    "notes": "Verified by HR Operations."
+}
+```
+
+
+---
+
+### `POST` Lock Period Attendance (Freeze for Payroll)
+
+- **URL:** `{{base_url}}/attendance/period-approvals/{{approval_id}}/lock?business_id=1`
+- **Method:** `POST`
+- **Summary:** Freeze period attendance to prevent tampering and hand over to automated salary processing.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `GET` Get Monthly Attendance Summary
+
+- **URL:** `{{base_url}}/attendance/monthly-summary?business_id=1&year=2026&month=10`
+- **Method:** `GET`
+- **Summary:** Comprehensive tabular roster breakdown of days present, late, absent, on leave, and overtime hours.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+  - `year`: `2026`
+  - `month`: `10`
+
+---
+
+### `GET` Export Monthly Summary to Excel
+
+- **URL:** `{{base_url}}/attendance/monthly-summary/export-excel?business_id=1&year=2026&month=10`
+- **Method:** `GET`
+- **Summary:** Download formatted spreadsheet of monthly attendance summary.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+  - `year`: `2026`
+  - `month`: `10`
+
+---
+
+
 ### Compensation
 
 ### `GET` Export Compensation to Excel
@@ -4647,6 +5066,929 @@ Tenant scoping is automatically resolved via the user's JWT claims and validated
 - **Headers:** `Content-Type: application/json`
 - **Query Parameters:**
   - `fiscal_year`: `2025-2026`
+
+---
+
+
+### Separation & Offboarding
+
+
+#### Resignation Applications
+
+### `POST` Submit Resignation Application
+
+- **URL:** `{{base_url}}/separation/resignations?business_id=1`
+- **Method:** `POST`
+- **Summary:** Employee submits formal resignation specifying proposed last working day.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "resignation_date": "2026-10-24",
+    "proposed_last_working_day": "2026-11-23",
+    "reason_type": "career_growth",
+    "reason_details": "Accepted a new role closer to home.",
+    "handover_notes": "Completed handover checklist and documentation."
+}
+```
+
+
+---
+
+### `GET` List Resignation Applications
+
+- **URL:** `{{base_url}}/separation/resignations?business_id=1`
+- **Method:** `GET`
+- **Summary:** Retrieve all submitted resignation applications with status filters.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `GET` Get Resignation Details
+
+- **URL:** `{{base_url}}/separation/resignations/{{resignation_id}}?business_id=1`
+- **Method:** `GET`
+- **Summary:** View full resignation details including notice calculation and review history.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Review Resignation (Approve/Reject)
+
+- **URL:** `{{base_url}}/separation/resignations/{{resignation_id}}/review?business_id=1`
+- **Method:** `POST`
+- **Summary:** Manager/HR reviews and signs off on resignation application.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "action": "approved",
+    "approved_last_working_day": "2026-11-23",
+    "notice_shortfall_days": 0,
+    "reviewer_notes": "Resignation accepted with full 30-day notice served."
+}
+```
+
+
+---
+
+### `POST` Withdraw Resignation Application
+
+- **URL:** `{{base_url}}/separation/resignations/{{resignation_id}}/withdraw?business_id=1`
+- **Method:** `POST`
+- **Summary:** Allows employee to retract resignation before separation execution.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+
+#### Employee Separation Master
+
+### `POST` Create Employee Separation (Termination/Retirement/Dismissal)
+
+- **URL:** `{{base_url}}/separation/separations?business_id=1`
+- **Method:** `POST`
+- **Summary:** Initiate formal employee separation under Bangladesh Labour Act (BLA 2006).
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "separation_type": "termination",
+    "separation_date": "2026-10-24",
+    "last_working_day": "2026-10-24",
+    "reason": "Business restructuring of branch operations.",
+    "is_eligible_for_rehire": true,
+    "gratuity_applicable": true,
+    "remarks": "Separated with full statutory severance package."
+}
+```
+
+
+---
+
+### `GET` List Employee Separations
+
+- **URL:** `{{base_url}}/separation/separations?business_id=1`
+- **Method:** `GET`
+- **Summary:** List all ongoing and completed employee separations.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `GET` Get Separation Details
+
+- **URL:** `{{base_url}}/separation/separations/{{separation_id}}?business_id=1`
+- **Method:** `GET`
+- **Summary:** View complete separation record, department clearances, and settlement links.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `PUT` Update Separation Record
+
+- **URL:** `{{base_url}}/separation/separations/{{separation_id}}?business_id=1`
+- **Method:** `PUT`
+- **Summary:** Modify separation metadata and key offboarding milestones.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "last_working_day": "2026-11-01",
+    "remarks": "Extended last working day for additional audit sign-off."
+}
+```
+
+
+---
+
+
+#### Department Clearances & NOC
+
+### `GET` List All Department Clearances
+
+- **URL:** `{{base_url}}/separation/clearances?business_id=1`
+- **Method:** `GET`
+- **Summary:** Retrieve clearance sign-off statuses across IT, Admin, Finance, Legal, and HR.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `GET` Get Separation Clearance Status (5 Departments)
+
+- **URL:** `{{base_url}}/separation/separations/{{separation_id}}/clearances?business_id=1`
+- **Method:** `GET`
+- **Summary:** View itemized departmental sign-offs for an active separation.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Sign-Off Department Clearance
+
+- **URL:** `{{base_url}}/separation/clearances/{{clearance_id}}/sign-off?business_id=1`
+- **Method:** `POST`
+- **Summary:** Authorized department representative signs off on employee clearance.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "status": "cleared",
+    "deduction_amount": 0.0,
+    "notes": "All access tokens, email credentials, and hardware verified."
+}
+```
+
+
+---
+
+
+#### Asset Handover & Recovery
+
+### `GET` List Custody Assets for Employee
+
+- **URL:** `{{base_url}}/separation/employees/{{employee_id}}/assets?business_id=1`
+- **Method:** `GET`
+- **Summary:** Query asset inventory to identify all laptops, ID cards, SIMs, and keys held by departing staff.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Execute Asset Return & Handover Sign-off
+
+- **URL:** `{{base_url}}/separation/assets/{{assignment_id}}/return?business_id=1`
+- **Method:** `POST`
+- **Summary:** Register physical return of company property into inventory.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "return_condition": "good",
+    "recovery_amount": 0.0,
+    "notes": "MacBook Pro returned in immaculate condition with original charger."
+}
+```
+
+
+---
+
+
+#### Exit Interview
+
+### `POST` Conduct Exit Interview
+
+- **URL:** `{{base_url}}/separation/exit-interviews?business_id=1`
+- **Method:** `POST`
+- **Summary:** Document exit interview ratings, retention feedback, and cultural scores.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "separation_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "interviewer_name": "Taufiqul Islam (Head of HR)",
+    "primary_reason_for_leaving": "Higher compensation & remote work flexibility",
+    "job_satisfaction_rating": 4,
+    "management_rating": 4,
+    "work_culture_rating": 5,
+    "recommend_company": true,
+    "feedback_notes": "Appreciated team support and career mentorship."
+}
+```
+
+
+---
+
+### `GET` List Exit Interviews
+
+- **URL:** `{{base_url}}/separation/exit-interviews?business_id=1`
+- **Method:** `GET`
+- **Summary:** Review enterprise offboarding analytics and exit interviews.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `GET` Get Separation Exit Interview Details
+
+- **URL:** `{{base_url}}/separation/separations/{{separation_id}}/exit-interview?business_id=1`
+- **Method:** `GET`
+- **Summary:** Inspect specific exit survey submitted for a separation.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+
+#### Final Settlement (FnF - BLA 2006)
+
+### `GET` List Final Settlements
+
+- **URL:** `{{base_url}}/separation/settlements?business_id=1`
+- **Method:** `GET`
+- **Summary:** Query full & final settlement records across all offboarded staff.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Compute Statutory Final Settlement (FnF)
+
+- **URL:** `{{base_url}}/separation/separations/{{separation_id}}/settlement/compute?business_id=1`
+- **Method:** `POST`
+- **Summary:** Compute statutory compensation adhering to BLA 2006 leave encashment and gratuity formulas.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "payable_salary_days": 24,
+    "unpaid_salary": 45000.0,
+    "encashable_leave_days": 14,
+    "leave_encashment_amount": 26250.0,
+    "service_years": 4.5,
+    "gratuity_amount": 105000.0,
+    "notice_pay": 0.0,
+    "bonus_payable": 0.0,
+    "other_allowances": 5000.0,
+    "total_earnings": 181250.0,
+    "notice_shortfall_deduction": 0.0,
+    "unreturned_asset_deduction": 0.0,
+    "loan_deduction": 12000.0,
+    "tax_deduction": 3500.0,
+    "other_deductions": 0.0,
+    "total_deductions": 15500.0,
+    "net_settlement_amount": 165750.0
+}
+```
+
+
+---
+
+### `GET` Get Final Settlement Breakdown
+
+- **URL:** `{{base_url}}/separation/settlements/{{settlement_id}}?business_id=1`
+- **Method:** `GET`
+- **Summary:** View full financial calculation breakdown and audit sign-off for a final settlement.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Disburse Final Settlement Funds
+
+- **URL:** `{{base_url}}/separation/settlements/{{settlement_id}}/disburse?business_id=1`
+- **Method:** `POST`
+- **Summary:** Complete disbursement of net FnF settlement and lock separation profile.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "payment_method": "bank_transfer",
+    "reference_number": "EFT-FNF-2026-9901",
+    "disbursed_at": "2026-10-24T12:00:00",
+    "remarks": "Disbursed to verified employee salary bank account."
+}
+```
+
+
+---
+
+
+#### Experience & Release Letters
+
+### `POST` Generate Experience & Release Letter
+
+- **URL:** `{{base_url}}/separation/release-letters?business_id=1`
+- **Method:** `POST`
+- **Summary:** Create authenticated certificate of service and official release letter.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "separation_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "reference_number": "HR/EXP/2026/042",
+    "title": "Experience & Certificate of Service",
+    "content": "This is to certify that Mr. Tariqul Islam was employed with our organization from 01 Jan 2022 to 24 Oct 2026 as Senior Retail Operations Lead. His conduct during his tenure was exemplary.",
+    "issued_date": "2026-10-24"
+}
+```
+
+
+---
+
+### `GET` List Release Letters
+
+- **URL:** `{{base_url}}/separation/release-letters?business_id=1`
+- **Method:** `GET`
+- **Summary:** View generated release letters across the enterprise.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `GET` Get Release Letter by Separation
+
+- **URL:** `{{base_url}}/separation/separations/{{separation_id}}/release-letter?business_id=1`
+- **Method:** `GET`
+- **Summary:** Fetch the officially issued certificate of service and experience letter.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+
+### Employee Document Management
+
+
+#### Document Categories
+
+### `GET` List Document Categories
+
+- **URL:** `{{base_url}}/documents/categories?business_id=1`
+- **Method:** `GET`
+- **Summary:** Fetch document categories configured with statutory and confidentiality policies.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Create Document Category
+
+- **URL:** `{{base_url}}/documents/categories?business_id=1`
+- **Method:** `POST`
+- **Summary:** Configure new document category for employee personal files.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "name": "Academic & Professional Certifications",
+    "code": "EDU_CERT",
+    "description": "University diplomas, academic transcripts, and professional licensures.",
+    "is_mandatory": false,
+    "has_expiry": false,
+    "confidentiality_level": "internal",
+    "allowed_extensions": "pdf,png,jpg,jpeg",
+    "max_file_size_mb": 10
+}
+```
+
+
+---
+
+### `PUT` Update Document Category
+
+- **URL:** `{{base_url}}/documents/categories/{{category_id}}?business_id=1`
+- **Method:** `PUT`
+- **Summary:** Update retention, size, or statutory flags on an existing category.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "is_mandatory": true,
+    "confidentiality_level": "confidential"
+}
+```
+
+
+---
+
+
+#### Document Templates & Preview Engine
+
+### `GET` List Document Templates
+
+- **URL:** `{{base_url}}/documents/templates?business_id=1`
+- **Method:** `GET`
+- **Summary:** Retrieve document generation blueprints with merge token schemas.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Create Document Template
+
+- **URL:** `{{base_url}}/documents/templates?business_id=1`
+- **Method:** `POST`
+- **Summary:** Register reusable document template containing merge tags.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "name": "Annual Appraisal Salary Increment Letter",
+    "template_type": "increment",
+    "subject": "Notice of Compensation Revision",
+    "content_html": "REF: {{reference_no}}\nDate: {{current_date}}\n\nDear {{employee_name}},\n\nWe are pleased to inform you that effective {{effective_date}}, your revised monthly gross salary is BDT {{gross_salary}}.",
+    "header_content": "Official Corporate Letterhead",
+    "footer_content": "Confidential - Addressee Only",
+    "is_active": true
+}
+```
+
+
+---
+
+### `PUT` Update Document Template
+
+- **URL:** `{{base_url}}/documents/templates/{{template_id}}?business_id=1`
+- **Method:** `PUT`
+- **Summary:** Update template content or active flag.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "name": "Revised Increment Letter 2026",
+    "is_active": true
+}
+```
+
+
+---
+
+### `POST` Live Preview Template with Tokens
+
+- **URL:** `{{base_url}}/documents/templates/preview?business_id=1`
+- **Method:** `POST`
+- **Summary:** Test render template with dynamic employee profile variables and custom token overrides.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "template_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "custom_tokens": {
+        "reference_no": "HR/INC/2026/001",
+        "effective_date": "2026-11-01"
+    }
+}
+```
+
+
+---
+
+
+#### Digital Personal File (e-Dossier / 201 File)
+
+### `GET` List Employee Dossier Documents
+
+- **URL:** `{{base_url}}/documents/dossier?business_id=1&employee_id={{employee_id}}`
+- **Method:** `GET`
+- **Summary:** Retrieve all digital files uploaded to an employee's e-Dossier folder.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+  - `employee_id`: `{{employee_id}}`
+
+---
+
+### `POST` Upload Document to Dossier
+
+- **URL:** `{{base_url}}/documents/dossier?business_id=1`
+- **Method:** `POST`
+- **Summary:** Upload authenticated document to employee's 201 personal file.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "category_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "document_title": "Graduation Diploma - BSc CSE",
+    "document_number": "DIP-DU-2020-891",
+    "file_url": "/uploads/dossier/emp1/diploma.pdf",
+    "file_name": "diploma.pdf",
+    "file_size_bytes": 1048576,
+    "mime_type": "application/pdf",
+    "issue_date": "2020-06-30",
+    "issuing_authority": "University of Dhaka"
+}
+```
+
+
+---
+
+### `GET` Get Dossier Completeness Scorecard
+
+- **URL:** `{{base_url}}/documents/dossier/summary/{{employee_id}}?business_id=1`
+- **Method:** `GET`
+- **Summary:** Evaluate compliance percentage across all mandatory statutory categories (NID, Photos, Agreements).
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `PUT` Verify / Reject Dossier Document
+
+- **URL:** `{{base_url}}/documents/dossier/{{doc_id}}/verify?business_id=1`
+- **Method:** `PUT`
+- **Summary:** HR auditor verifies or rejects uploaded document with audit trail.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "status": "verified",
+    "rejection_reason": null
+}
+```
+
+
+---
+
+
+#### ID, Passport, Visa & Work Permit Tracking
+
+### `GET` List Employee Identity Records
+
+- **URL:** `{{base_url}}/documents/identity-records?business_id=1`
+- **Method:** `GET`
+- **Summary:** Fetch statutory credentials including Smart NID, Passports, and BIDA work permits.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Create Identity Record (Smart NID / Passport / BIDA)
+
+- **URL:** `{{base_url}}/documents/identity-records?business_id=1`
+- **Method:** `POST`
+- **Summary:** Store verified statutory identification with automated expiration tracking.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "identity_type": "nid_smart_card",
+    "document_number": "1992019283",
+    "issuing_country": "Bangladesh",
+    "issuing_authority": "Election Commission Bangladesh",
+    "issue_date": "2018-05-15",
+    "expiry_date": "2028-05-15",
+    "alert_threshold_days": 60,
+    "is_primary": true
+}
+```
+
+
+---
+
+### `PUT` Update Identity Record
+
+- **URL:** `{{base_url}}/documents/identity-records/{{record_id}}?business_id=1`
+- **Method:** `PUT`
+- **Summary:** Update credential details and renewed expiration dates.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "document_number": "1992019284",
+    "expiry_date": "2029-05-15"
+}
+```
+
+
+---
+
+
+#### Contracts, NDAs & Agreements
+
+### `GET` List Employee Agreements
+
+- **URL:** `{{base_url}}/documents/agreements?business_id=1`
+- **Method:** `GET`
+- **Summary:** Query permanent contracts, fixed-term employment agreements, NDAs, and training bonds.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Create Agreement (Employment Contract, NDA, Bond)
+
+- **URL:** `{{base_url}}/documents/agreements?business_id=1`
+- **Method:** `POST`
+- **Summary:** Register legally binding employment agreement with statutory governance parameters.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "agreement_type": "permanent_contract",
+    "reference_no": "AGR-EMP-2026-001",
+    "title": "Permanent Employment Agreement",
+    "start_date": "2026-10-24",
+    "end_date": null,
+    "notice_period_days": 30,
+    "probation_months": 3,
+    "bond_amount": 0.0,
+    "governing_law": "Laws of Bangladesh (BLA 2006)",
+    "status": "active"
+}
+```
+
+
+---
+
+### `POST` Renew / Extend Agreement
+
+- **URL:** `{{base_url}}/documents/agreements/{{agreement_id}}/renew?business_id=1`
+- **Method:** `POST`
+- **Summary:** Execute agreement extension and archive historical term.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "new_start_date": "2026-11-01",
+    "new_end_date": "2027-10-31",
+    "new_reference_no": "AGR-EMP-2026-001-R1",
+    "renewal_notes": "Annual fixed-term contract renewed based on outstanding performance."
+}
+```
+
+
+---
+
+
+#### Document Expiry & Renewal Alerts
+
+### `GET` List Expiry Alerts
+
+- **URL:** `{{base_url}}/documents/expiry-alerts?business_id=1`
+- **Method:** `GET`
+- **Summary:** View documents, credentials, and agreements approaching expiration.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Run Expiry Scan Engine
+
+- **URL:** `{{base_url}}/documents/expiry-alerts/scan?business_id=1&threshold_days=60`
+- **Method:** `POST`
+- **Summary:** Trigger background scanner to evaluate passports, work permits, and contracts expiring within threshold.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+  - `threshold_days`: `60`
+
+---
+
+### `PUT` Update Renewal Tracking Status
+
+- **URL:** `{{base_url}}/documents/expiry-alerts/{{alert_id}}?business_id=1`
+- **Method:** `PUT`
+- **Summary:** Update resolution stage on active expiration alert.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "renewal_status": "in_progress",
+    "tracking_reference": "PASSPORT-RNW-2026-001",
+    "notes": "Submitted renewal packet to Embassy."
+}
+```
+
+
+---
+
+
+#### Bulk Letter Generation
+
+### `GET` List Bulk Letter Jobs
+
+- **URL:** `{{base_url}}/documents/bulk-letters/jobs?business_id=1`
+- **Method:** `GET`
+- **Summary:** List batch letter generation runs and dispatch statuses.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `POST` Create & Dispatch Bulk Letter Batch
+
+- **URL:** `{{base_url}}/documents/bulk-letters/generate?business_id=1`
+- **Method:** `POST`
+- **Summary:** Generate and dispatch personalized increment, appointment, or confirmation letters in batch.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "job_type": "increment",
+    "template_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "batch_title": "Annual Increment Cycle 2026",
+    "reference_prefix": "HR/INC/2026",
+    "issue_date": "2026-10-24",
+    "employee_ids": [
+        "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    ]
+}
+```
+
+
+---
+
+### `GET` Get Bulk Letter Job Details
+
+- **URL:** `{{base_url}}/documents/bulk-letters/jobs/{{job_id}}?business_id=1`
+- **Method:** `GET`
+- **Summary:** View batch statistics, success/failure counts, and rendered letters.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+### `GET` Get Bulk Letter Job Items
+
+- **URL:** `{{base_url}}/documents/bulk-letters/jobs/{{job_id}}/items?business_id=1`
+- **Method:** `GET`
+- **Summary:** Inspect individual recipient letters with acknowledgment status.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+---
+
+
+#### Statutory e-Signature & Verification (ICT Act 2006)
+
+### `POST` Execute Digital Signature (SHA-256 Stamp)
+
+- **URL:** `{{base_url}}/documents/signatures/sign?business_id=1`
+- **Method:** `POST`
+- **Summary:** Legally bind employee/signatory to document with tamper-evident SHA-256 hash and audit certificate number.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
+
+**Request Body (JSON):**
+```json
+{
+    "business_id": 1,
+    "employee_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "document_content_to_hash": "I accept the terms of the Employment Contract Ref: AGR-001.",
+    "signature_mode": "drawn_canvas",
+    "signature_image_base64_or_url": "data:image/png;base64,iVBORw0KGgo...",
+    "signer_full_name": "Tariqul Islam",
+    "signer_email": "tariqul@company.com",
+    "acknowledgement_text": "I hereby confirm that I have reviewed the contents of this document. By executing this electronic signature, I intend to legally bind myself under the Information & Communication Technology (ICT) Act 2006."
+}
+```
+
+
+---
+
+### `GET` Verify Certificate & Audit Authenticity
+
+- **URL:** `{{base_url}}/documents/signatures/verify/{{certificate_no}}?business_id=1`
+- **Method:** `GET`
+- **Summary:** Public/Internal verification of electronic signature certificate authenticity and checksum integrity.
+- **Headers:** `Authorization: Bearer {{token}}`, `Content-Type: application/json`
+- **Query Parameters:**
+  - `business_id`: `1`
 
 ---
 
