@@ -255,6 +255,11 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/hr-payroll/disciplinary",
           permission: { module: "hrm", feature: "disciplinary_cases", action: "view" },
         },
+        {
+          name: "Separation & Offboarding",
+          href: "/hr-payroll/separation",
+          permission: { module: "hrm", feature: "separations", action: "view" },
+        },
       ],
     },
     {

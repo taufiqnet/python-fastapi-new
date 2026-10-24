@@ -146,6 +146,14 @@ from app.modules.hr_payroll.roster.models import (  # noqa: F401
     RosterExchangeApplication,
     Shift,
 )
+from app.modules.hr_payroll.separation.models import (  # noqa: F401
+    DepartmentClearance,
+    EmployeeSeparation,
+    ExitInterview,
+    FinalSettlement,
+    ReleaseLetter,
+    ResignationApplication,
+)
 from app.services.ai.models import AIConversation  # noqa: F401
 from app.modules.finance.models import (  # noqa: F401
     Account,

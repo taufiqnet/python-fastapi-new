@@ -3018,6 +3018,205 @@ export interface LifecycleStats {
   open_disciplinary_cases: number;
 }
 
+// ── Separation & Offboarding Types ─────────────────────────────────────
+export type ResignationStatus = "submitted" | "under_review" | "approved" | "rejected" | "withdrawn";
+export type ResignationReason =
+  | "career_growth"
+  | "better_compensation"
+  | "relocation"
+  | "higher_studies"
+  | "health_personal"
+  | "work_environment"
+  | "other";
+
+export type SeparationType =
+  | "resignation"
+  | "termination"
+  | "dismissal"
+  | "retirement"
+  | "retrenchment"
+  | "death";
+
+export type SeparationStatus =
+  | "initiated"
+  | "clearance_in_progress"
+  | "settlement_pending"
+  | "completed"
+  | "cancelled";
+
+export type DepartmentClearanceType =
+  | "line_manager"
+  | "it_systems"
+  | "finance_accounts"
+  | "admin_facilities"
+  | "human_resources";
+
+export type ClearanceStatus = "pending" | "cleared" | "waived" | "issue_flagged";
+export type SettlementPaymentStatus = "draft" | "verified" | "approved" | "disbursed";
+
+export interface EmployeeSeparationSummary {
+  id: string;
+  employee_id: string;
+  first_name: string;
+  last_name?: string | null;
+  work_email?: string | null;
+  phone?: string | null;
+  designation?: string | null;
+  department?: string | null;
+  start_date?: string | null;
+}
+
+export interface ResignationApplication {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  resignation_number: string;
+  notice_date: string;
+  proposed_last_working_day: string;
+  approved_last_working_day?: string | null;
+  contractual_notice_days: number;
+  served_notice_days: number;
+  shortfall_notice_days: number;
+  reason_category: ResignationReason | string;
+  resignation_letter: string;
+  handover_notes?: string | null;
+  status: ResignationStatus;
+  reviewed_by_id?: number | null;
+  reviewed_at?: string | null;
+  rejection_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+  employee?: EmployeeSeparationSummary | null;
+}
+
+export interface DepartmentClearance {
+  id: string;
+  business_id: number;
+  separation_id: string;
+  employee_id: string;
+  department_type: DepartmentClearanceType | string;
+  status: ClearanceStatus;
+  cleared_by_id?: number | null;
+  cleared_at?: string | null;
+  outstanding_amount: number | string;
+  checklist_remarks?: string | null;
+  created_at: string;
+  updated_at: string;
+  employee?: EmployeeSeparationSummary | null;
+}
+
+export interface ExitInterview {
+  id: string;
+  business_id: number;
+  separation_id: string;
+  employee_id: string;
+  interview_date: string;
+  interviewer_id?: number | null;
+  primary_reason_for_leaving: string;
+  rating_culture: number;
+  rating_management: number;
+  rating_growth_opportunities: number;
+  rating_compensation: number;
+  rating_work_life_balance: number;
+  would_recommend: string;
+  proudest_accomplishment?: string | null;
+  improvement_suggestions?: string | null;
+  confidential_hr_notes?: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  employee?: EmployeeSeparationSummary | null;
+}
+
+export interface FinalSettlement {
+  id: string;
+  business_id: number;
+  separation_id: string;
+  employee_id: string;
+  settlement_number: string;
+  settlement_date: string;
+  unpaid_salary_days: number;
+  unpaid_salary_amount: number | string;
+  leave_encashment_days: number;
+  leave_encashment_amount: number | string;
+  gratuity_years: number;
+  gratuity_amount: number | string;
+  provident_fund_amount: number | string;
+  severance_pay_amount: number | string;
+  bonus_arrears_amount: number | string;
+  other_payable_amount: number | string;
+  total_payable_amount: number | string;
+  notice_shortfall_days: number;
+  notice_shortfall_deduction: number | string;
+  loan_advance_deduction: number | string;
+  asset_damage_deduction: number | string;
+  clearance_charge_deduction: number | string;
+  tax_withholding_deduction: number | string;
+  total_deduction_amount: number | string;
+  net_payable_amount: number | string;
+  payment_status: SettlementPaymentStatus;
+  payment_method: string;
+  payment_reference?: string | null;
+  disbursed_at?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  employee?: EmployeeSeparationSummary | null;
+}
+
+export interface ReleaseLetter {
+  id: string;
+  business_id: number;
+  separation_id: string;
+  employee_id: string;
+  letter_number: string;
+  issue_date: string;
+  effective_exit_date: string;
+  designation: string;
+  department?: string | null;
+  status: string;
+  letter_content: string;
+  created_at: string;
+  updated_at: string;
+  employee?: EmployeeSeparationSummary | null;
+}
+
+export interface EmployeeSeparation {
+  id: string;
+  business_id: number;
+  employee_id: string;
+  separation_number: string;
+  separation_type: SeparationType | string;
+  resignation_id?: string | null;
+  disciplinary_case_id?: string | null;
+  order_date: string;
+  last_working_date: string;
+  reason?: string | null;
+  status: SeparationStatus;
+  severance_entitled: boolean;
+  service_duration_days: number;
+  service_duration_years: number;
+  created_at: string;
+  updated_at: string;
+  employee?: EmployeeSeparationSummary | null;
+  resignation?: ResignationApplication | null;
+  clearances?: DepartmentClearance[];
+  exit_interview?: ExitInterview | null;
+  settlement?: FinalSettlement | null;
+}
+
+export interface AssetHandoverItem {
+  assignment_id: string;
+  asset_id: string;
+  asset_name: string;
+  asset_tag: string;
+  category?: string | null;
+  assigned_date?: string | null;
+  status: string;
+  condition_notes?: string | null;
+}
+
+
 
 
 

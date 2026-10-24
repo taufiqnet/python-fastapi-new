@@ -162,6 +162,17 @@ SYSTEM_MODULES = {
                     ("disciplinary_cases", "Show Cause & Warnings"),
                 ],
             },
+            {
+                "category": "Separation & Offboarding",
+                "features": [
+                    ("resignations", "Resignation Applications"),
+                    ("separations", "Employee Separations"),
+                    ("exit_interviews", "Exit Interviews"),
+                    ("department_clearances", "Department Clearances"),
+                    ("final_settlements", "Final Settlements (FnF)"),
+                    ("release_letters", "Relieving & Release Letters"),
+                ],
+            },
         ],
     },
     "finance": {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useEffect, useState, useTransition, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
@@ -24,7 +24,7 @@ import {
   UserCheck,
 } from "lucide-react";
 
-export default function PerformanceAppraisalsPage() {
+function PerformanceAppraisalsContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const initialCycleFilter = searchParams.get("cycle_id") || "all";
@@ -490,5 +490,13 @@ export default function PerformanceAppraisalsPage() {
         )}
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function PerformanceAppraisalsPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Loading Appraisals...</div>}>
+      <PerformanceAppraisalsContent />
+    </Suspense>
   );
 }
