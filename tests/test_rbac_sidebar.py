@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.core.billing.models import SubscriptionPlan
+from app.core.config import settings
 from app.core.deps import get_current_user_optional
 from app.core.identity.models import Permission, Role, User
 from app.core.tenancy.models import BusinessProfile
@@ -46,7 +47,8 @@ async def client(sync_db):
 
 
 @pytest.mark.asyncio
-async def test_hr_admin_sidebar_menu_visibility(sync_db, client: AsyncClient):
+async def test_hr_admin_sidebar_menu_visibility(sync_db, client: AsyncClient, monkeypatch):
+    monkeypatch.setattr(settings, "subscription_required", True)
     db = sync_db
 
     # Create HR Admin permissions
