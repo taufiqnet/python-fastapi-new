@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ProERP Enterprise HR & Payroll | Client Presentation</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-dark: #1e293b;
+      --bg-light: #f8fafc;
+      --card-light: #ffffff;
+      --border-color: #e2e8f0;
+      --primary: #1d4ed8;
+      --primary-light: #dbeafe;
+      --emerald: #047857;
+      --emerald-light: #d1fae5;
+      --amber: #b45309;
+      --amber-light: #fef3c7;
+      --purple: #6d28d9;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #f8fafc;
+      --text-light-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #0b0f19;
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Presentation Frame (16:9 widescreen) */
+    .deck-container {
+      position: relative;
+      width: 92vw;
+      max-width: 1400px;
+      aspect-ratio: 16 / 9;
+      background: var(--bg-light);
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 40px 60px;
+      flex-direction: column;
+      position: relative;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.995); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .slide.dark-theme {
+      background: var(--bg-dark);
+      color: var(--text-light);
+    }
+
+    /* Top Badge & Header */
+    .badge {
+      display: inline-block;
+      align-self: flex-start;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 20px;
+      background: var(--primary-light);
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .slide.dark-theme .badge {
+      background: rgba(37, 99, 235, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    .slide-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-dark);
+      line-height: 1.2;
+    }
+
+    .slide.dark-theme .slide-title {
+      color: var(--text-light);
+    }
+
+    .slide-subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      margin-bottom: 24px;
+    }
+
+    .slide.dark-theme .slide-subtitle {
+      color: var(--text-light-muted);
+    }
+
+    /* Content Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      flex: 1;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      flex: 1;
+    }
+
+    .grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      flex: 1;
+    }
+
+    .grid-6 {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 12px;
+      flex: 1;
+    }
+
+    .card {
+      background: var(--card-light);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .slide.dark-theme .card {
+      background: var(--card-dark);
+      border-color: rgba(255, 255, 255, 0.08);
+      box-shadow: none;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .card-text {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .slide.dark-theme .card-text {
+      color: var(--text-light-muted);
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .bullet-list li {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--text-muted);
+      position: relative;
+      padding-left: 18px;
+    }
+
+    .bullet-list li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--primary);
+      font-size: 18px;
+      line-height: 1;
+    }
+
+    .bullet-list li strong {
+      color: var(--text-dark);
+    }
+
+    .slide.dark-theme .bullet-list li strong {
+      color: var(--text-light);
+    }
+
+    /* Giant Stat */
+    .stat-number {
+      font-size: 40px;
+      font-weight: 900;
+      color: #38bdf8;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    /* Footer */
+    .slide-footer {
+      margin-top: auto;
+      padding-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .slide.dark-theme .slide-footer {
+      border-top-color: rgba(255, 255, 255, 0.08);
+      color: var(--text-light-muted);
+    }
+
+    /* Controls Bar */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-top: 16px;
+      color: #94a3b8;
+      font-size: 13px;
+    }
+
+    .btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+
+    .btn:hover {
+      background: #334155;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    .btn-primary:hover {
+      background: #1e40af;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deck-container" id="presentationContainer">
+    <!-- SLIDE 1: Title Slide (Dark Theme) -->
+    <div class="slide dark-theme active" data-index="1">
+      <div style="height: 4px; background: var(--primary); position: absolute; top:0; left:0; right:0;"></div>
+      <div style="margin-top: 60px;">
+        <span class="badge">PROERP ENTERPRISE SUITE</span>
+        <h1 class="slide-title" style="font-size: 42px; margin-top: 12px; margin-bottom: 12px;">Next-Generation HR & Payroll Platform</h1>
+        <p class="slide-subtitle" style="font-size: 18px; max-width: 900px;">Automated, Fully Compliant, Cloud-Native Human Resource Management for Bangladesh & Global Enterprises</p>
+      </div>
+      <div class="grid-3" style="margin-top: 40px; max-height: 140px;">
+        <div class="card" style="border-left: 4px solid #38bdf8;">
+          <div class="card-title" style="color: #38bdf8; font-size: 17px;">100% BLA 2006</div>
+          <div class="card-text">Statutory Bangladesh labor law leave quotas, maternity, encashment & gratuity rules.</div>
+        </div>
+        <div class="card" style="border-left: 4px solid #34d399;">
+          <div class="card-title" style="color: #34d399; font-size: 17px;">1-Click Automated Payroll</div>
+          <div class="card-text">Live attendance ingestion, progressive tax slabs (ITA 2023), and salary hold/release.</div>
+        </div>
+        <div class="card" style="border-left: 4px solid #fbbf24;">
+          <div class="card-title" style="color: #fbbf24; font-size: 17px;">BEFTN & MFS Banking</div>
+          <div class="card-text">Corporate advice files pre-filled with 9-digit routing codes for all 60+ BD banks & bKash.</div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Enterprise HR & Payroll Pitch Deck</span>
+        <span>Slide 1 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Executive Summary & Challenges Solved -->
+    <div class="slide" data-index="2">
+      <span class="badge">EXECUTIVE BRIEFING</span>
+      <h2 class="slide-title">Transforming Modern Workforce Operations</h2>
+      <p class="slide-subtitle">Bridging the critical gap between manual spreadsheet chaos and statutory compliance</p>
+      <div class="grid-2">
+        <div class="card" style="border-top: 3px solid var(--amber);">
+          <div class="card-title" style="color: var(--amber); font-size: 16px;">Current Industry Pain Points</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Manual Payroll Processing:</strong> HR teams waste 5-7 working days monthly wrestling with complex spreadsheets, leading to calculation leaks.</li>
+            <li><strong>Biometric & Roster Chaos:</strong> Standalone fingerprint machines fail to accurately reconcile grace periods, shifting rosters, and overtime.</li>
+            <li><strong>Statutory Compliance Fines:</strong> Non-compliance with BLA 2006 leave quotas, carryover limits, and maternity rules creates legal liabilities.</li>
+            <li><strong>Disbursement Bottlenecks:</strong> Manual check writing, cash handling risks, and delayed salary transfers harm staff morale.</li>
+          </ul>
+        </div>
+        <div class="card" style="border-top: 3px solid var(--emerald);">
+          <div class="card-title" style="color: var(--emerald); font-size: 16px;">The ProERP Advantage</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Unified Single Source of Truth:</strong> Attendance, leaves, loans, salary adjustments, and taxes flow seamlessly into the payroll engine.</li>
+            <li><strong>Full Bangladesh Compliance:</strong> Automated algorithms for BLA 2006 (leaves, encashment, gratuity) and NBR progressive tax slabs (ITA 2023).</li>
+            <li><strong>1-Click Corporate Disbursement:</strong> Automated BEFTN advice files for all 60+ BD commercial banks and bKash/Nagad corporate transfers.</li>
+            <li><strong>Employee Mobile Portal:</strong> 24/7 access to digital encrypted payslips, live attendance logs, and self-service leave requests.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 2 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: System Landscape & 18 Submodules -->
+    <div class="slide" data-index="3">
+      <span class="badge">MODULAR ECOSYSTEM</span>
+      <h2 class="slide-title">Complete HR & Payroll Functional Architecture</h2>
+      <p class="slide-subtitle">An interconnected suite of 18 submodules covering every stage of the employee lifecycle</p>
+      <div class="grid-6">
+        <div class="card"><div class="card-title" style="color: var(--primary); font-size: 12px;">Core HR & Org</div><div class="card-text" style="font-size: 11px;">Branches, Depts, Grades & 360° Profiles</div></div>
+        <div class="card"><div class="card-title" style="color: var(--primary); font-size: 12px;">Talent Acquisition</div><div class="card-text" style="font-size: 11px;">Requisitions, Pipeline & Digital Onboarding</div></div>
+        <div class="card"><div class="card-title" style="color: var(--primary); font-size: 12px;">Digital Letters</div><div class="card-text" style="font-size: 11px;">Offer, Appointment (Form 6) & NOCs</div></div>
+        <div class="card"><div class="card-title" style="color: var(--emerald); font-size: 12px;">Time & Biometrics</div><div class="card-text" style="font-size: 11px;">Device Sync, Grace Rules & Overtime</div></div>
+        <div class="card"><div class="card-title" style="color: var(--emerald); font-size: 12px;">Roster Management</div><div class="card-text" style="font-size: 11px;">Day/Evening/Night Shift Scheduling</div></div>
+        <div class="card"><div class="card-title" style="color: var(--emerald); font-size: 12px;">Statutory Leave</div><div class="card-text" style="font-size: 11px;">BLA 2006 Quotas & Encashment Engine</div></div>
+        <div class="card"><div class="card-title" style="color: var(--purple); font-size: 12px;">Payroll Engine</div><div class="card-text" style="font-size: 11px;">Draft to Paid, Hold/Release & Payslips</div></div>
+        <div class="card"><div class="card-title" style="color: var(--purple); font-size: 12px;">Taxation (ITA 2023)</div><div class="card-text" style="font-size: 11px;">Progressive Slabs & Withholding Certs</div></div>
+        <div class="card"><div class="card-title" style="color: var(--purple); font-size: 12px;">Disbursement</div><div class="card-text" style="font-size: 11px;">BEFTN Advice (60+ Banks) & MFS Bulk</div></div>
+        <div class="card"><div class="card-title" style="color: var(--amber); font-size: 12px;">Loans & Advances</div><div class="card-text" style="font-size: 11px;">Multi-Month EMI Auto-Deductions</div></div>
+        <div class="card"><div class="card-title" style="color: var(--amber); font-size: 12px;">Bonus & Arrears</div><div class="card-text" style="font-size: 11px;">Festival (Eid/Puja) Runs & Increments</div></div>
+        <div class="card"><div class="card-title" style="color: var(--amber); font-size: 12px;">PF & Gratuity</div><div class="card-text" style="font-size: 11px;">Dual 8.33% RPF & 5-Yr Gratuity Fund</div></div>
+        <div class="card"><div class="card-title" style="color: var(--primary); font-size: 12px;">Appraisals & KPIs</div><div class="card-text" style="font-size: 11px;">Goal Setting, Reviews & 360° Feedback</div></div>
+        <div class="card"><div class="card-title" style="color: var(--primary); font-size: 12px;">Disciplinary (Sec 23)</div><div class="card-text" style="font-size: 11px;">Show-Cause Notices & Inquiry Hearings</div></div>
+        <div class="card"><div class="card-title" style="color: var(--primary); font-size: 12px;">Travel & Claims</div><div class="card-text" style="font-size: 11px;">Per-diem Policies & Reimbursements</div></div>
+        <div class="card"><div class="card-title" style="color: var(--emerald); font-size: 12px;">Exit & Settlement</div><div class="card-text" style="font-size: 11px;">Clearances, Gratuity & Release Certs</div></div>
+        <div class="card"><div class="card-title" style="color: var(--emerald); font-size: 12px;">Self-Service ESS</div><div class="card-text" style="font-size: 11px;">Mobile Portal: Payslips, Attendance & Leave</div></div>
+        <div class="card"><div class="card-title" style="color: var(--emerald); font-size: 12px;">Security & RBAC</div><div class="card-text" style="font-size: 11px;">Multi-Tenant Isolation & Audit Trails</div></div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 3 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Core HR & Org Hierarchy -->
+    <div class="slide" data-index="4">
+      <span class="badge">ORGANIZATION SETUP</span>
+      <h2 class="slide-title">Enterprise Hierarchy & Employee 360° Master</h2>
+      <p class="slide-subtitle">Multi-branch organizational modeling with granular salary grade and step payscales</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary); font-size: 16px;">Multi-Tier Organization Hierarchy</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Multi-Branch Scalability:</strong> Manage Head Office, retail outlets, and remote factory branches under single corporate tenancy.</li>
+            <li><strong>Department & Designation Trees:</strong> Clear supervisory lines and reporting structures for automated approval routing.</li>
+            <li><strong>Salary Grade & Step Payscales:</strong> Define structured pay matrices (e.g. Grade 1 to 7) with step progressions (Step 1 to Step 5).</li>
+            <li><strong>Automated Step Advancements:</strong> Seamlessly promote staff along defined step matrices during annual appraisals.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald); font-size: 16px;">Comprehensive Digital Employee Record</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Statutory Identification:</strong> Verified 10/17-digit National ID (NID), Tax Identification Number (TIN), e-TIN, and passport.</li>
+            <li><strong>Disbursement Accounts:</strong> Capture corporate bank account numbers, 9-digit routing codes, and bKash/Nagad wallet IDs.</li>
+            <li><strong>Emergency & Medical Records:</strong> Blood group, emergency nominee declarations, kin contacts, and medical certificates.</li>
+            <li><strong>Encrypted Document Vault:</strong> Secure cloud storage for academic transcripts, signed contracts, and background checks.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 4 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: Recruitment & Letters -->
+    <div class="slide" data-index="5">
+      <span class="badge">TALENT LIFECYCLE</span>
+      <h2 class="slide-title">Recruitment & Statutory Document Generation</h2>
+      <p class="slide-subtitle">From job requisition to BLA 2006 Form 6 compliant appointment letters</p>
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary);">Requisition & Pipeline</div>
+          <p class="card-text" style="margin-top: 8px;">Manage department headcount requests, job postings, candidate pipelines, and interview ratings in one place.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald);">BLA 2006 Form 6 Letters</div>
+          <p class="card-text" style="margin-top: 8px;">Auto-generate legally binding statutory Appointment Letters with mandatory terms prescribed under Bangladesh Labour Act.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--primary);">Dynamic Offer Letters</div>
+          <p class="card-text" style="margin-top: 8px;">Generate professional offer packages with merged compensation breakdowns, probation terms, and digital acceptance.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--amber);">Certificates on Demand</div>
+          <p class="card-text" style="margin-top: 8px;">1-Click generation of verified Salary Certificates for bank loans, Service/Experience Letters, and travel NOCs.</p>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 5 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: Time, Attendance & Rostering -->
+    <div class="slide" data-index="6">
+      <span class="badge">TIME & ATTENDANCE</span>
+      <h2 class="slide-title">Biometrics, Intelligent Grace Rules & Shift Rosters</h2>
+      <p class="slide-subtitle">Eliminating time theft, attendance disputes, and manual reconciliation overhead</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary); font-size: 16px;">Hardware Integration & Smart Rules</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Direct Biometric Sync:</strong> Native API sync with ZKTeco, Realtime, and major fingerprint/facial recognition terminals.</li>
+            <li><strong>Geo-Fenced Mobile Check-ins:</strong> GPS-bound check-ins for field agents, remote employees, and branch offices.</li>
+            <li><strong>Configurable Grace Periods:</strong> Define late-in grace rules (e.g. 15 mins) and automated penalty deductions (e.g. 3 lates = 1 day pay).</li>
+            <li><strong>Statutory Overtime Engine:</strong> Automatic identification of early arrivals, late departures, and weekend/holiday overtime.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald); font-size: 16px;">Enterprise Multi-Shift Rostering</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Multi-Shift Matrix:</strong> Configure morning, evening, and overnight rotating shifts with designated meal breaks.</li>
+            <li><strong>Shift Rotation Cycles:</strong> Automated weekly/monthly shift rotations with visual department roster calendars.</li>
+            <li><strong>Night Shift Allowances:</strong> Automatic calculation of statutory night allowances for factory and 24/7 support teams.</li>
+            <li><strong>Flexible Duty Swapping:</strong> Supervisor-approved weekend and weekly off-day duty exchanges without breaking logic.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 6 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: BLA 2006 Leave & Encashment -->
+    <div class="slide" data-index="7">
+      <span class="badge">STATUTORY COMPLIANCE</span>
+      <h2 class="slide-title">BLA 2006 Compliant Leave & Encashment Engine</h2>
+      <p class="slide-subtitle">Enforcing Bangladesh statutory quotas, carryover limits, and financial encashment</p>
+      <div class="grid-5">
+        <div class="card" style="border-top: 3px solid var(--primary);">
+          <div class="card-title" style="font-size: 14px;">Casual Leave (CL)</div>
+          <div style="font-size: 22px; font-weight: 800; color: var(--emerald); margin: 6px 0;">10 Days</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--amber);">Section 115</div>
+          <p class="card-text" style="font-size: 11.5px; margin-top: 6px;">Full-pay non-cumulative leave for urgent personal affairs. Cannot combine with sick leave.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid var(--primary);">
+          <div class="card-title" style="font-size: 14px;">Sick Leave (SL)</div>
+          <div style="font-size: 22px; font-weight: 800; color: var(--emerald); margin: 6px 0;">14 Days</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--amber);">Section 116</div>
+          <p class="card-text" style="font-size: 11.5px; margin-top: 6px;">Full-pay medical leave requiring registered doctor certificate for absences over 3 days.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid var(--primary);">
+          <div class="card-title" style="font-size: 14px;">Earned / Annual (EL)</div>
+          <div style="font-size: 22px; font-weight: 800; color: var(--emerald); margin: 6px 0;">1 / 18 Days</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--amber);">Section 117</div>
+          <p class="card-text" style="font-size: 11.5px; margin-top: 6px;">Accrued on actual working days. Eligible for annual carryover and cash encashment.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid var(--primary);">
+          <div class="card-title" style="font-size: 14px;">Maternity Leave</div>
+          <div style="font-size: 22px; font-weight: 800; color: var(--emerald); margin: 6px 0;">16 Weeks</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--amber);">Section 46-50</div>
+          <p class="card-text" style="font-size: 11.5px; margin-top: 6px;">8 weeks pre-natal and 8 weeks post-natal with statutory daily average wage calculation.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid var(--primary);">
+          <div class="card-title" style="font-size: 14px;">Festival Holidays</div>
+          <div style="font-size: 22px; font-weight: 800; color: var(--emerald); margin: 6px 0;">11 Days</div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--amber);">Section 118</div>
+          <p class="card-text" style="font-size: 11.5px; margin-top: 6px;">Mandatory paid national and religious festival holidays declared by government.</p>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 7 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: Payroll Engine -->
+    <div class="slide" data-index="8">
+      <span class="badge">PAYROLL ENGINE</span>
+      <h2 class="slide-title">End-to-End Automated Payroll Processing</h2>
+      <p class="slide-subtitle">Guaranteed calculation accuracy with a 4-stage protected payroll lifecycle</p>
+      <div class="grid-4" style="max-height: 180px;">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary);">1. Create Period</div>
+          <p class="card-text">Define monthly cycle (e.g. Oct 2026), calendar boundaries, and disbursement target date.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald);">2. Auto-Compute</div>
+          <p class="card-text">Auto-ingests attendance, unapproved leaves, overtime, active loan EMIs, and progressive tax slabs.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--amber);">3. Audit & Adjust</div>
+          <p class="card-text">Review individual payslips, apply arrears/bonuses, and place salaries on temporary hold with audit notes.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--purple);">4. Lock & Disburse</div>
+          <p class="card-text">Freeze figures to prevent tampering, export BEFTN/MFS advice, and release encrypted payslips.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 20px; background: #f1f5f9;">
+        <div class="card-title" style="font-size: 15px;">Built-in Safeguard & Audit Controls</div>
+        <p class="card-text" style="margin-top: 6px; font-size: 13px; line-height: 1.6;">
+          ✔ <strong>Salary Hold & Release:</strong> Temporarily hold an employee's salary during clearance without blocking batch payroll.<br>
+          ✔ <strong>Tamper-Proof Lock:</strong> Once locked, figures cannot be modified, satisfying internal and external audit requirements.<br>
+          ✔ <strong>Duplicate Prevention:</strong> Prevents multiple payslips for the same employee in the same period.
+        </p>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 8 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: Compensation Structure -->
+    <div class="slide" data-index="9">
+      <span class="badge">COMPENSATION BREAKDOWN</span>
+      <h2 class="slide-title">Earnings, Deductions & Net Salary Computation</h2>
+      <p class="slide-subtitle">Transparent, granular breakdown of every monetary component per payslip</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary); font-size: 16px;">Earnings Components (Gross Salary)</div>
+          <ul class="bullet-list" style="margin-top: 8px;">
+            <li><strong>Basic Salary:</strong> 50% to 60% of Gross as per industry standard and wage gazette.</li>
+            <li><strong>House Rent Allowance:</strong> 25% to 50% of Basic as per corporate compensation rules.</li>
+            <li><strong>Medical & Transport:</strong> Configurable tax-free limits applied per Income Tax regulations.</li>
+            <li><strong>Food & Special Allowances:</strong> Customizable recurring allowances mapped to grades.</li>
+            <li><strong>Statutory Overtime:</strong> Calculated at double basic rate: (Basic ÷ 208 hrs) × 2 × OT Hours.</li>
+            <li><strong>Festival Bonuses:</strong> Eid-ul-Fitr, Eid-ul-Adha, Puja, and annual performance bonuses.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--amber); font-size: 16px;">Deductions & Net Disbursable</div>
+          <ul class="bullet-list" style="margin-top: 8px;">
+            <li><strong>Withholding Tax (AIT):</strong> Automated progressive income tax deducted at source.</li>
+            <li><strong>Provident Fund (RPF):</strong> 8.33% employee deduction matched with 8.33% employer contribution.</li>
+            <li><strong>Unpaid Leave (LWP):</strong> Exact calendar day deduction: (Basic ÷ Working Days) × LWP.</li>
+            <li><strong>Loan & Advance EMIs:</strong> Automated monthly recovery of active employee loan installments.</li>
+            <li><strong>Damage & Recovery:</strong> Authorized asset damage or disciplinary penalty deductions.</li>
+            <li><strong>Net Disbursable:</strong> Gross Salary − Total Deductions, automatically verified before payout.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 9 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: Tax & PF -->
+    <div class="slide" data-index="10">
+      <span class="badge">TAX & STATUTORY FUNDS</span>
+      <h2 class="slide-title">Income Tax (ITA 2023) & Provident Fund Governance</h2>
+      <p class="slide-subtitle">Seamless alignment with National Board of Revenue (NBR) individual tax rules</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary); font-size: 16px;">Income Tax Act 2023 Progressive Slabs</div>
+          <ul class="bullet-list" style="margin-top: 8px;">
+            <li><strong>First 3,50,000 BDT:</strong> 0% Tax (General Male Threshold)</li>
+            <li><strong>First 4,00,000 BDT:</strong> 0% Tax (Female & Senior Citizens 65+)</li>
+            <li><strong>First 4,75,000 BDT:</strong> 0% Tax (Third Gender & Disabled Persons)</li>
+            <li><strong>Next 1,00,000 BDT:</strong> 5% Progressive Tax Tier</li>
+            <li><strong>Next 3,00,000 BDT:</strong> 10% Progressive Tax Tier</li>
+            <li><strong>Next 4,00,000 BDT:</strong> 15% Progressive Tax Tier</li>
+            <li><strong>Next 5,00,000 BDT:</strong> 20% Progressive Tax Tier | <strong>Above:</strong> 25% Max</li>
+            <li><strong>City Minimum Tax:</strong> Automated Dhaka CC minimum 5,000 BDT annual tax rule.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald); font-size: 16px;">Provident Fund & Gratuity Governance</div>
+          <ul class="bullet-list" style="margin-top: 8px;">
+            <li><strong>Dual 8.33% Contribution:</strong> Equal 8.33% employee deduction and 8.33% employer corporate matching.</li>
+            <li><strong>Individual Member Ledgers:</strong> Cumulative tracking of employee PF contributions, company match, and profit interest.</li>
+            <li><strong>Gratuity Eligibility (BLA Sec 27):</strong> 5-year qualifying period granting 30 days basic pay per completed service year.</li>
+            <li><strong>Automated Tax Certificates:</strong> 1-Click annual NBR Salary Tax Certificates ready for employee tax return filing.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 10 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 11: Corporate Banking & MFS -->
+    <div class="slide" data-index="11">
+      <span class="badge">SALARY DISBURSEMENT</span>
+      <h2 class="slide-title">Direct Corporate Banking & MFS Advice Files</h2>
+      <p class="slide-subtitle">Eliminating check-writing friction, queues, and cash handling liabilities</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary); font-size: 16px;">BEFTN / EFT Corporate Bank Advice</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Universal Bank Compatibility:</strong> Pre-formatted Excel advice compatible with all 60+ scheduled commercial banks in Bangladesh.</li>
+            <li><strong>9-Digit Routing Numbers:</strong> Automatically verifies branch-specific 9-digit routing codes for BEFTN and RTGS transfers.</li>
+            <li><strong>Direct Portal Upload:</strong> Ready for instant upload to CityLive, CorpNet, Dutch-Bangla Corporate, EBL Skybanking, etc.</li>
+            <li><strong>Clean Audit Trail:</strong> Match corporate bank debit statements against payslip records with zero reconciliation drift.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald); font-size: 16px;">Mobile Financial Services (MFS) Payouts</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>bKash Corporate Payroll:</strong> One-click formatted export tailored for bKash B2C corporate bulk disbursement portal.</li>
+            <li><strong>Nagad Corporate Payouts:</strong> Pre-structured CSV advice for instant Nagad employee wallet transfers.</li>
+            <li><strong>Rocket (DBBL MFS):</strong> Full support for Rocket 12-digit mobile accounts and batch payouts.</li>
+            <li><strong>Factory & Retail Friendly:</strong> Ideal for retail floor staff, factory workers, and unbanked employees.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 11 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 12: Loans & Advances -->
+    <div class="slide" data-index="12">
+      <span class="badge">EMPLOYEE WELFARE</span>
+      <h2 class="slide-title">Loans, Advances & Hands-Off EMI Recovery</h2>
+      <p class="slide-subtitle">Managing staff financial assistance with automated monthly payroll deductions</p>
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary);">1. Application</div>
+          <p class="card-text" style="margin-top: 8px;">Staff apply through self-service specifying loan reason, requested principal, and preferred tenure in months.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald);">2. Approval & Schedule</div>
+          <p class="card-text" style="margin-top: 8px;">HR/Finance approves terms and system automatically creates a month-by-month EMI repayment schedule.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--amber);">3. Automated EMI Deduct</div>
+          <p class="card-text" style="margin-top: 8px;">When running monthly payroll, engine automatically checks active schedules and deducts the exact installment.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--purple);">4. Pause or Prepay</div>
+          <p class="card-text" style="margin-top: 8px;">Flexible administrative controls to pause installments during hardship, record prepayments, or waive balances.</p>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 12 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 13: Lifecycle & Disciplinary -->
+    <div class="slide" data-index="13">
+      <span class="badge">PEOPLE GOVERNANCE</span>
+      <h2 class="slide-title">Lifecycle Milestones & Disciplinary Proceedings</h2>
+      <p class="slide-subtitle">Managing promotions, salary increments, and BLA Section 23/24 legal procedures</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary); font-size: 16px;">Lifecycle Events & Appraisals</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Probation to Confirmation:</strong> Automated evaluation alerts, supervisor review forms, and confirmation letters.</li>
+            <li><strong>Promotions & Transfers:</strong> Branch, department, and designation transfers with complete salary revision tracking.</li>
+            <li><strong>Increments & Retroactive Arrears:</strong> Apply annual increments with automated calculation of retrospective arrears.</li>
+            <li><strong>Performance Management (KPI):</strong> Balanced scorecard goal setting, self-assessment ratings, and 360° reviews.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--amber); font-size: 16px;">Statutory Disciplinary Actions (BLA Sec 23/24)</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Formal Show-Cause Notice:</strong> Issue official notice detailing misconduct charges with mandatory response deadlines.</li>
+            <li><strong>Inquiry Committee Proceedings:</strong> Record inquiry appointments, witness statements, and hearing findings.</li>
+            <li><strong>Warnings & Suspensions:</strong> Log written warnings, suspension pending inquiry (with subsistence pay), or dismissal.</li>
+            <li><strong>Court-Proof Documentation:</strong> Maintain complete legal audit trails to defend against unfair dismissal claims.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 13 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 14: Employee Self-Service (ESS) -->
+    <div class="slide" data-index="14">
+      <span class="badge">EMPLOYEE EXPERIENCE</span>
+      <h2 class="slide-title">Employee Self-Service (ESS) & Mobile Access</h2>
+      <p class="slide-subtitle">Empowering staff with 24/7 self-service and eliminating repetitive HR inquiries</p>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary);">Digital Payslips</div>
+          <p class="card-text">Instant viewing and downloading of encrypted monthly payslip PDFs with detailed breakdowns.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald);">Leave Management</div>
+          <p class="card-text">Check real-time leave balances (CL, SL, EL), submit applications, and track approval stages.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--primary);">Attendance & Overtime</div>
+          <p class="card-text">View daily check-in/out timestamps, grace logs, approved overtime hours, and assigned shift rosters.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--amber);">Loans & Advances</div>
+          <p class="card-text">Apply for company financial assistance, view active repayment schedules, and check outstanding balances.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--purple);">Travel & Claims</div>
+          <p class="card-text">Submit travel expense claims, upload receipts via mobile camera, and track reimbursement status.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--primary);">Company Notice Board</div>
+          <p class="card-text">Stay updated with official circulars, holiday calendars, policy changes, and company announcements.</p>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 14 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 15: Separation & Final Settlement -->
+    <div class="slide" data-index="15">
+      <span class="badge">EXIT & OFFBOARDING</span>
+      <h2 class="slide-title">Separation Workflows & Final Settlement Engine</h2>
+      <p class="slide-subtitle">Automated calculation of gratuity, earned leave encashment, and department clearances</p>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary); font-size: 16px;">Multi-Department Clearance Matrix</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>IT Clearance:</strong> Revoke email, VPN, ERP credentials; return assigned laptop, phone, and tokens.</li>
+            <li><strong>Admin & Security:</strong> Recover office access cards, keys, parking permits, and uniform/safety gear.</li>
+            <li><strong>Department Handover:</strong> Sign-off on active project file handovers, task transfer, and documentation.</li>
+            <li><strong>Finance & Accounts:</strong> Audit petty cash advances, credit cards, outstanding loans, and travel claims.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald); font-size: 16px;">Automated Final Settlement Formula</div>
+          <ul class="bullet-list" style="margin-top: 10px;">
+            <li><strong>Unpaid Salary Days:</strong> Pro-rated salary for active days served during the final exit month.</li>
+            <li><strong>Earned Leave Encashment:</strong> Cash payment for unspent accrued annual leave: (Basic ÷ 30) × Unused EL.</li>
+            <li><strong>Statutory Gratuity Entitlement:</strong> 30 days basic pay per completed service year (5+ years service).</li>
+            <li><strong>Loan Recovery:</strong> Automatic deduction of remaining loan principal or notice shortfall penalties.</li>
+            <li><strong>Official Clearance Statement:</strong> Generates signed settlement voucher and Experience Certificate.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 15 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 16: Security & Architecture -->
+    <div class="slide" data-index="16">
+      <span class="badge">ENTERPRISE SECURITY</span>
+      <h2 class="slide-title">Multi-Tenancy Isolation, RBAC & Audit Trails</h2>
+      <p class="slide-subtitle">Banking-grade data protection, confidentiality, and governance</p>
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title" style="color: var(--primary);">Multi-Tenancy Isolation</div>
+          <p class="card-text" style="margin-top: 8px;">Strict business_id database scoping guarantees complete data isolation between sister concerns and clients.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--emerald);">Role-Based RBAC</div>
+          <p class="card-text" style="margin-top: 8px;">Granular permissions for Super Admin, HR Manager, Payroll Officer, Dept Head, and Staff with least-privilege security.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--amber);">Immutable Audit Trail</div>
+          <p class="card-text" style="margin-top: 8px;">Every salary revision, status change, and payment execution is logged with timestamp, user ID, and IP address.</p>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--purple);">Data Protection</div>
+          <p class="card-text" style="margin-top: 8px;">Database encryption at rest and in transit (TLS 1.3), automated daily backups, and disaster recovery.</p>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 16 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 17: ROI & Business Value (Dark Theme) -->
+    <div class="slide dark-theme" data-index="17">
+      <span class="badge">MEASURABLE IMPACT</span>
+      <h2 class="slide-title" style="color: #fff;">Tangible Return on Investment (ROI)</h2>
+      <p class="slide-subtitle">How ProERP delivers rapid payback and financial returns from Month 1</p>
+      <div class="grid-4">
+        <div class="card" style="border-top: 3px solid #38bdf8;">
+          <div class="stat-number">85%</div>
+          <div class="card-title" style="color: #fff; font-size: 15px;">Payroll Time Reduction</div>
+          <p class="card-text" style="margin-top: 6px;">Cut payroll processing from 5 days to 30 minutes with 1-click batch calculation.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid #34d399;">
+          <div class="stat-number" style="color: #34d399;">100%</div>
+          <div class="card-title" style="color: #fff; font-size: 15px;">Statutory Compliance</div>
+          <p class="card-text" style="margin-top: 6px;">Zero labor court fines, zero tax audit penalties under BLA 2006 and ITA 2023.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid #fbbf24;">
+          <div class="stat-number" style="color: #fbbf24;">Zero</div>
+          <div class="card-title" style="color: #fff; font-size: 15px;">Calculation Leakage</div>
+          <p class="card-text" style="margin-top: 6px;">Eliminate ghost overtime, improper leave deductions, and unrecovered loan defaults.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid #a78bfa;">
+          <div class="stat-number" style="color: #a78bfa;">90%</div>
+          <div class="card-title" style="color: #fff; font-size: 15px;">Fewer HR Inquiries</div>
+          <p class="card-text" style="margin-top: 6px;">Employees access digital payslips, balances, and certificates via self-service portal.</p>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 17 of 18</span>
+      </div>
+    </div>
+
+    <!-- SLIDE 18: Roadmap & Next Steps (Dark Theme) -->
+    <div class="slide dark-theme" data-index="18">
+      <span class="badge">NEXT STEPS</span>
+      <h2 class="slide-title" style="color: #fff;">4-Week Rapid Deployment Roadmap & Kickoff</h2>
+      <p class="slide-subtitle">A smooth, structured onboarding methodology with dedicated training and parallel run validation</p>
+      <div class="grid-4" style="max-height: 200px;">
+        <div class="card" style="border-top: 3px solid #38bdf8;">
+          <div class="card-title" style="color: #38bdf8;">Week 1: Setup & Import</div>
+          <p class="card-text">Configure organization hierarchy, branches, salary grades, and import historical employee master data.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid #34d399;">
+          <div class="card-title" style="color: #34d399;">Week 2: Attendance & Leave</div>
+          <p class="card-text">Integrate biometric devices, map shift rosters, and configure BLA 2006 statutory leave policies.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid #fbbf24;">
+          <div class="card-title" style="color: #fbbf24;">Week 3: Parallel Run</div>
+          <p class="card-text">Run parallel payroll alongside legacy spreadsheets to validate numbers to 100% precision.</p>
+        </div>
+        <div class="card" style="border-top: 3px solid #a78bfa;">
+          <div class="card-title" style="color: #a78bfa;">Week 4: Go-Live & ESS</div>
+          <p class="card-text">Live disbursement via BEFTN/MFS, employee mobile portal rollout, and HR team certification.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 24px; border-left: 4px solid #38bdf8;">
+        <div class="card-title" style="color: #38bdf8; font-size: 18px;">Ready to Modernize Your HR & Payroll Operations?</div>
+        <p class="card-text" style="margin-top: 4px; font-size: 14px;">
+          Let's schedule a live interactive system walkthrough and launch your pilot onboarding. Contact our solutions team to begin.
+        </p>
+      </div>
+      <div class="slide-footer">
+        <span>ProERP SaaS Platform • Confidential Client Presentation</span>
+        <span>Slide 18 of 18</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Controls Bar -->
+  <div class="controls">
+    <button class="btn" id="prevBtn" onclick="changeSlide(-1)">◀ Previous</button>
+    <span id="slideIndicator" style="font-weight: 600; color: #f8fafc;">Slide 1 / 18</span>
+    <button class="btn" id="nextBtn" onclick="changeSlide(1)">Next ▶</button>
+    <button class="btn btn-primary" onclick="toggleFullScreen()">⛶ Full Screen</button>
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 18;
+
+    function showSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+      currentSlide = index;
+
+      document.querySelectorAll('.slide').forEach(s => s.classList.remove('active'));
+      const activeSlide = document.querySelector(`.slide[data-index="${currentSlide}"]`);
+      if (activeSlide) activeSlide.classList.add('active');
+
+      document.getElementById('slideIndicator').textContent = `Slide ${currentSlide} / ${totalSlides}`;
+      document.getElementById('prevBtn').disabled = currentSlide === 1;
+      document.getElementById('nextBtn').disabled = currentSlide === totalSlides;
+    }
+
+    function changeSlide(direction) {
+      showSlide(currentSlide + direction);
+    }
+
+    function toggleFullScreen() {
+      const container = document.getElementById('presentationContainer');
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => alert(`Error enabling full-screen: ${err.message}`));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Keyboard Navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        changeSlide(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        changeSlide(-1);
+      } else if (e.key === 'Home') {
+        showSlide(1);
+      } else if (e.key === 'End') {
+        showSlide(totalSlides);
+      }
+    });
+
+    showSlide(1);
+  </script>
+</body>
+</html>
