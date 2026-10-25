@@ -126,30 +126,128 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       sectionKey: "ecommerce",
       module: "ecommerce",
       children: [
+        // 1. Catalog & Store
         {
           name: "Products",
           href: "/ecommerce/products",
+          group: "Catalog & Store",
           permission: { module: "ecommerce", feature: "products", action: "view" },
         },
         {
           name: "Categories",
           href: "/ecommerce/categories",
+          group: "Catalog & Store",
           permission: { module: "ecommerce", feature: "categories", action: "view" },
         },
         {
-          name: "Inventory",
-          href: "/ecommerce/inventory",
-          permission: { module: "ecommerce", feature: "inventory", action: "view" },
+          name: "Brands & Models",
+          href: "/ecommerce/brands",
+          group: "Catalog & Store",
+          permission: { module: "ecommerce", feature: "brands", action: "view" },
         },
+        {
+          name: "Catalog Browse",
+          href: "/ecommerce/catalog",
+          group: "Catalog & Store",
+          permission: { module: "ecommerce", feature: "catalog", action: "view" },
+        },
+        {
+          name: "Pricing & Coupons",
+          href: "/ecommerce/pricing",
+          group: "Catalog & Store",
+          permission: { module: "ecommerce", feature: "pricing", action: "view" },
+        },
+
+        // 2. Sales & POS
         {
           name: "Orders",
           href: "/ecommerce/orders",
+          group: "Sales & POS",
           permission: { module: "ecommerce", feature: "orders", action: "view" },
         },
         {
-          name: "POS Register",
+          name: "Customers",
+          href: "/ecommerce/customers",
+          group: "Sales & POS",
+          permission: { module: "ecommerce", feature: "customers", action: "view" },
+        },
+        {
+          name: "POS Terminal",
           href: "/ecommerce/pos",
+          group: "Sales & POS",
           permission: { module: "ecommerce", feature: "pos_terminal", action: "view" },
+        },
+        {
+          name: "POS Registers",
+          href: "/ecommerce/pos/registers",
+          group: "Sales & POS",
+          permission: { module: "ecommerce", feature: "pos_registers", action: "view" },
+        },
+
+        // 3. Inventory & Warehouses
+        {
+          name: "Stock & Inventory",
+          href: "/ecommerce/inventory",
+          group: "Inventory & Warehouses",
+          permission: { module: "ecommerce", feature: "inventory", action: "view" },
+        },
+        {
+          name: "Stock Transfers",
+          href: "/ecommerce/inventory/transfers",
+          group: "Inventory & Warehouses",
+          permission: { module: "ecommerce", feature: "inventory_transfers", action: "view" },
+        },
+        {
+          name: "Stock Audits & Counts",
+          href: "/ecommerce/inventory/counts",
+          group: "Inventory & Warehouses",
+          permission: { module: "ecommerce", feature: "inventory_counts", action: "view" },
+        },
+
+        // 4. Procurement & Inbound
+        {
+          name: "Purchase Orders",
+          href: "/ecommerce/procurement",
+          group: "Procurement & Inbound",
+          permission: { module: "ecommerce", feature: "procurement_po", action: "view" },
+        },
+        {
+          name: "Suppliers & Vendors",
+          href: "/ecommerce/procurement/suppliers",
+          group: "Procurement & Inbound",
+          permission: { module: "ecommerce", feature: "procurement_suppliers", action: "view" },
+        },
+
+        // 5. Operations & Reports
+        {
+          name: "Shipping & Delivery",
+          href: "/ecommerce/shipping",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "shipping", action: "view" },
+        },
+        {
+          name: "Payments & Refunds",
+          href: "/ecommerce/payments",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "payments", action: "view" },
+        },
+        {
+          name: "Customer Reviews",
+          href: "/ecommerce/reviews",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "reviews", action: "view" },
+        },
+        {
+          name: "Multi-Vendor Sellers",
+          href: "/ecommerce/sellers",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "sellers", action: "view" },
+        },
+        {
+          name: "Reports & Analytics",
+          href: "/ecommerce/reports",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "reports", action: "view" },
         },
       ],
     },
