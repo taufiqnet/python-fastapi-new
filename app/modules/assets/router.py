@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
@@ -38,7 +38,7 @@ asset_service = AssetService()
 @router.get("/overview/stats", response_model=AssetOverviewStats)
 def get_assets_stats(
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -52,7 +52,7 @@ def get_assets_stats(
 def create_category(
     data: AssetCategoryCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -63,7 +63,7 @@ def create_category(
 def list_categories(
     active_only: bool = Query(False),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -75,7 +75,7 @@ def update_category(
     category_id: uuid.UUID,
     data: AssetCategoryUpdate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -86,7 +86,7 @@ def update_category(
 def delete_category(
     category_id: uuid.UUID,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "delete")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -101,7 +101,7 @@ def delete_category(
 def create_asset(
     data: CompanyAssetCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -120,7 +120,7 @@ def list_assets(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -148,7 +148,7 @@ def list_assets(
 def get_asset(
     asset_id: uuid.UUID,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -171,7 +171,7 @@ def update_asset(
     asset_id: uuid.UUID,
     data: CompanyAssetUpdate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -186,7 +186,7 @@ def update_asset(
 def delete_asset(
     asset_id: uuid.UUID,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "assets", "delete")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -201,7 +201,7 @@ def delete_asset(
 def allocate_asset(
     data: AssetAssignmentCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "asset_allocations", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -224,7 +224,7 @@ def list_allocations(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "asset_allocations", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -249,7 +249,7 @@ def return_asset(
     assignment_id: uuid.UUID,
     data: AssetAssignmentReturn,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "asset_allocations", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -269,7 +269,7 @@ def acknowledge_asset(
     assignment_id: uuid.UUID,
     data: AssetAssignmentAcknowledge,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "asset_allocations", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -288,7 +288,7 @@ def acknowledge_asset(
 def create_maintenance(
     data: AssetMaintenanceCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "asset_maintenance", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -305,7 +305,7 @@ def update_maintenance(
     maintenance_id: uuid.UUID,
     data: AssetMaintenanceUpdate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "asset_maintenance", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -324,7 +324,7 @@ def list_maintenance(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "asset_maintenance", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -348,7 +348,7 @@ def list_maintenance(
 def get_employee_unreturned_assets(
     employee_id: uuid.UUID,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "asset_allocations", "view")),
     db: Session = Depends(get_db),
 ):
     """Exit clearance check: Returns all pending or active assets held by employee."""

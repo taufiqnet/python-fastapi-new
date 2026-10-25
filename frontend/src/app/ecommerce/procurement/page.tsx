@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useTransition, useCallback } from "react";
+import React, { useState, useEffect, useTransition, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   ShoppingBag,
   Building2,
@@ -27,13 +28,25 @@ import { useToast } from "@/context/toast-context";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { PurchaseOrderOut, SupplierOut } from "@/types";
 
-export default function ProcurementPage() {
+function ProcurementContent() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [, startTransition] = useTransition();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
 
   // Active Tab: "orders" | "suppliers"
-  const [activeTab, setActiveTab] = useState<"orders" | "suppliers">("orders");
+  const [activeTab, setActiveTab] = useState<"orders" | "suppliers">(
+    tabParam === "suppliers" ? "suppliers" : "orders"
+  );
+
+  useEffect(() => {
+    if (tabParam === "suppliers") {
+      setActiveTab("suppliers");
+    } else if (tabParam === "orders") {
+      setActiveTab("orders");
+    }
+  }, [tabParam]);
 
   // Purchase Orders State
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderOut[]>([]);
@@ -740,5 +753,23 @@ export default function ProcurementPage() {
         </div>
       )}
     </DashboardLayout>
+  );
+}
+
+export default function ProcurementPage() {
+  return (
+    <Suspense
+      fallback={
+        <DashboardLayout>
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="text-xs text-slate-500 font-medium animate-pulse">
+              Loading Procurement...
+            </div>
+          </div>
+        </DashboardLayout>
+      }
+    >
+      <ProcurementContent />
+    </Suspense>
   );
 }

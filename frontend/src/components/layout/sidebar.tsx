@@ -110,6 +110,22 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/portal/letters",
         },
         {
+          name: "My Assets",
+          href: "/portal/assets",
+        },
+        {
+          name: "Travel & Claims",
+          href: "/portal/travel",
+        },
+        {
+          name: "Goals & Appraisals",
+          href: "/portal/performance",
+        },
+        {
+          name: "Career & Movements",
+          href: "/portal/career",
+        },
+        {
           name: "Policy Handbook",
           href: "/portal/handbook",
         },
@@ -213,7 +229,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
         },
         {
           name: "Suppliers & Vendors",
-          href: "/ecommerce/procurement/suppliers",
+          href: "/ecommerce/procurement?tab=suppliers",
           group: "Procurement & Inbound",
           permission: { module: "ecommerce", feature: "procurement_suppliers", action: "view" },
         },
@@ -274,7 +290,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
         {
           name: "Document Management",
           href: "/hr-payroll/documents",
-          permission: { module: "hrm", feature: "Documents", action: "view" },
+          permission: { module: "hrm", feature: "employee_documents", action: "view" },
           group: "Core HR & Workforce",
         },
 
@@ -306,9 +322,27 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           group: "Payroll & Compensation",
         },
         {
+          name: "Pay Periods",
+          href: "/hr-payroll/payroll-periods",
+          permission: { module: "hrm", feature: "payroll_periods", action: "view" },
+          group: "Payroll & Compensation",
+        },
+        {
+          name: "Process Payroll",
+          href: "/hr-payroll/payroll-process",
+          permission: { module: "hrm", feature: "payroll_periods", action: "update" },
+          group: "Payroll & Compensation",
+        },
+        {
           name: "Payroll Payslips",
           href: "/hr-payroll/payroll-records",
           permission: { module: "hrm", feature: "payroll_records", action: "view" },
+          group: "Payroll & Compensation",
+        },
+        {
+          name: "Payroll Settings",
+          href: "/hr-payroll/payroll-settings",
+          permission: { module: "hrm", feature: "salary_structures", action: "view" },
           group: "Payroll & Compensation",
         },
         {
@@ -414,10 +448,12 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       href: "/fleet",
       icon: Car,
       sectionKey: "fleet",
+      module: "fleet",
       children: [
         {
           name: "Fleet Overview",
           href: "/fleet",
+          permission: { module: "fleet", feature: "vehicles", action: "view" },
         },
       ],
     },
@@ -455,26 +491,57 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       href: "/healthcare",
       icon: Stethoscope,
       sectionKey: "healthcare",
+      module: "healthcare",
       children: [
         {
           name: "Diagnostic Billing",
           href: "/healthcare/diagnostic/billing",
+          permission: { module: "healthcare", feature: "diagnostic_billing", action: "view" },
         },
         {
           name: "Patient Registry (MPI)",
           href: "/healthcare/patients",
+          permission: { module: "healthcare", feature: "patients", action: "view" },
         },
         {
           name: "Doctors & Chambers",
           href: "/healthcare/doctors",
+          permission: { module: "healthcare", feature: "doctors", action: "view" },
+        },
+        {
+          name: "OPD Chamber Slots",
+          href: "/healthcare/opd-chambers",
+          permission: { module: "healthcare", feature: "doctors", action: "view" },
+        },
+        {
+          name: "Doctor Desk & Prescriptions",
+          href: "/healthcare/doctor-desk",
+          permission: { module: "healthcare", feature: "appointments", action: "view" },
         },
         {
           name: "Test Catalog",
           href: "/healthcare/diagnostic/catalog",
+          permission: { module: "healthcare", feature: "diagnostic_catalog", action: "view" },
         },
         {
           name: "Phlebotomy & Samples",
           href: "/healthcare/diagnostic/phlebotomy",
+          permission: { module: "healthcare", feature: "phlebotomy", action: "view" },
+        },
+        {
+          name: "LIS Worklist & Results",
+          href: "/healthcare/diagnostic/lis-worklist",
+          permission: { module: "healthcare", feature: "lis_worklist", action: "view" },
+        },
+        {
+          name: "Report Verification",
+          href: "/healthcare/diagnostic/verification",
+          permission: { module: "healthcare", feature: "verification", action: "view" },
+        },
+        {
+          name: "Referral Doctor Commissions",
+          href: "/healthcare/referrals",
+          permission: { module: "healthcare", feature: "referrals", action: "view" },
         },
       ],
     },
