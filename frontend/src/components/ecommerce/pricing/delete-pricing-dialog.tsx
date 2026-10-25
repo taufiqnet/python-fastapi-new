@@ -37,7 +37,7 @@ export function DeletePricingDialog({
         toast.success(`Coupon "${(item as CouponOut).code}" deleted.`);
       } else {
         await apiClient.delete(`/pricing/discount-rules/${item.id}`);
-        toast.success(`Discount rule "${item.name}" deleted.`);
+        toast.success(`Discount rule "${(item as DiscountRuleOut).name}" deleted.`);
       }
       onSuccess();
       onClose();
@@ -70,7 +70,7 @@ export function DeletePricingDialog({
         <p className="text-xs text-slate-600 leading-relaxed">
           Are you sure you want to delete{" "}
           <strong className="text-slate-900 font-semibold">
-            {type === "coupon" ? (item as CouponOut).code : item.name}
+            {type === "coupon" ? (item as CouponOut).code : (item as DiscountRuleOut).name}
           </strong>
           ? Customers will no longer be able to redeem this promotion.
         </p>

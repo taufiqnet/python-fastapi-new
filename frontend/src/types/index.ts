@@ -449,6 +449,7 @@ export interface BrandOut {
   is_active?: boolean;
   business_id?: number | null;
   created_at?: string;
+  models?: ProductModelOut[];
 }
 
 export interface BrandCreateInput {
@@ -554,7 +555,7 @@ export interface CurrencyRateOut {
 }
 
 export type OrderPaymentStatus = "pending" | "authorized" | "paid" | "partially_refunded" | "refunded" | "failed";
-export type OrderFulfillmentStatus = "unfulfilled" | "partially_fulfilled" | "fulfilled" | "shipped" | "delivered" | "cancelled" | "returned";
+export type OrderFulfillmentStatus = "unfulfilled" | "processing" | "partially_fulfilled" | "fulfilled" | "shipped" | "delivered" | "cancelled" | "returned";
 
 export interface OrderItemOut {
   id: string;
@@ -650,6 +651,8 @@ export interface CustomerCreateInput {
   address?: string | null;
   business_id?: number | null;
   membership_tier?: string;
+  loyalty_points?: number;
+  store_credit?: number | string;
   is_active?: boolean;
 }
 
