@@ -48,13 +48,22 @@ class OrderRepository:
             calculated_total + shipping + tax + other_charges - discount,
         )
 
+        guest_email = data.guest_email
+        if not data.user_id and not guest_email:
+            phone_slug = (
+                data.shipping_address.phone.replace(" ", "").replace("+", "")
+                if data.shipping_address.phone
+                else f"guest_{uuid.uuid4().hex[:6]}"
+            )
+            guest_email = f"{phone_slug}@social.proerp.local"
+
         order = Order(
             business_id=data.business_id,
             user_id=data.user_id,
-            guest_email=data.guest_email,
+            guest_email=guest_email,
             order_number=order_num,
-            payment_status=OrderPaymentStatus.UNPAID,
-            fulfillment_status=OrderFulfillmentStatus.PENDING,
+            payment_status=data.payment_status or OrderPaymentStatus.UNPAID,
+            fulfillment_status=data.fulfillment_status or OrderFulfillmentStatus.PENDING,
             subtotal_amount=calculated_total,
             shipping_amount=shipping,
             tax_amount=tax,
@@ -64,7 +73,7 @@ class OrderRepository:
             currency=data.currency,
             customer_note=data.customer_note,
             payment_method=data.payment_method,
-            payment_channel=data.payment_channel,
+            payment_channel=data.payment_channel or data.order_source,
             delivery_method=data.delivery_method,
             courier_company=data.courier_company,
             tracking_id=data.tracking_id,

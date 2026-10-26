@@ -18,6 +18,7 @@ import {
   Edit2,
   X,
   Calculator,
+  Settings,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { apiClient } from "@/lib/api-client";
@@ -25,6 +26,7 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { ShipmentOut } from "@/types";
+import { DeliverySettingsModal } from "@/components/ecommerce/delivery-settings-modal";
 
 export default function ShippingPage() {
   const { user } = useAuth();
@@ -48,6 +50,7 @@ export default function ShippingPage() {
   const [modalTrackingNum, setModalTrackingNum] = useState<string>("");
   const [modalStatus, setModalStatus] = useState<string>("in_transit");
   const [isUpdatingTracking, setIsUpdatingTracking] = useState<boolean>(false);
+  const [isDeliveryModalOpen, setIsDeliveryModalOpen] = useState<boolean>(false);
 
   // Fetch Shipments with in-place transition
   const fetchShipments = useCallback(
@@ -172,6 +175,13 @@ export default function ShippingPage() {
           </div>
 
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setIsDeliveryModalOpen(true)}
+              className="inline-flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-xl shadow-xs transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+              <span>Delivery & Courier Pricing</span>
+            </button>
             <button
               onClick={() => fetchShipments(true)}
               className="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-xl shadow-xs transition-colors"
@@ -466,6 +476,14 @@ export default function ShippingPage() {
           </div>
         </div>
       )}
+
+      {/* Delivery Rates & Courier Pricing Settings Modal */}
+      <DeliverySettingsModal
+        isOpen={isDeliveryModalOpen}
+        onClose={() => setIsDeliveryModalOpen(false)}
+        businessId={user?.business_id || 1}
+        onUpdated={() => {}}
+      />
     </DashboardLayout>
   );
 }

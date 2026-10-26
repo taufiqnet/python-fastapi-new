@@ -43,6 +43,7 @@ def shipping_manage_page(
     zones = shipping_service.get_shipping_zones(db, business_id=selected_business_id)
     shipments = shipping_service.get_shipments(db, business_id=selected_business_id)
     orders = order_service.get_orders(db, business_id=selected_business_id, skip=skip, limit=limit)
+    delivery_settings = shipping_service.get_delivery_settings(db, business_id=selected_business_id)
 
     total_zones = len(zones)
     total_shipments = len(shipments)
@@ -66,6 +67,7 @@ def shipping_manage_page(
             "zones": zones,
             "shipments": shipments,
             "orders": orders,
+            "delivery_settings": delivery_settings,
             "businesses": businesses,
             "selected_business_id": selected_business_id,
             "total_zones": total_zones,

@@ -204,6 +204,63 @@
 
     </div>
 
+    <!-- Delivery & Courier Service Rates Setup (Order Form Dynamic Presets) -->
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
+        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                    <i class="fas fa-truck text-sm"></i>
+                </div>
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900">Delivery & Courier Service Pricing</h2>
+                    <p class="text-[11px] text-gray-500">Configure regional delivery rates (Inside Dhaka, Outside Dhaka, etc.) populated dynamically on order creation.</p>
+                </div>
+            </div>
+            <button type="button" onclick="openDeliveryRateModal()" class="px-3 py-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition-colors flex items-center space-x-1.5">
+                <i class="fas fa-plus text-[10px]"></i>
+                <span>Add Delivery Rate</span>
+            </button>
+        </div>
+
+        {% if not delivery_settings %}
+        <div class="text-center py-8 bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+            <i class="fas fa-truck text-2xl text-gray-300 mb-2"></i>
+            <p class="text-xs font-semibold text-gray-600">No Delivery Rates Configured</p>
+            <p class="text-[11px] text-gray-400 mt-0.5">Click 'Add Delivery Rate' to define delivery prices for orders.</p>
+        </div>
+        {% else %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {% for ds in delivery_settings %}
+            <div class="bg-gray-50/70 border border-gray-200/80 rounded-xl p-3.5 hover:border-indigo-200 transition-all flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs text-gray-900">{{ ds.name }}</span>
+                        {% if ds.is_default %}
+                        <span class="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-100 text-emerald-800">Default</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-[11px] text-gray-500 mt-1 space-y-0.5">
+                        {% if ds.region %}<p><i class="fas fa-map-marker-alt text-[10px] text-gray-400 mr-1"></i>{{ ds.region }}</p>{% endif %}
+                        {% if ds.estimated_days %}<p><i class="far fa-clock text-[10px] text-gray-400 mr-1"></i>{{ ds.estimated_days }}</p>{% endif %}
+                    </div>
+                </div>
+                <div class="pt-3 mt-3 border-t border-gray-200/60 flex items-center justify-between">
+                    <span class="text-sm font-extrabold text-indigo-700">৳{{ '%.2f'|format(ds.charge) }}</span>
+                    <div class="flex items-center space-x-1">
+                        <button type="button" onclick="openDeliveryRateModal('{{ ds.id }}', '{{ ds.name }}', '{{ '%.2f'|format(ds.charge) }}', '{{ ds.region or '' }}', '{{ ds.estimated_days or '' }}', {{ 1 if ds.is_default else 0 }})" class="p-1.5 text-gray-400 hover:text-indigo-600 rounded-lg hover:bg-white transition" title="Edit">
+                            <i class="fas fa-pencil-alt text-xs"></i>
+                        </button>
+                        <button type="button" onclick="deleteDeliveryRate('{{ ds.id }}', '{{ ds.name }}')" class="p-1.5 text-gray-400 hover:text-rose-600 rounded-lg hover:bg-white transition" title="Delete">
+                            <i class="fas fa-trash-alt text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
     <!-- Shipments & Fulfillment Tracking Section -->
     <div class="bg-white rounded-2xl border border-gray-100 shadow-xs p-5 space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
@@ -505,6 +562,41 @@
                 <span>Print Label</span>
             </button>
         </div>
+<!-- Modal: Delivery Rate Setting (Add/Edit) -->
+<div id="deliveryRateModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-md mx-4 overflow-hidden">
+        <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+            <span id="deliveryRateModalTitle" class="text-xs font-bold text-gray-800 uppercase tracking-wider">Configure Delivery Service Rate</span>
+            <button type="button" onclick="closeDeliveryRateModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+        </div>
+
+        <form id="deliveryRateForm" onsubmit="saveDeliveryRate(event)" class="p-5 space-y-3">
+            <input type="hidden" id="dr_id" value="">
+            <div>
+                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Service Name *</label>
+                <input type="text" id="dr_name" required placeholder="e.g. Inside Dhaka City" class="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Delivery Charge (৳) *</label>
+                <input type="number" step="0.01" min="0" id="dr_charge" required placeholder="e.g. 70.00" class="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Estimated Days / Time</label>
+                <input type="text" id="dr_est_days" placeholder="e.g. 24-48 Hours" class="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div>
+                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1">Coverage Region</label>
+                <input type="text" id="dr_region" placeholder="e.g. Dhaka City" class="w-full px-3 py-2 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-500">
+            </div>
+            <div class="flex items-center space-x-2 pt-1">
+                <input type="checkbox" id="dr_is_default" class="rounded text-indigo-600 focus:ring-indigo-500">
+                <label for="dr_is_default" class="text-xs font-semibold text-gray-700 cursor-pointer">Set as Default Selection</label>
+            </div>
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-end space-x-2">
+                <button type="button" onclick="closeDeliveryRateModal()" class="px-3.5 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button type="submit" id="dr_submit_btn" class="px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs">Save Rate</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -757,6 +849,84 @@
                 row.style.display = 'none';
             }
         });
+    }
+
+    // Delivery & Courier Pricing Setup Handlers
+    function openDeliveryRateModal(id, name, charge, region, estDays, isDefault) {
+        document.getElementById('dr_id').value = id || '';
+        document.getElementById('dr_name').value = name || '';
+        document.getElementById('dr_charge').value = charge || '';
+        document.getElementById('dr_region').value = region || '';
+        document.getElementById('dr_est_days').value = estDays || '';
+        document.getElementById('dr_is_default').checked = isDefault === 1;
+        document.getElementById('deliveryRateModalTitle').textContent = id ? 'Edit Delivery Rate' : 'Add Delivery Rate';
+        document.getElementById('deliveryRateModal').classList.remove('hidden');
+    }
+
+    function closeDeliveryRateModal() {
+        document.getElementById('deliveryRateModal').classList.add('hidden');
+    }
+
+    async function saveDeliveryRate(e) {
+        e.preventDefault();
+        const id = document.getElementById('dr_id').value;
+        const name = document.getElementById('dr_name').value.trim();
+        const charge = parseFloat(document.getElementById('dr_charge').value);
+        const region = document.getElementById('dr_region').value.trim() || null;
+        const estDays = document.getElementById('dr_est_days').value.trim() || null;
+        const isDefault = document.getElementById('dr_is_default').checked;
+
+        const btn = document.getElementById('dr_submit_btn');
+        btn.disabled = true;
+
+        try {
+            const url = id 
+                ? `/shipping/delivery-settings/${id}?business_id=${currentBusinessId}`
+                : `/shipping/delivery-settings`;
+            const method = id ? 'PUT' : 'POST';
+            const payload = id
+                ? { name: name, charge: charge, region: region, estimated_days: estDays, is_default: isDefault }
+                : { business_id: currentBusinessId, name: name, charge: charge, region: region, estimated_days: estDays, is_default: isDefault, is_active: true };
+
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                window.showSuccessToast('Saved', 'Delivery service rate saved successfully.');
+                setTimeout(() => window.location.reload(), 600);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Error', err.detail || 'Failed to save delivery rate.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function deleteDeliveryRate(id, name) {
+        if (!confirm(`Are you sure you want to delete delivery rate "${name}"?`)) return;
+
+        try {
+            const res = await fetch(`/shipping/delivery-settings/${id}?business_id=${currentBusinessId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                window.showSuccessToast('Deleted', `Delivery rate "${name}" removed.`);
+                setTimeout(() => window.location.reload(), 600);
+            } else {
+                const err = await res.json();
+                window.showErrorAlert('Error', err.detail || 'Failed to delete delivery rate.');
+            }
+        } catch (err) {
+            console.error(err);
+            window.showErrorAlert('Error', 'An unexpected error occurred.');
+        }
     }
 </script>
 {% endblock %}

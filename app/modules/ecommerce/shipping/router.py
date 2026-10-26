@@ -7,6 +7,9 @@ from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.database import get_db
 from app.modules.ecommerce.shipping.schemas import (
+    DeliveryServiceSettingCreate,
+    DeliveryServiceSettingOut,
+    DeliveryServiceSettingUpdate,
     ShipmentCreate,
     ShipmentOut,
     ShippingRateQuoteRequest,
@@ -109,3 +112,66 @@ def generate_shipping_label(
     db: Session = Depends(get_db),
 ):
     return service.create_shipment(db, data)
+
+
+@router.get("/delivery-settings", response_model=list[DeliveryServiceSettingOut])
+def get_delivery_settings(
+    business_id: int = Query(1),
+    active_only: bool = Query(False),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_delivery_settings(
+        db, business_id=business_id, active_only=active_only
+    )
+
+
+@router.get("/delivery-settings/{setting_id}", response_model=DeliveryServiceSettingOut)
+def get_delivery_setting(
+    setting_id: uuid.UUID,
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
+    db: Session = Depends(get_db),
+):
+    return service.get_delivery_setting(
+        db, setting_id=setting_id, business_id=business_id
+    )
+
+
+@router.post(
+    "/delivery-settings",
+    response_model=DeliveryServiceSettingOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_delivery_setting(
+    data: DeliveryServiceSettingCreate,
+    current_user: User = Depends(require_permission("ecommerce", "orders", "create")),
+    db: Session = Depends(get_db),
+):
+    return service.create_delivery_setting(db, data)
+
+
+@router.put("/delivery-settings/{setting_id}", response_model=DeliveryServiceSettingOut)
+def update_delivery_setting(
+    setting_id: uuid.UUID,
+    data: DeliveryServiceSettingUpdate,
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "update")),
+    db: Session = Depends(get_db),
+):
+    return service.update_delivery_setting(
+        db, setting_id=setting_id, data=data, business_id=business_id
+    )
+
+
+@router.delete("/delivery-settings/{setting_id}")
+def delete_delivery_setting(
+    setting_id: uuid.UUID,
+    business_id: int = Query(1),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "delete")),
+    db: Session = Depends(get_db),
+):
+    return service.delete_delivery_setting(
+        db, setting_id=setting_id, business_id=business_id
+    )
+

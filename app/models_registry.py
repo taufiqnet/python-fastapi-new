@@ -88,6 +88,7 @@ from app.modules.ecommerce.products.models import (  # noqa: F401
 from app.modules.ecommerce.reviews.models import Review, ReviewVote  # noqa: F401
 from app.modules.ecommerce.sellers.models import Seller  # noqa: F401
 from app.modules.ecommerce.shipping.models import (  # noqa: F401
+    DeliveryServiceSetting,
     Shipment,
     ShippingRate,
     ShippingZone,

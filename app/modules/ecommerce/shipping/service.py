@@ -5,6 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.modules.ecommerce.shipping.repository import ShippingRepository
 from app.modules.ecommerce.shipping.schemas import (
+    DeliveryServiceSettingCreate,
+    DeliveryServiceSettingOut,
+    DeliveryServiceSettingUpdate,
     ShipmentCreate,
     ShipmentOut,
     ShippingRateQuoteRequest,
@@ -102,3 +105,63 @@ class ShippingService:
         return ShippingRateQuoteResponse(
             carrier="Standard Express", base_cost=matched_cost
         )
+
+    def get_delivery_settings(
+        self, db: Session, business_id: int = 1, active_only: bool = False
+    ) -> list[DeliveryServiceSettingOut]:
+        settings = self.repository.get_delivery_settings(
+            db, business_id=business_id, active_only=active_only
+        )
+        return [DeliveryServiceSettingOut.model_validate(s) for s in settings]
+
+    def get_delivery_setting(
+        self, db: Session, setting_id: uuid.UUID, business_id: int = 1
+    ) -> DeliveryServiceSettingOut:
+        setting = self.repository.get_delivery_setting_by_id(
+            db, setting_id=setting_id, business_id=business_id
+        )
+        if not setting:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Delivery service setting not found",
+            )
+        return DeliveryServiceSettingOut.model_validate(setting)
+
+    def create_delivery_setting(
+        self, db: Session, data: DeliveryServiceSettingCreate
+    ) -> DeliveryServiceSettingOut:
+        setting = self.repository.create_delivery_setting(db, data)
+        return DeliveryServiceSettingOut.model_validate(setting)
+
+    def update_delivery_setting(
+        self,
+        db: Session,
+        setting_id: uuid.UUID,
+        data: DeliveryServiceSettingUpdate,
+        business_id: int = 1,
+    ) -> DeliveryServiceSettingOut:
+        setting = self.repository.get_delivery_setting_by_id(
+            db, setting_id=setting_id, business_id=business_id
+        )
+        if not setting:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Delivery service setting not found",
+            )
+        updated = self.repository.update_delivery_setting(db, setting, data)
+        return DeliveryServiceSettingOut.model_validate(updated)
+
+    def delete_delivery_setting(
+        self, db: Session, setting_id: uuid.UUID, business_id: int = 1
+    ) -> dict[str, str]:
+        setting = self.repository.get_delivery_setting_by_id(
+            db, setting_id=setting_id, business_id=business_id
+        )
+        if not setting:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Delivery service setting not found",
+            )
+        self.repository.delete_delivery_setting(db, setting)
+        return {"status": "success", "message": "Delivery setting deleted"}
+

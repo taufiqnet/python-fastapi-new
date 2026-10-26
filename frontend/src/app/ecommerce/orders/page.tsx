@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef, startTransition } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { apiClient } from "@/lib/api-client";
 import {
@@ -32,6 +33,12 @@ import {
   Loader2,
   DollarSign,
   Printer,
+  Plus,
+  Trash2,
+  MessageCircle,
+  Globe,
+  Phone,
+  Store,
 } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { OrderDetailDrawer } from "@/components/ecommerce/orders/order-detail-drawer";
@@ -56,6 +63,11 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [fulfillmentFilter, setFulfillmentFilter] = useState<string>("all");
+  const [channelFilter, setChannelFilter] = useState<string>("all");
+
+  // Deletion State
+  const [orderToDelete, setOrderToDelete] = useState<OrderSummary | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -118,13 +130,43 @@ export default function OrdersPage() {
     });
   };
 
+  const handleChannelFilterChange = (channel: string) => {
+    startTransition(() => {
+      setChannelFilter(channel);
+      setCurrentPage(1);
+    });
+  };
+
   const clearFilters = () => {
     startTransition(() => {
       setSearchQuery("");
       setPaymentFilter("all");
       setFulfillmentFilter("all");
+      setChannelFilter("all");
       setCurrentPage(1);
     });
+  };
+
+  // Order Deletion Handler
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    setIsDeleting(true);
+    try {
+      await apiClient.delete(`/orders/${orderToDelete.id}?business_id=${businessId}`);
+      toast.success(
+        "Order Deleted",
+        `Order ${orderToDelete.order_number} has been deleted successfully.`
+      );
+      setOrderToDelete(null);
+      loadData(false);
+    } catch (err: any) {
+      toast.error(
+        "Delete Failed",
+        err.response?.data?.detail || "Could not delete order record."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Metrics
@@ -158,9 +200,15 @@ export default function OrdersPage() {
       const matchesFulfillment =
         fulfillmentFilter === "all" || o.fulfillment_status === fulfillmentFilter;
 
-      return matchesSearch && matchesPayment && matchesFulfillment;
+      const matchesChannel =
+        channelFilter === "all" ||
+        (channelFilter === "online_store"
+          ? !o.payment_channel || o.payment_channel === "online_store"
+          : o.payment_channel === channelFilter);
+
+      return matchesSearch && matchesPayment && matchesFulfillment && matchesChannel;
     });
-  }, [orders, searchQuery, paymentFilter, fulfillmentFilter]);
+  }, [orders, searchQuery, paymentFilter, fulfillmentFilter, channelFilter]);
 
   // Pagination Calculations
   const totalFiltered = filteredOrders.length;
@@ -276,8 +324,52 @@ export default function OrdersPage() {
     }
   };
 
+  const getChannelBadge = (channel?: string | null) => {
+    switch (channel) {
+      case "facebook":
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+            <Globe className="w-2.5 h-2.5" /> Facebook
+          </span>
+        );
+      case "whatsapp":
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <MessageCircle className="w-2.5 h-2.5" /> WhatsApp
+          </span>
+        );
+      case "phone":
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            <Phone className="w-2.5 h-2.5" /> Phone
+          </span>
+        );
+      case "walk_in":
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+            <Store className="w-2.5 h-2.5" /> Walk-in
+          </span>
+        );
+      case "online_store":
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+            Online Store
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-50 text-slate-600 border border-slate-200">
+            Online
+          </span>
+        );
+    }
+  };
+
   const hasActiveFilters =
-    searchQuery.trim() !== "" || paymentFilter !== "all" || fulfillmentFilter !== "all";
+    searchQuery.trim() !== "" ||
+    paymentFilter !== "all" ||
+    fulfillmentFilter !== "all" ||
+    channelFilter !== "all";
 
   return (
     <DashboardLayout>
@@ -318,6 +410,14 @@ export default function OrdersPage() {
               <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
               Excel Export
             </a>
+
+            <Link
+              href="/ecommerce/orders/create"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              New Order
+            </Link>
           </div>
         </div>
 
@@ -392,6 +492,19 @@ export default function OrdersPage() {
 
             {/* Filter Dropdowns */}
             <div className="flex items-center gap-2">
+              <select
+                value={channelFilter}
+                onChange={(e) => handleChannelFilterChange(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="all">All Channels</option>
+                <option value="facebook">Facebook</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="phone">Phone</option>
+                <option value="walk_in">Walk-in</option>
+                <option value="online_store">Online Store</option>
+              </select>
+
               <select
                 value={paymentFilter}
                 onChange={(e) => handlePaymentFilterChange(e.target.value)}
@@ -489,13 +602,16 @@ export default function OrdersPage() {
                     paginatedOrders.map((o) => (
                       <tr key={o.id} className="hover:bg-slate-50/75 transition-colors group">
                         <td className="py-3 px-4">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenDrawer(o)}
-                            className="font-mono font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition"
-                          >
-                            {o.order_number}
-                          </button>
+                          <div className="flex flex-col gap-1 items-start">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenDrawer(o)}
+                              className="font-mono font-bold text-indigo-600 hover:text-indigo-800 hover:underline transition"
+                            >
+                              {o.order_number}
+                            </button>
+                            {getChannelBadge(o.payment_channel)}
+                          </div>
                         </td>
                         <td className="py-3 px-4 text-slate-500 text-[11px]">
                           {formatDate(o.created_at)}
@@ -544,6 +660,14 @@ export default function OrdersPage() {
                               title="Print Commercial Invoice"
                             >
                               <Printer className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setOrderToDelete(o)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                              title="Delete Order Record"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>
@@ -657,6 +781,57 @@ export default function OrdersPage() {
           }}
           order={orderForModal}
         />
+
+        {/* Delete Confirmation Modal */}
+        {orderToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-100 p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Delete Order Record</h3>
+                  <p className="text-xs text-slate-500">
+                    Are you sure you want to permanently delete order{" "}
+                    <strong className="text-slate-800">{orderToDelete.order_number}</strong>?
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                This action cannot be undone. All associated line items, status logs, and address records will be permanently removed.
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setOrderToDelete(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold rounded-xl text-xs transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteOrder}
+                  disabled={isDeleting}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition shadow-xs"
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" /> Confirm Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

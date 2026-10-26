@@ -659,10 +659,11 @@ export interface CustomerCreateInput {
 
 export interface OrderCreateInput {
   business_id: number;
-  user_id?: string;
+  user_id?: string | null;
   guest_email?: string | null;
-  items: Array<{ variant_id: string; quantity: number }>;
+  items: Array<{ variant_id: string; quantity: number; unit_price?: number }>;
   shipping_address: {
+    address_type?: string;
     recipient_name: string;
     phone?: string;
     street: string;
@@ -672,6 +673,7 @@ export interface OrderCreateInput {
     country: string;
   };
   billing_address?: {
+    address_type?: string;
     recipient_name: string;
     phone?: string;
     street: string;
@@ -684,9 +686,34 @@ export interface OrderCreateInput {
   shipping_amount?: number;
   tax_amount?: number;
   discount_amount?: number;
+  other_charges?: number;
   payment_method?: string;
+  payment_channel?: string;
+  payment_status?: OrderPaymentStatus;
+  fulfillment_status?: OrderFulfillmentStatus;
   delivery_method?: string;
+  courier_company?: string;
+  tracking_id?: string;
+  order_source?: string;
   customer_note?: string;
+}
+
+export interface CatalogVariant {
+  id: string;
+  sku: string;
+  price: number;
+  cost_price?: number;
+  stock_qty: number;
+  attributes?: Record<string, any> | null;
+  attr_summary?: string;
+}
+
+export interface CatalogProduct {
+  id: string;
+  title: string;
+  brand?: string | null;
+  thumbnail_url?: string | null;
+  variants: CatalogVariant[];
 }
 
 // POS Interfaces
@@ -885,6 +912,22 @@ export interface ShipmentOut {
   estimated_delivery?: string | null;
   shipped_at?: string | null;
 }
+
+export interface DeliveryServiceSettingOut {
+  id: string;
+  business_id: number;
+  name: string;
+  charge: number;
+  region?: string | null;
+  estimated_days?: string | null;
+  default_courier?: string | null;
+  is_active: boolean;
+  is_default: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 
 // Payments & Transactions
 export interface PaymentTransactionOut {
