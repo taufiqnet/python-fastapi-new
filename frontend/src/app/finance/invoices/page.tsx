@@ -10,6 +10,7 @@ import {
   Search,
   RefreshCw,
   Printer,
+  Download,
   CheckCircle2,
   AlertCircle,
   Clock,
@@ -128,6 +129,14 @@ export default function SalesInvoicesPage() {
       setStatusFilter(status);
       setCurrentPage(1);
     });
+  };
+
+  const handleDownloadPdf = (invoiceId: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const pdfUrl = `${backendBase}/finance/invoices/${invoiceId}/mushak-6-3/pdf?business_id=${businessId}${tokenParam}`;
+    window.open(pdfUrl, "_blank");
   };
 
   const filteredInvoices = useMemo(() => {
@@ -313,9 +322,19 @@ export default function SalesInvoicesPage() {
                             setIsModalOpen(true);
                           }}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 transition"
+                          title="View / Print Statutory Mushak 6.3"
                         >
                           <Printer className="w-3 h-3" />
                           <span>মূসক-৬.৩</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadPdf(inv.id)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition"
+                          title="Download Statutory Mushak 6.3 PDF"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>PDF</span>
                         </button>
                       </td>
                     </tr>

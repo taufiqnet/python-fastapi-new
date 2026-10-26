@@ -72,8 +72,10 @@ export function Mushak63Modal({
 
   const handleDownloadPdf = () => {
     if (!invoiceId) return;
-    const bizParam = businessId ? `?business_id=${businessId}` : "";
-    const pdfUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/finance/invoices/${invoiceId}/mushak-6-3/pdf${bizParam}`;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const pdfUrl = `${backendBase}/finance/invoices/${invoiceId}/mushak-6-3/pdf?business_id=${businessId || 1}${tokenParam}`;
     window.open(pdfUrl, "_blank");
   };
 

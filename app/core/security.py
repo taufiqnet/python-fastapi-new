@@ -56,6 +56,11 @@ def extract_token_from_request(request: Request, header_token: str | None = None
         if cookie_token.startswith("Bearer "):
             return cookie_token[7:]
         return cookie_token
+    query_token = request.query_params.get("token")
+    if query_token:
+        if query_token.startswith("Bearer "):
+            return query_token[7:]
+        return query_token
     return None
 
 

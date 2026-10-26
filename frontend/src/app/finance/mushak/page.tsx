@@ -208,6 +208,14 @@ export default function MushakRegistryPage() {
     setIsModalOpen(true);
   };
 
+  const handleDownloadPdf = (invoiceId: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+    const pdfUrl = `${backendBase}/finance/invoices/${invoiceId}/mushak-6-3/pdf?business_id=${businessId}${tokenParam}`;
+    window.open(pdfUrl, "_blank");
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -477,7 +485,7 @@ export default function MushakRegistryPage() {
                           </span>
                         </td>
 
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-4 text-right space-x-1.5 whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => handleOpenMushakModal(inv.id)}
@@ -486,6 +494,15 @@ export default function MushakRegistryPage() {
                           >
                             <Printer className="w-3.5 h-3.5" />
                             <span>চালানপত্র (৬.৩)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadPdf(inv.id)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition"
+                            title="Download Statutory Mushak 6.3 PDF"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>PDF</span>
                           </button>
                         </td>
                       </tr>

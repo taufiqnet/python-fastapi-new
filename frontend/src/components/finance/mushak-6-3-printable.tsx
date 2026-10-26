@@ -59,25 +59,52 @@ export interface Mushak63Data {
 
 interface Mushak63PrintableProps {
   data: Mushak63Data;
+  showPrintButton?: boolean;
 }
 
 export const Mushak63Printable = forwardRef<HTMLDivElement, Mushak63PrintableProps>(
-  ({ data }, ref) => {
+  ({ data, showPrintButton = false }, ref) => {
     const { registered_person, header, buyer, lines, summary, footer } = data;
 
-    const formatNum = (val: number | string | undefined): string => {
-      if (val === undefined || val === null) return "0.00";
-      const num = typeof val === "string" ? parseFloat(val) : val;
-      return isNaN(num) ? "0.00" : num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatPrice = (val: number | string | undefined | null): string => {
+      if (val === undefined || val === null || val === "") return "";
+      const num = typeof val === "string" ? parseFloat(val) : Number(val);
+      return isNaN(num) ? "0.00" : num.toFixed(2);
+    };
+
+    const formatQty = (val: number | string | undefined | null): string => {
+      if (val === undefined || val === null || val === "") return "0";
+      const num = typeof val === "string" ? parseFloat(val) : Number(val);
+      if (isNaN(num)) return "0";
+      return Number.isInteger(num) ? num.toFixed(0) : num.toFixed(2);
+    };
+
+    const formatRate = (val: number | string | undefined | null): string => {
+      if (val === undefined || val === null || val === "") return "";
+      const num = typeof val === "string" ? parseFloat(val) : Number(val);
+      if (isNaN(num)) return "";
+      return Number.isInteger(num) ? num.toFixed(0) : num.toFixed(2);
     };
 
     return (
       <div
         ref={ref}
-        className="mushak-printable bg-white text-slate-900 p-8 max-w-[210mm] mx-auto text-xs leading-tight font-sans selection:bg-slate-200"
-        style={{ minHeight: "297mm", boxSizing: "border-box" }}
+        className="mushak-template-container bg-white text-black p-4 sm:p-6 mx-auto"
+        style={{
+          fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif',
+          fontSize: "11px",
+          color: "#000",
+          backgroundColor: "#fff",
+          maxWidth: "800px",
+          lineHeight: "1.4",
+          boxSizing: "border-box",
+        }}
       >
         <style dangerouslySetInnerHTML={{ __html: `
+          @page {
+            size: A4 portrait;
+            margin: 12mm 10mm 12mm 10mm;
+          }
           @media print {
             body {
               background: #ffffff !important;
@@ -85,12 +112,13 @@ export const Mushak63Printable = forwardRef<HTMLDivElement, Mushak63PrintablePro
               margin: 0 !important;
               padding: 0 !important;
             }
-            .mushak-printable {
-              padding: 10mm !important;
+            .mushak-template-container {
               max-width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
               box-shadow: none !important;
               border: none !important;
-              font-size: 10pt !important;
+              font-size: 11px !important;
             }
             .no-print {
               display: none !important;
@@ -105,202 +133,497 @@ export const Mushak63Printable = forwardRef<HTMLDivElement, Mushak63PrintablePro
           }
         `}} />
 
-        {/* NBR Statutory Header */}
-        <div className="text-center pb-3 border-b-2 border-slate-900">
-          <p className="font-bold text-sm tracking-wide text-slate-800">
-            গণপ্রজাতন্ত্রী বাংলাদেশ সরকার
-          </p>
-          <p className="text-[11px] text-slate-700">
-            Government of the People&apos;s Republic of Bangladesh
-          </p>
-          <p className="font-extrabold text-base text-slate-950 mt-0.5">
-            জাতীয় রাজস্ব বোর্ড
-          </p>
-          <p className="text-[11px] text-slate-700">
-            National Board of Revenue (NBR)
-          </p>
-          
-          <div className="mt-2 inline-block px-4 py-1 border border-slate-900 rounded font-black text-sm uppercase tracking-wider bg-slate-50">
-            কর চালানপত্র (মূসক-৬.৩)
-            <span className="block text-[10px] font-normal tracking-normal text-slate-700">
-              [TAX INVOICE]
-            </span>
+        {/* Optional Action Bar */}
+        {showPrintButton && (
+          <div className="no-print mb-4 text-right">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition shadow-xs"
+            >
+              Print / Save PDF
+            </button>
           </div>
+        )}
 
-          <p className="text-[10px] text-slate-600 mt-1 font-medium">
-            [বিধি ৪০ এর উপ-বিধি (১) এর দফা (গ) ও দফা (চ) দ্রষ্টব্য / See clauses (c) &amp; (f) of sub-rule (1) of rule 40]
-          </p>
+        {/* Top Header Table */}
+        <table className="w-full border-collapse mb-2" style={{ borderCollapse: "collapse" }}>
+          <tbody>
+            <tr>
+              <td style={{ width: "20%", verticalAlign: "top", textAlign: "left", fontWeight: "bold", fontSize: "12px" }}>
+                BD Logo
+              </td>
+              <td style={{ width: "60%", verticalAlign: "top", textAlign: "center" }}>
+                <div style={{ fontWeight: "bold", fontSize: "13px" }}>
+                  Government of the People&apos;s Republic of Bangladesh
+                </div>
+                <div style={{ fontWeight: "bold", fontSize: "12px" }}>
+                  National Board of Revenue
+                </div>
+                <div style={{ fontWeight: "bold", fontSize: "15px", marginTop: "4px" }}>
+                  Tax Invoice
+                </div>
+                <div style={{ fontWeight: "bold", fontSize: "11px", marginTop: "2px" }}>
+                  [Note clause (c) and clause (f) of sub-rule (1) of rule 40]
+                </div>
+              </td>
+              <td style={{ width: "20%", verticalAlign: "top", textAlign: "right" }}>
+                <div
+                  style={{
+                    border: "2px solid #000",
+                    padding: "4px 10px",
+                    fontWeight: "bold",
+                    fontSize: "13px",
+                    textAlign: "center",
+                    display: "inline-block",
+                    lineHeight: "1.2",
+                  }}
+                >
+                  Musak -<br />6.3
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* Registered Person Info */}
+        <div style={{ textAlign: "center", fontSize: "12px", marginBottom: "15px", lineHeight: "1.5" }}>
+          <div><strong>Name of the registered person:</strong> {registered_person.name}</div>
+          <div><strong>BIN of the registered person:</strong> {registered_person.bin}</div>
+          <div><strong>Invoice Issue Address:</strong> {registered_person.address}</div>
         </div>
 
-        {/* Business & Challan Metadata Grid */}
-        <div className="grid grid-cols-2 gap-4 my-3 text-[11px] border border-slate-300 p-2.5 rounded bg-slate-50/50">
-          {/* Registered Person Details */}
-          <div className="space-y-1 border-r border-slate-300 pr-3">
-            <p className="font-bold text-slate-950 text-xs">
-              নিবন্ধিত ব্যক্তির নাম (Registered Person):{" "}
-              <span className="font-normal text-slate-800">{registered_person.name}</span>
-            </p>
-            <p className="font-bold text-slate-950">
-              নিবন্ধিত ব্যক্তির বিআইএন (BIN):{" "}
-              <span className="font-mono font-bold tracking-wider text-slate-900 bg-white px-1.5 py-0.5 border border-slate-300 rounded">
-                {registered_person.bin || "N/A"}
-              </span>
-            </p>
-            <p className="text-slate-700">
-              <span className="font-semibold text-slate-900">চালানপত্র প্রদানের স্থান ও ঠিকানা:</span>{" "}
-              {registered_person.address}
-            </p>
-          </div>
+        {/* Buyer & Invoice Info Table */}
+        <table className="w-full border-collapse mb-3.5" style={{ borderCollapse: "collapse", fontSize: "11px", lineHeight: "1.6" }}>
+          <tbody>
+            <tr>
+              <td style={{ width: "55%", verticalAlign: "top", padding: "2px 0" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: "42%", verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Buyer&apos;s Name</strong>
+                      </td>
+                      <td style={{ width: "5%", verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ width: "53%", verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>{buyer.name}</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Buyer&apos;s BIN (If Applicable)</strong>
+                      </td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        {buyer.bin || ""}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Buyer&apos;s address</strong>
+                      </td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        {buyer.address || "-"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Delivery destination</strong>
+                      </td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        {buyer.delivery_destination || "-"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Nature and number of vehicles</strong>
+                      </td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>{buyer.vehicle_nature_number || "-"}</strong>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
 
-          {/* Challan Serial & Date */}
-          <div className="space-y-1 pl-1">
-            <p className="font-bold text-slate-950">
-              চালানপত্র নম্বর (Challan No):{" "}
-              <span className="font-mono font-extrabold text-indigo-900 bg-indigo-50 px-2 py-0.5 border border-indigo-200 rounded">
-                {header.mushak_number}
-              </span>
-            </p>
-            <p className="text-slate-800">
-              <span className="font-semibold text-slate-950">ইস্যুর তারিখ (Issue Date):</span>{" "}
-              {header.issue_date}
-            </p>
-            <p className="text-slate-800">
-              <span className="font-semibold text-slate-950">ইস্যুর সময় (Issue Time):</span>{" "}
-              {header.issue_time}
-            </p>
-            <p className="text-slate-800">
-              <span className="font-semibold text-slate-950">ইনভয়েস রেফারেন্স (Invoice Ref):</span>{" "}
-              <span className="font-mono">{header.invoice_number}</span>
-            </p>
-          </div>
-        </div>
+              <td style={{ width: "45%", verticalAlign: "top", padding: "2px 0" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: "35%", verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Invoice No</strong>
+                      </td>
+                      <td style={{ width: "5%", verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ width: "60%", verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>{header.mushak_number || header.invoice_number}</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Date of issue</strong>
+                      </td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>{header.issue_date}</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Time of issue</strong>
+                      </td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>{header.issue_time}</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>SO No</strong>
+                      </td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>{header.so_number || "-"}</strong>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>Bill No</strong>
+                      </td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>:</td>
+                      <td style={{ verticalAlign: "top", padding: "1px 0" }}>
+                        <strong>{header.bill_number || header.so_number || "-"}</strong>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* Buyer Details Box */}
-        <div className="border border-slate-300 p-2.5 rounded mb-3 text-[11px] space-y-1 bg-white">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="font-bold text-slate-950">
-                ক্রেতার নাম (Buyer Name):{" "}
-                <span className="font-semibold text-slate-900">{buyer.name || "Walk-in Retail Buyer"}</span>
-              </p>
-              <p className="text-slate-800">
-                <span className="font-semibold text-slate-950">ক্রেতার বিআইএন / এনআইডি (BIN/NID):</span>{" "}
-                <span className="font-mono">{buyer.bin || "Unregistered Retail Consumer"}</span>
-              </p>
-              <p className="text-slate-700">
-                <span className="font-semibold text-slate-950">ক্রেতার ঠিকানা (Buyer Address):</span>{" "}
-                {buyer.address || "Dhaka, Bangladesh"}
-              </p>
-            </div>
-            <div>
-              <p className="text-slate-800">
-                <span className="font-semibold text-slate-950">সরবরাহের গন্তব্যস্থল (Destination):</span>{" "}
-                {buyer.delivery_destination || buyer.address || "Premises Delivery"}
-              </p>
-              <p className="text-slate-800">
-                <span className="font-semibold text-slate-950">যানবাহনের প্রকৃতি ও নম্বর (Vehicle Details):</span>{" "}
-                {buyer.vehicle_nature_number || "Direct Handover / Courier"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Statutory 11-Column Table */}
-        <div className="overflow-x-auto border border-slate-900 rounded-xs mb-3">
-          <table className="w-full border-collapse text-[10px] text-left">
-            <thead>
-              <tr className="bg-slate-100 border-b border-slate-900 text-slate-950 font-bold text-center divide-x divide-slate-400">
-                <th className="p-1.5 w-7">১<br/><span className="text-[8px] font-normal">ক্রমিক</span></th>
-                <th className="p-1.5 text-left min-w-[130px]">২<br/><span className="text-[8px] font-normal">পণ্য বা সেবার বর্ণনা</span></th>
-                <th className="p-1.5 w-16">৩<br/><span className="text-[8px] font-normal">এইচ.এস. কোড</span></th>
-                <th className="p-1.5 w-10">৪<br/><span className="text-[8px] font-normal">একক</span></th>
-                <th className="p-1.5 w-12 text-right">৫<br/><span className="text-[8px] font-normal">পরিমাণ</span></th>
-                <th className="p-1.5 w-16 text-right">৬<br/><span className="text-[8px] font-normal">একক মূল্য (টাকা)</span></th>
-                <th className="p-1.5 w-18 text-right">৭<br/><span className="text-[8px] font-normal">মোট মূল্য (টাকা)</span></th>
-                <th className="p-1.5 w-16 text-right">৮<br/><span className="text-[8px] font-normal">সম্পূরক শুল্ক</span></th>
-                <th className="p-1.5 w-18 text-right">৯<br/><span className="text-[8px] font-normal">মূসক (VAT)</span></th>
-                <th className="p-1.5 w-20 text-right">১০<br/><span className="text-[8px] font-normal">করসহ মূল্য</span></th>
-                <th className="p-1.5 w-14">১১<br/><span className="text-[8px] font-normal">মন্তব্য</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-300">
-              {lines.map((line, idx) => (
-                <tr key={idx} className="divide-x divide-slate-300 hover:bg-slate-50/50">
-                  <td className="p-1.5 text-center font-mono text-[9px]">{line.sl_no}</td>
-                  <td className="p-1.5 text-left font-medium text-slate-900">{line.description}</td>
-                  <td className="p-1.5 text-center font-mono text-[9px] text-slate-600">
-                    {line.hs_code || "9900.00.00"}
-                  </td>
-                  <td className="p-1.5 text-center uppercase text-[9px] text-slate-600">{line.uom}</td>
-                  <td className="p-1.5 text-right font-mono">{formatNum(line.quantity)}</td>
-                  <td className="p-1.5 text-right font-mono">{formatNum(line.unit_price)}</td>
-                  <td className="p-1.5 text-right font-mono font-semibold">{formatNum(line.total_price)}</td>
-                  <td className="p-1.5 text-right font-mono">
-                    <span className="text-[8px] text-slate-500 block">{formatNum(line.sd_rate)}%</span>
-                    {formatNum(line.sd_amount)}
-                  </td>
-                  <td className="p-1.5 text-right font-mono">
-                    <span className="text-[8px] text-slate-500 block">{formatNum(line.vat_rate)}%</span>
-                    {formatNum(line.vat_amount)}
-                  </td>
-                  <td className="p-1.5 text-right font-mono font-bold text-slate-950">
-                    {formatNum(line.price_incl_duties_taxes)}
-                  </td>
-                  <td className="p-1.5 text-center text-[9px] text-slate-500">{line.remarks || "-"}</td>
-                </tr>
+        {/* Statutory 11-Column Items Table */}
+        <table
+          className="w-full border-collapse mb-4"
+          style={{ width: "100%", borderCollapse: "collapse", marginBottom: "15px" }}
+        >
+          <thead>
+            <tr>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "4%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                SL<br />No.
+              </th>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "22%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Description of the product or service<br />(including brand name as applicable)
+              </th>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "7%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Unit of supply
+              </th>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "6%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Quantity
+              </th>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "9%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Unit Price<br />(In Taka)
+              </th>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "10%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Total Price<br />(In Taka)
+              </th>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "8%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Supplementary duty rate
+              </th>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "9%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Amount of Supplementary Duty<br />(in taka)
+              </th>
+              <th
+                colSpan={2}
+                style={{
+                  width: "15%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Value Added Tax
+              </th>
+              <th
+                rowSpan={2}
+                style={{
+                  width: "10%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Price inclusive of all duties and taxes
+              </th>
+            </tr>
+            <tr>
+              <th
+                style={{
+                  width: "7%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Rate of Value Added Tax / Specific Tax
+              </th>
+              <th
+                style={{
+                  width: "8%",
+                  border: "1px solid #000",
+                  padding: "4px 5px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  verticalAlign: "middle",
+                  backgroundColor: "#fff",
+                }}
+              >
+                Amount of Value Added Tax / Specific Tax<br />(in taka)
+              </th>
+            </tr>
+            <tr>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((colNum) => (
+                <th
+                  key={colNum}
+                  style={{
+                    border: "1px solid #000",
+                    padding: "3px 4px",
+                    fontSize: "10px",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    backgroundColor: "#fff",
+                  }}
+                >
+                  {colNum}
+                </th>
               ))}
-            </tbody>
-            <tfoot>
-              <tr className="bg-slate-100 border-t-2 border-slate-900 font-bold text-slate-950 divide-x divide-slate-400">
-                <td colSpan={6} className="p-2 text-right uppercase tracking-wider text-[11px]">
-                  সর্বমোট (Total):
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map((item, idx) => (
+              <tr key={idx}>
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "center" }}>
+                  {item.sl_no}
                 </td>
-                <td className="p-2 text-right font-mono text-[11px]">
-                  {formatNum(summary.total_price)}
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", fontWeight: "bold" }}>
+                  {item.description}
                 </td>
-                <td className="p-2 text-right font-mono text-[11px]">
-                  {formatNum(summary.total_sd)}
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "center" }}>
+                  {item.uom}
                 </td>
-                <td className="p-2 text-right font-mono text-[11px]">
-                  {formatNum(summary.total_vat)}
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "center" }}>
+                  {formatQty(item.quantity)}
                 </td>
-                <td className="p-2 text-right font-mono text-xs font-black text-slate-950">
-                  {formatNum(summary.total_payable)}
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                  {formatPrice(item.unit_price)}
                 </td>
-                <td className="p-2 text-center text-[9px] text-slate-500">BDT</td>
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                  {formatPrice(item.total_price)}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "center" }}>
+                  {item.sd_rate ? formatRate(item.sd_rate) : ""}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                  {item.sd_amount ? formatPrice(item.sd_amount) : ""}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "center" }}>
+                  {item.vat_rate ? formatRate(item.vat_rate) : ""}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                  {formatPrice(item.vat_amount)}
+                </td>
+                <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right", fontWeight: "bold" }}>
+                  {formatPrice(item.price_incl_duties_taxes)}
+                </td>
               </tr>
-            </tfoot>
-          </table>
-        </div>
+            ))}
+            <tr style={{ fontWeight: "bold" }}>
+              <td colSpan={3} style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                Total:
+              </td>
+              <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "center" }}>
+                {formatQty(summary.total_quantity)}
+              </td>
+              <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px" }}></td>
+              <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                {formatPrice(summary.total_price)}
+              </td>
+              <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px" }}></td>
+              <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                {summary.total_sd ? formatPrice(summary.total_sd) : ""}
+              </td>
+              <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px" }}></td>
+              <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                {formatPrice(summary.total_vat)}
+              </td>
+              <td style={{ border: "1px solid #000", padding: "4px 5px", fontSize: "10px", textAlign: "right" }}>
+                {formatPrice(summary.total_payable)}
+              </td>
+            </tr>
+            <tr>
+              <td
+                colSpan={11}
+                style={{
+                  border: "1px solid #000",
+                  padding: "6px 10px",
+                  fontSize: "10px",
+                  fontWeight: "bold",
+                  textAlign: "right",
+                }}
+              >
+                Total (in word): {summary.total_in_words || ""}
+              </td>
+            </tr>
+          </tbody>
+        </table>
 
-        {/* Amount in words */}
-        <div className="p-2 border border-slate-300 rounded bg-slate-50/75 mb-6 text-[11px]">
-          <span className="font-bold text-slate-950">কথায় (In Words):</span>{" "}
-          <span className="font-semibold text-slate-900 capitalize">
-            {summary.total_in_words || "Zero Taka Only"}
-          </span>
-        </div>
-
-        {/* Footer & Signature Section */}
-        <div className="pt-8 grid grid-cols-2 gap-8 text-[11px]">
+        {/* Footer Grid */}
+        <div
+          style={{
+            marginTop: "25px",
+            width: "100%",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            fontSize: "11px",
+            lineHeight: "1.6",
+          }}
+        >
           <div>
-            <p className="text-[10px] text-slate-500 italic leading-relaxed">
-              * বিশেষ দ্রষ্টব্য: মূল্য সংযোজন কর ও সম্পূরক শুল্ক আইন, ২০১২ এবং মূল্য সংযোজন কর ও সম্পূরক শুল্ক বিধিমালা, ২০১৬ মোতাবেক ইস্যুকৃত বিধিবদ্ধ কর চালানপত্র। ইহা কর রেয়াত গ্রহণের জন্য ব্যবহারযোগ্য।
-            </p>
-            <p className="text-[9px] text-slate-400 mt-2 font-mono">
-              System Generated • ProERP Bangladesh Statutory VAT Compliance Module
-            </p>
+            <div>
+              <strong>Name of the person in charge of the organization authority:</strong>{" "}
+              {footer?.authorized_person_name || "Authorized Officer"}
+            </div>
+            <div>
+              <strong>Designation:</strong> {footer?.designation || "Executive"}
+            </div>
+            <div>
+              <strong>Signature:</strong>
+            </div>
+            <div>
+              <strong>Seal:</strong>
+            </div>
           </div>
+          <div style={{ textAlign: "right" }}>
+            <div>
+              <strong>Total Price without vat summary:</strong> {formatPrice(summary.total_price)}
+            </div>
+          </div>
+        </div>
 
-          <div className="text-center space-y-1 flex flex-col items-center justify-end">
-            <div className="w-48 border-b border-slate-900 pb-1"></div>
-            <p className="font-bold text-slate-950">
-              {footer?.authorized_person_name || "দায়িত্বপ্রাপ্ত কর্মকর্তার স্বাক্ষর ও নাম"}
-            </p>
-            <p className="text-slate-600 text-[10px]">
-              {footer?.designation || "Authorized Officer Signature & Seal"}
-            </p>
-          </div>
+        <div style={{ marginTop: "25px", fontSize: "10px", fontStyle: "italic" }}>
+          * Price excluding all taxes
         </div>
       </div>
     );
