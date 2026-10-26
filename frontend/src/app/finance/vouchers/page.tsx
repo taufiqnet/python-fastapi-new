@@ -73,7 +73,7 @@ export default function JournalVouchersPage() {
       setVouchers(res.data || []);
     } catch {
       setError("Failed to fetch Journal Vouchers from backend.");
-      toast?.("Failed to fetch vouchers", "error");
+      toast.error("Failed to fetch vouchers");
     } finally {
       setInitialLoading(false);
       setIsFetching(false);

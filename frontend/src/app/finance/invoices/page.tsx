@@ -90,7 +90,7 @@ export default function SalesInvoicesPage() {
       setInvoices(res.data || []);
     } catch {
       setError("Failed to fetch Sales Invoices from server.");
-      toast?.("Failed to fetch invoices", "error");
+      toast.error("Failed to fetch invoices");
     } finally {
       setInitialLoading(false);
       setIsFetching(false);
@@ -108,11 +108,11 @@ export default function SalesInvoicesPage() {
     setActionInProgress(invoiceId);
     try {
       await apiClient.post(`/finance/invoices/${invoiceId}/post?business_id=${businessId}`);
-      toast?.("Sales invoice posted to General Ledger", "success");
+      toast.success("Sales invoice posted to General Ledger");
       await loadData(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to post invoice.";
-      toast?.(msg, "error");
+      toast.error(msg);
     } finally {
       setActionInProgress(null);
     }

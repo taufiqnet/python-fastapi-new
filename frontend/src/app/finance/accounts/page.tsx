@@ -58,7 +58,7 @@ export default function ChartOfAccountsPage() {
       setAccounts(res.data || []);
     } catch {
       setError("Failed to fetch Chart of Accounts from backend.");
-      toast?.("Failed to fetch accounts", "error");
+      toast.error("Failed to fetch accounts");
     } finally {
       setInitialLoading(false);
       setIsFetching(false);

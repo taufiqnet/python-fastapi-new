@@ -97,7 +97,7 @@ export default function MushakRegistryPage() {
       setInvoices(res.data || []);
     } catch {
       setError("Failed to fetch Sales Invoices & Mushak registry from backend.");
-      toast?.("Failed to fetch invoices", "error");
+      toast.error("Failed to fetch invoices");
     } finally {
       setInitialLoading(false);
       setIsFetching(false);
