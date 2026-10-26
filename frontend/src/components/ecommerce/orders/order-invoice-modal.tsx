@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { OrderDetail } from "@/types";
-import { X, Printer, Building2 } from "lucide-react";
+import { X, Printer, Building2, Receipt, Loader2 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { apiClient } from "@/lib/api-client";
+import { Mushak63Modal } from "@/components/finance/mushak-6-3-modal";
 
 interface OrderInvoiceModalProps {
   isOpen: boolean;
@@ -13,6 +15,8 @@ interface OrderInvoiceModalProps {
 
 export function OrderInvoiceModal({ isOpen, onClose, order }: OrderInvoiceModalProps) {
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const [isMushakModalOpen, setIsMushakModalOpen] = useState(false);
+  const [isGeneratingMushak, setIsGeneratingMushak] = useState(false);
 
   if (!isOpen || !order) return null;
 
@@ -20,35 +24,65 @@ export function OrderInvoiceModal({ isOpen, onClose, order }: OrderInvoiceModalP
     window.print();
   };
 
+  const handleGenerateMushak = async () => {
+    setIsGeneratingMushak(true);
+    try {
+      await apiClient.post(
+        `/finance/mushak-6-3/generate-from-order/${order.id}?business_id=${order.business_id}`
+      );
+    } catch {
+      // Backend may already have generated it, so we proceed to open the modal
+    } finally {
+      setIsGeneratingMushak(false);
+      setIsMushakModalOpen(true);
+    }
+  };
+
   const shippingAddr =
     order.addresses?.find((a) => a.address_type === "shipping") || order.addresses?.[0];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[95vh]">
-        {/* Controls Bar (hidden during print) */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/75 print:hidden">
-          <div className="flex items-center gap-2">
-            <Printer className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-base font-bold text-slate-900">Commercial Tax Invoice</h3>
+    <>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[95vh]">
+          {/* Controls Bar (hidden during print) */}
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/75 print:hidden">
+            <div className="flex items-center gap-2">
+              <Printer className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-base font-bold text-slate-900">Commercial Tax Invoice</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleGenerateMushak}
+                disabled={isGeneratingMushak}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs transition shadow-xs disabled:opacity-50"
+                title="Generate statutory Mushak 6.3 Tax Invoice"
+              >
+                {isGeneratingMushak ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Receipt className="w-3.5 h-3.5" />
+                )}
+                <span>কর চালানপত্র (মূসক-৬.৩)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition shadow-xs"
+              >
+                <Printer className="w-4 h-4" /> Print Invoice
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs transition shadow-xs"
-            >
-              <Printer className="w-4 h-4" /> Print Invoice
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
 
         {/* Printable Invoice Container */}
         <div ref={printAreaRef} className="p-8 overflow-y-auto space-y-6 text-slate-900 bg-white print:p-0">
@@ -200,5 +234,14 @@ export function OrderInvoiceModal({ isOpen, onClose, order }: OrderInvoiceModalP
         </div>
       </div>
     </div>
-  );
+
+    {/* Embedded Statutory Mushak 6.3 Modal */}
+    <Mushak63Modal
+      isOpen={isMushakModalOpen}
+      onClose={() => setIsMushakModalOpen(false)}
+      invoiceId={order.id}
+      businessId={order.business_id}
+    />
+  </>
+);
 }

@@ -23,6 +23,8 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/context/toast-context";
 import { formatDate } from "@/lib/utils";
 import { StockTransferOut, WarehouseOut } from "@/types";
+import { Mushak65Modal, Mushak65TransferData } from "@/components/finance/mushak-6-5-modal";
+import { Printer } from "lucide-react";
 
 export default function StockTransfersPage() {
   const { user } = useAuth();
@@ -47,6 +49,22 @@ export default function StockTransfersPage() {
   const [destWarehouseId, setDestWarehouseId] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [transferSaving, setTransferSaving] = useState<boolean>(false);
+
+  // Mushak 6.5 Statutory Transfer Chalan State
+  const [mushakTransferData, setMushakTransferData] = useState<Mushak65TransferData | null>(null);
+  const [showMushakModal, setShowMushakModal] = useState<boolean>(false);
+
+  const handleOpenMushak65 = (tr: StockTransferOut) => {
+    setMushakTransferData({
+      transferNumber: tr.transfer_number || tr.id.substring(0, 8),
+      transferDate: tr.created_at,
+      sourceWarehouse: tr.source_warehouse?.name || "Central Distribution Hub",
+      destWarehouse: tr.destination_warehouse?.name || "Retail Outlet Branch",
+      itemsCount: tr.items_count || 1,
+      notes: tr.notes,
+    });
+    setShowMushakModal(true);
+  };
 
   // Fetch Warehouses
   const fetchWarehouses = useCallback(async () => {
@@ -390,6 +408,15 @@ export default function StockTransfersPage() {
                               Receive
                             </button>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenMushak65(tr)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg transition-colors"
+                            title="Print statutory Mushak 6.5 transfer chalan"
+                          >
+                            <Printer className="w-3 h-3" />
+                            <span>মূসক-৬.৫</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -528,6 +555,13 @@ export default function StockTransfersPage() {
           </div>
         </div>
       )}
+
+      {/* Mushak 6.5 Statutory Transfer Chalan Modal */}
+      <Mushak65Modal
+        isOpen={showMushakModal}
+        onClose={() => setShowMushakModal(false)}
+        data={mushakTransferData}
+      />
     </DashboardLayout>
   );
 }

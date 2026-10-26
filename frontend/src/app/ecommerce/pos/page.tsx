@@ -786,45 +786,63 @@ export default function POSTerminalPage() {
                 </div>
               </div>
 
-              {/* 80mm Receipt Body */}
-              <div className="p-6 font-mono text-[11px] text-slate-900 space-y-4 bg-white print:p-0">
-                <div className="text-center space-y-0.5">
-                  <h3 className="font-bold text-sm tracking-tight">PROERP RETAIL STORE</h3>
-                  <p className="text-[10px] text-slate-500">Dhaka Counter 1 • TRN-98471204</p>
-                  <p className="text-[10px] text-slate-500">{formatDate(receipt.created_at)}</p>
+              {/* 80mm NBR Compliant Statutory Thermal Cash Memo */}
+              <div className="p-6 font-mono text-[11px] text-slate-900 space-y-3 bg-white print:p-0">
+                <div className="text-center space-y-0.5 border-b border-dashed border-slate-300 pb-2">
+                  <p className="font-bold text-[10px] text-slate-600">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার, জাতীয় রাজস্ব বোর্ড</p>
+                  <h3 className="font-extrabold text-sm tracking-tight text-slate-950">কর চালানপত্র (মূসক-৬.৩ ক্যাশ মেমো)</h3>
+                  <p className="text-[9px] text-slate-500">[বিধি ৪০ এর উপ-বিধি (১) মোতাবেক অনুমোদিত]</p>
+                  <p className="font-bold text-xs text-slate-900 mt-1">PROERP RETAIL OUTLET</p>
+                  <p className="text-[10px] font-bold text-slate-900">
+                    বিআইএন (BIN): <span className="bg-slate-100 px-1 border border-slate-300 rounded font-mono">001234567-0101</span>
+                  </p>
+                  <p className="text-[9px] text-slate-500">Dhaka Counter 1 • {formatDate(receipt.created_at)}</p>
                 </div>
 
-                <div className="border-t border-b border-dashed border-slate-300 py-1.5 flex justify-between text-[10px]">
-                  <span>Order: #{receipt.order_number}</span>
+                <div className="py-1 flex justify-between text-[10px] text-slate-600 border-b border-dashed border-slate-200">
+                  <span>স্মারক / Order: #{receipt.order_number}</span>
                   <span>Cashier: Admin</span>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <div className="flex justify-between font-bold text-[10px] pb-1 border-b border-slate-200">
-                    <span>Item</span>
-                    <span>Total</span>
+                    <span>আইটেম (Description)</span>
+                    <span>মূল্য (BDT)</span>
                   </div>
                   {/* Items list */}
                   <div className="flex justify-between">
-                    <span>Retail Purchase</span>
+                    <span>খুচরা বিক্রয় (POS Supply)</span>
                     <span>{formatCurrency(receipt.total_amount)}</span>
                   </div>
                 </div>
 
-                <div className="border-t border-dashed border-slate-300 pt-2 space-y-0.5 text-right">
-                  <div className="flex justify-between font-bold text-xs">
-                    <span>TOTAL:</span>
+                {/* Statutory Tax Breakdown */}
+                <div className="border-t border-dashed border-slate-300 pt-2 space-y-1 text-right text-[10px]">
+                  <div className="flex justify-between text-slate-600">
+                    <span>করযোগ্য মূল্য (Base Subtotal):</span>
+                    <span>{formatCurrency(receipt.total_amount * 0.8695)}</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-700 font-semibold">
+                    <span>আদায়কৃত মূসক (Output VAT 15%):</span>
+                    <span>{formatCurrency(receipt.total_amount * 0.1305)}</span>
+                  </div>
+                  <div className="flex justify-between font-black text-xs pt-1 border-t border-slate-200 text-slate-950">
+                    <span>সর্বমোট প্রদেয় (TOTAL):</span>
                     <span>{formatCurrency(receipt.total_amount)}</span>
                   </div>
                   <div className="flex justify-between text-slate-500 text-[10px]">
-                    <span>CHANGE DUE:</span>
+                    <span>পরিশোধিত অর্থ (Tendered):</span>
+                    <span>{formatCurrency(receipt.tendered_amount || receipt.total_amount)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-600 text-[10px]">
+                    <span>ফেরত অর্থ (Change Due):</span>
                     <span>{formatCurrency(receipt.change_due)}</span>
                   </div>
                 </div>
 
-                <div className="text-center border-t border-dashed border-slate-300 pt-3 text-[10px] text-slate-400">
-                  <p>Thank you for shopping with us!</p>
-                  <p>Goods once sold are exchangeable in 7 days.</p>
+                <div className="text-center border-t border-dashed border-slate-300 pt-2.5 text-[9px] text-slate-500 space-y-0.5">
+                  <p className="font-semibold text-slate-700">* মূল্য সংযোজন কর ও সম্পূরক শুল্ক আইন, ২০১২ মোতাবেক ভ্যাট অন্তর্ভুক্ত *</p>
+                  <p>Thank you for shopping with ProERP! Please preserve this tax receipt.</p>
                 </div>
               </div>
             </div>

@@ -547,30 +547,34 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
     },
     {
       name: "Finance & Accounts",
-      href: "/finance/accounts",
+      href: "/finance/mushak",
       icon: Wallet,
       sectionKey: "finance",
       module: "finance",
       children: [
         {
+          name: "কর চালানপত্র (মূসক-৬.৩)",
+          href: "/finance/mushak",
+          permission: { module: "finance", feature: "mushak", action: "view" },
+          group: "Statutory VAT (NBR)",
+        },
+        {
+          name: "Sales Invoices",
+          href: "/finance/invoices",
+          permission: { module: "finance", feature: "invoices", action: "view" },
+          group: "Statutory VAT (NBR)",
+        },
+        {
           name: "Chart of Accounts",
           href: "/finance/accounts",
           permission: { module: "finance", feature: "accounts", action: "view" },
+          group: "General Ledger",
         },
         {
-          name: "Vouchers",
+          name: "Journal Vouchers",
           href: "/finance/vouchers",
           permission: { module: "finance", feature: "vouchers", action: "view" },
-        },
-        {
-          name: "Ledger",
-          href: "/finance/ledger",
-          permission: { module: "finance", feature: "accounts", action: "view" },
-        },
-        {
-          name: "Financial Reports",
-          href: "/finance/reports",
-          permission: { module: "finance", feature: "reports", action: "view" },
+          group: "General Ledger",
         },
       ],
     },
