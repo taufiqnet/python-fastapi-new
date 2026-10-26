@@ -1,7 +1,15 @@
 import React from "react";
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Mushak63Printable, Mushak63Data } from "../mushak-6-3-printable";
+import { Mushak63Modal } from "../mushak-6-3-modal";
+
+// Mock pdf-export
+vi.mock("@/lib/pdf-export", () => ({
+  exportElementToPdf: vi.fn().mockResolvedValue(undefined),
+}));
+
+import { exportElementToPdf } from "@/lib/pdf-export";
 
 const mockMushakData: Mushak63Data = {
   registered_person: {
@@ -167,5 +175,43 @@ describe("Mushak 6.3 Statutory Layout & 11-Column Table Conformance", () => {
     expect(screen.getByText("Seal:")).toBeInTheDocument();
     expect(screen.getByText("Total Price without vat summary:")).toBeInTheDocument();
     expect(screen.getByText("* Price excluding all taxes")).toBeInTheDocument();
+  });
+
+  it("handles native Next.js PDF download without redirecting to port 8000", async () => {
+    const windowOpenSpy = vi.spyOn(window, "open");
+
+    render(
+      <Mushak63Modal
+        isOpen={true}
+        onClose={vi.fn()}
+        invoiceId="inv-12345"
+        initialData={mockMushakData}
+      />
+    );
+
+    // Verify modal header has native action buttons
+    const downloadBtn = screen.getByRole("button", { name: /Download PDF/i });
+    expect(downloadBtn).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Print A4/i })).toBeInTheDocument();
+
+    // Click Download PDF
+    fireEvent.click(downloadBtn);
+
+    await waitFor(() => {
+      expect(exportElementToPdf).toHaveBeenCalledWith(
+        expect.anything(),
+        "Mushak-6.3-M6.3-001234567-0101-20262027-000042"
+      );
+    });
+
+    // Ensure window.open was NOT called with port 8000
+    expect(windowOpenSpy).not.toHaveBeenCalledWith(
+      expect.stringContaining(":8000"),
+      expect.anything()
+    );
+
+    // Verify standalone view link is on port 3000 (relative Next.js route)
+    const externalLink = screen.getByTitle("Open full page view in new tab (Port 3000)");
+    expect(externalLink).toHaveAttribute("href", "/finance/mushak/inv-12345");
   });
 });

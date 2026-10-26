@@ -2,10 +2,11 @@
 
 import React, { useRef, useState } from "react";
 import { OrderDetail } from "@/types";
-import { X, Printer, Building2, Receipt, Loader2 } from "lucide-react";
+import { X, Printer, Building2, Receipt, Loader2, Download } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { apiClient } from "@/lib/api-client";
 import { Mushak63Modal } from "@/components/finance/mushak-6-3-modal";
+import { exportElementToPdf } from "@/lib/pdf-export";
 
 interface OrderInvoiceModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ export function OrderInvoiceModal({ isOpen, onClose, order }: OrderInvoiceModalP
   const printAreaRef = useRef<HTMLDivElement>(null);
   const [isMushakModalOpen, setIsMushakModalOpen] = useState(false);
   const [isGeneratingMushak, setIsGeneratingMushak] = useState(false);
+  const [isDownloadingInvoice, setIsDownloadingInvoice] = useState(false);
+  const [mushakInvoiceId, setMushakInvoiceId] = useState<string | null>(null);
 
   if (!isOpen || !order) return null;
 
@@ -24,12 +27,30 @@ export function OrderInvoiceModal({ isOpen, onClose, order }: OrderInvoiceModalP
     window.print();
   };
 
+  const handleDownloadInvoicePdf = async () => {
+    if (!printAreaRef.current || !order) return;
+    setIsDownloadingInvoice(true);
+    try {
+      await exportElementToPdf(
+        printAreaRef.current,
+        `Commercial-Invoice-${order.order_number}`
+      );
+    } catch (err) {
+      console.error("Failed to generate commercial invoice PDF in frontend:", err);
+    } finally {
+      setIsDownloadingInvoice(false);
+    }
+  };
+
   const handleGenerateMushak = async () => {
     setIsGeneratingMushak(true);
     try {
-      await apiClient.post(
+      const res = await apiClient.post<{ invoice_id?: string }>(
         `/finance/mushak-6-3/generate-from-order/${order.id}?business_id=${order.business_id}`
       );
+      if (res.data?.invoice_id) {
+        setMushakInvoiceId(res.data.invoice_id);
+      }
     } catch {
       // Backend may already have generated it, so we proceed to open the modal
     } finally {
@@ -65,6 +86,21 @@ export function OrderInvoiceModal({ isOpen, onClose, order }: OrderInvoiceModalP
                   <Receipt className="w-3.5 h-3.5" />
                 )}
                 <span>কর চালানপত্র (মূসক-৬.৩)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownloadInvoicePdf}
+                disabled={isDownloadingInvoice}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-semibold rounded-xl text-xs transition border border-slate-700 shadow-xs"
+                title="Download invoice as PDF directly from Next.js"
+              >
+                {isDownloadingInvoice ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+                ) : (
+                  <Download className="w-3.5 h-3.5 text-indigo-400" />
+                )}
+                <span>{isDownloadingInvoice ? "Creating PDF..." : "Download PDF"}</span>
               </button>
 
               <button
@@ -239,7 +275,7 @@ export function OrderInvoiceModal({ isOpen, onClose, order }: OrderInvoiceModalP
     <Mushak63Modal
       isOpen={isMushakModalOpen}
       onClose={() => setIsMushakModalOpen(false)}
-      invoiceId={order.id}
+      invoiceId={mushakInvoiceId || order.id}
       businessId={order.business_id}
     />
   </>

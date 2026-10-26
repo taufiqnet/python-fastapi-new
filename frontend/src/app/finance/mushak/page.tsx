@@ -80,6 +80,7 @@ export default function MushakRegistryPage() {
   // Modal State
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [autoDownloadPdf, setAutoDownloadPdf] = useState<boolean>(false);
 
   const loadData = async (isInitial = false) => {
     if (isInitial) {
@@ -205,15 +206,14 @@ export default function MushakRegistryPage() {
 
   const handleOpenMushakModal = (invoiceId: string) => {
     setSelectedInvoiceId(invoiceId);
+    setAutoDownloadPdf(false);
     setIsModalOpen(true);
   };
 
   const handleDownloadPdf = (invoiceId: string) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
-    const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-    const pdfUrl = `${backendBase}/finance/invoices/${invoiceId}/mushak-6-3/pdf?business_id=${businessId}${tokenParam}`;
-    window.open(pdfUrl, "_blank");
+    setSelectedInvoiceId(invoiceId);
+    setAutoDownloadPdf(true);
+    setIsModalOpen(true);
   };
 
   return (
@@ -556,9 +556,11 @@ export default function MushakRegistryPage() {
         onClose={() => {
           setIsModalOpen(false);
           setSelectedInvoiceId(null);
+          setAutoDownloadPdf(false);
         }}
         invoiceId={selectedInvoiceId}
         businessId={businessId}
+        autoDownload={autoDownloadPdf}
       />
     </DashboardLayout>
   );

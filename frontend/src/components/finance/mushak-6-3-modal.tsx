@@ -2,8 +2,18 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { apiClient } from "@/lib/api-client";
-import { X, Printer, Download, Maximize2, Minimize2, Loader2, AlertCircle } from "lucide-react";
+import {
+  X,
+  Printer,
+  Download,
+  Maximize2,
+  Minimize2,
+  Loader2,
+  AlertCircle,
+  ExternalLink,
+} from "lucide-react";
 import { Mushak63Printable, Mushak63Data } from "./mushak-6-3-printable";
+import { exportElementToPdf } from "@/lib/pdf-export";
 
 interface Mushak63ModalProps {
   isOpen: boolean;
@@ -11,6 +21,7 @@ interface Mushak63ModalProps {
   invoiceId?: string | null;
   initialData?: Mushak63Data | null;
   businessId?: number;
+  autoDownload?: boolean;
 }
 
 export function Mushak63Modal({
@@ -19,18 +30,22 @@ export function Mushak63Modal({
   invoiceId,
   initialData,
   businessId,
+  autoDownload = false,
 }: Mushak63ModalProps) {
   const [data, setData] = useState<Mushak63Data | null>(initialData || null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const printableRef = useRef<HTMLDivElement>(null);
+  const autoDownloadedRef = useRef<boolean>(false);
 
   useEffect(() => {
     if (!isOpen) {
       setData(null);
       setError(null);
       setIsFullscreen(false);
+      autoDownloadedRef.current = false;
       return;
     }
 
@@ -43,6 +58,18 @@ export function Mushak63Modal({
       fetchMushakData(invoiceId);
     }
   }, [isOpen, invoiceId, initialData]);
+
+  // Handle auto-download if requested once data is loaded and rendered
+  useEffect(() => {
+    if (autoDownload && data && printableRef.current && !autoDownloadedRef.current && !loading) {
+      autoDownloadedRef.current = true;
+      // Slight delay to allow DOM styles to calculate accurately
+      const timer = setTimeout(() => {
+        handleDownloadPdf();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [autoDownload, data, loading]);
 
   const fetchMushakData = async (id: string) => {
     setLoading(true);
@@ -70,13 +97,18 @@ export function Mushak63Modal({
     window.print();
   };
 
-  const handleDownloadPdf = () => {
-    if (!invoiceId) return;
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : "";
-    const backendBase = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-    const pdfUrl = `${backendBase}/finance/invoices/${invoiceId}/mushak-6-3/pdf?business_id=${businessId || 1}${tokenParam}`;
-    window.open(pdfUrl, "_blank");
+  const handleDownloadPdf = async () => {
+    if (!printableRef.current || !data) return;
+    setIsDownloadingPdf(true);
+    try {
+      const mushakNum =
+        data.header.mushak_number || data.header.invoice_number || "Tax-Invoice";
+      await exportElementToPdf(printableRef.current, `Mushak-6.3-${mushakNum}`);
+    } catch (err) {
+      console.error("Failed to generate Mushak 6.3 PDF in frontend:", err);
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
   return (
@@ -115,21 +147,37 @@ export function Mushak63Modal({
               onClick={handlePrint}
               disabled={!data || loading}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium rounded-lg text-xs transition shadow-xs"
+              title="Print statutory invoice directly"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Print A4</span>
             </button>
 
+            <button
+              type="button"
+              onClick={handleDownloadPdf}
+              disabled={!data || loading || isDownloadingPdf}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-medium rounded-lg text-xs transition border border-slate-700"
+              title="Download statutory PDF natively from Next.js frontend"
+            >
+              {isDownloadingPdf ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-400" />
+              ) : (
+                <Download className="w-3.5 h-3.5 text-indigo-400" />
+              )}
+              <span>{isDownloadingPdf ? "Creating PDF..." : "Download PDF"}</span>
+            </button>
+
             {invoiceId && (
-              <button
-                type="button"
-                onClick={handleDownloadPdf}
-                disabled={loading}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg text-xs transition border border-slate-700"
+              <a
+                href={`/finance/mushak/${invoiceId}`}
+                target="_blank"
+                rel="noreferrer"
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+                title="Open full page view in new tab (Port 3000)"
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>Download PDF</span>
-              </button>
+                <ExternalLink className="w-4 h-4" />
+              </a>
             )}
 
             <button
@@ -182,7 +230,7 @@ export function Mushak63Modal({
           )}
 
           {data && !loading && (
-            <div className="shadow-lg border border-slate-300 rounded-sm bg-white">
+            <div className="shadow-lg border border-slate-300 rounded-xs bg-white">
               <Mushak63Printable ref={printableRef} data={data} />
             </div>
           )}
