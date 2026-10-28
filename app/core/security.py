@@ -56,6 +56,11 @@ def extract_token_from_request(request: Request, header_token: str | None = None
         if cookie_token.startswith("Bearer "):
             return cookie_token[7:]
         return cookie_token
+    query_token = request.query_params.get("token")
+    if query_token:
+        if query_token.startswith("Bearer "):
+            return query_token[7:]
+        return query_token
     return None
 
 
@@ -154,6 +159,10 @@ def require_permission(module: str, feature: str, action: str):
             candidate_codes.extend([f"{module}:pos:{action}", f"{module}:orders:{action}"])
         elif feature == "coupons":
             candidate_codes.append(f"{module}:products:{action}")
+        elif module in ("fleet", "vehicles"):
+            candidate_codes.extend([f"fleet:{feature}:{action}", f"vehicles:{feature}:{action}"])
+        elif feature in ("assets", "asset_allocations", "asset_maintenance"):
+            candidate_codes.extend([f"hrm:{feature}:{action}", f"assets:{feature}:{action}"])
 
         # Check authorization strategy
         strategy = getattr(settings, "auth_strategy", "rbac").lower()

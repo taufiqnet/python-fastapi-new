@@ -199,6 +199,7 @@ class UserResponse(BaseModel):
 
     roles: list[RoleResponse] = []
     direct_permissions: list[PermissionResponse] = []
+    permissions: list[str] = []
     customer_profile: CustomerProfileResponse | None = None
     vendor_profile: VendorProfileResponse | None = None
     addresses: list[AddressResponse] = []

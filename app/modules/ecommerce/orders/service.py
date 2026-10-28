@@ -14,7 +14,10 @@ from app.modules.ecommerce.orders.models import (
     OrderPaymentStatus,
 )
 from app.modules.ecommerce.orders.repository import OrderRepository
+from app.common.enums import Status
 from app.modules.ecommerce.orders.schemas import (
+    CatalogProductOut,
+    CatalogVariantOut,
     OrderCreate,
     OrderDetail,
     OrderStatusUpdate,
@@ -108,7 +111,11 @@ class OrderService:
             product = db.query(Product).filter(Product.id == variant.product_id).first()
             seller_id = product.seller_id if product else None
 
-            unit_price = variant.price
+            unit_price = (
+                Decimal(str(item.unit_price))
+                if item.unit_price is not None
+                else variant.price
+            )
             subtotal = unit_price * item.quantity
             calculated_total += subtotal
 
@@ -132,6 +139,48 @@ class OrderService:
             items_with_prices=items_with_prices,
         )
         return OrderDetail.model_validate(order)
+
+    def get_catalog_products(
+        self, db: Session, business_id: int | None = None
+    ) -> list[CatalogProductOut]:
+        query = db.query(Product)
+        if business_id is not None:
+            query = query.filter(Product.business_id == business_id)
+        products = query.order_by(Product.title.asc()).limit(500).all()
+
+        results = []
+        for p in products:
+            variants_out = []
+            for v in p.variants:
+                attr_parts = []
+                if v.attributes and isinstance(v.attributes, dict):
+                    attr_parts = [f"{val}" for val in v.attributes.values()]
+                summary = " / ".join(attr_parts)
+                variants_out.append(
+                    CatalogVariantOut(
+                        id=v.id,
+                        sku=v.sku,
+                        price=float(v.price) if v.price is not None else 0.0,
+                        cost_price=float(v.cost_price) if v.cost_price is not None else 0.0,
+                        stock_qty=v.stock_qty or 0,
+                        attributes=v.attributes,
+                        attr_summary=summary,
+                    )
+                )
+            first_img = (
+                next((img.url for img in p.images if img.is_primary), None)
+                or (p.images[0].url if p.images else None)
+            )
+            results.append(
+                CatalogProductOut(
+                    id=p.id,
+                    title=p.title,
+                    brand=p.brand,
+                    thumbnail_url=first_img,
+                    variants=variants_out,
+                )
+            )
+        return results
 
     def get_order(
         self, db: Session, order_id: uuid.UUID, business_id: int | None = None

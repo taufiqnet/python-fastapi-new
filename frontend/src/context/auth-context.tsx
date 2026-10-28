@@ -82,33 +82,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = (module: string, feature: string, action: string): boolean => {
     if (!user) return false;
-    if (user.is_superuser) return true;
-
-    const targetCode = `${module}:${feature}:${action}`;
-    if (user.permissions && user.permissions.includes(targetCode)) {
+    if (
+      user.is_superuser ||
+      user.roles?.some((r) => r.name === "admin" || r.name === "Super Admin" || r.name === "System Admin") ||
+      user.permissions?.includes("*")
+    ) {
       return true;
     }
 
-    if (user.direct_permissions) {
-      for (const perm of user.direct_permissions) {
-        if (
-          perm.code === targetCode ||
-          (perm.module === module && perm.feature === feature && perm.action === action)
-        ) {
-          return true;
-        }
-      }
+    const candidates: [string, string, string][] = [[module, feature, action]];
+    if (module === "ecommerce") {
+      if (feature === "pos") candidates.push([module, "pos_terminal", action]);
+      if (feature === "pos_terminal") candidates.push([module, "pos", action]);
+      if (feature === "procurement") candidates.push([module, "procurement_po", action]);
+      if (feature === "procurement_po") candidates.push([module, "procurement", action]);
+    }
+    if (module === "hrm") {
+      if (feature === "employee_documents") candidates.push([module, "document_categories", action]);
+      if (feature === "document_categories") candidates.push([module, "employee_documents", action]);
+    }
+    if (module === "fleet") {
+      candidates.push(["vehicles", feature, action]);
+    }
+    if (module === "vehicles") {
+      candidates.push(["fleet", feature, action]);
+    }
+    if (module === "assets") {
+      candidates.push(["hrm", "assets", action]);
+      candidates.push(["hrm", "asset_allocations", action]);
     }
 
-    if (user.roles) {
-      for (const role of user.roles) {
-        if (role.permissions) {
-          for (const perm of role.permissions) {
-            if (
-              perm.code === targetCode ||
-              (perm.module === module && perm.feature === feature && perm.action === action)
-            ) {
-              return true;
+    for (const [m, f, a] of candidates) {
+      const targetCode = `${m}:${f}:${a}`;
+      if (user.permissions && user.permissions.includes(targetCode)) {
+        return true;
+      }
+
+      if (user.direct_permissions) {
+        for (const perm of user.direct_permissions) {
+          if (
+            perm.code === targetCode ||
+            (perm.module === m && perm.feature === f && perm.action === a)
+          ) {
+            return true;
+          }
+        }
+      }
+
+      if (user.roles) {
+        for (const role of user.roles) {
+          if (role.permissions) {
+            for (const perm of role.permissions) {
+              if (
+                perm.code === targetCode ||
+                (perm.module === m && perm.feature === f && perm.action === a)
+              ) {
+                return true;
+              }
             }
           }
         }
@@ -120,18 +150,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasModuleAccess = (module: string): boolean => {
     if (!user) return false;
-    if (user.is_superuser) return true;
-
-    if (user.permissions?.some((code) => code.startsWith(`${module}:`))) {
+    if (
+      user.is_superuser ||
+      user.roles?.some((r) => r.name === "admin" || r.name === "Super Admin" || r.name === "System Admin") ||
+      user.permissions?.includes("*")
+    ) {
       return true;
     }
 
-    if (user.direct_permissions?.some((p) => p.module === module)) {
-      return true;
-    }
+    const moduleCandidates = [module];
+    if (module === "fleet") moduleCandidates.push("vehicles");
+    if (module === "vehicles") moduleCandidates.push("fleet");
+    if (module === "assets") moduleCandidates.push("hrm");
 
-    if (user.roles?.some((r) => r.permissions?.some((p) => p.module === module))) {
-      return true;
+    for (const m of moduleCandidates) {
+      if (user.permissions?.some((code) => code.startsWith(`${m}:`))) {
+        return true;
+      }
+
+      if (user.direct_permissions?.some((p) => p.module === m)) {
+        return true;
+      }
+
+      if (user.roles?.some((r) => r.permissions?.some((p) => p.module === m))) {
+        return true;
+      }
     }
 
     return false;

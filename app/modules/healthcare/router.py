@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user_optional
+from app.core.deps import require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
@@ -69,7 +69,7 @@ def list_patients(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "patients", "view")),
 ):
     resolved_bid = resolve_business_id(current_user, business_id)
     return patient_service.list_patients(
@@ -86,7 +86,7 @@ def list_patients(
 def register_patient(
     patient_data: PatientCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "patients", "create")),
 ):
     if current_user and not current_user.is_superuser:
         patient_data.business_id = current_user.business_id
@@ -97,7 +97,7 @@ def register_patient(
 def get_patient(
     patient_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "patients", "view")),
 ):
     return patient_service.get_patient(db, patient_id, current_user=current_user)
 
@@ -107,7 +107,7 @@ def update_patient(
     patient_id: uuid.UUID,
     patient_data: PatientUpdate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "patients", "update")),
 ):
     return patient_service.update_patient(
         db, patient_id, patient_data, current_user=current_user
@@ -118,7 +118,7 @@ def update_patient(
 def delete_patient(
     patient_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "patients", "delete")),
 ):
     patient_service.delete_patient(db, patient_id, current_user=current_user)
 
@@ -132,7 +132,7 @@ def list_doctors(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "doctors", "view")),
 ):
     resolved_bid = resolve_business_id(current_user, business_id)
     return doctor_service.list_doctors(
@@ -150,7 +150,7 @@ def list_doctors(
 def create_doctor(
     doctor_data: DoctorProfileCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "doctors", "create")),
 ):
     if current_user and not current_user.is_superuser:
         doctor_data.business_id = current_user.business_id
@@ -161,7 +161,7 @@ def create_doctor(
 def get_doctor(
     doctor_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "doctors", "view")),
 ):
     return doctor_service.get_doctor(db, doctor_id, current_user=current_user)
 
@@ -171,7 +171,7 @@ def update_doctor(
     doctor_id: uuid.UUID,
     doctor_data: DoctorProfileUpdate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "doctors", "update")),
 ):
     return doctor_service.update_doctor(
         db, doctor_id, doctor_data, current_user=current_user
@@ -182,7 +182,7 @@ def update_doctor(
 def delete_doctor(
     doctor_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "doctors", "delete")),
 ):
     doctor_service.delete_doctor(db, doctor_id, current_user=current_user)
 
@@ -197,7 +197,7 @@ def list_diagnostic_tests(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "diagnostic_catalog", "view")),
 ):
     resolved_bid = resolve_business_id(current_user, business_id)
     return diagnostic_catalog_service.list_tests(
@@ -216,7 +216,7 @@ def list_diagnostic_tests(
 def create_diagnostic_test(
     test_data: DiagnosticTestCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "diagnostic_catalog", "create")),
 ):
     if current_user and not current_user.is_superuser:
         test_data.business_id = current_user.business_id
@@ -227,7 +227,7 @@ def create_diagnostic_test(
 def get_diagnostic_test(
     test_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "diagnostic_catalog", "view")),
 ):
     return diagnostic_catalog_service.get_test(db, test_id, current_user=current_user)
 
@@ -237,7 +237,7 @@ def update_diagnostic_test(
     test_id: uuid.UUID,
     test_data: DiagnosticTestUpdate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "diagnostic_catalog", "update")),
 ):
     return diagnostic_catalog_service.update_test(
         db, test_id, test_data, current_user=current_user
@@ -248,7 +248,7 @@ def update_diagnostic_test(
 def delete_diagnostic_test(
     test_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "diagnostic_catalog", "delete")),
 ):
     diagnostic_catalog_service.delete_test(db, test_id, current_user=current_user)
 
@@ -262,7 +262,7 @@ def list_diagnostic_orders(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "diagnostic_billing", "view")),
 ):
     resolved_bid = resolve_business_id(current_user, business_id)
     return diagnostic_order_service.list_orders(
@@ -280,7 +280,7 @@ def list_diagnostic_orders(
 def checkout_diagnostic_order(
     checkout_data: DiagnosticCheckoutRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "diagnostic_billing", "create")),
 ):
     if current_user and not current_user.is_superuser:
         checkout_data.business_id = current_user.business_id
@@ -293,7 +293,7 @@ def checkout_diagnostic_order(
 def get_diagnostic_order(
     order_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "diagnostic_billing", "view")),
 ):
     return diagnostic_order_service.get_order(db, order_id, current_user=current_user)
 
@@ -308,7 +308,7 @@ def list_samples(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "phlebotomy", "view")),
 ):
     resolved_bid = resolve_business_id(current_user, business_id)
     return diagnostic_sample_service.list_samples(
@@ -328,7 +328,7 @@ def collect_sample(
     sample_id: uuid.UUID,
     data: DiagnosticSampleCollect,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "phlebotomy", "update")),
 ):
     return diagnostic_sample_service.collect_sample(
         db, sample_id, data, current_user=current_user
@@ -341,7 +341,7 @@ def list_doctor_slots(
     doctor_id: uuid.UUID,
     is_active: bool | None = Query(None),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "doctors", "view")),
 ):
     return doctor_schedule_service.list_slots(db, doctor_id, is_active=is_active)
 
@@ -351,7 +351,7 @@ def create_doctor_slot(
     doctor_id: uuid.UUID,
     slot_data: DoctorScheduleSlotCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "doctors", "update")),
 ):
     slot_data.doctor_id = doctor_id
     return doctor_schedule_service.create_slot(db, slot_data, current_user=current_user)
@@ -361,7 +361,7 @@ def create_doctor_slot(
 def delete_doctor_slot(
     slot_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "doctors", "delete")),
 ):
     doctor_schedule_service.delete_slot(db, slot_id, current_user=current_user)
 
@@ -378,7 +378,7 @@ def list_appointments(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "view")),
 ):
     resolved_bid = resolve_business_id(current_user, business_id)
     return appointment_service.list_appointments(
@@ -399,7 +399,7 @@ def list_appointments(
 def book_appointment(
     data: AppointmentCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "create")),
 ):
     if current_user and not current_user.is_superuser:
         data.business_id = current_user.business_id
@@ -410,7 +410,7 @@ def book_appointment(
 def get_appointment(
     appointment_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "view")),
 ):
     return appointment_service.get_appointment(db, appointment_id, current_user=current_user)
 
@@ -420,7 +420,7 @@ def update_appointment(
     appointment_id: uuid.UUID,
     data: AppointmentUpdate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "update")),
 ):
     return appointment_service.update_appointment(db, appointment_id, data, current_user=current_user)
 
@@ -429,7 +429,7 @@ def update_appointment(
 def delete_appointment(
     appointment_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "delete")),
 ):
     appointment_service.delete_appointment(db, appointment_id, current_user=current_user)
 
@@ -444,7 +444,7 @@ def list_prescriptions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "view")),
 ):
     resolved_bid = resolve_business_id(current_user, business_id)
     return prescription_service.list_prescriptions(
@@ -463,7 +463,7 @@ def list_prescriptions(
 def create_prescription(
     data: PrescriptionCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "create")),
 ):
     if current_user and not current_user.is_superuser:
         data.business_id = current_user.business_id
@@ -474,7 +474,7 @@ def create_prescription(
 def get_prescription(
     prescription_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "view")),
 ):
     return prescription_service.get_prescription(db, prescription_id, current_user=current_user)
 
@@ -484,7 +484,7 @@ def update_prescription(
     prescription_id: uuid.UUID,
     data: PrescriptionUpdate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "appointments", "update")),
 ):
     return prescription_service.update_prescription(db, prescription_id, data, current_user=current_user)
 
@@ -494,7 +494,7 @@ def update_prescription(
 def get_order_item_results(
     order_item_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "lis_worklist", "view")),
 ):
     return lis_service.get_order_item_results(db, order_item_id, current_user=current_user)
 
@@ -503,7 +503,7 @@ def get_order_item_results(
 def batch_enter_lab_results(
     data: LabResultBatchRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "lis_worklist", "update")),
 ):
     if current_user and not current_user.is_superuser:
         data.business_id = current_user.business_id
@@ -515,7 +515,7 @@ def verify_lab_results(
     order_item_id: uuid.UUID,
     req: LabVerificationRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "verification", "update")),
 ):
     return lis_service.verify_results(db, order_item_id, req, current_user=current_user)
 
@@ -525,7 +525,7 @@ def verify_lab_results(
 def get_radiology_report(
     order_item_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "radiology", "view")),
 ):
     return radiology_service.get_report(db, order_item_id, current_user=current_user)
 
@@ -534,7 +534,7 @@ def get_radiology_report(
 def save_radiology_report(
     data: RadiologyReportCreate,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "radiology", "create")),
 ):
     if current_user and not current_user.is_superuser:
         data.business_id = current_user.business_id
@@ -546,7 +546,7 @@ def verify_radiology_report(
     order_item_id: uuid.UUID,
     req: LabVerificationRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "radiology", "update")),
 ):
     return radiology_service.verify_report(
         db, order_item_id, verified_by_name=req.verified_by_name, current_user=current_user
@@ -562,7 +562,7 @@ def list_referral_commissions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "referrals", "view")),
 ):
     resolved_bid = resolve_business_id(current_user, business_id)
     return referral_commission_service.list_commissions(
@@ -581,7 +581,7 @@ def record_referral_payout(
     commission_id: uuid.UUID,
     data: ReferralPayoutRequest,
     db: Session = Depends(get_db),
-    current_user: User | None = Depends(get_current_user_optional),
+    current_user: User = Depends(require_permission("healthcare", "referrals", "update")),
 ):
     return referral_commission_service.record_payout(
         db, commission_id, data, current_user=current_user

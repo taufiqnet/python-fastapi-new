@@ -259,26 +259,40 @@
                 <div class="p-5">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                Method
-                            </label>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+                                    Delivery & Courier Service
+                                </label>
+                                <a href="/shipping/manage?business_id={{ selected_business_id }}" target="_blank" class="text-[10px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
+                                    <i class="fas fa-cog"></i> Settings
+                                </a>
+                            </div>
                             <select id="delivery_method" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
-                                <option value="Inside Dhaka" {% if not is_edit or not order.delivery_method or order.delivery_method == 'Inside Dhaka' %}selected{% endif %}>Inside Dhaka</option>
-                                <option value="Outside Dhaka" {% if is_edit and order.delivery_method == 'Outside Dhaka' %}selected{% endif %}>Outside Dhaka</option>
-                                <option value="Express Delivery" {% if is_edit and order.delivery_method == 'Express Delivery' %}selected{% endif %}>Express Delivery</option>
+                                {% if delivery_settings %}
+                                    {% for ds in delivery_settings %}
+                                    <option value="{{ ds.name }}" data-charge="{{ '%.2f'|format(ds.charge) }}" data-default="{{ 1 if ds.is_default else 0 }}" {% if (is_edit and order.delivery_method == ds.name) or (not is_edit and ds.is_default) %}selected{% endif %}>
+                                        {{ ds.name }} (৳{{ '%.2f'|format(ds.charge) }})
+                                    </option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="Inside Dhaka City" data-charge="70.00" data-default="1" selected>Inside Dhaka City (৳70.00)</option>
+                                    <option value="Outside Dhaka City" data-charge="150.00" data-default="0">Outside Dhaka City (৳150.00)</option>
+                                {% endif %}
                             </select>
                         </div>
 
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                Courier Company
+                                Courier Partner
                             </label>
                             <select id="courier_company" class="w-full text-xs border border-gray-200 rounded-lg p-2.5 focus:ring-1 focus:ring-blue-500 outline-none bg-white">
-                                <option value="" {% if not is_edit or not order.courier_company %}selected{% endif %}>Select Courier</option>
-                                <option value="Pathao" {% if is_edit and order.courier_company == 'Pathao' %}selected{% endif %}>Pathao</option>
-                                <option value="Steadfast" {% if is_edit and order.courier_company == 'Steadfast' %}selected{% endif %}>Steadfast</option>
-                                <option value="RedX" {% if is_edit and order.courier_company == 'RedX' %}selected{% endif %}>RedX</option>
+                                <option value="" {% if not is_edit or not order.courier_company %}selected{% endif %}>-- Select Courier Partner (Optional) --</option>
+                                <option value="Pathao" {% if is_edit and order.courier_company == 'Pathao' %}selected{% endif %}>Pathao Courier</option>
+                                <option value="Steadfast" {% if is_edit and order.courier_company == 'Steadfast' %}selected{% endif %}>Steadfast Courier</option>
+                                <option value="RedX" {% if is_edit and order.courier_company == 'RedX' %}selected{% endif %}>RedX Logistics</option>
                                 <option value="Paperfly" {% if is_edit and order.courier_company == 'Paperfly' %}selected{% endif %}>Paperfly</option>
+                                <option value="Sundarban" {% if is_edit and order.courier_company == 'Sundarban' %}selected{% endif %}>Sundarban Courier</option>
+                                <option value="Self Delivery" {% if is_edit and order.courier_company == 'Self Delivery' %}selected{% endif %}>In-House / Self Delivery</option>
                             </select>
                         </div>
 
@@ -880,6 +894,30 @@ document.addEventListener('DOMContentLoaded', function() {
     [shippingFeeInput, taxAmountInput, otherChargesInput, discountAmountInput].forEach(inp => {
         if (inp) inp.addEventListener('input', calculateOrderTotals);
     });
+
+    const deliveryMethodSelect = document.getElementById('delivery_method');
+    if (deliveryMethodSelect) {
+        deliveryMethodSelect.addEventListener('change', function() {
+            const selectedOpt = deliveryMethodSelect.options[deliveryMethodSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.dataset.charge) {
+                const charge = parseFloat(selectedOpt.dataset.charge);
+                if (shippingFeeInput) {
+                    shippingFeeInput.value = charge.toFixed(2);
+                    calculateOrderTotals();
+                    markFormAsDirty();
+                }
+            }
+        });
+
+        {% if not is_edit %}
+        const initialSelectedOpt = deliveryMethodSelect.options[deliveryMethodSelect.selectedIndex];
+        if (initialSelectedOpt && initialSelectedOpt.dataset.charge) {
+            if (shippingFeeInput && (!shippingFeeInput.value || parseFloat(shippingFeeInput.value) === 0)) {
+                shippingFeeInput.value = parseFloat(initialSelectedOpt.dataset.charge).toFixed(2);
+            }
+        }
+        {% endif %}
+    }
 
     // ── Draft Saving & Unsaved Data Protection Logic ──
     const isEditPage = {% if is_edit %}true{% else %}false{% endif %};

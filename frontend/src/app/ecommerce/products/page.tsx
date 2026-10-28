@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef, startTransition } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { apiClient } from "@/lib/api-client";
 import {
@@ -34,6 +34,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Loader2,
 } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/context/toast-context";
@@ -47,8 +48,10 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [categories, setCategories] = useState<CategoryOut[]>([]);
   const [brands, setBrands] = useState<BrandOut[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isInitialMount = useRef(true);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,8 +74,12 @@ export default function ProductsPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<ProductListItem | ProductDetailOut | null>(null);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isInitial = false) => {
+    if (isInitial) {
+      setInitialLoading(true);
+    } else {
+      setIsFetching(true);
+    }
     setError(null);
     try {
       const [prodRes, catRes, brandRes] = await Promise.allSettled([
@@ -97,13 +104,63 @@ export default function ProductsPage() {
     } catch {
       setError("Unable to connect to FastAPI REST server.");
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      loadData(true);
+    }
   }, []);
+
+  // Filter Handlers with React startTransition (single-render batching)
+  const handleSearchChange = (query: string) => {
+    startTransition(() => {
+      setSearchQuery(query);
+      setCurrentPage(1);
+    });
+  };
+
+  const handleStatusChange = (status: string) => {
+    startTransition(() => {
+      setStatusFilter(status);
+      setCurrentPage(1);
+    });
+  };
+
+  const handleCategoryChange = (catId: string) => {
+    startTransition(() => {
+      setSelectedCategory(catId);
+      setCurrentPage(1);
+    });
+  };
+
+  const handleBrandChange = (brandId: string) => {
+    startTransition(() => {
+      setSelectedBrand(brandId);
+      setCurrentPage(1);
+    });
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    startTransition(() => {
+      setPageSize(newSize);
+      setCurrentPage(1);
+    });
+  };
+
+  const clearFilters = () => {
+    startTransition(() => {
+      setSearchQuery("");
+      setStatusFilter("all");
+      setSelectedCategory("all");
+      setSelectedBrand("all");
+      setCurrentPage(1);
+    });
+  };
 
   // Filter Logic
   const filteredProducts = useMemo(() => {
@@ -134,11 +191,6 @@ export default function ProductsPage() {
       return matchesSearch && matchesStatus && matchesCategory && matchesBrand;
     });
   }, [products, searchQuery, statusFilter, selectedCategory, selectedBrand]);
-
-  // Reset to page 1 whenever search, filters, or page size change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter, selectedCategory, selectedBrand, pageSize]);
 
   // Pagination Calculations
   const totalFiltered = filteredProducts.length;
@@ -191,12 +243,6 @@ export default function ProductsPage() {
     setIsDeleteOpen(true);
   };
 
-  const clearFilters = () => {
-    setSearchQuery("");
-    setStatusFilter("all");
-    setSelectedCategory("all");
-    setSelectedBrand("all");
-  };
 
   const hasActiveFilters =
     searchQuery.trim() !== "" ||
@@ -227,12 +273,12 @@ export default function ProductsPage() {
           <div className="flex items-center gap-2.5">
             <button
               type="button"
-              onClick={loadData}
-              disabled={loading}
+              onClick={() => loadData(false)}
+              disabled={isFetching}
               className="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-xs"
               title="Refresh Catalog"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin text-indigo-600" : ""}`} />
             </button>
 
             <button
@@ -299,13 +345,13 @@ export default function ProductsPage() {
                 type="text"
                 placeholder="Search products by title, SKU, brand, or slug..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-10 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition"
               />
               {searchQuery && (
                 <button
                   type="button"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => handleSearchChange("")}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="w-4 h-4" />
@@ -317,7 +363,7 @@ export default function ProductsPage() {
             <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0">
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="all">All Categories</option>
@@ -330,7 +376,7 @@ export default function ProductsPage() {
 
               <select
                 value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
+                onChange={(e) => handleBrandChange(e.target.value)}
                 className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               >
                 <option value="all">All Brands</option>
@@ -386,7 +432,7 @@ export default function ProductsPage() {
                 <button
                   key={tab.id}
                   type="button"
-                  onClick={() => setStatusFilter(tab.id)}
+                  onClick={() => handleStatusChange(tab.id)}
                   className={`px-3 py-1 rounded-lg font-medium transition ${
                     statusFilter === tab.id
                       ? "bg-indigo-600 text-white shadow-xs"
@@ -399,9 +445,10 @@ export default function ProductsPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-slate-500 font-medium">
+              <span className="text-slate-500 font-medium flex items-center gap-1.5">
                 Showing <strong className="text-slate-800">{filteredProducts.length}</strong> of{" "}
                 {products.length} products
+                {isFetching && <Loader2 className="w-3 h-3 text-indigo-600 animate-spin" />}
               </span>
               {hasActiveFilters && (
                 <button
@@ -424,8 +471,8 @@ export default function ProductsPage() {
           </div>
         )}
 
-        {/* Data Display */}
-        {loading ? (
+        {/* Data Display - Never Unmounts Container */}
+        {initialLoading && products.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-xs">
             <div className="flex flex-col items-center justify-center gap-3">
               <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
@@ -433,41 +480,16 @@ export default function ProductsPage() {
               <p className="text-xs text-slate-400">Fetching products from FastAPI backend</p>
             </div>
           </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-xs">
-            <div className="flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
-                <Package className="w-7 h-7" />
-              </div>
-              <h3 className="text-base font-bold text-slate-800">No products match your criteria</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">
-                {hasActiveFilters
-                  ? "Try adjusting your search keywords, category or status filters to find matching items."
-                  : "Your product catalog is currently empty. Click the button below to add your first product."}
-              </p>
-              {hasActiveFilters ? (
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className="mt-2 px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition"
-                >
-                  Clear All Filters
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleOpenCreate}
-                  className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-700 shadow-sm transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  Create First Product
-                </button>
-              )}
-            </div>
-          </div>
         ) : viewMode === "table" ? (
           /* Table View */
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden relative">
+            {/* Top indeterminate progress line during background fetch */}
+            {isFetching && (
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-indigo-100 overflow-hidden z-20">
+                <div className="w-full h-full bg-indigo-600 animate-pulse" />
+              </div>
+            )}
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -480,8 +502,43 @@ export default function ProductsPage() {
                     <th className="py-3.5 px-5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {paginatedProducts.map((p) => {
+                <tbody className={`divide-y divide-slate-100 transition-opacity duration-150 ${isFetching ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+                  {filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-16 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3 max-w-sm mx-auto">
+                          <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center">
+                            <Package className="w-7 h-7" />
+                          </div>
+                          <h3 className="text-base font-bold text-slate-800">No products match your criteria</h3>
+                          <p className="text-xs text-slate-500 leading-relaxed">
+                            {hasActiveFilters
+                              ? "Try adjusting your search keywords, category or status filters to find matching items."
+                              : "Your product catalog is currently empty. Click the button below to add your first product."}
+                          </p>
+                          {hasActiveFilters ? (
+                            <button
+                              type="button"
+                              onClick={clearFilters}
+                              className="mt-2 px-4 py-2 rounded-xl border border-slate-200 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition"
+                            >
+                              Clear All Filters
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleOpenCreate}
+                              className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-700 shadow-sm transition"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Create First Product
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedProducts.map((p) => {
                     const priceVal = p.min_price ? Number(p.min_price) : 0;
                     return (
                       <tr key={p.id} className="hover:bg-slate-50/70 transition-colors group">
@@ -584,7 +641,7 @@ export default function ProductsPage() {
                         </td>
                       </tr>
                     );
-                  })}
+                  }))}
                 </tbody>
               </table>
             </div>
@@ -698,17 +755,18 @@ export default function ProductsPage() {
         {filteredProducts.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 px-5 py-3.5 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
             <div className="flex flex-wrap items-center gap-3">
-              <span>
+              <span className="flex items-center gap-1.5">
                 Showing <strong className="text-slate-900">{startIndex + 1}</strong> to{" "}
                 <strong className="text-slate-900">{endIndex}</strong> of{" "}
                 <strong className="text-slate-900">{totalFiltered}</strong> items
+                {isFetching && <Loader2 className="w-3 h-3 text-indigo-600 animate-spin shrink-0" />}
               </span>
               <span className="text-slate-300 hidden sm:inline">•</span>
               <div className="flex items-center gap-1.5">
                 <span>Per page:</span>
                 <select
                   value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   className="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                 >
                   <option value={10}>10</option>

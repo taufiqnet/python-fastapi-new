@@ -347,11 +347,94 @@ export interface ProductCreateInput {
   }>;
 }
 
+export interface CategoryAttributeTemplateOut {
+  id?: string;
+  attribute_name: string;
+  attribute_type: "text" | "select" | "number" | "boolean" | string;
+  is_required: boolean;
+  options?: string[] | string | Record<string, unknown> | null;
+}
+
+export interface SearchResultItem {
+  id: string;
+  business_id?: number | null;
+  title: string;
+  slug: string;
+  brand?: string | null;
+  description?: string | null;
+  status: string;
+  category_id?: string | null;
+  min_price?: number | null;
+  max_price?: number | null;
+  average_rating: number;
+  review_count: number;
+  sold_count: number;
+  is_featured: boolean;
+  primary_image_url?: string | null;
+}
+
+export interface FacetValueOut {
+  value: string;
+  count: number;
+}
+
+export interface FacetOut {
+  name: string;
+  values: FacetValueOut[];
+}
+
+export interface SuggestItem {
+  id: string;
+  title: string;
+  slug: string;
+  brand?: string | null;
+  min_price?: number | null;
+  primary_image_url?: string | null;
+}
+
+export interface SearchResult {
+  query?: string | null;
+  items: SearchResultItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+  facets: FacetOut[];
+}
+
 export interface CategoryOut {
   id: string;
   name: string;
   slug: string;
+  icon?: string | null;
   description?: string | null;
+  is_active: boolean;
+  parent_id?: string | null;
+  business_id?: number | null;
+  created_at?: string;
+  updated_at?: string;
+  attribute_templates?: CategoryAttributeTemplateOut[];
+}
+
+export interface CategoryCreateInput {
+  name: string;
+  slug: string;
+  icon?: string | null;
+  description?: string | null;
+  is_active?: boolean;
+  parent_id?: string | null;
+  business_id?: number | null;
+  attribute_templates?: CategoryAttributeTemplateOut[];
+}
+
+export interface CategoryUpdateInput {
+  name?: string;
+  slug?: string;
+  icon?: string | null;
+  description?: string | null;
+  is_active?: boolean;
   parent_id?: string | null;
   business_id?: number | null;
 }
@@ -362,7 +445,535 @@ export interface BrandOut {
   slug: string;
   description?: string | null;
   logo_url?: string | null;
+  website_url?: string | null;
+  is_active?: boolean;
   business_id?: number | null;
+  created_at?: string;
+  models?: ProductModelOut[];
+}
+
+export interface BrandCreateInput {
+  name: string;
+  slug: string;
+  description?: string | null;
+  logo_url?: string | null;
+  website_url?: string | null;
+  business_id?: number | null;
+  is_active?: boolean;
+}
+
+export interface ProductModelOut {
+  id: string;
+  name: string;
+  slug?: string;
+  code?: string | null;
+  brand_id?: string | null;
+  brand_name?: string | null;
+  year?: number | null;
+  description?: string | null;
+  is_active?: boolean;
+  business_id?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductModelCreateInput {
+  name: string;
+  slug?: string;
+  code?: string | null;
+  brand_id: string;
+  year?: number | null;
+  description?: string | null;
+  business_id?: number | null;
+  is_active?: boolean;
+}
+
+export interface DiscountRuleOut {
+  id: string;
+  business_id: number;
+  name: string;
+  code?: string | null;
+  discount_type: "percentage" | "fixed" | "buy_x_get_y" | string;
+  discount_value: number;
+  buy_x_qty?: number | null;
+  get_y_qty?: number | null;
+  min_order_amount: number;
+  is_active: boolean;
+}
+
+export interface DiscountRuleCreateInput {
+  name: string;
+  code?: string | null;
+  discount_type: "percentage" | "fixed" | "buy_x_get_y" | string;
+  discount_value: number;
+  buy_x_qty?: number | null;
+  get_y_qty?: number | null;
+  min_order_amount?: number;
+  is_active?: boolean;
+  business_id?: number;
+}
+
+export interface CouponOut {
+  id: string;
+  business_id: number;
+  code: string;
+  discount_rule_id: string;
+  max_uses?: number | null;
+  used_count: number;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  is_active: boolean;
+  discount_rule?: DiscountRuleOut | null;
+}
+
+export interface CouponCreateInput {
+  code: string;
+  discount_rule_id: string;
+  max_uses?: number | null;
+  valid_from?: string | null;
+  valid_to?: string | null;
+  is_active?: boolean;
+  business_id?: number;
+}
+
+export interface TaxRuleOut {
+  id: string;
+  business_id: number;
+  name: string;
+  tax_rate: number;
+  country_code?: string | null;
+  state_code?: string | null;
+  is_active: boolean;
+}
+
+export interface CurrencyRateOut {
+  id: string;
+  business_id: number;
+  currency_code: string;
+  exchange_rate: number;
+  is_base: boolean;
+}
+
+export type OrderPaymentStatus = "pending" | "authorized" | "paid" | "partially_refunded" | "refunded" | "failed";
+export type OrderFulfillmentStatus = "unfulfilled" | "processing" | "partially_fulfilled" | "fulfilled" | "shipped" | "delivered" | "cancelled" | "returned";
+
+export interface OrderItemOut {
+  id: string;
+  order_id: string;
+  variant_id: string;
+  seller_id?: string | null;
+  product_title?: string;
+  sku?: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+}
+
+export interface OrderAddressOut {
+  id: string;
+  order_id: string;
+  address_type: string;
+  recipient_name: string;
+  phone?: string | null;
+  street: string;
+  city: string;
+  state?: string | null;
+  zip_code?: string | null;
+  country: string;
+}
+
+export interface OrderStatusHistoryOut {
+  id: string;
+  status_type: string;
+  status_value: string;
+  note?: string | null;
+  created_at: string;
+}
+
+export interface OrderSummary {
+  id: string;
+  business_id: number;
+  order_number: string;
+  user_id?: string | null;
+  customer_name?: string;
+  customer_email?: string;
+  payment_status: OrderPaymentStatus;
+  fulfillment_status: OrderFulfillmentStatus;
+  subtotal_amount: number;
+  tax_amount: number;
+  shipping_amount: number;
+  discount_amount: number;
+  other_charges: number;
+  total_amount: number;
+  currency: string;
+  payment_method?: string | null;
+  payment_channel?: string | null;
+  delivery_method?: string | null;
+  courier_company?: string | null;
+  tracking_id?: string | null;
+  created_at: string;
+}
+
+export interface OrderDetail extends OrderSummary {
+  items: OrderItemOut[];
+  addresses: OrderAddressOut[];
+  status_history: OrderStatusHistoryOut[];
+}
+
+export interface OrderStatusUpdateInput {
+  payment_status?: OrderPaymentStatus;
+  fulfillment_status?: OrderFulfillmentStatus;
+  note?: string | null;
+}
+
+export interface CustomerOut {
+  id: string;
+  first_name: string;
+  last_name?: string | null;
+  full_name?: string;
+  email?: string | null;
+  phone: string;
+  address?: string | null;
+  is_active: boolean;
+  business_id?: number | null;
+  loyalty_points?: number;
+  store_credit?: number | string;
+  membership_tier?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CustomerCreateInput {
+  first_name: string;
+  last_name?: string | null;
+  email?: string | null;
+  phone: string;
+  address?: string | null;
+  business_id?: number | null;
+  membership_tier?: string;
+  loyalty_points?: number;
+  store_credit?: number | string;
+  is_active?: boolean;
+}
+
+
+export interface OrderCreateInput {
+  business_id: number;
+  user_id?: string | null;
+  guest_email?: string | null;
+  items: Array<{ variant_id: string; quantity: number; unit_price?: number }>;
+  shipping_address: {
+    address_type?: string;
+    recipient_name: string;
+    phone?: string;
+    street: string;
+    city: string;
+    state?: string;
+    zip_code?: string;
+    country: string;
+  };
+  billing_address?: {
+    address_type?: string;
+    recipient_name: string;
+    phone?: string;
+    street: string;
+    city: string;
+    state?: string;
+    zip_code?: string;
+    country: string;
+  };
+  currency?: string;
+  shipping_amount?: number;
+  tax_amount?: number;
+  discount_amount?: number;
+  other_charges?: number;
+  payment_method?: string;
+  payment_channel?: string;
+  payment_status?: OrderPaymentStatus;
+  fulfillment_status?: OrderFulfillmentStatus;
+  delivery_method?: string;
+  courier_company?: string;
+  tracking_id?: string;
+  order_source?: string;
+  customer_note?: string;
+}
+
+export interface CatalogVariant {
+  id: string;
+  sku: string;
+  price: number;
+  cost_price?: number;
+  stock_qty: number;
+  attributes?: Record<string, any> | null;
+  attr_summary?: string;
+}
+
+export interface CatalogProduct {
+  id: string;
+  title: string;
+  brand?: string | null;
+  thumbnail_url?: string | null;
+  variants: CatalogVariant[];
+}
+
+// POS Interfaces
+export interface POSRegisterOut {
+  id: string;
+  name: string;
+  code: string;
+  warehouse_id: string;
+  warehouse_name?: string;
+  is_active: boolean;
+  business_id: number;
+  receipt_header?: string | null;
+  receipt_footer?: string | null;
+  created_at?: string;
+}
+
+export interface POSSessionOut {
+  id: string;
+  register_id: string;
+  register_name?: string;
+  user_id: string;
+  cashier_name?: string;
+  status: "open" | "closed";
+  opening_cash: number;
+  closing_cash_counted?: number | null;
+  closing_cash_expected?: number | null;
+  opened_at: string;
+  closed_at?: string | null;
+  notes?: string | null;
+}
+
+export interface POSProductSearchOut {
+  id: string;
+  variant_id: string;
+  title: string;
+  sku: string;
+  barcode?: string | null;
+  price: number;
+  stock_quantity: number;
+  thumbnail_url?: string | null;
+  category_name?: string | null;
+}
+
+export interface POSLineItem {
+  variant_id: string;
+  product_id?: string;
+  title: string;
+  sku: string;
+  price: number;
+  quantity: number;
+  discount: number;
+  tax_percent?: number;
+}
+
+export interface POSCheckoutRequest {
+  register_id: string;
+  session_id?: string;
+  customer_id?: string | null;
+  items: Array<{
+    variant_id: string;
+    quantity: number;
+    unit_price: number;
+    discount?: number;
+  }>;
+  payments: Array<{
+    payment_method: "cash" | "card" | "mobile_banking" | string;
+    amount: number;
+    tendered_amount?: number;
+    change_amount?: number;
+    transaction_ref?: string;
+  }>;
+  discount_amount?: number;
+  tax_amount?: number;
+  notes?: string;
+}
+
+export interface POSCheckoutResponse {
+  success: boolean;
+  order_number: string;
+  order_id: string;
+  total_amount: number;
+  change_due: number;
+  receipt_html?: string;
+  created_at: string;
+}
+
+// Inventory & Warehouse Interfaces
+export interface WarehouseOut {
+  id: string;
+  name: string;
+  code: string;
+  address?: string | null;
+  is_active: boolean;
+  business_id?: number | null;
+}
+
+export interface UoMOut {
+  id: string;
+  name: string;
+  code: string;
+  is_active?: boolean;
+}
+
+export interface InventoryStockOut {
+  id: string;
+  variant_id: string;
+  item_title: string;
+  sku: string;
+  barcode?: string | null;
+  warehouse_id: string;
+  warehouse_name?: string;
+  quantity_on_hand: number;
+  quantity_reserved: number;
+  quantity_available: number;
+  reorder_level?: number;
+  unit_cost?: number;
+  total_value?: number;
+  last_counted_at?: string | null;
+}
+
+export interface StockTransferOut {
+  id: string;
+  transfer_number: string;
+  source_warehouse_id: string;
+  source_warehouse_name?: string;
+  destination_warehouse_id: string;
+  destination_warehouse_name?: string;
+  status: "draft" | "in_transit" | "received" | "cancelled";
+  items_count: number;
+  created_at: string;
+}
+
+export interface StockCountOut {
+  id: string;
+  warehouse_id: string;
+  warehouse_name?: string;
+  scheduled_date: string;
+  status: "open" | "in_progress" | "completed";
+  counted_by?: string | null;
+  items_count?: number;
+  variance_count?: number;
+  created_at: string;
+}
+
+// Procurement Interfaces
+export interface SupplierOut {
+  id: string;
+  name: string;
+  code: string;
+  contact_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  country?: string;
+  payment_terms?: string;
+  is_active: boolean;
+  business_id: number;
+  created_at?: string;
+}
+
+export interface PurchaseOrderOut {
+  id: string;
+  po_number: string;
+  supplier_id: string;
+  supplier_name?: string;
+  warehouse_id?: string;
+  warehouse_name?: string;
+  total_amount: number;
+  status: "draft" | "submitted" | "partially_received" | "received" | "cancelled";
+  order_date: string;
+  expected_delivery?: string | null;
+  currency?: string;
+}
+
+// Pricing & Coupons
+export interface DiscountRuleOut {
+  id: string;
+  name: string;
+  code?: string | null;
+  discount_type: "percentage" | "fixed" | "buy_x_get_y" | string;
+  discount_value: number;
+  min_order_amount: number;
+  is_active: boolean;
+  business_id: number;
+  created_at?: string;
+}
+
+// Shipping & Tracking
+export interface ShipmentOut {
+  id: string;
+  tracking_number: string;
+  order_number: string;
+  carrier_name: string;
+  shipping_status: "pending" | "dispatched" | "in_transit" | "delivered" | "failed";
+  shipping_cost: number;
+  estimated_delivery?: string | null;
+  shipped_at?: string | null;
+}
+
+export interface DeliveryServiceSettingOut {
+  id: string;
+  business_id: number;
+  name: string;
+  charge: number;
+  region?: string | null;
+  estimated_days?: string | null;
+  default_courier?: string | null;
+  is_active: boolean;
+  is_default: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+
+// Payments & Transactions
+export interface PaymentTransactionOut {
+  id: string;
+  order_id: string;
+  order_number?: string;
+  transaction_ref: string;
+  payment_method: string;
+  amount: number;
+  fee?: number;
+  status: "success" | "pending" | "failed" | "refunded";
+  created_at: string;
+}
+
+// Product Reviews
+export interface ReviewOut {
+  id: string;
+  product_id: string;
+  product_title?: string;
+  customer_name: string;
+  rating: number;
+  title?: string | null;
+  content: string;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+}
+
+// Sellers
+export interface SellerOut {
+  id: string;
+  store_name: string;
+  owner_name: string;
+  email: string;
+  commission_type: "percentage" | "flat";
+  commission_rate: number;
+  status: "active" | "pending_approval" | "suspended";
+  created_at: string;
+}
+
+// Reports
+export interface EcommerceReportSummaryOut {
+  gross_revenue: number;
+  net_revenue: number;
+  total_orders: number;
+  average_order_value: number;
+  top_products: Array<{ title: string; units_sold: number; revenue: number }>;
 }
 
 export interface BranchOut {

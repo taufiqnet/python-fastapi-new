@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
@@ -59,7 +59,7 @@ service = VehicleService()
 @router.get("/overview/stats", response_model=FleetOverviewStatsOut)
 def get_fleet_stats(
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "vehicles", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -70,7 +70,7 @@ def get_fleet_stats(
 def get_document_expiry_alerts(
     threshold_days: int = Query(30, ge=1, le=180),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "vehicles", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -84,7 +84,7 @@ def get_document_expiry_alerts(
 def create_vehicle(
     data: VehicleCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "vehicles", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -100,7 +100,7 @@ def list_vehicles(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "vehicles", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -120,7 +120,7 @@ def list_vehicles(
 def get_vehicle(
     vehicle_id: uuid.UUID,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "vehicles", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -132,7 +132,7 @@ def update_vehicle(
     vehicle_id: uuid.UUID,
     data: VehicleUpdate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "vehicles", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -143,7 +143,7 @@ def update_vehicle(
 def delete_vehicle(
     vehicle_id: uuid.UUID,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "vehicles", "delete")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -157,7 +157,7 @@ def delete_vehicle(
 def create_driver(
     data: DriverCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "drivers", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -171,7 +171,7 @@ def list_drivers(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "drivers", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -189,7 +189,7 @@ def list_drivers(
 def get_driver(
     driver_id: uuid.UUID,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "drivers", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -201,7 +201,7 @@ def update_driver(
     driver_id: uuid.UUID,
     data: DriverUpdate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "drivers", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -215,7 +215,7 @@ def update_driver(
 def create_requisition(
     data: RequisitionCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "requisitions", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -228,7 +228,7 @@ def list_requisitions(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "requisitions", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -240,7 +240,7 @@ def approve_requisition(
     requisition_id: uuid.UUID,
     data: RequisitionApproval,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "requisitions", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -252,7 +252,7 @@ def dispatch_requisition(
     requisition_id: uuid.UUID,
     data: RequisitionDispatch,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "requisitions", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -266,7 +266,7 @@ def dispatch_requisition(
 def start_trip(
     data: TripStart,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "trips", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -278,7 +278,7 @@ def complete_trip(
     trip_id: uuid.UUID,
     data: TripComplete,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "trips", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -293,7 +293,7 @@ def list_trips(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "trips", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -309,7 +309,7 @@ def list_trips(
 def log_fuel(
     data: FuelLogCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "fuel_logs", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -322,7 +322,7 @@ def list_fuel_logs(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "fuel_logs", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -336,7 +336,7 @@ def list_fuel_logs(
 def create_maintenance_schedule(
     data: MaintenanceScheduleCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "maintenance", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -346,7 +346,7 @@ def create_maintenance_schedule(
 @router.get("/maintenance-schedules", response_model=List[MaintenanceScheduleOut])
 def list_maintenance_schedules(
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "maintenance", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -357,7 +357,7 @@ def list_maintenance_schedules(
 def create_work_order(
     data: WorkOrderCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "maintenance", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -369,7 +369,7 @@ def update_work_order(
     work_order_id: uuid.UUID,
     data: WorkOrderUpdate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "maintenance", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -383,7 +383,7 @@ def list_work_orders(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "maintenance", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -424,7 +424,7 @@ def list_tires(
 def report_incident(
     data: IncidentReportCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "incidents", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -437,7 +437,7 @@ def list_incidents(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=200),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("fleet", "incidents", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)

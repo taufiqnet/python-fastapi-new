@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_permission
 from app.core.identity.models import User
 from app.core.tenancy.scoping import resolve_business_id
 from app.database import get_db
@@ -123,7 +123,7 @@ def review_travel_request(
     request_id: uuid.UUID,
     data: TravelRequestReview,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "travel_requests", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -159,7 +159,7 @@ def disburse_travel_advance(
     advance_id: uuid.UUID,
     data: TravelAdvanceDisburse,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "travel_requests", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -173,7 +173,7 @@ def disburse_travel_advance(
 def create_policy(
     data: DAConveyancePolicyCreate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "da_policies", "create")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -184,7 +184,7 @@ def create_policy(
 def list_policies(
     active_only: bool = Query(False),
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "da_policies", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -196,7 +196,7 @@ def update_policy(
     policy_id: uuid.UUID,
     data: DAConveyancePolicyUpdate,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "da_policies", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -207,7 +207,7 @@ def update_policy(
 def delete_policy(
     policy_id: uuid.UUID,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "da_policies", "delete")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -286,7 +286,7 @@ def review_expense_claim(
     claim_id: uuid.UUID,
     data: ExpenseClaimReview,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "expense_claims", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -304,7 +304,7 @@ def settle_expense_claim(
     claim_id: uuid.UUID,
     data: ExpenseClaimSettle,
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "expense_claims", "update")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)
@@ -323,7 +323,7 @@ def settle_expense_claim(
 @router.get("/travel/overview/stats", response_model=TravelExpenseStats)
 def get_travel_stats(
     business_id: Optional[int] = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("hrm", "travel_requests", "view")),
     db: Session = Depends(get_db),
 ):
     biz_id = resolve_business_id(current_user, business_id)

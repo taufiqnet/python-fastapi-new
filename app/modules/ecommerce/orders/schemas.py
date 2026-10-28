@@ -12,6 +12,7 @@ from app.modules.ecommerce.orders.models import (
 class OrderItemCreate(BaseModel):
     variant_id: uuid.UUID
     quantity: int = Field(..., gt=0)
+    unit_price: float | None = Field(None, ge=0.0)
 
 
 class OrderAddressCreate(BaseModel):
@@ -27,22 +28,43 @@ class OrderAddressCreate(BaseModel):
 
 class OrderCreate(BaseModel):
     business_id: int = Field(1)
-    user_id: uuid.UUID
+    user_id: uuid.UUID | None = None
     guest_email: str | None = Field(None, max_length=255)
     items: list[OrderItemCreate] = Field(..., min_length=1)
     shipping_address: OrderAddressCreate
     billing_address: OrderAddressCreate | None = None
-    currency: str = Field("USD", max_length=3)
+    currency: str = Field("BDT", max_length=3)
     shipping_amount: float = Field(0.0)
     tax_amount: float = Field(0.0)
     discount_amount: float = Field(0.0)
     other_charges: float = Field(0.0)
     customer_note: str | None = None
+    order_source: str | None = Field(None, max_length=50)
     payment_method: str | None = Field(None, max_length=50)
     payment_channel: str | None = Field(None, max_length=50)
+    payment_status: OrderPaymentStatus = OrderPaymentStatus.UNPAID
+    fulfillment_status: OrderFulfillmentStatus = OrderFulfillmentStatus.PENDING
     delivery_method: str | None = Field(None, max_length=50)
     courier_company: str | None = Field(None, max_length=50)
     tracking_id: str | None = Field(None, max_length=100)
+
+
+class CatalogVariantOut(BaseModel):
+    id: uuid.UUID
+    sku: str
+    price: float
+    cost_price: float = 0.0
+    stock_qty: int = 0
+    attributes: dict | None = None
+    attr_summary: str = ""
+
+
+class CatalogProductOut(BaseModel):
+    id: uuid.UUID
+    title: str
+    brand: str | None = None
+    thumbnail_url: str | None = None
+    variants: list[CatalogVariantOut] = []
 
 
 class OrderItemOut(BaseModel):

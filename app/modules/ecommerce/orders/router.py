@@ -12,6 +12,7 @@ from app.modules.ecommerce.orders.models import (
     OrderPaymentStatus,
 )
 from app.modules.ecommerce.orders.schemas import (
+    CatalogProductOut,
     OrderCreate,
     OrderDetail,
     OrderStatusUpdate,
@@ -22,6 +23,16 @@ from app.modules.ecommerce.orders.service import OrderService
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 service = OrderService()
+
+
+@router.get("/catalog/products", response_model=list[CatalogProductOut])
+def get_catalog_products(
+    business_id: int | None = Query(None),
+    current_user: User = Depends(require_permission("ecommerce", "orders", "view")),
+    db: Session = Depends(get_db),
+):
+    resolved_business_id = resolve_business_id(current_user, business_id)
+    return service.get_catalog_products(db, business_id=resolved_business_id)
 
 
 @router.get("/template-excel")

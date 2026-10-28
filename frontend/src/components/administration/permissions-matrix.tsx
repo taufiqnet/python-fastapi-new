@@ -11,6 +11,8 @@ import {
   Square,
   Layers,
   Sparkles,
+  Car,
+  Stethoscope,
 } from "lucide-react";
 
 interface PermissionsMatrixProps {
@@ -33,6 +35,8 @@ const MODULE_ICON_MAP: Record<string, React.ComponentType<{ className?: string }
   hrm: Users,
   finance: Calculator,
   ecommerce: ShoppingCart,
+  fleet: Car,
+  healthcare: Stethoscope,
 };
 
 export function PermissionsMatrix({

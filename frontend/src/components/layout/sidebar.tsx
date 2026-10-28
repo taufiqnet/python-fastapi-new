@@ -110,6 +110,22 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           href: "/portal/letters",
         },
         {
+          name: "My Assets",
+          href: "/portal/assets",
+        },
+        {
+          name: "Travel & Claims",
+          href: "/portal/travel",
+        },
+        {
+          name: "Goals & Appraisals",
+          href: "/portal/performance",
+        },
+        {
+          name: "Career & Movements",
+          href: "/portal/career",
+        },
+        {
           name: "Policy Handbook",
           href: "/portal/handbook",
         },
@@ -126,30 +142,128 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       sectionKey: "ecommerce",
       module: "ecommerce",
       children: [
+        // 1. Catalog & Store
         {
           name: "Products",
           href: "/ecommerce/products",
+          group: "Catalog & Store",
           permission: { module: "ecommerce", feature: "products", action: "view" },
         },
         {
           name: "Categories",
           href: "/ecommerce/categories",
+          group: "Catalog & Store",
           permission: { module: "ecommerce", feature: "categories", action: "view" },
         },
         {
-          name: "Inventory",
-          href: "/ecommerce/inventory",
-          permission: { module: "ecommerce", feature: "inventory", action: "view" },
+          name: "Brands & Models",
+          href: "/ecommerce/brands",
+          group: "Catalog & Store",
+          permission: { module: "ecommerce", feature: "brands", action: "view" },
         },
+        {
+          name: "Catalog Browse",
+          href: "/ecommerce/catalog",
+          group: "Catalog & Store",
+          permission: { module: "ecommerce", feature: "catalog", action: "view" },
+        },
+        {
+          name: "Pricing & Coupons",
+          href: "/ecommerce/pricing",
+          group: "Catalog & Store",
+          permission: { module: "ecommerce", feature: "pricing", action: "view" },
+        },
+
+        // 2. Sales & POS
         {
           name: "Orders",
           href: "/ecommerce/orders",
+          group: "Sales & POS",
           permission: { module: "ecommerce", feature: "orders", action: "view" },
         },
         {
-          name: "POS Register",
+          name: "Customers",
+          href: "/ecommerce/customers",
+          group: "Sales & POS",
+          permission: { module: "ecommerce", feature: "customers", action: "view" },
+        },
+        {
+          name: "POS Terminal",
           href: "/ecommerce/pos",
+          group: "Sales & POS",
           permission: { module: "ecommerce", feature: "pos_terminal", action: "view" },
+        },
+        {
+          name: "POS Registers",
+          href: "/ecommerce/pos/registers",
+          group: "Sales & POS",
+          permission: { module: "ecommerce", feature: "pos_registers", action: "view" },
+        },
+
+        // 3. Inventory & Warehouses
+        {
+          name: "Stock & Inventory",
+          href: "/ecommerce/inventory",
+          group: "Inventory & Warehouses",
+          permission: { module: "ecommerce", feature: "inventory", action: "view" },
+        },
+        {
+          name: "Stock Transfers",
+          href: "/ecommerce/inventory/transfers",
+          group: "Inventory & Warehouses",
+          permission: { module: "ecommerce", feature: "inventory_transfers", action: "view" },
+        },
+        {
+          name: "Stock Audits & Counts",
+          href: "/ecommerce/inventory/counts",
+          group: "Inventory & Warehouses",
+          permission: { module: "ecommerce", feature: "inventory_counts", action: "view" },
+        },
+
+        // 4. Procurement & Inbound
+        {
+          name: "Purchase Orders",
+          href: "/ecommerce/procurement",
+          group: "Procurement & Inbound",
+          permission: { module: "ecommerce", feature: "procurement_po", action: "view" },
+        },
+        {
+          name: "Suppliers & Vendors",
+          href: "/ecommerce/procurement?tab=suppliers",
+          group: "Procurement & Inbound",
+          permission: { module: "ecommerce", feature: "procurement_suppliers", action: "view" },
+        },
+
+        // 5. Operations & Reports
+        {
+          name: "Shipping & Delivery",
+          href: "/ecommerce/shipping",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "shipping", action: "view" },
+        },
+        {
+          name: "Payments & Refunds",
+          href: "/ecommerce/payments",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "payments", action: "view" },
+        },
+        {
+          name: "Customer Reviews",
+          href: "/ecommerce/reviews",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "reviews", action: "view" },
+        },
+        {
+          name: "Multi-Vendor Sellers",
+          href: "/ecommerce/sellers",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "sellers", action: "view" },
+        },
+        {
+          name: "Reports & Analytics",
+          href: "/ecommerce/reports",
+          group: "Operations & Reports",
+          permission: { module: "ecommerce", feature: "reports", action: "view" },
         },
       ],
     },
@@ -176,7 +290,7 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
         {
           name: "Document Management",
           href: "/hr-payroll/documents",
-          permission: { module: "hrm", feature: "Documents", action: "view" },
+          permission: { module: "hrm", feature: "employee_documents", action: "view" },
           group: "Core HR & Workforce",
         },
 
@@ -208,9 +322,27 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
           group: "Payroll & Compensation",
         },
         {
+          name: "Pay Periods",
+          href: "/hr-payroll/payroll-periods",
+          permission: { module: "hrm", feature: "payroll_periods", action: "view" },
+          group: "Payroll & Compensation",
+        },
+        {
+          name: "Process Payroll",
+          href: "/hr-payroll/payroll-process",
+          permission: { module: "hrm", feature: "payroll_periods", action: "update" },
+          group: "Payroll & Compensation",
+        },
+        {
           name: "Payroll Payslips",
           href: "/hr-payroll/payroll-records",
           permission: { module: "hrm", feature: "payroll_records", action: "view" },
+          group: "Payroll & Compensation",
+        },
+        {
+          name: "Payroll Settings",
+          href: "/hr-payroll/payroll-settings",
+          permission: { module: "hrm", feature: "salary_structures", action: "view" },
           group: "Payroll & Compensation",
         },
         {
@@ -316,10 +448,12 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       href: "/fleet",
       icon: Car,
       sectionKey: "fleet",
+      module: "fleet",
       children: [
         {
           name: "Fleet Overview",
           href: "/fleet",
+          permission: { module: "fleet", feature: "vehicles", action: "view" },
         },
       ],
     },
@@ -357,55 +491,90 @@ export function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }
       href: "/healthcare",
       icon: Stethoscope,
       sectionKey: "healthcare",
+      module: "healthcare",
       children: [
         {
           name: "Diagnostic Billing",
           href: "/healthcare/diagnostic/billing",
+          permission: { module: "healthcare", feature: "diagnostic_billing", action: "view" },
         },
         {
           name: "Patient Registry (MPI)",
           href: "/healthcare/patients",
+          permission: { module: "healthcare", feature: "patients", action: "view" },
         },
         {
           name: "Doctors & Chambers",
           href: "/healthcare/doctors",
+          permission: { module: "healthcare", feature: "doctors", action: "view" },
+        },
+        {
+          name: "OPD Chamber Slots",
+          href: "/healthcare/opd-chambers",
+          permission: { module: "healthcare", feature: "doctors", action: "view" },
+        },
+        {
+          name: "Doctor Desk & Prescriptions",
+          href: "/healthcare/doctor-desk",
+          permission: { module: "healthcare", feature: "appointments", action: "view" },
         },
         {
           name: "Test Catalog",
           href: "/healthcare/diagnostic/catalog",
+          permission: { module: "healthcare", feature: "diagnostic_catalog", action: "view" },
         },
         {
           name: "Phlebotomy & Samples",
           href: "/healthcare/diagnostic/phlebotomy",
+          permission: { module: "healthcare", feature: "phlebotomy", action: "view" },
+        },
+        {
+          name: "LIS Worklist & Results",
+          href: "/healthcare/diagnostic/lis-worklist",
+          permission: { module: "healthcare", feature: "lis_worklist", action: "view" },
+        },
+        {
+          name: "Report Verification",
+          href: "/healthcare/diagnostic/verification",
+          permission: { module: "healthcare", feature: "verification", action: "view" },
+        },
+        {
+          name: "Referral Doctor Commissions",
+          href: "/healthcare/referrals",
+          permission: { module: "healthcare", feature: "referrals", action: "view" },
         },
       ],
     },
     {
       name: "Finance & Accounts",
-      href: "/finance/accounts",
+      href: "/finance/mushak",
       icon: Wallet,
       sectionKey: "finance",
       module: "finance",
       children: [
         {
+          name: "কর চালানপত্র (মূসক-৬.৩)",
+          href: "/finance/mushak",
+          permission: { module: "finance", feature: "mushak", action: "view" },
+          group: "Statutory VAT (NBR)",
+        },
+        {
+          name: "Sales Invoices",
+          href: "/finance/invoices",
+          permission: { module: "finance", feature: "invoices", action: "view" },
+          group: "Statutory VAT (NBR)",
+        },
+        {
           name: "Chart of Accounts",
           href: "/finance/accounts",
           permission: { module: "finance", feature: "accounts", action: "view" },
+          group: "General Ledger",
         },
         {
-          name: "Vouchers",
+          name: "Journal Vouchers",
           href: "/finance/vouchers",
           permission: { module: "finance", feature: "vouchers", action: "view" },
-        },
-        {
-          name: "Ledger",
-          href: "/finance/ledger",
-          permission: { module: "finance", feature: "accounts", action: "view" },
-        },
-        {
-          name: "Financial Reports",
-          href: "/finance/reports",
-          permission: { module: "finance", feature: "reports", action: "view" },
+          group: "General Ledger",
         },
       ],
     },

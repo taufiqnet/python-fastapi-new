@@ -98,6 +98,10 @@ class User(Base):
         lazy="selectin",
     )
 
+    @property
+    def permissions(self) -> list[str]:
+        return sorted(list(self.get_all_permission_codes()))
+
     def has_role(self, role_name: str) -> bool:
         if self.is_superuser:
             return True
@@ -133,8 +137,13 @@ class User(Base):
                 candidates.extend([f"{mod}:pos:{act}", f"{mod}:orders:{act}"])
             elif feat == "coupons":
                 candidates.append(f"{mod}:products:{act}")
+            elif mod in ("fleet", "vehicles"):
+                candidates.extend([f"fleet:{feat}:{act}", f"vehicles:{feat}:{act}"])
+            elif feat in ("assets", "asset_allocations", "asset_maintenance"):
+                candidates.extend([f"hrm:{feat}:{act}", f"assets:{feat}:{act}"])
             return any(c in all_codes for c in candidates)
         return False
+
 
 
 # ---------------------------------------------------------------------------

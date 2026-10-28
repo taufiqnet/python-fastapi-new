@@ -17,6 +17,7 @@ from app.modules.ecommerce.orders.models import (
 )
 from app.modules.ecommerce.orders.service import OrderService
 from app.modules.ecommerce.products.service import ProductService
+from app.modules.ecommerce.shipping.service import ShippingService
 
 router = APIRouter(prefix="", tags=["Order Views"])
 templates = Jinja2Templates(directory="app/templates")
@@ -24,6 +25,8 @@ order_service = OrderService()
 product_service = ProductService()
 business_service = BusinessService()
 customer_service = CustomerService()
+shipping_service = ShippingService()
+
 
 
 @router.get("/orders/manage", response_class=HTMLResponse)
@@ -146,6 +149,10 @@ def order_create_page(
             }
         )
 
+    delivery_settings = shipping_service.get_delivery_settings(
+        db, business_id=selected_business_id, active_only=True
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="modules/ecommerce/orders/order_form.html",
@@ -157,6 +164,7 @@ def order_create_page(
             "customers": customers,
             "products": products,
             "products_data": products_data,
+            "delivery_settings": delivery_settings,
             "currencies": ["USD", "EUR", "GBP", "CAD", "BDT"],
             "active_page": "orders",
         },
@@ -331,6 +339,10 @@ def order_edit_page(
         (a for a in order.addresses if a.address_type == "billing"), shipping_address
     )
 
+    delivery_settings = shipping_service.get_delivery_settings(
+        db, business_id=selected_business_id, active_only=False
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="modules/ecommerce/orders/order_form.html",
@@ -343,6 +355,7 @@ def order_edit_page(
             "products": all_products,
             "products_data": products_data,
             "order_items_data": order_items_data,
+            "delivery_settings": delivery_settings,
             "shipping_address": shipping_address,
             "billing_address": billing_address,
             "payment_statuses": [s.value for s in OrderPaymentStatus],

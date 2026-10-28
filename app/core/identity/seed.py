@@ -270,6 +270,56 @@ SYSTEM_MODULES = {
             },
         ],
     },
+    "fleet": {
+        "title": "Vehicle & Fleet",
+        "icon": "fas fa-car",
+        "categories": [
+            {
+                "category": "Fleet Operations",
+                "features": [
+                    ("vehicles", "Vehicles & Fleet Registry"),
+                    ("drivers", "Drivers Management"),
+                    ("requisitions", "Vehicle Requisitions"),
+                    ("trips", "Trip Dispatch & Management"),
+                    ("fuel_logs", "Fuel & Mileage Logs"),
+                    ("maintenance", "Maintenance & Work Orders"),
+                    ("incidents", "Incident & Accident Reports"),
+                    ("telematics", "Telematics & Tracking"),
+                ],
+            }
+        ],
+    },
+    "healthcare": {
+        "title": "Healthcare & Clinic",
+        "icon": "fas fa-stethoscope",
+        "categories": [
+            {
+                "category": "Clinical & Consultations",
+                "features": [
+                    ("patients", "Patient Registry (MPI)"),
+                    ("doctors", "Doctors & Chamber Setup"),
+                    ("appointments", "OPD Appointments & Consultations"),
+                ],
+            },
+            {
+                "category": "Diagnostics & Laboratory",
+                "features": [
+                    ("diagnostic_billing", "Diagnostic Billing & Invoices"),
+                    ("diagnostic_catalog", "Diagnostic Test Catalog"),
+                    ("phlebotomy", "Phlebotomy & Sample Collection"),
+                    ("lis_worklist", "LIS Worklist & Lab Results"),
+                    ("verification", "Lab Result Verification"),
+                    ("radiology", "Radiology & Imaging Reports"),
+                ],
+            },
+            {
+                "category": "Referrals & Commissions",
+                "features": [
+                    ("referrals", "Referral Doctor Commissions"),
+                ],
+            },
+        ],
+    },
 }
 
 for mod_key, mod_info in SYSTEM_MODULES.items():
@@ -476,6 +526,28 @@ def seed_system_admin_and_permissions_sync(db: Session) -> None:
         db.add(ecommerce_role)
         db.flush()
     ecommerce_role.permissions = [p for p in db_all_perms if p.module == "ecommerce"]
+
+    fleet_role = db.query(Role).filter(Role.name == "fleet_manager", Role.business_id.is_(None)).first()
+    if not fleet_role:
+        fleet_role = Role(
+            name="fleet_manager",
+            description="Vehicle & Fleet Manager with complete operational access",
+            business_id=None,
+        )
+        db.add(fleet_role)
+        db.flush()
+    fleet_role.permissions = [p for p in db_all_perms if p.module == "fleet"]
+
+    healthcare_role = db.query(Role).filter(Role.name == "healthcare_admin", Role.business_id.is_(None)).first()
+    if not healthcare_role:
+        healthcare_role = Role(
+            name="healthcare_admin",
+            description="Healthcare Clinic & Diagnostics Administrator",
+            business_id=None,
+        )
+        db.add(healthcare_role)
+        db.flush()
+    healthcare_role.permissions = [p for p in db_all_perms if p.module == "healthcare"]
 
     # 3. Seed System Admin & Demo Users
     admin_email = "admin@example.com"
